@@ -1,6 +1,39 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 
-@Body
+<nav class="topnav">
+    <a class="topnav-brand" href="/index.html">
+        <span class="topnav-dot"></span>
+        <span class="topnav-title">Marquitos Game Arcade</span>
+    </a>
+    <div class="topnav-links">
+        <a href="/index.html">Jogos</a>
+        <a href="/pontuacoes.html">🏆 Pontuações</a>
+        <AuthorizeView>
+            <Authorized>
+                <a href="Account/Manage">👤 @context.User.Identity?.Name</a>
+                <form action="Account/Logout" method="post">
+                    <AntiforgeryToken />
+                    <input type="hidden" name="ReturnUrl" value="index.html" />
+                    <button type="submit" class="topnav-linklike">Sair</button>
+                </form>
+            </Authorized>
+            <NotAuthorized>
+                <a href="Account/Login">Entrar</a>
+                <a href="Account/Register">Registar</a>
+            </NotAuthorized>
+        </AuthorizeView>
+    </div>
+</nav>
+
+<div class="page-scroll">
+    <main class="account-shell">
+        @Body
+    </main>
+</div>
+
+<footer class="site-footer">
+    <p>GameStudios Lab - by MarquitosPT and Claude IA</p>
+</footer>
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
