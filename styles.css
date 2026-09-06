@@ -15,11 +15,20 @@
   box-sizing: border-box;
 }
 
+html,
+body {
+  height: 100%;
+}
+
 body {
   margin: 0;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   background: radial-gradient(circle at top, #14143a, var(--bg) 45%);
   color: var(--text);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
 }
 
 h1,
@@ -36,8 +45,7 @@ a {
 /* ---------- Top navigation ---------- */
 
 .topnav {
-  position: sticky;
-  top: 0;
+  flex-shrink: 0;
   z-index: 10;
   display: flex;
   align-items: center;
@@ -47,6 +55,14 @@ a {
   background: rgba(8, 8, 18, 0.75);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ---------- Scrollable content area ---------- */
+
+.page-scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .topnav-brand {
@@ -333,7 +349,7 @@ main {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
   padding: 1.25rem;
-  scroll-margin-top: 5.5rem;
+  scroll-margin-top: 1rem;
 }
 
 .game-panel.highlight {
@@ -399,11 +415,14 @@ th {
 /* ---------- Footer ---------- */
 
 .site-footer {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 1.5rem 1.25rem 2.5rem;
+  flex-shrink: 0;
+  z-index: 10;
+  padding: 0.55rem 1.25rem;
+  background: rgba(8, 8, 18, 0.75);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   text-align: center;
 }
 
