@@ -1,0 +1,105 @@
+using System.Text.RegularExpressions;
+using MarquitosArcade.Data;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+
+namespace MarquitosArcade.Scores;
+
+public record ScoreSubmission(string? Name, int Score);
+
+public record ScoreDto(string Name, int Score, long Ts);
+
+public static class ScoresEndpoints
+{
+    private const int TopCount = 20;
+    private static readonly Regex GameIdPattern = new("[^a-z0-9-]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    public static void MapScoresEndpoints(this IEndpointRouteBuilder app)
+    {
+        var group = app.MapGroup("/api/scores");
+
+        group.MapGet("/{gameId}", async (string gameId, ApplicationDbContext db) =>
+        {
+            var cleanGameId = SanitizeGameId(gameId);
+            if (cleanGameId is null)
+                return Results.BadRequest(new { error = "Jogo inválido" });
+
+            var scores = await db.Scores
+                .Where(s => s.GameId == cleanGameId)
+                .OrderByDescending(s => s.Score)
+                .ThenBy(s => s.CreatedAtUtc)
+                .Take(TopCount)
+                .Select(s => new ScoreDto(s.PlayerName, s.Score, ToUnixMillis(s.CreatedAtUtc)))
+                .ToListAsync();
+
+            return Results.Ok(scores);
+        });
+
+        group.MapPost("/{gameId}", async (string gameId, ScoreSubmission submission, ApplicationDbContext db, UserManager<ApplicationUser> userManager, HttpContext httpContext) =>
+        {
+            var cleanGameId = SanitizeGameId(gameId);
+            if (cleanGameId is null)
+                return Results.BadRequest(new { error = "Jogo inválido" });
+
+            if (submission.Score < 0 || submission.Score > 999999)
+                return Results.BadRequest(new { error = "Pontuação inválida" });
+
+            string? userId = null;
+            string playerName;
+
+            var user = httpContext.User.Identity?.IsAuthenticated == true
+                ? await userManager.GetUserAsync(httpContext.User)
+                : null;
+
+            if (user is not null)
+            {
+                userId = user.Id;
+                playerName = user.UserName ?? "Anónimo";
+            }
+            else
+            {
+                playerName = SanitizeName(submission.Name);
+            }
+
+            db.Scores.Add(new ScoreEntry
+            {
+                GameId = cleanGameId,
+                PlayerName = playerName,
+                UserId = userId,
+                Score = submission.Score,
+                CreatedAtUtc = DateTime.UtcNow,
+            });
+            await db.SaveChangesAsync();
+
+            var topScores = await db.Scores
+                .Where(s => s.GameId == cleanGameId)
+                .OrderByDescending(s => s.Score)
+                .ThenBy(s => s.CreatedAtUtc)
+                .Take(TopCount)
+                .Select(s => new ScoreDto(s.PlayerName, s.Score, ToUnixMillis(s.CreatedAtUtc)))
+                .ToListAsync();
+
+            return Results.Ok(topScores);
+        });
+    }
+
+    private static string? SanitizeGameId(string gameId)
+    {
+        var cleaned = GameIdPattern.Replace(gameId, "");
+        cleaned = cleaned.Length > 40 ? cleaned[..40] : cleaned;
+        return cleaned.Length == 0 ? null : cleaned;
+    }
+
+    private static string SanitizeName(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return "Anónimo";
+
+        var clean = Regex.Replace(name, "<[^>]*>", "").Trim();
+        clean = clean.Length > 24 ? clean[..24] : clean;
+        return clean.Length == 0 ? "Anónimo" : clean;
+    }
+
+    private static long ToUnixMillis(DateTime utc) =>
+        new DateTimeOffset(DateTime.SpecifyKind(utc, DateTimeKind.Utc)).ToUnixTimeMilliseconds();
+}

@@ -1,1 +1,7 @@
 node_modules/
+
+# .NET
+bin/
+obj/
+src/MarquitosArcade/Data/app.db
+src/MarquitosArcade/Data/app.db-*

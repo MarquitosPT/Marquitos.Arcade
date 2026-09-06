@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Pong Retro | Marquitos Arcade</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="/favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="manifest" href="/site.webmanifest" />
+<meta name="theme-color" content="#111127" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Marquitos Arcade" />
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; user-select:none; }
+  html, body {
+    width:100%; height:100%;
+    background:#000;
+    overflow:hidden;
+    font-family: 'Courier New', monospace;
+    touch-action:none;
+  }
+  #wrap {
+    position:relative;
+    width:100vw;
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+  }
+  canvas {
+    background:#000;
+    display:block;
+    image-rendering: pixelated;
+  }
+  #startScreen, #pauseScreen {
+    position:absolute;
+    top:0; left:0; width:100%; height:100%;
+    background:rgba(0,0,0,0.92);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    color:#fff;
+    z-index:10;
+    text-align:center;
+    padding: 20px;
+  }
+  #pauseScreen { display:none; }
+  .title {
+    font-size: 12vw;
+    letter-spacing: 0.3em;
+    margin-bottom: 6px;
+    text-shadow: 0 0 15px #fff;
+  }
+  .sub {
+    font-size: 3.6vw;
+    opacity:0.7;
+    margin-bottom: 30px;
+    letter-spacing: 0.1em;
+  }
+  .btn {
+    background:#fff;
+    color:#000;
+    border:none;
+    padding: 16px 46px;
+    font-family:inherit;
+    font-size: 4.6vw;
+    letter-spacing: 0.2em;
+    font-weight:bold;
+    cursor:pointer;
+    margin-top: 10px;
+  }
+  .btnOutline {
+    background:transparent;
+    color:#fff;
+    border:2px solid #fff;
+    padding: 14px 40px;
+    font-family:inherit;
+    font-size: 4vw;
+    letter-spacing: 0.15em;
+    margin-top: 14px;
+  }
+  .row {
+    display:flex;
+    gap:10px;
+    margin-bottom:16px;
+    flex-wrap: wrap;
+    justify-content:center;
+  }
+  .modeBtn {
+    background:transparent;
+    color:#fff;
+    border:2px solid #fff;
+    padding: 12px 20px;
+    font-family:inherit;
+    font-size:3.8vw;
+    letter-spacing:0.1em;
+  }
+  .modeBtn.active {
+    background:#fff;
+    color:#000;
+  }
+  .diffBtn {
+    background:transparent;
+    color:#fff;
+    border:2px solid #888;
+    padding: 9px 16px;
+    font-family:inherit;
+    font-size:3.2vw;
+    letter-spacing:0.1em;
+  }
+  .diffBtn.active {
+    background:#fff;
+    color:#000;
+    border-color:#fff;
+  }
+  #diffRow { display:flex; }
+  #nameRow { display:flex; }
+  .nameInput {
+    background:transparent;
+    border:2px solid #fff;
+    color:#fff;
+    padding:10px 16px;
+    font-family:inherit;
+    font-size:3.4vw;
+    text-align:center;
+    letter-spacing:0.05em;
+    width:100%;
+    max-width:280px;
+  }
+  .nameInput::placeholder { color:rgba(255,255,255,0.5); }
+  #hint {
+    margin-top:22px; font-size:2.8vw; opacity:0.5;
+  }
+  #rotateWarning {
+    display:none;
+    color:#fff;
+    font-size: 4vw;
+    letter-spacing:0.1em;
+    margin: 20px 0;
+    max-width: 80%;
+  }
+  .topBar {
+    position:absolute;
+    top: max(12px, env(safe-area-inset-top));
+    right:12px;
+    display:flex;
+    gap:8px;
+    z-index:5;
+  }
+  .topBtn {
+    color:#fff;
+    background:rgba(0,0,0,0.4);
+    border:1px solid #666;
+    font-family:inherit;
+    font-size:14px;
+    padding:6px 14px;
+    letter-spacing:0.1em;
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div class="topBar">
+    <a class="topBtn" href="../../index.html" style="text-decoration:none; display:inline-block;">← ARCADE</a>
+    <a class="topBtn" href="../../pontuacoes.html#pong" style="text-decoration:none; display:inline-block;">🏆</a>
+    <button class="topBtn" id="pauseBtn">II</button>
+    <button class="topBtn" id="endBtn">✕ SAIR</button>
+  </div>
+  <canvas id="game"></canvas>
+
+  <div id="startScreen">
+    <div class="title">PONG</div>
+    <div class="sub">RETRO • ARCADE</div>
+
+    <div class="row" id="modeRow">
+      <button class="modeBtn active" data-mode="single">1 JOGADOR</button>
+      <button class="modeBtn" data-mode="two">2 JOGADORES</button>
+    </div>
+
+    <div id="nameRow" class="row">
+      <input type="text" id="playerNameInput" class="nameInput" placeholder="O TEU NOME" maxlength="20">
+    </div>
+
+    <div id="diffRow" class="row">
+      <button class="diffBtn" data-lvl="0.6">FÁCIL</button>
+      <button class="diffBtn active" data-lvl="0.85">MÉDIO</button>
+      <button class="diffBtn" data-lvl="1.05">DIFÍCIL</button>
+    </div>
+
+    <div id="rotateWarning">📱 GIRE O IPHONE<br>PARA O MODO PAISAGEM</div>
+
+    <button class="btn" id="startBtn">JOGAR</button>
+    <div id="hint">Arraste na tela para mover</div>
+  </div>
+
+  <div id="pauseScreen">
+    <div class="title" style="font-size:9vw;">PAUSA</div>
+    <button class="btn" id="resumeBtn">CONTINUAR</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const startScreen = document.getElementById('startScreen');
+  const pauseScreen = document.getElementById('pauseScreen');
+  const startBtn = document.getElementById('startBtn');
+  const resumeBtn = document.getElementById('resumeBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const endBtn = document.getElementById('endBtn');
+  const diffRow = document.getElementById('diffRow');
+  const nameRow = document.getElementById('nameRow');
+  const nameInput = document.getElementById('playerNameInput');
+  const modeRow = document.getElementById('modeRow');
+  const rotateWarning = document.getElementById('rotateWarning');
+
+  const API_URL = '/api/scores/pong';
+  const NAME_KEY = 'pongPlayerName_v1';
+  try { nameInput.value = localStorage.getItem(NAME_KEY) || ''; } catch(e){}
+
+  function submitPongScore(name, score){
+    if (!(score > 0)) return;
+    try { localStorage.setItem(NAME_KEY, name); } catch(e){}
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, score })
+    }).catch(function(){});
+  }
+
+  function maybeSubmitCurrentScore(){
+    if (mode === 'single' && running && scoreP > 0) {
+      const name = (nameInput.value || '').trim() || 'Anónimo';
+      submitPongScore(name, scoreP);
+    }
+  }
+
+  let W, H, DPR;
+  let mode = 'single'; // 'single' or 'two'
+  let aiLevel = 0.85;
+  let running = false;
+  let paused = false;
+  let lastTime = 0;
+
+  // ---------- Sound (retro square-wave beeps) ----------
+  let audioCtx = null;
+  function ensureAudio(){
+    if (!audioCtx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) audioCtx = new AC();
+    }
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  }
+  function beep(freq, duration, type, volume){
+    if (!audioCtx) return;
+    type = type || 'square';
+    volume = volume === undefined ? 0.15 : volume;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    gain.gain.value = volume;
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+  }
+  const sfx = {
+    paddle: () => beep(440, 0.07, 'square', 0.18),
+    wall:   () => beep(220, 0.06, 'square', 0.14),
+    score:  () => { beep(160, 0.12, 'square', 0.2); setTimeout(()=>beep(100,0.18,'square',0.18), 90); }
+  };
+
+  // ---------- Sizing / layout ----------
+  let paddleW, paddleH, ballR; // single mode (horizontal paddles)
+  let paddleLen, paddleThick;  // two-player mode (vertical paddles)
+  let player = {x:0, y:0};     // single mode
+  let ai = {x:0, y:0};         // single mode
+  let p1 = {x:0, y:0};         // two-player left
+  let p2 = {x:0, y:0};         // two-player right
+  let ball = {x:0, y:0, vx:0, vy:0};
+  let scoreP = 0, scoreA = 0;
+
+  function resize(){
+    DPR = window.devicePixelRatio || 1;
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    canvas.width = W * DPR;
+    canvas.height = H * DPR;
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    layout();
+    checkOrientation();
+    if (running) draw();
+  }
+
+  function layout(){
+    if (mode === 'single') {
+      paddleW = W * 0.22;
+      paddleH = Math.max(10, H*0.012);
+      ballR = Math.max(6, W*0.018);
+      player.x = W/2 - paddleW/2;
+      player.y = H - H*0.06 - paddleH;
+      ai.x = W/2 - paddleW/2;
+      ai.y = H*0.06;
+    } else {
+      paddleLen = H * 0.24;
+      paddleThick = Math.max(10, W*0.012);
+      ballR = Math.max(6, H*0.025);
+      p1.x = W*0.03;
+      p1.y = H/2 - paddleLen/2;
+      p2.x = W - W*0.03 - paddleThick;
+      p2.y = H/2 - paddleLen/2;
+    }
+    resetBall(true);
+  }
+
+  function resetBall(initial){
+    ball.x = W/2;
+    ball.y = H/2;
+    if (mode === 'single') {
+      const speed = Math.max(3.2, W*0.006);
+      const angle = (Math.random()*0.6 - 0.3);
+      const dir = Math.random() < 0.5 ? 1 : -1;
+      ball.vx = speed * Math.sin(angle);
+      ball.vy = speed * Math.cos(angle) * dir;
+    } else {
+      const speed = Math.max(3.2, H*0.009);
+      const angle = (Math.random()*0.6 - 0.3);
+      const dir = Math.random() < 0.5 ? 1 : -1;
+      ball.vy = speed * Math.sin(angle);
+      ball.vx = speed * Math.cos(angle) * dir;
+    }
+  }
+
+  function checkOrientation(){
+    if (mode === 'two' && W < H) {
+      rotateWarning.style.display = 'block';
+      startBtn.style.display = 'none';
+    } else {
+      rotateWarning.style.display = 'none';
+      startBtn.style.display = 'inline-block';
+    }
+  }
+
+  // ---------- Touch controls ----------
+  function relPos(t){
+    const rect = canvas.getBoundingClientRect();
+    return { x: t.clientX - rect.left, y: t.clientY - rect.top };
+  }
+
+  function handleTouches(e){
+    if (!e.touches || !e.touches.length) return;
+    if (mode === 'single') {
+      const p = relPos(e.touches[0]);
+      player.x = Math.min(W - paddleW, Math.max(0, p.x - paddleW/2));
+    } else {
+      for (let i=0; i<e.touches.length; i++){
+        const p = relPos(e.touches[i]);
+        if (p.x < W/2) {
+          p1.y = Math.min(H - paddleLen, Math.max(0, p.y - paddleLen/2));
+        } else {
+          p2.y = Math.min(H - paddleLen, Math.max(0, p.y - paddleLen/2));
+        }
+      }
+    }
+  }
+
+  canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleTouches(e); }, {passive:false});
+  canvas.addEventListener('touchmove', (e) => { e.preventDefault(); handleTouches(e); }, {passive:false});
+
+  // Mouse fallback (desktop testing)
+  let mouseDown = false;
+  canvas.addEventListener('mousedown', (e)=> { mouseDown = true; handleMouse(e); });
+  canvas.addEventListener('mouseup', ()=> mouseDown = false);
+  canvas.addEventListener('mousemove', (e) => { if (mouseDown) handleMouse(e); });
+  function handleMouse(e){
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left, y = e.clientY - rect.top;
+    if (mode === 'single') {
+      player.x = Math.min(W - paddleW, Math.max(0, x - paddleW/2));
+    } else if (x < W/2) {
+      p1.y = Math.min(H - paddleLen, Math.max(0, y - paddleLen/2));
+    } else {
+      p2.y = Math.min(H - paddleLen, Math.max(0, y - paddleLen/2));
+    }
+  }
+
+  // ---------- Update / physics ----------
+  function update(dt){
+    ball.x += ball.vx * dt;
+    ball.y += ball.vy * dt;
+
+    if (mode === 'single') {
+      if (ball.x - ballR < 0) { ball.x = ballR; ball.vx *= -1; sfx.wall(); }
+      if (ball.x + ballR > W) { ball.x = W - ballR; ball.vx *= -1; sfx.wall(); }
+
+      const aiCenter = ai.x + paddleW/2;
+      const targetX = ball.x;
+      const aiSpeed = W * 0.012 * aiLevel;
+      if (aiCenter < targetX - 4) ai.x += Math.min(aiSpeed*dt, targetX - aiCenter);
+      else if (aiCenter > targetX + 4) ai.x -= Math.min(aiSpeed*dt, aiCenter - targetX);
+      ai.x = Math.min(W - paddleW, Math.max(0, ai.x));
+
+      if (ball.vy > 0 && ball.y + ballR >= player.y && ball.y + ballR <= player.y + paddleH + 10 && ball.x >= player.x - ballR && ball.x <= player.x + paddleW + ballR) {
+        ball.y = player.y - ballR;
+        const hitPos = (ball.x - (player.x + paddleW/2)) / (paddleW/2);
+        const speed = Math.hypot(ball.vx, ball.vy) * 1.04;
+        ball.vx = speed * Math.sin(hitPos);
+        ball.vy = -Math.abs(speed * Math.cos(hitPos));
+        sfx.paddle();
+      }
+      if (ball.vy < 0 && ball.y - ballR <= ai.y + paddleH && ball.y - ballR >= ai.y - 10 && ball.x >= ai.x - ballR && ball.x <= ai.x + paddleW + ballR) {
+        ball.y = ai.y + paddleH + ballR;
+        const hitPos = (ball.x - (ai.x + paddleW/2)) / (paddleW/2);
+        const speed = Math.hypot(ball.vx, ball.vy) * 1.04;
+        ball.vx = speed * Math.sin(hitPos);
+        ball.vy = Math.abs(speed * Math.cos(hitPos));
+        sfx.paddle();
+      }
+
+      if (ball.y - ballR > H) { scoreA++; sfx.score(); resetBall(false); }
+      else if (ball.y + ballR < 0) { scoreP++; sfx.score(); resetBall(false); }
+
+    } else {
+      // two-player: ball moves mostly horizontally, bounces top/bottom
+      if (ball.y - ballR < 0) { ball.y = ballR; ball.vy *= -1; sfx.wall(); }
+      if (ball.y + ballR > H) { ball.y = H - ballR; ball.vy *= -1; sfx.wall(); }
+
+      // left paddle (p1)
+      if (ball.vx < 0 && ball.x - ballR <= p1.x + paddleThick && ball.x - ballR >= p1.x - 10 && ball.y >= p1.y - ballR && ball.y <= p1.y + paddleLen + ballR) {
+        ball.x = p1.x + paddleThick + ballR;
+        const hitPos = (ball.y - (p1.y + paddleLen/2)) / (paddleLen/2);
+        const speed = Math.hypot(ball.vx, ball.vy) * 1.04;
+        ball.vy = speed * Math.sin(hitPos);
+        ball.vx = Math.abs(speed * Math.cos(hitPos));
+        sfx.paddle();
+      }
+      // right paddle (p2)
+      if (ball.vx > 0 && ball.x + ballR >= p2.x && ball.x + ballR <= p2.x + 10 && ball.y >= p2.y - ballR && ball.y <= p2.y + paddleLen + ballR) {
+        ball.x = p2.x - ballR;
+        const hitPos = (ball.y - (p2.y + paddleLen/2)) / (paddleLen/2);
+        const speed = Math.hypot(ball.vx, ball.vy) * 1.04;
+        ball.vy = speed * Math.sin(hitPos);
+        ball.vx = -Math.abs(speed * Math.cos(hitPos));
+        sfx.paddle();
+      }
+
+      if (ball.x - ballR > W) { scoreP++; sfx.score(); resetBall(false); } // p1 (left) scores when ball exits right
+      else if (ball.x + ballR < 0) { scoreA++; sfx.score(); resetBall(false); } // p2 (right) scores when ball exits left
+    }
+  }
+
+  // ---------- Draw ----------
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0,0,W,H);
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([H*0.02, H*0.02]);
+    ctx.beginPath();
+    if (mode === 'single') {
+      ctx.moveTo(0, H/2); ctx.lineTo(W, H/2);
+    } else {
+      ctx.moveTo(W/2, 0); ctx.lineTo(W/2, H);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = '#fff';
+    if (mode === 'single') {
+      ctx.fillRect(player.x, player.y, paddleW, paddleH);
+      ctx.fillRect(ai.x, ai.y, paddleW, paddleH);
+    } else {
+      ctx.fillRect(p1.x, p1.y, paddleThick, paddleLen);
+      ctx.fillRect(p2.x, p2.y, paddleThick, paddleLen);
+    }
+
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, ballR, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.font = `bold ${Math.floor(Math.min(H,W)*0.08)}px 'Courier New', monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    if (mode === 'single') {
+      ctx.fillText(scoreA, W/2, H*0.42);
+      ctx.fillText(scoreP, W/2, H*0.58);
+    } else {
+      ctx.fillText(scoreP, W*0.25, H*0.14);
+      ctx.fillText(scoreA, W*0.75, H*0.14);
+    }
+  }
+
+  // ---------- Loop ----------
+  function loop(ts){
+    if (!running) return;
+    if (paused) { lastTime = ts; requestAnimationFrame(loop); return; }
+    if (!lastTime) lastTime = ts;
+    const dt = Math.min(2.5, (ts - lastTime) / 16.67);
+    lastTime = ts;
+    update(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  function startGame(){
+    ensureAudio();
+    startScreen.style.display = 'none';
+    scoreP = 0; scoreA = 0;
+    layout();
+    running = true;
+    paused = false;
+    lastTime = 0;
+    requestAnimationFrame(loop);
+  }
+
+  function returnToMenu(){
+    maybeSubmitCurrentScore();
+    running = false;
+    paused = false;
+    pauseScreen.style.display = 'none';
+    startScreen.style.display = 'flex';
+  }
+
+  startBtn.addEventListener('click', startGame);
+
+  pauseBtn.addEventListener('click', () => {
+    if (!running) return;
+    paused = true;
+    pauseScreen.style.display = 'flex';
+  });
+
+  resumeBtn.addEventListener('click', () => {
+    paused = false;
+    pauseScreen.style.display = 'none';
+    lastTime = 0;
+  });
+
+  endBtn.addEventListener('click', () => {
+    if (!running) return;
+    returnToMenu();
+  });
+
+  diffRow.addEventListener('click', (e) => {
+    const btn = e.target.closest('.diffBtn');
+    if (!btn) return;
+    [...diffRow.children].forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    aiLevel = parseFloat(btn.dataset.lvl);
+  });
+
+  modeRow.addEventListener('click', (e) => {
+    const btn = e.target.closest('.modeBtn');
+    if (!btn) return;
+    [...modeRow.children].forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    mode = btn.dataset.mode;
+    diffRow.style.display = (mode === 'single') ? 'flex' : 'none';
+    nameRow.style.display = (mode === 'single') ? 'flex' : 'none';
+    checkOrientation();
+  });
+
+  window.addEventListener('resize', resize);
+  window.addEventListener('orientationchange', () => setTimeout(resize, 200));
+  resize();
+  draw();
+})();
+</script>
+</body>
+</html>
