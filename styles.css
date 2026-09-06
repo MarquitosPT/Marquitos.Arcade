@@ -444,6 +444,16 @@ th {
   }
 
   .topnav {
-    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .topnav-title {
+    display: none;
+  }
+
+  .topnav-links {
+    gap: 0.9rem;
   }
 }
