@@ -128,11 +128,10 @@ a {
 }
 
 .mascot {
-  width: 130px;
-  height: 130px;
+  width: 150px;
+  height: 167px;
   flex-shrink: 0;
-  border-radius: 50%;
-  box-shadow: 0 0 30px rgba(59, 245, 255, 0.45);
+  filter: drop-shadow(0 0 22px rgba(59, 245, 255, 0.45));
 }
 
 .hero-copy h1 {

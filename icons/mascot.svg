@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 220" role="img" aria-label="Mascote GameStudios Lab">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3bf5ff" />
+      <stop offset="100%" stop-color="#8374ff" />
+    </linearGradient>
+    <linearGradient id="skin" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffd9b3" />
+      <stop offset="100%" stop-color="#f2b989" />
+    </linearGradient>
+    <linearGradient id="cap" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8374ff" />
+      <stop offset="100%" stop-color="#4b2fc9" />
+    </linearGradient>
+  </defs>
+
+  <!-- badge -->
+  <circle cx="110" cy="110" r="106" fill="url(#bg)" />
+
+  <!-- hair tufts (sideburns) -->
+  <circle cx="64" cy="104" r="12" fill="#3c2716" />
+  <circle cx="156" cy="104" r="12" fill="#3c2716" />
+
+  <!-- ears -->
+  <circle cx="62" cy="130" r="9" fill="#f0b48f" />
+  <circle cx="158" cy="130" r="9" fill="#f0b48f" />
+
+  <!-- head -->
+  <circle cx="110" cy="128" r="50" fill="url(#skin)" />
+
+  <!-- cheeks -->
+  <circle cx="78" cy="144" r="7" fill="#ff9fc7" opacity="0.55" />
+  <circle cx="142" cy="144" r="7" fill="#ff9fc7" opacity="0.55" />
+
+  <!-- eyebrows -->
+  <path d="M82,112 Q92,105 102,111" stroke="#3c2716" stroke-width="4" fill="none" stroke-linecap="round" />
+  <path d="M118,111 Q128,105 138,112" stroke="#3c2716" stroke-width="4" fill="none" stroke-linecap="round" />
+
+  <!-- eyes -->
+  <ellipse cx="92" cy="128" rx="11" ry="13" fill="#ffffff" />
+  <ellipse cx="128" cy="128" rx="11" ry="13" fill="#ffffff" />
+  <circle cx="95" cy="131" r="6" fill="#211f3d" />
+  <circle cx="131" cy="131" r="6" fill="#211f3d" />
+  <circle cx="93" cy="128" r="2" fill="#ffffff" />
+  <circle cx="129" cy="128" r="2" fill="#ffffff" />
+
+  <!-- smile -->
+  <path d="M92,148c8,14 28,14 36,0" stroke="#8a4632" stroke-width="7" stroke-linecap="round" fill="none" />
+
+  <!-- cap brim -->
+  <path d="M56,101 Q110,124 164,101 Q110,113 56,101 Z" fill="#3d24a8" />
+  <!-- cap crown -->
+  <path d="M56,101 A54,56 0 0 1 164,101 Q110,89 56,101 Z" fill="url(#cap)" />
+  <!-- lightning bolt -->
+  <path d="M116,60 L100,82 L109,82 L104,99 L124,75 L112,75 Z" fill="#eafcff" />
+
+  <!-- hoodie / collar -->
+  <path d="M54,180 Q110,210 166,180 L166,199 Q110,222 54,199 Z" fill="url(#cap)" />
+  <line x1="110" y1="182" x2="110" y2="210" stroke="#3bf5ff" stroke-width="4" stroke-linecap="round" />
+  <circle cx="88" cy="196" r="6" fill="#5cf27e" />
+  <circle cx="132" cy="196" r="6" fill="#ff4b9f" />
+</svg>

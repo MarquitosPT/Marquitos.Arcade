@@ -4,6 +4,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MarquitosPT - GameStudios Arcade</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#111127" />
+    <meta name="msapplication-TileColor" content="#12122c" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Marquitos Arcade" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -23,31 +35,76 @@
       <div class="hero-inner">
         <svg
           class="mascot"
-          viewBox="0 0 220 220"
+          viewBox="0 0 240 268"
           role="img"
-          aria-label="Mascote MarquitosPT"
+          aria-label="Mascote GameStudios Lab"
         >
           <defs>
             <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stop-color="#3bf5ff" />
               <stop offset="100%" stop-color="#8374ff" />
             </linearGradient>
+            <linearGradient id="skin" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#ffd9b3" />
+              <stop offset="100%" stop-color="#f2b989" />
+            </linearGradient>
+            <linearGradient id="cap" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#8374ff" />
+              <stop offset="100%" stop-color="#4b2fc9" />
+            </linearGradient>
+            <linearGradient id="hoodie" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#9285ff" />
+              <stop offset="100%" stop-color="#4b2fc9" />
+            </linearGradient>
           </defs>
-          <circle cx="110" cy="110" r="100" fill="url(#bg)" />
-          <circle cx="75" cy="92" r="18" fill="#101033" />
-          <circle cx="145" cy="92" r="18" fill="#101033" />
-          <circle cx="75" cy="90" r="6" fill="#f4f8ff" />
-          <circle cx="145" cy="90" r="6" fill="#f4f8ff" />
-          <path
-            d="M70 145c18 24 62 24 80 0"
-            stroke="#101033"
-            stroke-width="10"
-            stroke-linecap="round"
-            fill="none"
-          />
-          <rect x="70" y="165" width="80" height="24" rx="12" fill="#101033" />
-          <circle cx="95" cy="177" r="6" fill="#5cf27e" />
-          <circle cx="125" cy="177" r="6" fill="#ff4b9f" />
+
+          <circle cx="120" cy="112" r="106" fill="url(#bg)" />
+
+          <path d="M60,190 Q40,215 55,240 Q70,250 90,238 L96,214 Z" fill="url(#hoodie)" />
+
+          <path d="M62,182 Q120,222 178,182 L188,246 Q120,268 52,246 Z" fill="url(#hoodie)" />
+          <line x1="120" y1="188" x2="120" y2="240" stroke="#3bf5ff" stroke-width="5" stroke-linecap="round" />
+          <circle cx="98" cy="206" r="6" fill="#5cf27e" />
+          <circle cx="142" cy="206" r="6" fill="#ff4b9f" />
+
+          <path d="M180,190 Q202,212 190,238 Q175,250 154,236 L150,212 Z" fill="url(#cap)" />
+
+          <circle cx="92" cy="240" r="15" fill="url(#skin)" />
+          <circle cx="150" cy="238" r="15" fill="url(#skin)" />
+
+          <rect x="82" y="222" width="78" height="40" rx="18" fill="#101033" />
+          <rect x="98" y="236" width="16" height="6" rx="3" fill="#2a2a55" />
+          <rect x="103" y="231" width="6" height="16" rx="3" fill="#2a2a55" />
+          <circle cx="138" cy="234" r="5" fill="#5cf27e" />
+          <circle cx="150" cy="242" r="5" fill="#ff4b9f" />
+
+          <circle cx="72" cy="106" r="13" fill="#3c2716" />
+          <circle cx="168" cy="106" r="13" fill="#3c2716" />
+
+          <circle cx="70" cy="132" r="9" fill="#f0b48f" />
+          <circle cx="170" cy="132" r="9" fill="#f0b48f" />
+
+          <circle cx="120" cy="130" r="52" fill="url(#skin)" />
+
+          <circle cx="87" cy="147" r="7" fill="#ff9fc7" opacity="0.55" />
+          <circle cx="153" cy="147" r="7" fill="#ff9fc7" opacity="0.55" />
+
+          <path d="M91,113 Q101,106 111,112" stroke="#3c2716" stroke-width="4" fill="none" stroke-linecap="round" />
+          <path d="M129,112 Q139,106 149,113" stroke="#3c2716" stroke-width="4" fill="none" stroke-linecap="round" />
+
+          <ellipse cx="101" cy="130" rx="11" ry="13" fill="#ffffff" />
+          <ellipse cx="139" cy="130" rx="11" ry="13" fill="#ffffff" />
+          <circle cx="104" cy="133" r="6" fill="#211f3d" />
+          <circle cx="142" cy="133" r="6" fill="#211f3d" />
+          <circle cx="102" cy="130" r="2" fill="#ffffff" />
+          <circle cx="140" cy="130" r="2" fill="#ffffff" />
+
+          <path d="M101,150c8,14 28,14 36,0" stroke="#8a4632" stroke-width="7" stroke-linecap="round" fill="none" />
+
+          <path d="M65,103 Q120,127 175,103 Q120,116 65,103 Z" fill="#3d24a8" />
+          <path d="M65,103 A55,57 0 0 1 175,103 Q120,91 65,103 Z" fill="url(#cap)" />
+          <ellipse cx="105" cy="72" rx="20" ry="7" fill="#ffffff" opacity="0.18" />
+          <path d="M126,62 L110,84 L119,84 L114,101 L134,77 L122,77 Z" fill="#eafcff" />
         </svg>
         <div class="hero-copy">
           <p class="brand-kicker">MarquitosPT</p>
