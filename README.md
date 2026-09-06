@@ -4,9 +4,10 @@ Coleção de jogos casuais online desenvolvidos nos GameStudios do MarquitosPT c
 
 ## Estrutura
 
-- `index.html`, `app.js`, `styles.css`: portal principal com branding, catálogo de jogos e dashboard de pontuações.
+- `index.html`, `styles.css`: portal principal com branding e catálogo de jogos.
+- `pontuacoes.html`, `pontuacoes.js`: página dedicada às pontuações, com um painel por jogo carregado dinamicamente a partir da API.
 - `games/tasca-do-ze/`: mini-jogo "Tasca do Zé" (gestão de pedidos), com leaderboard persistido no servidor via `/api/scores/tasca-do-ze`.
-- `games/pong/`: Pong Retro, com modo 1 jogador (vs. CPU) e 2 jogadores.
+- `games/pong/`: Pong Retro, com modo 1 jogador (vs. CPU, pontuação submetida via `/api/scores/pong`) e 2 jogadores.
 - `server.js`: servidor Node/Express único que serve todo o site estático (portal + jogos) e a API de pontuações genérica `/api/scores/:gameId`, persistida em `scores.json`.
 
 ## Servidor único vs. um servidor por jogo
@@ -23,9 +24,9 @@ Se algum jogo precisar de lógica de servidor muito diferente (ex. websockets pa
 
 1. Criar `games/<slug>/index.html` (pode ser um ficheiro único autocontido, como os atuais).
 2. Se precisar de leaderboard persistente, chamar `GET/POST /api/scores/<slug>`.
-3. Adicionar um `<article class="game-tile">` em `index.html` a apontar para `./games/<slug>/`.
+3. Adicionar um `<article class="game-card">` em `index.html` a apontar para `./games/<slug>/`.
+4. Adicionar o jogo ao array `GAMES` em `pontuacoes.js` para aparecer na página de pontuações.
 
 ## Pontuações
 
-- O dashboard da página principal usa `localStorage` (`marquitosArcadeScores`) apenas para a demonstração local do portal.
-- O leaderboard real de cada jogo (quando existe) vive no servidor, em `scores.json`, via a API `/api/scores/:gameId`.
+Não há dashboard na página principal — as pontuações vivem todas em `pontuacoes.html`, que gera um painel por jogo (a partir do array `GAMES` em `pontuacoes.js`) e busca o leaderboard de cada um via `GET /api/scores/:gameId`. Os dados são persistidos no servidor em `scores.json`.
