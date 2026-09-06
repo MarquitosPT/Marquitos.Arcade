@@ -1,5 +1,7 @@
-// Servidor de pontuações para o jogo "Tasca do Zé"
-// Guarda as pontuações num ficheiro JSON simples e expõe uma API para o jogo consultar.
+// Servidor geral do Marquitos Arcade.
+// Serve o site estático (portal + todos os mini-jogos em games/*) e expõe
+// uma API de pontuações genérica, partilhada por qualquer jogo que precise
+// de um leaderboard persistente no servidor.
 
 const express = require('express');
 const cors = require('cors');
@@ -9,23 +11,26 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const DATA_FILE = path.join(__dirname, 'scores.json');
-const GAME_FILE = path.join(__dirname, 'tasca-do-ze-online.html');
 
-app.use(cors());          // permite que o jogo, alojado noutro domínio, chame esta API
-app.use(express.json());  // interpreta o corpo dos pedidos POST como JSON
+app.use(cors());
+app.use(express.json());
 
-function loadScores() {
+function loadAllScores() {
   try {
     const raw = fs.readFileSync(DATA_FILE, 'utf8');
-    const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? arr : [];
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
   } catch (e) {
-    return [];
+    return {};
   }
 }
 
-function saveScores(arr) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(arr, null, 2));
+function saveAllScores(allScores) {
+  fs.writeFileSync(DATA_FILE, JSON.stringify(allScores, null, 2));
+}
+
+function sanitizeGameId(gameId) {
+  return typeof gameId === 'string' ? gameId.replace(/[^a-z0-9-]/gi, '').slice(0, 40) : '';
 }
 
 function sanitizeName(name) {
@@ -35,14 +40,21 @@ function sanitizeName(name) {
   return clean || 'Anónimo';
 }
 
-// GET /api/scores -> devolve o top 20
-app.get('/api/scores', (req, res) => {
-  const scores = loadScores();
+// GET /api/scores/:gameId -> devolve o top 20 desse jogo
+app.get('/api/scores/:gameId', (req, res) => {
+  const gameId = sanitizeGameId(req.params.gameId);
+  if (!gameId) return res.status(400).json({ error: 'Jogo inválido' });
+
+  const allScores = loadAllScores();
+  const scores = Array.isArray(allScores[gameId]) ? allScores[gameId] : [];
   res.json(scores.slice(0, 20));
 });
 
-// POST /api/scores { name, score } -> adiciona uma pontuação e devolve o novo top 20
-app.post('/api/scores', (req, res) => {
+// POST /api/scores/:gameId { name, score } -> adiciona uma pontuação e devolve o novo top 20
+app.post('/api/scores/:gameId', (req, res) => {
+  const gameId = sanitizeGameId(req.params.gameId);
+  if (!gameId) return res.status(400).json({ error: 'Jogo inválido' });
+
   const { name, score } = req.body || {};
   const cleanName = sanitizeName(name);
   const cleanScore = Number.isFinite(score) ? Math.max(0, Math.min(999999, Math.round(score))) : null;
@@ -51,27 +63,19 @@ app.post('/api/scores', (req, res) => {
     return res.status(400).json({ error: 'Pontuação inválida' });
   }
 
-  let scores = loadScores();
+  const allScores = loadAllScores();
+  let scores = Array.isArray(allScores[gameId]) ? allScores[gameId] : [];
   scores.push({ name: cleanName, score: cleanScore, ts: Date.now() });
   scores.sort((a, b) => b.score - a.score);
   scores = scores.slice(0, 200); // guarda algum histórico a mais internamente
 
-  saveScores(scores);
+  allScores[gameId] = scores;
+  saveAllScores(allScores);
   res.json(scores.slice(0, 20));
 });
 
-function sendGame(res) {
-  res.sendFile(GAME_FILE);
-}
-
-app.get('/', (req, res) => {
-  sendGame(res);
-});
-
-app.get('/tasca-do-ze-online.html', (req, res) => {
-  sendGame(res);
-});
+app.use(express.static(__dirname));
 
 app.listen(PORT, () => {
-  console.log('Servidor a correr na porta ' + PORT);
+  console.log('Marquitos Arcade a correr na porta ' + PORT);
 });
