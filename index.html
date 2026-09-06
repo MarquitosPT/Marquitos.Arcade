@@ -7,8 +7,19 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <nav class="topnav">
+      <a class="topnav-brand" href="./index.html">
+        <span class="topnav-dot"></span>
+        MarquitosPT Arcade
+      </a>
+      <div class="topnav-links">
+        <a href="./index.html" class="active">Jogos</a>
+        <a href="./pontuacoes.html">🏆 Pontuações</a>
+      </div>
+    </nav>
+
     <header class="hero">
-      <div class="brand">
+      <div class="hero-inner">
         <svg
           class="mascot"
           viewBox="0 0 220 220"
@@ -37,135 +48,103 @@
           <circle cx="95" cy="177" r="6" fill="#5cf27e" />
           <circle cx="125" cy="177" r="6" fill="#ff4b9f" />
         </svg>
-        <div>
+        <div class="hero-copy">
           <p class="brand-kicker">MarquitosPT</p>
           <h1>GameStudios Arcade</h1>
           <p class="brand-copy">
             Uma arcada viva para juntar clássicos, projetos originais e novos
             desafios online.
           </p>
+          <div class="hero-actions">
+            <a class="hero-cta" href="#catalogo">Ver jogos ↓</a>
+            <a class="hero-cta secondary" href="./pontuacoes.html"
+              >🏆 Ver pontuações</a
+            >
+          </div>
         </div>
       </div>
     </header>
 
     <main>
-      <section class="section">
+      <section class="section" id="catalogo">
         <div class="section-heading">
           <h2>Jogos disponíveis</h2>
-          <p>Scroll horizontal para explorar o catálogo.</p>
+          <p>O catálogo vai crescendo — volta sempre a espreitar.</p>
         </div>
-        <div class="game-row" aria-label="Lista de jogos">
-          <article class="game-tile">
-            <span class="tag live">Já disponível</span>
+
+        <div class="game-grid">
+          <article class="game-card">
+            <div class="game-card-top">
+              <span class="tag live">Já disponível</span>
+              <span class="game-emoji" aria-hidden="true">🍽️</span>
+            </div>
             <h3>Tasca do Zé</h3>
             <p>
-              Mini-jogo casual com foco em sorte e pontuação rápida para abrir
-              o apetite da arcade.
+              Gere os pedidos da tasca, prepara os pratos certos e serve os
+              clientes antes que percam a paciência.
             </p>
-            <a class="tile-action" href="./games/tasca-do-ze/">Jogar agora</a>
+            <div class="game-card-actions">
+              <a class="tile-action" href="./games/tasca-do-ze/">Jogar agora</a>
+              <a class="tile-action ghost" href="./pontuacoes.html#tasca-do-ze"
+                >🏆 Pontuações</a
+              >
+            </div>
           </article>
 
-          <article class="game-tile">
-            <span class="tag beta">Novo</span>
+          <article class="game-card">
+            <div class="game-card-top">
+              <span class="tag beta">Novo</span>
+              <span class="game-emoji" aria-hidden="true">🏓</span>
+            </div>
             <h3>Pong Retro</h3>
             <p>
-              Releitura neon do clássico Pong com controlo por teclado e
-              registo de score.
+              Releitura neon do clássico Pong, com modo 1 jogador (vs. CPU) ou
+              2 jogadores no mesmo ecrã.
             </p>
-            <a class="tile-action" href="./games/pong/">Experimentar</a>
+            <div class="game-card-actions">
+              <a class="tile-action" href="./games/pong/">Experimentar</a>
+              <a class="tile-action ghost" href="./pontuacoes.html#pong"
+                >🏆 Pontuações</a
+              >
+            </div>
           </article>
 
-          <article class="game-tile">
-            <span class="tag soon">Em breve</span>
+          <article class="game-card muted">
+            <div class="game-card-top">
+              <span class="tag soon">Em breve</span>
+              <span class="game-emoji" aria-hidden="true">🏎️</span>
+            </div>
             <h3>Pixel Racer</h3>
             <p>Corridas arcade em pistas curtas com boost, drift e torneios.</p>
-            <button class="tile-action muted" type="button" disabled>
-              A caminho
-            </button>
+            <div class="game-card-actions">
+              <button class="tile-action muted" type="button" disabled>
+                A caminho
+              </button>
+            </div>
           </article>
 
-          <article class="game-tile">
-            <span class="tag soon">Em breve</span>
+          <article class="game-card muted">
+            <div class="game-card-top">
+              <span class="tag soon">Em breve</span>
+              <span class="game-emoji" aria-hidden="true">🧩</span>
+            </div>
             <h3>Maze Run</h3>
             <p>
               Labirintos rápidos com inimigos IA e níveis progressivamente mais
               desafiantes.
             </p>
-            <button class="tile-action muted" type="button" disabled>
-              A caminho
-            </button>
+            <div class="game-card-actions">
+              <button class="tile-action muted" type="button" disabled>
+                A caminho
+              </button>
+            </div>
           </article>
         </div>
-      </section>
-
-      <section class="section">
-        <div class="section-heading">
-          <h2>Dashboard de pontuações</h2>
-          <p>Dinâmico, filtrável e atualizado em tempo real no browser.</p>
-        </div>
-
-        <div class="stats-grid" id="stats-grid">
-          <article class="stat-card">
-            <p class="stat-label">Maior pontuação</p>
-            <p class="stat-value" id="best-score">0</p>
-          </article>
-          <article class="stat-card">
-            <p class="stat-label">Jogos com score</p>
-            <p class="stat-value" id="active-games">0</p>
-          </article>
-          <article class="stat-card">
-            <p class="stat-label">Registos totais</p>
-            <p class="stat-value" id="total-entries">0</p>
-          </article>
-        </div>
-
-        <div class="dashboard-controls">
-          <label for="game-filter">Filtrar por jogo</label>
-          <select id="game-filter"></select>
-        </div>
-
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Jogador</th>
-                <th>Jogo</th>
-                <th>Pontuação</th>
-                <th>Data</th>
-              </tr>
-            </thead>
-            <tbody id="scoreboard-body"></tbody>
-          </table>
-        </div>
-
-        <form id="score-form" class="score-form">
-          <h3>Adicionar nova pontuação</h3>
-          <label>
-            Jogador
-            <input id="player-input" name="player" required maxlength="24" />
-          </label>
-          <label>
-            Jogo
-            <select id="game-input" name="game"></select>
-          </label>
-          <label>
-            Pontuação
-            <input
-              id="score-input"
-              name="score"
-              type="number"
-              min="1"
-              step="1"
-              required
-            />
-          </label>
-          <button type="submit">Guardar pontuação</button>
-          <p id="form-message" role="status" aria-live="polite"></p>
-        </form>
       </section>
     </main>
 
-    <script src="app.js"></script>
+    <footer class="site-footer">
+      <p>GameStudios Arcade · feito por MarquitosPT</p>
+    </footer>
   </body>
 </html>

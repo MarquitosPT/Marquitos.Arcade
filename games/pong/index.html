@@ -110,6 +110,20 @@
     border-color:#fff;
   }
   #diffRow { display:flex; }
+  #nameRow { display:flex; }
+  .nameInput {
+    background:transparent;
+    border:2px solid #fff;
+    color:#fff;
+    padding:10px 16px;
+    font-family:inherit;
+    font-size:3.4vw;
+    text-align:center;
+    letter-spacing:0.05em;
+    width:100%;
+    max-width:280px;
+  }
+  .nameInput::placeholder { color:rgba(255,255,255,0.5); }
   #hint {
     margin-top:22px; font-size:2.8vw; opacity:0.5;
   }
@@ -144,6 +158,7 @@
 <div id="wrap">
   <div class="topBar">
     <a class="topBtn" href="../../index.html" style="text-decoration:none; display:inline-block;">← ARCADE</a>
+    <a class="topBtn" href="../../pontuacoes.html#pong" style="text-decoration:none; display:inline-block;">🏆</a>
     <button class="topBtn" id="pauseBtn">II</button>
     <button class="topBtn" id="endBtn">✕ SAIR</button>
   </div>
@@ -156,6 +171,10 @@
     <div class="row" id="modeRow">
       <button class="modeBtn active" data-mode="single">1 JOGADOR</button>
       <button class="modeBtn" data-mode="two">2 JOGADORES</button>
+    </div>
+
+    <div id="nameRow" class="row">
+      <input type="text" id="playerNameInput" class="nameInput" placeholder="O TEU NOME" maxlength="20">
     </div>
 
     <div id="diffRow" class="row">
@@ -187,8 +206,31 @@
   const pauseBtn = document.getElementById('pauseBtn');
   const endBtn = document.getElementById('endBtn');
   const diffRow = document.getElementById('diffRow');
+  const nameRow = document.getElementById('nameRow');
+  const nameInput = document.getElementById('playerNameInput');
   const modeRow = document.getElementById('modeRow');
   const rotateWarning = document.getElementById('rotateWarning');
+
+  const API_URL = '/api/scores/pong';
+  const NAME_KEY = 'pongPlayerName_v1';
+  try { nameInput.value = localStorage.getItem(NAME_KEY) || ''; } catch(e){}
+
+  function submitPongScore(name, score){
+    if (!(score > 0)) return;
+    try { localStorage.setItem(NAME_KEY, name); } catch(e){}
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, score })
+    }).catch(function(){});
+  }
+
+  function maybeSubmitCurrentScore(){
+    if (mode === 'single' && running && scoreP > 0) {
+      const name = (nameInput.value || '').trim() || 'Anónimo';
+      submitPongScore(name, scoreP);
+    }
+  }
 
   let W, H, DPR;
   let mode = 'single'; // 'single' or 'two'
@@ -475,6 +517,7 @@
   }
 
   function returnToMenu(){
+    maybeSubmitCurrentScore();
     running = false;
     paused = false;
     pauseScreen.style.display = 'none';
@@ -515,6 +558,7 @@
     btn.classList.add('active');
     mode = btn.dataset.mode;
     diffRow.style.display = (mode === 'single') ? 'flex' : 'none';
+    nameRow.style.display = (mode === 'single') ? 'flex' : 'none';
     checkOrientation();
   });
 
