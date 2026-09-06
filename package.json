@@ -1,7 +1,7 @@
 {
-  "name": "tasca-do-ze-servidor",
+  "name": "marquitos-arcade",
   "version": "1.0.0",
-  "description": "Servidor simples de tabela de pontuações para o jogo Tasca do Zé",
+  "description": "Servidor geral do Marquitos Arcade: serve o portal e os mini-jogos, e expõe a API de pontuações partilhada",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
