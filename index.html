@@ -4,6 +4,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MarquitosPT - GameStudios Arcade</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#111127" />
+    <meta name="msapplication-TileColor" content="#12122c" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Marquitos Arcade" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -25,19 +37,51 @@
           class="mascot"
           viewBox="0 0 220 220"
           role="img"
-          aria-label="Mascote MarquitosPT"
+          aria-label="Mascote GameStudios Lab"
         >
           <defs>
             <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stop-color="#3bf5ff" />
               <stop offset="100%" stop-color="#8374ff" />
             </linearGradient>
+            <radialGradient id="orb" cx="35%" cy="30%" r="75%">
+              <stop offset="0%" stop-color="#eafff2" />
+              <stop offset="45%" stop-color="#5cf27e" />
+              <stop offset="100%" stop-color="#22c98f" />
+            </radialGradient>
+            <radialGradient id="eyeGlow" cx="35%" cy="30%" r="75%">
+              <stop offset="0%" stop-color="#d9fbff" />
+              <stop offset="55%" stop-color="#3bf5ff" />
+              <stop offset="100%" stop-color="#1fb8d6" />
+            </radialGradient>
           </defs>
-          <circle cx="110" cy="110" r="100" fill="url(#bg)" />
-          <circle cx="75" cy="92" r="18" fill="#101033" />
-          <circle cx="145" cy="92" r="18" fill="#101033" />
-          <circle cx="75" cy="90" r="6" fill="#f4f8ff" />
-          <circle cx="145" cy="90" r="6" fill="#f4f8ff" />
+
+          <circle cx="110" cy="110" r="106" fill="url(#bg)" />
+
+          <line
+            x1="110"
+            y1="46"
+            x2="110"
+            y2="26"
+            stroke="#101033"
+            stroke-width="9"
+            stroke-linecap="round"
+          />
+          <circle cx="110" cy="20" r="11" fill="url(#orb)" />
+          <circle cx="106.5" cy="16" r="3" fill="#ffffff" opacity="0.85" />
+
+          <circle cx="28" cy="150" r="15" fill="#101033" />
+          <circle cx="28" cy="150" r="5" fill="#8374ff" />
+          <circle cx="192" cy="150" r="15" fill="#101033" />
+          <circle cx="192" cy="150" r="5" fill="#ff4b9f" />
+
+          <rect x="56" y="73" width="38" height="38" rx="13" fill="#101033" />
+          <rect x="126" y="73" width="38" height="38" rx="13" fill="#101033" />
+          <circle cx="75" cy="92" r="9" fill="url(#eyeGlow)" />
+          <circle cx="145" cy="92" r="9" fill="url(#eyeGlow)" />
+          <circle cx="71.5" cy="88.5" r="2.6" fill="#ffffff" opacity="0.9" />
+          <circle cx="141.5" cy="88.5" r="2.6" fill="#ffffff" opacity="0.9" />
+
           <path
             d="M70 145c18 24 62 24 80 0"
             stroke="#101033"
