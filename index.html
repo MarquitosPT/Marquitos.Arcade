@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MarquitosPT - GameStudios Arcade</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <div class="brand">
+        <svg
+          class="mascot"
+          viewBox="0 0 220 220"
+          role="img"
+          aria-label="Mascote MarquitosPT"
+        >
+          <defs>
+            <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#3bf5ff" />
+              <stop offset="100%" stop-color="#8374ff" />
+            </linearGradient>
+          </defs>
+          <circle cx="110" cy="110" r="100" fill="url(#bg)" />
+          <circle cx="75" cy="92" r="18" fill="#101033" />
+          <circle cx="145" cy="92" r="18" fill="#101033" />
+          <circle cx="75" cy="90" r="6" fill="#f4f8ff" />
+          <circle cx="145" cy="90" r="6" fill="#f4f8ff" />
+          <path
+            d="M70 145c18 24 62 24 80 0"
+            stroke="#101033"
+            stroke-width="10"
+            stroke-linecap="round"
+            fill="none"
+          />
+          <rect x="70" y="165" width="80" height="24" rx="12" fill="#101033" />
+          <circle cx="95" cy="177" r="6" fill="#5cf27e" />
+          <circle cx="125" cy="177" r="6" fill="#ff4b9f" />
+        </svg>
+        <div>
+          <p class="brand-kicker">MarquitosPT</p>
+          <h1>GameStudios Arcade</h1>
+          <p class="brand-copy">
+            Uma arcada viva para juntar clássicos, projetos originais e novos
+            desafios online.
+          </p>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="section">
+        <div class="section-heading">
+          <h2>Jogos disponíveis</h2>
+          <p>Scroll horizontal para explorar o catálogo.</p>
+        </div>
+        <div class="game-row" aria-label="Lista de jogos">
+          <article class="game-tile">
+            <span class="tag live">Já disponível</span>
+            <h3>Tasca do Zé</h3>
+            <p>
+              Mini-jogo casual com foco em sorte e pontuação rápida para abrir
+              o apetite da arcade.
+            </p>
+            <a class="tile-action" href="./games/tasca-do-ze/">Jogar agora</a>
+          </article>
+
+          <article class="game-tile">
+            <span class="tag beta">Novo</span>
+            <h3>Pong Retro</h3>
+            <p>
+              Releitura neon do clássico Pong com controlo por teclado e
+              registo de score.
+            </p>
+            <a class="tile-action" href="./games/pong/">Experimentar</a>
+          </article>
+
+          <article class="game-tile">
+            <span class="tag soon">Em breve</span>
+            <h3>Pixel Racer</h3>
+            <p>Corridas arcade em pistas curtas com boost, drift e torneios.</p>
+            <button class="tile-action muted" type="button" disabled>
+              A caminho
+            </button>
+          </article>
+
+          <article class="game-tile">
+            <span class="tag soon">Em breve</span>
+            <h3>Maze Run</h3>
+            <p>
+              Labirintos rápidos com inimigos IA e níveis progressivamente mais
+              desafiantes.
+            </p>
+            <button class="tile-action muted" type="button" disabled>
+              A caminho
+            </button>
+          </article>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-heading">
+          <h2>Dashboard de pontuações</h2>
+          <p>Dinâmico, filtrável e atualizado em tempo real no browser.</p>
+        </div>
+
+        <div class="stats-grid" id="stats-grid">
+          <article class="stat-card">
+            <p class="stat-label">Maior pontuação</p>
+            <p class="stat-value" id="best-score">0</p>
+          </article>
+          <article class="stat-card">
+            <p class="stat-label">Jogos com score</p>
+            <p class="stat-value" id="active-games">0</p>
+          </article>
+          <article class="stat-card">
+            <p class="stat-label">Registos totais</p>
+            <p class="stat-value" id="total-entries">0</p>
+          </article>
+        </div>
+
+        <div class="dashboard-controls">
+          <label for="game-filter">Filtrar por jogo</label>
+          <select id="game-filter"></select>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Jogador</th>
+                <th>Jogo</th>
+                <th>Pontuação</th>
+                <th>Data</th>
+              </tr>
+            </thead>
+            <tbody id="scoreboard-body"></tbody>
+          </table>
+        </div>
+
+        <form id="score-form" class="score-form">
+          <h3>Adicionar nova pontuação</h3>
+          <label>
+            Jogador
+            <input id="player-input" name="player" required maxlength="24" />
+          </label>
+          <label>
+            Jogo
+            <select id="game-input" name="game"></select>
+          </label>
+          <label>
+            Pontuação
+            <input
+              id="score-input"
+              name="score"
+              type="number"
+              min="1"
+              step="1"
+              required
+            />
+          </label>
+          <button type="submit">Guardar pontuação</button>
+          <p id="form-message" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

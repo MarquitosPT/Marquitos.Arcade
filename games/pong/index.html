@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pong Retro | Marquitos Arcade</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="game-shell">
+      <a class="back-link" href="../../index.html">← Voltar à arcade</a>
+      <h1>Pong Retro</h1>
+      <p>Controla a raquete com ↑ e ↓. Cada ressalto soma pontos.</p>
+
+      <div class="controls">
+        <label>
+          Nome do jogador
+          <input id="player-name" maxlength="24" placeholder="MarquitosPT" />
+        </label>
+        <button id="restart-btn" type="button">Recomeçar</button>
+        <span id="score-board">Pontuação: 0</span>
+      </div>
+
+      <canvas id="pong-canvas" width="700" height="380"></canvas>
+      <p id="status" class="status"></p>
+    </main>
+    <script src="./pong.js"></script>
+  </body>
+</html>
