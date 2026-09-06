@@ -4,49 +4,59 @@
       <stop offset="0%" stop-color="#3bf5ff" />
       <stop offset="100%" stop-color="#8374ff" />
     </linearGradient>
-    <radialGradient id="orb" cx="35%" cy="30%" r="75%">
-      <stop offset="0%" stop-color="#eafff2" />
-      <stop offset="45%" stop-color="#5cf27e" />
-      <stop offset="100%" stop-color="#22c98f" />
-    </radialGradient>
-    <radialGradient id="eyeGlow" cx="35%" cy="30%" r="75%">
-      <stop offset="0%" stop-color="#d9fbff" />
-      <stop offset="55%" stop-color="#3bf5ff" />
-      <stop offset="100%" stop-color="#1fb8d6" />
-    </radialGradient>
+    <linearGradient id="skin" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffd9b3" />
+      <stop offset="100%" stop-color="#f2b989" />
+    </linearGradient>
+    <linearGradient id="cap" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8374ff" />
+      <stop offset="100%" stop-color="#4b2fc9" />
+    </linearGradient>
   </defs>
 
   <!-- badge -->
   <circle cx="110" cy="110" r="106" fill="url(#bg)" />
 
-  <!-- antenna (lab/power orb) -->
-  <line x1="110" y1="46" x2="110" y2="26" stroke="#101033" stroke-width="9" stroke-linecap="round" />
-  <circle cx="110" cy="20" r="11" fill="url(#orb)" />
-  <circle cx="106.5" cy="16" r="3" fill="#ffffff" opacity="0.85" />
+  <!-- hair tufts (sideburns) -->
+  <circle cx="64" cy="104" r="12" fill="#3c2716" />
+  <circle cx="156" cy="104" r="12" fill="#3c2716" />
 
-  <!-- ears / controller grips -->
-  <circle cx="28" cy="150" r="15" fill="#101033" />
-  <circle cx="28" cy="150" r="5" fill="#8374ff" />
-  <circle cx="192" cy="150" r="15" fill="#101033" />
-  <circle cx="192" cy="150" r="5" fill="#ff4b9f" />
+  <!-- ears -->
+  <circle cx="62" cy="130" r="9" fill="#f0b48f" />
+  <circle cx="158" cy="130" r="9" fill="#f0b48f" />
 
-  <!-- face -->
-  <rect x="56" y="73" width="38" height="38" rx="13" fill="#101033" />
-  <rect x="126" y="73" width="38" height="38" rx="13" fill="#101033" />
-  <circle cx="75" cy="92" r="9" fill="url(#eyeGlow)" />
-  <circle cx="145" cy="92" r="9" fill="url(#eyeGlow)" />
-  <circle cx="71.5" cy="88.5" r="2.6" fill="#ffffff" opacity="0.9" />
-  <circle cx="141.5" cy="88.5" r="2.6" fill="#ffffff" opacity="0.9" />
+  <!-- head -->
+  <circle cx="110" cy="128" r="50" fill="url(#skin)" />
 
-  <path
-    d="M70 145c18 24 62 24 80 0"
-    stroke="#101033"
-    stroke-width="10"
-    stroke-linecap="round"
-    fill="none"
-  />
+  <!-- cheeks -->
+  <circle cx="78" cy="144" r="7" fill="#ff9fc7" opacity="0.55" />
+  <circle cx="142" cy="144" r="7" fill="#ff9fc7" opacity="0.55" />
 
-  <rect x="70" y="165" width="80" height="24" rx="12" fill="#101033" />
-  <circle cx="95" cy="177" r="6" fill="#5cf27e" />
-  <circle cx="125" cy="177" r="6" fill="#ff4b9f" />
+  <!-- eyebrows -->
+  <path d="M82,112 Q92,105 102,111" stroke="#3c2716" stroke-width="4" fill="none" stroke-linecap="round" />
+  <path d="M118,111 Q128,105 138,112" stroke="#3c2716" stroke-width="4" fill="none" stroke-linecap="round" />
+
+  <!-- eyes -->
+  <ellipse cx="92" cy="128" rx="11" ry="13" fill="#ffffff" />
+  <ellipse cx="128" cy="128" rx="11" ry="13" fill="#ffffff" />
+  <circle cx="95" cy="131" r="6" fill="#211f3d" />
+  <circle cx="131" cy="131" r="6" fill="#211f3d" />
+  <circle cx="93" cy="128" r="2" fill="#ffffff" />
+  <circle cx="129" cy="128" r="2" fill="#ffffff" />
+
+  <!-- smile -->
+  <path d="M92,148c8,14 28,14 36,0" stroke="#8a4632" stroke-width="7" stroke-linecap="round" fill="none" />
+
+  <!-- cap brim -->
+  <path d="M56,101 Q110,124 164,101 Q110,113 56,101 Z" fill="#3d24a8" />
+  <!-- cap crown -->
+  <path d="M56,101 A54,56 0 0 1 164,101 Q110,89 56,101 Z" fill="url(#cap)" />
+  <!-- lightning bolt -->
+  <path d="M116,60 L100,82 L109,82 L104,99 L124,75 L112,75 Z" fill="#eafcff" />
+
+  <!-- hoodie / collar -->
+  <path d="M54,180 Q110,210 166,180 L166,199 Q110,222 54,199 Z" fill="url(#cap)" />
+  <line x1="110" y1="182" x2="110" y2="210" stroke="#3bf5ff" stroke-width="4" stroke-linecap="round" />
+  <circle cx="88" cy="196" r="6" fill="#5cf27e" />
+  <circle cx="132" cy="196" r="6" fill="#ff4b9f" />
 </svg>
