@@ -68,7 +68,7 @@ a {
   justify-content: space-between;
   gap: 1rem;
   padding: 0.9rem 1.25rem;
-  background: rgba(18, 58, 94, 0.94);
+  background: rgba(31, 92, 138, 0.94);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(0, 0, 0, 0.15);
 }
@@ -119,12 +119,12 @@ a {
 
 .topnav-links a:hover {
   color: #fff;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(18, 58, 94, 0.3);
 }
 
 .topnav-links a.active {
   color: #fff;
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--deep);
 }
 
 /* ---------- Hero ---------- */
