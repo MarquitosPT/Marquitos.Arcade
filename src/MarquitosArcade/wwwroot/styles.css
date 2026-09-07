@@ -1,14 +1,22 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,900&family=Nunito:wght@500;700;800&display=swap");
+
 :root {
-  color-scheme: dark;
-  --bg: #080812;
-  --panel: #111127;
-  --panel-2: #171736;
-  --text: #ecf1ff;
-  --muted: #adb5d9;
-  --accent: #3bf5ff;
-  --accent-2: #8b70ff;
-  --ok: #57f88c;
-  --danger: #ff6b8b;
+  color-scheme: light;
+  --bg: #f6ecd9;
+  --panel: #fffaf0;
+  --panel-2: #f1e8d3;
+  --text: #23211d;
+  --muted: #8a8071;
+  --divider: #ece0c4;
+  --input-border: #e3d5b3;
+  --accent: #c1442e;
+  --accent-dark: #9c3423;
+  --accent-2: #1f5c8a;
+  --deep: #123a5e;
+  --rosa: #c1467e;
+  --rosa-dark: #9c3564;
+  --ok: #4c8c4a;
+  --danger: #b3261e;
 }
 
 * {
@@ -22,8 +30,8 @@ body {
 
 body {
   margin: 0;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  background: radial-gradient(circle at top, #14143a, var(--bg) 45%);
+  font-family: "Nunito", system-ui, sans-serif;
+  background: var(--bg);
   color: var(--text);
   display: flex;
   flex-direction: column;
@@ -36,6 +44,13 @@ h2,
 h3,
 p {
   margin: 0;
+}
+
+h1,
+h2,
+h3 {
+  font-family: "Fraunces", serif;
+  font-weight: 800;
 }
 
 a {
@@ -52,9 +67,9 @@ a {
   justify-content: space-between;
   gap: 1rem;
   padding: 0.9rem 1.25rem;
-  background: rgba(8, 8, 18, 0.75);
+  background: rgba(18, 58, 94, 0.94);
   backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.15);
 }
 
 /* ---------- Scrollable content area ---------- */
@@ -72,36 +87,38 @@ a {
   font-weight: 800;
   text-decoration: none;
   letter-spacing: 0.02em;
+  color: #fff;
 }
 
 .topnav-dot {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: linear-gradient(120deg, var(--accent), var(--accent-2));
-  box-shadow: 0 0 10px rgba(59, 245, 255, 0.7);
+  background: var(--accent);
+  box-shadow: 0 0 10px rgba(193, 68, 46, 0.7);
 }
 
 .topnav-links {
   display: flex;
+  align-items: center;
   gap: 1.4rem;
 }
 
 .topnav-links a {
-  color: var(--muted);
+  color: rgba(255, 255, 255, 0.8);
   text-decoration: none;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 0.92rem;
   padding-bottom: 0.2rem;
   border-bottom: 2px solid transparent;
 }
 
 .topnav-links a:hover {
-  color: var(--text);
+  color: #fff;
 }
 
 .topnav-links a.active {
-  color: var(--text);
+  color: #fff;
   border-bottom-color: var(--accent);
 }
 
@@ -119,10 +136,10 @@ a {
   align-items: center;
   background: linear-gradient(
     130deg,
-    rgba(59, 245, 255, 0.15),
-    rgba(139, 112, 255, 0.15)
+    rgba(18, 58, 94, 0.08),
+    rgba(193, 68, 46, 0.08)
   );
-  border: 1px solid rgba(237, 244, 255, 0.12);
+  border: 1px solid var(--divider);
   border-radius: 24px;
   padding: 2rem;
 }
@@ -131,7 +148,7 @@ a {
   width: 150px;
   height: 167px;
   flex-shrink: 0;
-  filter: drop-shadow(0 0 22px rgba(59, 245, 255, 0.45));
+  filter: drop-shadow(0 8px 18px rgba(18, 58, 94, 0.3));
 }
 
 .hero-copy h1 {
@@ -165,18 +182,30 @@ a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 0.7rem 1.1rem;
-  font-weight: 600;
+  font-weight: 800;
   text-decoration: none;
-  background: linear-gradient(120deg, var(--accent), #58c3ff);
-  color: #051019;
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 4px 0 var(--accent-dark);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.hero-cta:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--accent-dark);
 }
 
 .hero-cta.secondary {
-  background: rgba(255, 255, 255, 0.08);
+  background: transparent;
   color: var(--text);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 2px solid var(--input-border);
+  box-shadow: none;
+}
+
+.hero-cta.secondary:active {
+  transform: translateY(1px);
 }
 
 /* ---------- Main / sections ---------- */
@@ -219,22 +248,23 @@ main {
 
 .game-card {
   background: var(--panel);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--divider);
   border-radius: 16px;
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 3px 10px rgba(30, 40, 20, 0.06);
   transition: transform 0.18s ease, border-color 0.18s ease;
 }
 
 .game-card:hover {
   transform: translateY(-3px);
-  border-color: rgba(59, 245, 255, 0.35);
+  border-color: rgba(193, 68, 46, 0.4);
 }
 
 .game-card.muted:hover {
   transform: none;
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: var(--divider);
 }
 
 .game-card-top {
@@ -276,24 +306,37 @@ main {
   border: 0;
   border-radius: 10px;
   text-decoration: none;
-  color: #051019;
-  font-weight: 600;
-  background: linear-gradient(120deg, var(--accent), #58c3ff);
+  color: #fff;
+  font-weight: 700;
+  background: var(--accent);
+  box-shadow: 0 3px 0 var(--accent-dark);
   padding: 0.6rem 0.8rem;
   text-align: center;
   cursor: pointer;
   font-size: 0.9rem;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.tile-action:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--accent-dark);
 }
 
 .tile-action.ghost {
-  background: rgba(255, 255, 255, 0.07);
+  background: transparent;
   color: var(--text);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid var(--input-border);
+  box-shadow: none;
+}
+
+.tile-action.ghost:active {
+  transform: translateY(1px);
 }
 
 .tile-action.muted {
-  background: #26264f;
-  color: #8383a6;
+  background: rgba(35, 33, 29, 0.08);
+  color: rgba(35, 33, 29, 0.4);
+  box-shadow: none;
   cursor: not-allowed;
   flex-basis: 100%;
 }
@@ -309,18 +352,18 @@ main {
 }
 
 .live {
-  background: rgba(87, 248, 140, 0.18);
+  background: #e5f1e1;
   color: var(--ok);
 }
 
 .beta {
-  background: rgba(59, 245, 255, 0.18);
-  color: var(--accent);
+  background: rgba(31, 92, 138, 0.14);
+  color: var(--accent-2);
 }
 
 .soon {
-  background: rgba(139, 112, 255, 0.2);
-  color: #c7baff;
+  background: rgba(193, 70, 126, 0.16);
+  color: var(--rosa-dark);
 }
 
 /* ---------- Pontuações page ---------- */
@@ -351,15 +394,16 @@ main {
 
 .game-panel {
   background: var(--panel);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--divider);
   border-radius: 16px;
   padding: 1.25rem;
+  box-shadow: 0 3px 10px rgba(30, 40, 20, 0.06);
   scroll-margin-top: 1rem;
 }
 
 .game-panel.highlight {
-  border-color: rgba(59, 245, 255, 0.5);
-  box-shadow: 0 0 0 1px rgba(59, 245, 255, 0.25);
+  border-color: rgba(193, 68, 46, 0.5);
+  box-shadow: 0 0 0 1px rgba(193, 68, 46, 0.25);
 }
 
 .game-panel-head {
@@ -375,18 +419,19 @@ main {
 }
 
 .refresh-btn {
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--input-border);
+  background: transparent;
   color: var(--text);
   border-radius: 8px;
   padding: 0.4rem 0.75rem;
   font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
 }
 
 .refresh-btn:hover {
-  border-color: rgba(59, 245, 255, 0.4);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .table-wrap {
@@ -401,14 +446,14 @@ table {
 th,
 td {
   padding: 0.65rem 0.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  border-bottom: 1px solid var(--divider);
   text-align: left;
 }
 
 th {
   color: var(--muted);
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .empty-state {
@@ -423,10 +468,10 @@ th {
   flex-shrink: 0;
   z-index: 10;
   padding: 0.55rem 1.25rem;
-  background: rgba(8, 8, 18, 0.75);
+  background: rgba(18, 58, 94, 0.94);
   backdrop-filter: blur(10px);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  color: var(--muted);
+  border-top: 1px solid rgba(0, 0, 0, 0.15);
+  color: rgba(255, 255, 255, 0.75);
   font-size: 0.8rem;
   text-align: center;
 }
@@ -463,16 +508,16 @@ th {
 .topnav-linklike {
   background: none;
   border: 0;
-  color: var(--muted);
+  color: rgba(255, 255, 255, 0.8);
   font: inherit;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 0.92rem;
   cursor: pointer;
   padding: 0;
 }
 
 .topnav-linklike:hover {
-  color: var(--text);
+  color: #fff;
 }
 
 /* ---------- Páginas de conta (login/registo/gestão - /Account/*) ---------- */
@@ -517,7 +562,7 @@ th {
 
 .account-shell hr {
   border: none;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--divider);
   margin: 1.25rem 0;
 }
 
@@ -572,11 +617,12 @@ th {
 .account-shell .form-control {
   width: 100%;
   background: var(--panel);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 2px solid var(--input-border);
   border-radius: 10px;
   color: var(--text);
   padding: 1rem 0.85rem 0.4rem;
   font-size: 0.95rem;
+  font-family: inherit;
 }
 
 .account-shell .form-floating > .form-control::placeholder {
@@ -586,8 +632,8 @@ th {
 
 .account-shell .form-control:focus {
   outline: none;
-  border-color: rgba(59, 245, 255, 0.5);
-  box-shadow: 0 0 0 3px rgba(59, 245, 255, 0.15);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(193, 68, 46, 0.15);
 }
 
 .account-shell .form-control:disabled {
@@ -635,29 +681,47 @@ th {
   justify-content: center;
   border-radius: 10px;
   padding: 0.65rem 1.1rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   text-decoration: none;
   font-size: 0.92rem;
-  background: rgba(255, 255, 255, 0.07);
+  font-family: inherit;
+  background: transparent;
   color: var(--text);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 2px solid var(--input-border);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
 
 .account-shell .btn:hover {
-  border-color: rgba(59, 245, 255, 0.4);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .account-shell .btn-primary {
-  background: linear-gradient(120deg, var(--accent), #58c3ff);
-  color: #051019;
+  background: var(--accent);
+  color: #fff;
   border: 0;
+  box-shadow: 0 4px 0 var(--accent-dark);
+}
+
+.account-shell .btn-primary:hover {
+  color: #fff;
+}
+
+.account-shell .btn-primary:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--accent-dark);
 }
 
 .account-shell .btn-danger {
-  background: rgba(255, 107, 139, 0.16);
+  background: rgba(179, 38, 30, 0.1);
   color: var(--danger);
-  border: 1px solid rgba(255, 107, 139, 0.35);
+  border: 1px solid rgba(179, 38, 30, 0.35);
+}
+
+.account-shell .btn-danger:hover {
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .account-shell .btn-link {
@@ -688,27 +752,27 @@ th {
 }
 
 .account-shell .alert-danger {
-  background: rgba(255, 107, 139, 0.14);
+  background: rgba(179, 38, 30, 0.1);
   color: var(--danger);
-  border: 1px solid rgba(255, 107, 139, 0.3);
+  border: 1px solid rgba(179, 38, 30, 0.3);
 }
 
 .account-shell .alert-success {
-  background: rgba(87, 248, 140, 0.12);
+  background: #e5f1e1;
   color: var(--ok);
-  border: 1px solid rgba(87, 248, 140, 0.3);
+  border: 1px solid rgba(76, 140, 74, 0.3);
 }
 
 .account-shell .alert-warning {
-  background: rgba(139, 112, 255, 0.14);
-  color: #c7baff;
-  border: 1px solid rgba(139, 112, 255, 0.3);
+  background: rgba(193, 70, 126, 0.14);
+  color: var(--rosa-dark);
+  border: 1px solid rgba(193, 70, 126, 0.3);
 }
 
 .account-shell .alert-info {
-  background: rgba(59, 245, 255, 0.12);
-  color: var(--accent);
-  border: 1px solid rgba(59, 245, 255, 0.3);
+  background: rgba(31, 92, 138, 0.12);
+  color: var(--accent-2);
+  border: 1px solid rgba(31, 92, 138, 0.3);
 }
 
 .account-shell .text-danger {
@@ -725,7 +789,7 @@ th {
 }
 
 .account-shell .text-info {
-  color: var(--accent);
+  color: var(--accent-2);
 }
 
 /* barra lateral de navegação (Gerir conta) */
@@ -745,19 +809,19 @@ th {
   border-radius: 8px;
   color: var(--muted);
   text-decoration: none;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 0.9rem;
 }
 
 .account-shell .nav-pills .nav-link:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--panel-2);
   text-decoration: none;
 }
 
 .account-shell .nav-pills .nav-link.active {
-  color: #051019;
-  background: linear-gradient(120deg, var(--accent), #58c3ff);
+  color: #fff;
+  background: var(--accent);
 }
 
 /* tabelas (logins externos, etc.) */
@@ -771,7 +835,7 @@ th {
 .account-shell th,
 .account-shell td {
   padding: 0.6rem 0.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--divider);
   text-align: left;
 }
 
@@ -830,7 +894,7 @@ th {
   align-items: center;
   padding: 0 0.85rem;
   background: var(--panel-2);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 2px solid var(--input-border);
   border-left: 0;
   border-top-right-radius: 10px;
   border-bottom-right-radius: 10px;
