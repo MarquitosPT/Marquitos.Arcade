@@ -7,6 +7,7 @@
   --panel-2: #f1e8d3;
   --text: #23211d;
   --muted: #8a8071;
+  --muted-dark: #6d6152;
   --divider: #ece0c4;
   --input-border: #e3d5b3;
   --accent: #c1442e;
@@ -213,14 +214,14 @@ a {
 }
 
 .hero-cta.secondary {
-  background: transparent;
-  color: var(--accent-dark);
-  border: 2px solid var(--accent-dark);
-  box-shadow: none;
+  background: var(--muted);
+  color: #fff;
+  box-shadow: 0 4px 0 var(--muted-dark);
 }
 
 .hero-cta.secondary:active {
-  transform: translateY(1px);
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--muted-dark);
 }
 
 /* ---------- Main / sections ---------- */
@@ -338,14 +339,14 @@ main {
 }
 
 .tile-action.ghost {
-  background: transparent;
-  color: var(--accent-dark);
-  border: 2px solid var(--accent-dark);
-  box-shadow: none;
+  background: var(--muted);
+  color: #fff;
+  box-shadow: 0 3px 0 var(--muted-dark);
 }
 
 .tile-action.ghost:active {
-  transform: translateY(1px);
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--muted-dark);
 }
 
 .tile-action.muted {
@@ -364,6 +365,7 @@ main {
   line-height: 1;
   font-size: 0.72rem;
   font-weight: 700;
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
 }
 
 .live {
@@ -701,15 +703,20 @@ th {
   text-decoration: none;
   font-size: 0.92rem;
   font-family: inherit;
-  background: transparent;
-  color: var(--accent-dark);
-  border: 2px solid var(--accent-dark);
+  background: var(--muted);
+  color: #fff;
+  border: 0;
+  box-shadow: 0 4px 0 var(--muted-dark);
   transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
 
 .account-shell .btn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  color: #fff;
+}
+
+.account-shell .btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--muted-dark);
 }
 
 .account-shell .btn-primary {
