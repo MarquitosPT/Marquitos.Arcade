@@ -528,14 +528,14 @@ th {
   }
 
   .topnav-links {
-    gap: 0;
+    gap: 0.15rem;
   }
 
   .topnav-links a,
   .topnav-trigger {
     font-size: 0.85rem;
-    padding-left: 0.4rem;
-    padding-right: 0.4rem;
+    padding-left: 0.7rem;
+    padding-right: 0.7rem;
   }
 }
 
