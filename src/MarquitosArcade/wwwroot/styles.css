@@ -70,6 +70,7 @@ a {
   padding: 0.9rem 1.25rem;
   background: rgba(18, 58, 94, 0.94);
   backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
 }
 
 /* ---------- Scrollable content area ---------- */
@@ -475,7 +476,7 @@ th {
   padding: 0.55rem 1.25rem;
   background: rgba(18, 58, 94, 0.94);
   backdrop-filter: blur(10px);
-  border-top: 1px solid rgba(0, 0, 0, 0.15);
+  border-top: 1px solid rgba(0, 0, 0, 0.2);
   color: rgba(255, 255, 255, 0.75);
   font-size: 0.8rem;
   text-align: center;
