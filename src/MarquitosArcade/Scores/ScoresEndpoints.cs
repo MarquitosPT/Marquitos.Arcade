@@ -24,14 +24,7 @@ public static class ScoresEndpoints
             if (cleanGameId is null)
                 return Results.BadRequest(new { error = "Jogo inválido" });
 
-            var scores = await db.Scores
-                .Where(s => s.GameId == cleanGameId)
-                .OrderByDescending(s => s.Score)
-                .ThenBy(s => s.CreatedAtUtc)
-                .Take(TopCount)
-                .Select(s => new ScoreDto(s.PlayerName, s.Score, ToUnixMillis(s.CreatedAtUtc)))
-                .ToListAsync();
-
+            var scores = await GetTopScoresAsync(db, cleanGameId);
             return Results.Ok(scores);
         });
 
@@ -71,17 +64,19 @@ public static class ScoresEndpoints
             });
             await db.SaveChangesAsync();
 
-            var topScores = await db.Scores
-                .Where(s => s.GameId == cleanGameId)
-                .OrderByDescending(s => s.Score)
-                .ThenBy(s => s.CreatedAtUtc)
-                .Take(TopCount)
-                .Select(s => new ScoreDto(s.PlayerName, s.Score, ToUnixMillis(s.CreatedAtUtc)))
-                .ToListAsync();
-
+            var topScores = await GetTopScoresAsync(db, cleanGameId);
             return Results.Ok(topScores);
         });
     }
+
+    public static Task<List<ScoreDto>> GetTopScoresAsync(ApplicationDbContext db, string gameId) =>
+        db.Scores
+            .Where(s => s.GameId == gameId)
+            .OrderByDescending(s => s.Score)
+            .ThenBy(s => s.CreatedAtUtc)
+            .Take(TopCount)
+            .Select(s => new ScoreDto(s.PlayerName, s.Score, ToUnixMillis(s.CreatedAtUtc)))
+            .ToListAsync();
 
     private static string? SanitizeGameId(string gameId)
     {

@@ -72,22 +72,4 @@ app.MapAdditionalIdentityEndpoints();
 
 app.MapScoresEndpoints();
 
-app.MapGet("/api/account/me", (HttpContext httpContext) =>
-{
-    if (httpContext.User.Identity?.IsAuthenticated != true)
-        return Results.Ok(new { authenticated = false });
-
-    return Results.Ok(new { authenticated = true, userName = httpContext.User.Identity.Name });
-});
-
-// Endpoint de logout simples para as páginas estáticas (index.html/pontuacoes.html),
-// que não têm forma de gerar o token de antiforgery que o /Account/Logout do Identity
-// exige. Um CSRF aqui só consegue forçar logout, não ler nem alterar dados - risco
-// aceitável para dispensar essa complexidade nessas páginas.
-app.MapPost("/api/account/logout", async (SignInManager<ApplicationUser> signInManager) =>
-{
-    await signInManager.SignOutAsync();
-    return Results.Ok();
-}).DisableAntiforgery();
-
 app.Run();

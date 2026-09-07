@@ -440,9 +440,11 @@ main {
 }
 
 .refresh-btn {
+  display: inline-block;
   border: 1px solid var(--input-border);
   background: transparent;
   color: var(--text);
+  text-decoration: none;
   border-radius: 8px;
   padding: 0.4rem 0.75rem;
   font-size: 0.82rem;

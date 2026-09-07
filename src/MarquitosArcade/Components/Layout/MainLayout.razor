@@ -3,13 +3,13 @@
 @inject NavigationManager NavigationManager
 
 <nav class="topnav">
-    <a class="topnav-brand" href="/index.html">
+    <a class="topnav-brand" href="/">
         <span class="topnav-dot"></span>
         <span class="topnav-title">Game Arcade</span>
     </a>
     <div class="topnav-links">
-        <a href="/index.html">Jogos</a>
-        <a href="/pontuacoes.html">Pontuações</a>
+        <NavLink href="/" Match="NavLinkMatch.All">Jogos</NavLink>
+        <NavLink href="/pontuacoes" Match="NavLinkMatch.Prefix">Pontuações</NavLink>
         <AuthorizeView>
             <Authorized>
                 <details class="topnav-dropdown">
@@ -19,7 +19,7 @@
                         <hr />
                         <form action="Account/Logout" method="post">
                             <AntiforgeryToken />
-                            <input type="hidden" name="ReturnUrl" value="index.html" />
+                            <input type="hidden" name="ReturnUrl" value="/" />
                             <button type="submit">Sair</button>
                         </form>
                     </div>
@@ -33,9 +33,7 @@
 </nav>
 
 <div class="page-scroll">
-    <main class="account-shell">
-        @Body
-    </main>
+    @Body
 </div>
 
 <footer class="site-footer">

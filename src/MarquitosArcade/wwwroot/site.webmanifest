@@ -2,7 +2,7 @@
   "name": "Marquitos Game Arcade",
   "short_name": "Marquitos Arcade",
   "description": "GameStudios Lab - coleção de jogos casuais online do MarquitosPT.",
-  "start_url": "/index.html",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f6ecd9",
