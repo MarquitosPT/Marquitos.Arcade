@@ -103,11 +103,19 @@ a {
   display: flex;
   align-items: center;
   gap: 0.25rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.topnav-links::-webkit-scrollbar {
+  display: none;
 }
 
 .topnav-links a {
   display: flex;
   align-items: center;
+  white-space: nowrap;
   color: rgba(255, 255, 255, 0.8);
   text-decoration: none;
   font-weight: 700;
@@ -500,13 +508,24 @@ th {
 }
 
 @media (max-width: 480px) {
+  .topnav {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    gap: 0.4rem;
+  }
+
   .topnav-title {
     display: none;
   }
 
+  .topnav-links {
+    gap: 0;
+  }
+
   .topnav-links a {
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
+    font-size: 0.85rem;
+    padding-left: 0.4rem;
+    padding-right: 0.4rem;
   }
 }
 
