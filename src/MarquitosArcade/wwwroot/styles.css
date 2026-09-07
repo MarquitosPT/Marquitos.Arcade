@@ -105,12 +105,23 @@ a {
 }
 
 .topnav-links a {
+  position: relative;
   color: rgba(255, 255, 255, 0.8);
   text-decoration: none;
   font-weight: 700;
   font-size: 0.92rem;
-  padding-bottom: 0.2rem;
-  border-bottom: 2px solid transparent;
+  padding-bottom: 0.35rem;
+}
+
+.topnav-links a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  border-radius: 999px;
+  background: transparent;
 }
 
 .topnav-links a:hover {
@@ -119,7 +130,11 @@ a {
 
 .topnav-links a.active {
   color: #fff;
-  border-bottom-color: var(--accent);
+}
+
+.topnav-links a.active::after {
+  background: var(--accent);
+  box-shadow: 0 1px 6px rgba(193, 68, 46, 0.6);
 }
 
 /* ---------- Hero ---------- */
