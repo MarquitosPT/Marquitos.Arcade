@@ -1,0 +1,91 @@
+@page "/pontuacoes"
+@using MarquitosArcade.Data
+@using MarquitosArcade.Scores
+@inject ApplicationDbContext Db
+
+<PageTitle>Pontuações | MarquitosPT Arcade</PageTitle>
+
+<header class="page-header">
+    <h1>🏆 Pontuações da Arcade</h1>
+    <p>
+        As melhores pontuações de cada minijogo, atualizadas em tempo real a
+        partir do servidor.
+    </p>
+</header>
+
+<main class="scores-main">
+    @foreach (var game in Games)
+    {
+        <section class="game-panel @(game.Id == HighlightId ? "highlight" : "")" id="@game.Id">
+            <div class="game-panel-head">
+                <h2><span aria-hidden="true">@game.Emoji</span> @game.Name</h2>
+                <a class="refresh-btn" href="/pontuacoes?jogo=@game.Id#@game.Id">↻ Atualizar</a>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Jogador</th>
+                            <th>Pontuação</th>
+                            <th>Data</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            var scores = Scores[game.Id];
+                        }
+                        @if (scores.Count == 0)
+                        {
+                            <tr><td colspan="4" class="empty-state">Ainda não há pontuações registadas. Sê o primeiro! 🎮</td></tr>
+                        }
+                        else
+                        {
+                            @for (var i = 0; i < scores.Count; i++)
+                            {
+                                var entry = scores[i];
+                                var medal = i switch { 0 => "🥇", 1 => "🥈", 2 => "🥉", _ => (i + 1).ToString() };
+                                <tr>
+                                    <td>@medal</td>
+                                    <td>@entry.Name</td>
+                                    <td>@entry.Score</td>
+                                    <td>@FormatDate(entry.Ts)</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    }
+</main>
+
+@code {
+    private static readonly (string Id, string Name, string Emoji)[] Games =
+    [
+        ("tasca-do-ze", "Tasca do Zé", "🍽️"),
+        ("pong", "Pong Retro", "🏓"),
+    ];
+
+    [SupplyParameterFromQuery(Name = "jogo")]
+    private string? HighlightId { get; set; }
+
+    private Dictionary<string, List<ScoreDto>> Scores { get; set; } = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        foreach (var game in Games)
+        {
+            Scores[game.Id] = await ScoresEndpoints.GetTopScoresAsync(Db, game.Id);
+        }
+    }
+
+    private static string FormatDate(long ts)
+    {
+        if (ts == 0)
+            return "—";
+
+        var date = DateTimeOffset.FromUnixTimeMilliseconds(ts).UtcDateTime;
+        return date.ToString("dd/MM/yyyy HH:mm");
+    }
+}

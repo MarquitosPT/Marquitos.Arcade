@@ -72,12 +72,4 @@ app.MapAdditionalIdentityEndpoints();
 
 app.MapScoresEndpoints();
 
-app.MapGet("/api/account/me", (HttpContext httpContext) =>
-{
-    if (httpContext.User.Identity?.IsAuthenticated != true)
-        return Results.Ok(new { authenticated = false });
-
-    return Results.Ok(new { authenticated = true, userName = httpContext.User.Identity.Name });
-});
-
 app.Run();
