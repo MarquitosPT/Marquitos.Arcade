@@ -9,15 +9,21 @@
     </a>
     <div class="topnav-links">
         <a href="/index.html">Jogos</a>
-        <a href="/pontuacoes.html">🏆 Pontuações</a>
+        <a href="/pontuacoes.html">Pontuações</a>
         <AuthorizeView>
             <Authorized>
-                <a href="Account/Manage" class="topnav-account @AccountActiveClass" title="@context.User.Identity?.Name">👤 <span class="topnav-account-name">@context.User.Identity?.Name</span></a>
-                <form action="Account/Logout" method="post">
-                    <AntiforgeryToken />
-                    <input type="hidden" name="ReturnUrl" value="index.html" />
-                    <button type="submit" class="topnav-linklike">Sair</button>
-                </form>
+                <details class="topnav-dropdown">
+                    <summary class="topnav-trigger @AccountActiveClass">Conta</summary>
+                    <div class="topnav-dropdown-menu">
+                        <a href="Account/Manage">Ver conta</a>
+                        <hr />
+                        <form action="Account/Logout" method="post">
+                            <AntiforgeryToken />
+                            <input type="hidden" name="ReturnUrl" value="index.html" />
+                            <button type="submit">Sair</button>
+                        </form>
+                    </div>
+                </details>
             </Authorized>
             <NotAuthorized>
                 <a href="Account/Login" class="@AccountActiveClass">Entrar</a>
