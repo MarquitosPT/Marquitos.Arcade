@@ -12,7 +12,7 @@
         <a href="/pontuacoes.html">🏆 Pontuações</a>
         <AuthorizeView>
             <Authorized>
-                <a href="Account/Manage" class="@AccountActiveClass">👤 @context.User.Identity?.Name</a>
+                <a href="Account/Manage" class="topnav-account @AccountActiveClass" title="@context.User.Identity?.Name">👤 <span class="topnav-account-name">@context.User.Identity?.Name</span></a>
                 <form action="Account/Logout" method="post">
                     <AntiforgeryToken />
                     <input type="hidden" name="ReturnUrl" value="index.html" />
