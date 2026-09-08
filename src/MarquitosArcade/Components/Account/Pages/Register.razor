@@ -44,6 +44,10 @@
             </div>
             <button type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
         </EditForm>
+        <hr />
+        <p>
+            Already a member? <a href="@(NavigationManager.GetUriWithQueryParameters("Account/Login", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))">Sign in here!</a>
+        </p>
     </div>
 </div>
 
