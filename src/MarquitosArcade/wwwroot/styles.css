@@ -165,6 +165,7 @@ a {
 
 .mascot {
   width: min(285px, 100%);
+  max-width: 100%;
   height: auto;
   flex-shrink: 0;
   filter: drop-shadow(0 8px 18px rgba(18, 58, 94, 0.3));
@@ -504,10 +505,15 @@ th {
   .hero-inner {
     flex-direction: column;
     text-align: center;
+    padding: 1.25rem;
   }
 
   .hero-actions {
     justify-content: center;
+  }
+
+  .mascot {
+    width: min(240px, 100%);
   }
 
   .topnav {
