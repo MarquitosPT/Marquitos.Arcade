@@ -103,7 +103,6 @@ a {
 .topnav-links {
   display: flex;
   align-items: stretch;
-  gap: 0.25rem;
   overflow-x: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
