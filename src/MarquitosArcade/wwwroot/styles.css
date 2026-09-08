@@ -93,12 +93,11 @@ a {
   flex-shrink: 0;
 }
 
-.topnav-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 10px rgba(193, 68, 46, 0.7);
+.topnav-logo {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
 .topnav-links {
@@ -165,8 +164,8 @@ a {
 }
 
 .mascot {
-  width: 150px;
-  height: 167px;
+  width: min(285px, 100%);
+  height: auto;
   flex-shrink: 0;
   filter: drop-shadow(0 8px 18px rgba(18, 58, 94, 0.3));
 }

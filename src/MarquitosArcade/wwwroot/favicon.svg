@@ -1,62 +1,36 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 220" role="img" aria-label="Mascote GameStudios Lab">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Game Arcade anime icon">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#3bf5ff" />
-      <stop offset="100%" stop-color="#8374ff" />
+      <stop offset="0%" stop-color="#39f3ff" />
+      <stop offset="100%" stop-color="#6d64ff" />
     </linearGradient>
-    <linearGradient id="skin" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ffd9b3" />
-      <stop offset="100%" stop-color="#f2b989" />
+    <linearGradient id="hair" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2a1b7a" />
+      <stop offset="100%" stop-color="#140d42" />
     </linearGradient>
-    <linearGradient id="cap" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#8374ff" />
-      <stop offset="100%" stop-color="#4b2fc9" />
+    <linearGradient id="hoodie" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7a74ff" />
+      <stop offset="100%" stop-color="#4a2fcc" />
     </linearGradient>
   </defs>
 
-  <!-- badge -->
-  <circle cx="110" cy="110" r="106" fill="url(#bg)" />
+  <rect x="24" y="24" width="464" height="464" rx="116" fill="url(#bg)" />
+  <circle cx="256" cy="280" r="124" fill="#ffd8b3" />
+  <path d="M124 236 C160 150 236 118 314 130 C373 139 411 180 428 238 C350 216 283 228 256 262 C225 225 178 214 124 236 Z" fill="url(#hair)" />
 
-  <!-- hair tufts (sideburns) -->
-  <circle cx="64" cy="104" r="12" fill="#3c2716" />
-  <circle cx="156" cy="104" r="12" fill="#3c2716" />
+  <ellipse cx="209" cy="274" rx="44" ry="52" fill="#fff" />
+  <ellipse cx="303" cy="274" rx="44" ry="52" fill="#fff" />
+  <ellipse cx="219" cy="286" rx="24" ry="30" fill="#1a1c47" />
+  <ellipse cx="293" cy="286" rx="24" ry="30" fill="#1a1c47" />
+  <circle cx="228" cy="274" r="8" fill="#fff" />
+  <circle cx="302" cy="274" r="8" fill="#fff" />
+  <path d="M189 233 Q214 217 241 229" stroke="#2f1e15" stroke-width="11" fill="none" stroke-linecap="round" />
+  <path d="M272 229 Q299 216 323 233" stroke="#2f1e15" stroke-width="11" fill="none" stroke-linecap="round" />
 
-  <!-- ears -->
-  <circle cx="62" cy="130" r="9" fill="#f0b48f" />
-  <circle cx="158" cy="130" r="9" fill="#f0b48f" />
+  <circle cx="175" cy="324" r="20" fill="#ff9dc6" opacity="0.65" />
+  <circle cx="337" cy="324" r="20" fill="#ff9dc6" opacity="0.65" />
+  <path d="M216 348 Q256 388 296 348" stroke="#9b4638" stroke-width="15" fill="none" stroke-linecap="round" />
 
-  <!-- head -->
-  <circle cx="110" cy="128" r="50" fill="url(#skin)" />
-
-  <!-- cheeks -->
-  <circle cx="78" cy="144" r="7" fill="#ff9fc7" opacity="0.55" />
-  <circle cx="142" cy="144" r="7" fill="#ff9fc7" opacity="0.55" />
-
-  <!-- eyebrows -->
-  <path d="M82,112 Q92,105 102,111" stroke="#3c2716" stroke-width="4" fill="none" stroke-linecap="round" />
-  <path d="M118,111 Q128,105 138,112" stroke="#3c2716" stroke-width="4" fill="none" stroke-linecap="round" />
-
-  <!-- eyes -->
-  <ellipse cx="92" cy="128" rx="11" ry="13" fill="#ffffff" />
-  <ellipse cx="128" cy="128" rx="11" ry="13" fill="#ffffff" />
-  <circle cx="95" cy="131" r="6" fill="#211f3d" />
-  <circle cx="131" cy="131" r="6" fill="#211f3d" />
-  <circle cx="93" cy="128" r="2" fill="#ffffff" />
-  <circle cx="129" cy="128" r="2" fill="#ffffff" />
-
-  <!-- smile -->
-  <path d="M92,148c8,14 28,14 36,0" stroke="#8a4632" stroke-width="7" stroke-linecap="round" fill="none" />
-
-  <!-- cap brim -->
-  <path d="M56,101 Q110,124 164,101 Q110,113 56,101 Z" fill="#3d24a8" />
-  <!-- cap crown -->
-  <path d="M56,101 A54,56 0 0 1 164,101 Q110,89 56,101 Z" fill="url(#cap)" />
-  <!-- lightning bolt -->
-  <path d="M116,60 L100,82 L109,82 L104,99 L124,75 L112,75 Z" fill="#eafcff" />
-
-  <!-- hoodie / collar -->
-  <path d="M54,180 Q110,210 166,180 L166,199 Q110,222 54,199 Z" fill="url(#cap)" />
-  <line x1="110" y1="182" x2="110" y2="210" stroke="#3bf5ff" stroke-width="4" stroke-linecap="round" />
-  <circle cx="88" cy="196" r="6" fill="#5cf27e" />
-  <circle cx="132" cy="196" r="6" fill="#ff4b9f" />
+  <path d="M137 373 Q256 450 375 373 L392 458 Q256 500 120 458 Z" fill="url(#hoodie)" />
+  <path d="M256 376 L235 411 L255 411 L246 445 L286 396 L264 396 Z" fill="#e6f9ff" />
 </svg>
