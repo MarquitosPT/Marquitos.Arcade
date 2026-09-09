@@ -94,10 +94,10 @@ a {
 }
 
 .topnav-logo {
-  width: 26px;
-  height: 26px;
-  border-radius: 7px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    width: 26px;
+    height: 26px;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
 .topnav-links {
@@ -167,7 +167,7 @@ a {
   max-width: 100%;
   height: auto;
   flex-shrink: 0;
-  filter: drop-shadow(0 8px 18px rgba(18, 58, 94, 0.3));
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.3));
 }
 
 .hero-copy h1 {
@@ -478,6 +478,10 @@ th {
   font-weight: 700;
 }
 
+td {
+    font-size: 0.85rem;
+}
+
 .empty-state {
   color: var(--muted);
   text-align: center;
@@ -529,10 +533,6 @@ th {
 
   .topnav-title {
     display: none;
-  }
-
-  .topnav-links {
-    gap: 0.15rem;
   }
 
   .topnav-links a,
