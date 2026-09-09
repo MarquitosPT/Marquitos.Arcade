@@ -84,7 +84,7 @@
 
     private sealed class InputModel
     {
-        [Phone]
+        [Phone(ErrorMessage = "O campo {0} não é um número de telefone válido.")]
         [Display(Name = "Número de telefone")]
         public string? PhoneNumber { get; set; }
     }

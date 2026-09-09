@@ -88,8 +88,9 @@
 
     private sealed class InputModel
     {
-        [Required]
+        [Required(ErrorMessage = "O campo {0} é obrigatório.")]
         [StringLength(200, ErrorMessage = "O nome da passkey não pode ter mais de {1} caracteres.")]
+        [Display(Name = "Nome")]
         public string Name { get; set; } = "";
     }
 }
