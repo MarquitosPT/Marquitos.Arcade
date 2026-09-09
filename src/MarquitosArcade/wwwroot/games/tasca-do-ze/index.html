@@ -156,7 +156,12 @@
   }
   #toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 
-  .overlay{ position:fixed; inset:0; background:rgba(18,58,94,0.92); display:flex; align-items:center; justify-content:center; z-index:100; padding:24px; }
+  .overlay{
+    position:fixed; top:0; left:0; right:0;
+    height:100vh; height:100dvh;
+    background:rgba(18,58,94,0.92); display:flex; align-items:center; justify-content:center; z-index:100;
+    padding:max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom));
+  }
   .overlay.hidden{ display:none; }
   .panel{ background:var(--massa-card); border-radius:20px; padding:28px 24px; max-width:360px; width:100%; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.3); }
   .panel h1{ font-family:'Fraunces',serif; font-size:1.7rem; margin:0 0 6px; }
