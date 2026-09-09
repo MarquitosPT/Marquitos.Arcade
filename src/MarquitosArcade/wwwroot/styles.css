@@ -30,14 +30,15 @@ body {
 }
 
 body {
-  margin: 0;
-  font-family: "Nunito", system-ui, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
+    margin: 0;
+    font-family: "Nunito", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
 }
 
 h1,
