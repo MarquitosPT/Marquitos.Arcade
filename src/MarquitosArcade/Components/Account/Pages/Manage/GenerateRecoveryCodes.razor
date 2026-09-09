@@ -1,4 +1,4 @@
-﻿@page "/Account/Manage/GenerateRecoveryCodes"
+@page "/Account/Manage/GenerateRecoveryCodes"
 
 @using Microsoft.AspNetCore.Identity
 @using MarquitosArcade.Data
@@ -7,7 +7,7 @@
 @inject IdentityRedirectManager RedirectManager
 @inject ILogger<GenerateRecoveryCodes> Logger
 
-<PageTitle>Generate two-factor authentication (2FA) recovery codes</PageTitle>
+<PageTitle>Gerar códigos de recuperação de dois fatores (2FA)</PageTitle>
 
 @if (recoveryCodes is not null)
 {
@@ -15,24 +15,24 @@
 }
 else
 {
-    <h3>Generate two-factor authentication (2FA) recovery codes</h3>
+    <h3>Gerar códigos de recuperação de dois fatores (2FA)</h3>
     <div class="alert alert-warning" role="alert">
         <p>
             <span class="glyphicon glyphicon-warning-sign"></span>
-            <strong>Put these codes in a safe place.</strong>
+            <strong>Guarda estes códigos num local seguro.</strong>
         </p>
         <p>
-            If you lose your device and don't have the recovery codes you will lose access to your account.
+            Se perderes o teu dispositivo e não tiveres os códigos de recuperação, perderás o acesso à tua conta.
         </p>
         <p>
-            Generating new recovery codes does not change the keys used in authenticator apps. If you wish to change the key
-            used in an authenticator app you should <a href="Account/Manage/ResetAuthenticator">reset your authenticator keys.</a>
+            Gerar novos códigos de recuperação não altera as chaves usadas nas aplicações de autenticação. Se quiseres alterar a chave
+            usada numa aplicação de autenticação, deves <a href="Account/Manage/ResetAuthenticator">repor as tuas chaves de autenticação.</a>
         </p>
     </div>
     <div>
         <form @formname="generate-recovery-codes" @onsubmit="OnSubmitAsync" method="post">
             <AntiforgeryToken />
-            <button class="btn btn-danger" type="submit">Generate Recovery Codes</button>
+            <button class="btn btn-danger" type="submit">Gerar códigos de recuperação</button>
         </form>
     </div>
 }
@@ -71,7 +71,7 @@ else
 
         var userId = await UserManager.GetUserIdAsync(user);
         recoveryCodes = await UserManager.GenerateNewTwoFactorRecoveryCodesAsync(user, 10);
-        message = "You have generated new recovery codes.";
+        message = "Foram gerados novos códigos de recuperação.";
 
         Logger.LogInformation("User with ID '{UserId}' has generated new 2FA recovery codes.", userId);
     }

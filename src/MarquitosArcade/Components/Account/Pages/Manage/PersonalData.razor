@@ -1,4 +1,4 @@
-﻿@page "/Account/Manage/PersonalData"
+@page "/Account/Manage/PersonalData"
 
 @using Microsoft.AspNetCore.Identity
 @using MarquitosArcade.Data
@@ -6,23 +6,23 @@
 @inject UserManager<ApplicationUser> UserManager
 @inject IdentityRedirectManager RedirectManager
 
-<PageTitle>Personal Data</PageTitle>
+<PageTitle>Dados pessoais</PageTitle>
 
 <StatusMessage />
-<h3>Personal Data</h3>
+<h3>Dados pessoais</h3>
 
 <div class="row">
     <div class="col-md-6">
-        <p>Your account contains personal data that you have given us. This page allows you to download or delete that data.</p>
+        <p>A tua conta contém dados pessoais que nos forneceste. Esta página permite-te transferir ou eliminar esses dados.</p>
         <p>
-            <strong>Deleting this data will permanently remove your account, and this cannot be recovered.</strong>
+            <strong>Ao eliminar estes dados, a tua conta será removida permanentemente e não poderá ser recuperada.</strong>
         </p>
         <form action="Account/Manage/DownloadPersonalData" method="post">
             <AntiforgeryToken />
-            <button class="btn btn-primary" type="submit">Download</button>
+            <button class="btn btn-primary" type="submit">Transferir</button>
         </form>
         <p>
-            <a href="Account/Manage/DeletePersonalData" class="btn btn-danger">Delete</a>
+            <a href="Account/Manage/DeletePersonalData" class="btn btn-danger">Eliminar</a>
         </p>
     </div>
 </div>

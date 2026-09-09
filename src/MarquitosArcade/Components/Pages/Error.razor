@@ -1,27 +1,27 @@
-﻿@page "/Error"
+@page "/Error"
 @using System.Diagnostics
 
-<PageTitle>Error</PageTitle>
+<PageTitle>Erro</PageTitle>
 
-<h1 class="text-danger">Error.</h1>
-<h2 class="text-danger">An error occurred while processing your request.</h2>
+<h1 class="text-danger">Erro.</h1>
+<h2 class="text-danger">Ocorreu um erro ao processar o teu pedido.</h2>
 
 @if (ShowRequestId)
 {
     <p>
-        <strong>Request ID:</strong> <code>@RequestId</code>
+        <strong>ID do pedido:</strong> <code>@RequestId</code>
     </p>
 }
 
-<h3>Development Mode</h3>
+<h3>Modo de desenvolvimento</h3>
 <p>
-    Swapping to <strong>Development</strong> environment will display more detailed information about the error that occurred.
+    Ao mudar para o ambiente de <strong>Development</strong>, será apresentada informação mais detalhada sobre o erro ocorrido.
 </p>
 <p>
-    <strong>The Development environment shouldn't be enabled for deployed applications.</strong>
-    It can result in displaying sensitive information from exceptions to end users.
-    For local debugging, enable the <strong>Development</strong> environment by setting the <strong>ASPNETCORE_ENVIRONMENT</strong> environment variable to <strong>Development</strong>
-    and restarting the app.
+    <strong>O ambiente de Development não deve estar ativo em aplicações implementadas em produção.</strong>
+    Pode resultar na exposição de informação sensível de exceções aos utilizadores finais.
+    Para depuração local, ativa o ambiente de <strong>Development</strong> definindo a variável de ambiente <strong>ASPNETCORE_ENVIRONMENT</strong> como <strong>Development</strong>
+    e reinicia a aplicação.
 </p>
 
 @code{
