@@ -79,7 +79,7 @@
 
     private sealed class InputModel
     {
-        [Required]
+        [Required(ErrorMessage = "O campo {0} é obrigatório.")]
         [DataType(DataType.Text)]
         [Display(Name = "Código de recuperação")]
         public string RecoveryCode { get; set; } = "";

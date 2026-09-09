@@ -141,12 +141,13 @@
 
     private sealed class InputModel
     {
-        [Required]
-        [EmailAddress]
+        [Required(ErrorMessage = "O campo {0} é obrigatório.")]
+        [EmailAddress(ErrorMessage = "O campo {0} não é um endereço de email válido.")]
         public string Email { get; set; } = "";
 
-        [Required]
+        [Required(ErrorMessage = "O campo {0} é obrigatório.")]
         [DataType(DataType.Password)]
+        [Display(Name = "Palavra-passe")]
         public string Password { get; set; } = "";
 
         [Display(Name = "Lembrar-me?")]
