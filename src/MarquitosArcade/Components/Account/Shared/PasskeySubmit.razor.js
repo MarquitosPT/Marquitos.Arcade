@@ -68,7 +68,7 @@ customElements.define('passkey-submit', class extends HTMLElement {
 
     async obtainCredential(useConditionalMediation, signal) {
         if (!browserSupportsPasskeys) {
-            throw new Error('Some passkey features are missing. Please update your browser.');
+            throw new Error('Faltam algumas funcionalidades de passkeys. Atualiza o teu navegador.');
         }
 
         const headers = {
@@ -107,7 +107,7 @@ customElements.define('passkey-submit', class extends HTMLElement {
                 return;
             }
             const errorMessage = error.name === 'NotAllowedError'
-                ? 'No passkey was provided by the authenticator.'
+                ? 'Nenhuma passkey foi fornecida pelo autenticador.'
                 : error.message;
             formData.append(`${this.attrs.name}.Error`, errorMessage);
         }

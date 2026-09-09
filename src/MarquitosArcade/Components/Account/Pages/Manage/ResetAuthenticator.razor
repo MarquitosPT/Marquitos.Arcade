@@ -1,4 +1,4 @@
-﻿@page "/Account/Manage/ResetAuthenticator"
+@page "/Account/Manage/ResetAuthenticator"
 
 @using Microsoft.AspNetCore.Identity
 @using MarquitosArcade.Data
@@ -8,24 +8,24 @@
 @inject IdentityRedirectManager RedirectManager
 @inject ILogger<ResetAuthenticator> Logger
 
-<PageTitle>Reset authenticator key</PageTitle>
+<PageTitle>Repor chave de autenticação</PageTitle>
 
 <StatusMessage />
-<h3>Reset authenticator key</h3>
+<h3>Repor chave de autenticação</h3>
 <div class="alert alert-warning" role="alert">
     <p>
         <span class="glyphicon glyphicon-warning-sign"></span>
-        <strong>If you reset your authenticator key your authenticator app will not work until you reconfigure it.</strong>
+        <strong>Se repuseres a tua chave de autenticação, a tua aplicação de autenticação deixará de funcionar até a reconfigurares.</strong>
     </p>
     <p>
-        This process disables 2FA until you verify your authenticator app.
-        If you do not complete your authenticator app configuration you may lose access to your account.
+        Este processo desativa a 2FA até verificares a tua aplicação de autenticação.
+        Se não concluíres a configuração da tua aplicação de autenticação, poderás perder o acesso à tua conta.
     </p>
 </div>
 <div>
     <form @formname="reset-authenticator" @onsubmit="OnSubmitAsync" method="post">
         <AntiforgeryToken />
-        <button class="btn btn-danger" type="submit">Reset authenticator key</button>
+        <button class="btn btn-danger" type="submit">Repor chave de autenticação</button>
     </form>
 </div>
 
@@ -51,7 +51,7 @@
 
         RedirectManager.RedirectToWithStatus(
             "Account/Manage/EnableAuthenticator",
-            "Your authenticator app key has been reset, you will need to configure your authenticator app using the new key.",
+            "A chave da tua aplicação de autenticação foi reposta, terás de configurar a aplicação de autenticação com a nova chave.",
             HttpContext);
     }
 }
