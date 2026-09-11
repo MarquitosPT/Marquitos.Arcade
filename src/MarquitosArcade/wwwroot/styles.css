@@ -113,12 +113,17 @@ a {
 .topnav-links {
   display: flex;
   align-items: stretch;
+}
+
+.topnav-scroll {
+  display: flex;
+  align-items: stretch;
   overflow-x: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
 }
 
-.topnav-links::-webkit-scrollbar {
+.topnav-scroll::-webkit-scrollbar {
   display: none;
 }
 
