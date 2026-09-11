@@ -38,21 +38,19 @@ public static class ScoresEndpoints
                 return Results.BadRequest(new { error = "Pontuação inválida" });
 
             string? userId = null;
-            string playerName;
-
-            var user = httpContext.User.Identity?.IsAuthenticated == true
-                ? await userManager.GetUserAsync(httpContext.User)
-                : null;
-
-            if (user is not null)
+            string? accountDisplayName = null;
+            if (httpContext.User.Identity?.IsAuthenticated == true)
             {
-                userId = user.Id;
-                playerName = user.UserName ?? "Anónimo";
+                var user = await userManager.GetUserAsync(httpContext.User);
+                userId = user?.Id;
+                accountDisplayName = user?.DisplayName;
             }
-            else
-            {
-                playerName = SanitizeName(submission.Name);
-            }
+
+            // O nome escrito no jogo tem sempre prioridade; só se vier vazio é que
+            // se recorre ao nome a mostrar da conta (nunca ao email/username).
+            var playerName = !string.IsNullOrWhiteSpace(submission.Name)
+                ? SanitizeName(submission.Name)
+                : SanitizeName(accountDisplayName);
 
             db.Scores.Add(new ScoreEntry
             {

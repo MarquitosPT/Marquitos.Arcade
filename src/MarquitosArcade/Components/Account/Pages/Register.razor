@@ -33,6 +33,11 @@
                 <ValidationMessage For="() => Input.Email" class="text-danger" />
             </div>
             <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.DisplayName" id="Input.DisplayName" class="form-control" autocomplete="nickname" placeholder="Como queres aparecer nas pontuações" maxlength="50" />
+                <label for="Input.DisplayName">Nome a mostrar (opcional)</label>
+                <ValidationMessage For="() => Input.DisplayName" class="text-danger" />
+            </div>
+            <div class="form-floating mb-3">
                 <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="palavra-passe" />
                 <label for="Input.Password">Palavra-passe</label>
                 <ValidationMessage For="() => Input.Password" class="text-danger" />
@@ -70,6 +75,8 @@
     public async Task RegisterUser(EditContext editContext)
     {
         var user = CreateUser();
+
+        user.DisplayName = string.IsNullOrWhiteSpace(Input.DisplayName) ? null : Input.DisplayName.Trim();
 
         await UserStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
         var emailStore = GetEmailStore();
@@ -134,6 +141,10 @@
         [EmailAddress(ErrorMessage = "O campo {0} não é um endereço de email válido.")]
         [Display(Name = "Email")]
         public string Email { get; set; } = "";
+
+        [StringLength(50, ErrorMessage = "O campo {0} deve ter, no máximo, {1} caracteres.")]
+        [Display(Name = "Nome a mostrar")]
+        public string? DisplayName { get; set; }
 
         [Required(ErrorMessage = "O campo {0} é obrigatório.")]
         [StringLength(100, ErrorMessage = "A {0} deve ter, no mínimo, {2} e, no máximo, {1} caracteres.", MinimumLength = 6)]

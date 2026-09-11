@@ -270,6 +270,14 @@
             const NAME_KEY = 'pongPlayerName_v1';
             try { nameInput.value = localStorage.getItem(NAME_KEY) || ''; } catch (e) { }
 
+            // Se a conta tiver um nome a mostrar definido e o campo ainda estiver vazio
+            // (ex: primeira vez neste aparelho), pré-preenche com esse nome.
+            fetch('/api/account/me').then(function (r) { return r.ok ? r.json() : null; }).then(function (data) {
+                if (data && data.displayName && !nameInput.value) {
+                    nameInput.value = data.displayName;
+                }
+            }).catch(function () { });
+
             function submitPongScore(name, score) {
                 if (!(score > 0)) return;
                 try { localStorage.setItem(NAME_KEY, name); } catch (e) { }

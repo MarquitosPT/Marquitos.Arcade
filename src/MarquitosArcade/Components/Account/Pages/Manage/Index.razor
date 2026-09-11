@@ -23,6 +23,14 @@
                 <label for="username" class="form-label">Nome de utilizador</label>
             </div>
             <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.DisplayName" id="Input.DisplayName" class="form-control" placeholder="Como queres aparecer nas pontuações" maxlength="50" />
+                <label for="Input.DisplayName" class="form-label">Nome a mostrar</label>
+                <ValidationMessage For="() => Input.DisplayName" class="text-danger" />
+            </div>
+            <div class="form-text mb-3">
+                Este é o nome usado nas tabelas de pontuações públicas. O teu email nunca é mostrado.
+            </div>
+            <div class="form-floating mb-3">
                 <InputText @bind-Value="Input.PhoneNumber" id="Input.PhoneNumber" class="form-control" placeholder="Introduz o teu número de telefone" />
                 <label for="Input.PhoneNumber" class="form-label">Número de telefone</label>
                 <ValidationMessage For="() => Input.PhoneNumber" class="text-danger" />
@@ -58,6 +66,7 @@
         phoneNumber = await UserManager.GetPhoneNumberAsync(user);
 
         Input.PhoneNumber ??= phoneNumber;
+        Input.DisplayName ??= user.DisplayName;
     }
 
     private async Task OnValidSubmitAsync()
@@ -78,12 +87,28 @@
             }
         }
 
+        var trimmedDisplayName = string.IsNullOrWhiteSpace(Input.DisplayName) ? null : Input.DisplayName.Trim();
+        if (trimmedDisplayName != user.DisplayName)
+        {
+            user.DisplayName = trimmedDisplayName;
+            var updateResult = await UserManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+            {
+                RedirectManager.RedirectToCurrentPageWithStatus("Erro: Não foi possível definir o nome a mostrar.", HttpContext);
+                return;
+            }
+        }
+
         await SignInManager.RefreshSignInAsync(user);
         RedirectManager.RedirectToCurrentPageWithStatus("O teu perfil foi atualizado", HttpContext);
     }
 
     private sealed class InputModel
     {
+        [StringLength(50, ErrorMessage = "O campo {0} deve ter, no máximo, {1} caracteres.")]
+        [Display(Name = "Nome a mostrar")]
+        public string? DisplayName { get; set; }
+
         [Phone(ErrorMessage = "O campo {0} não é um número de telefone válido.")]
         [Display(Name = "Número de telefone")]
         public string? PhoneNumber { get; set; }

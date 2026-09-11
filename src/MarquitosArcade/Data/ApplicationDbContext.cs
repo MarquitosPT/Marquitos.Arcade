@@ -13,5 +13,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         builder.Entity<ScoreEntry>()
             .HasIndex(s => new { s.GameId, s.Score });
+
+        builder.Entity<ApplicationUser>()
+            .Property(u => u.DisplayName)
+            .HasMaxLength(50);
     }
 }
