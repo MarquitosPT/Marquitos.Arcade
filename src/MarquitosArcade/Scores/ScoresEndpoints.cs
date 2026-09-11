@@ -38,21 +38,13 @@ public static class ScoresEndpoints
                 return Results.BadRequest(new { error = "Pontuação inválida" });
 
             string? userId = null;
-            string playerName;
-
-            var user = httpContext.User.Identity?.IsAuthenticated == true
-                ? await userManager.GetUserAsync(httpContext.User)
-                : null;
-
-            if (user is not null)
+            if (httpContext.User.Identity?.IsAuthenticated == true)
             {
-                userId = user.Id;
-                playerName = user.UserName ?? "Anónimo";
+                var user = await userManager.GetUserAsync(httpContext.User);
+                userId = user?.Id;
             }
-            else
-            {
-                playerName = SanitizeName(submission.Name);
-            }
+
+            var playerName = SanitizeName(submission.Name);
 
             db.Scores.Add(new ScoreEntry
             {
