@@ -195,7 +195,7 @@
             right: 12px;
             display: flex;
             gap: 8px;
-            z-index: 5;
+            z-index: 20;
         }
 
         .topBtn {
@@ -295,7 +295,10 @@
                 }
             }
 
+            const topBar = document.querySelector('.topBar');
+
             let W, H, DPR;
+            let topInset = 0; // espaço reservado no topo para não sobrepor os botões da barra de topo
             let mode = 'single'; // 'single' or 'two'
             let aiLevel = 0.85;
             let running = false;
@@ -351,6 +354,8 @@
                 canvas.width = W * DPR;
                 canvas.height = H * DPR;
                 ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+                const barRect = topBar.getBoundingClientRect();
+                topInset = barRect.bottom + 10;
                 layout();
                 checkOrientation();
                 if (running) draw();
@@ -364,15 +369,15 @@
                     player.x = W / 2 - paddleW / 2;
                     player.y = H - H * 0.06 - paddleH;
                     ai.x = W / 2 - paddleW / 2;
-                    ai.y = H * 0.06;
+                    ai.y = Math.max(H * 0.06, topInset);
                 } else {
                     paddleLen = H * 0.24;
                     paddleThick = Math.max(10, W * 0.012);
                     ballR = Math.max(6, H * 0.025);
                     p1.x = W * 0.03;
-                    p1.y = H / 2 - paddleLen / 2;
+                    p1.y = Math.max(H / 2 - paddleLen / 2, topInset);
                     p2.x = W - W * 0.03 - paddleThick;
-                    p2.y = H / 2 - paddleLen / 2;
+                    p2.y = Math.max(H / 2 - paddleLen / 2, topInset);
                 }
                 resetBall(true);
             }
@@ -420,9 +425,9 @@
                     for (let i = 0; i < e.touches.length; i++) {
                         const p = relPos(e.touches[i]);
                         if (p.x < W / 2) {
-                            p1.y = Math.min(H - paddleLen, Math.max(0, p.y - paddleLen / 2));
+                            p1.y = Math.min(H - paddleLen, Math.max(topInset, p.y - paddleLen / 2));
                         } else {
-                            p2.y = Math.min(H - paddleLen, Math.max(0, p.y - paddleLen / 2));
+                            p2.y = Math.min(H - paddleLen, Math.max(topInset, p.y - paddleLen / 2));
                         }
                     }
                 }
@@ -442,9 +447,9 @@
                 if (mode === 'single') {
                     player.x = Math.min(W - paddleW, Math.max(0, x - paddleW / 2));
                 } else if (x < W / 2) {
-                    p1.y = Math.min(H - paddleLen, Math.max(0, y - paddleLen / 2));
+                    p1.y = Math.min(H - paddleLen, Math.max(topInset, y - paddleLen / 2));
                 } else {
-                    p2.y = Math.min(H - paddleLen, Math.max(0, y - paddleLen / 2));
+                    p2.y = Math.min(H - paddleLen, Math.max(topInset, y - paddleLen / 2));
                 }
             }
 
@@ -486,7 +491,7 @@
 
                 } else {
                     // two-player: ball moves mostly horizontally, bounces top/bottom
-                    if (ball.y - ballR < 0) { ball.y = ballR; ball.vy *= -1; sfx.wall(); }
+                    if (ball.y - ballR < topInset) { ball.y = topInset + ballR; ball.vy *= -1; sfx.wall(); }
                     if (ball.y + ballR > H) { ball.y = H - ballR; ball.vy *= -1; sfx.wall(); }
 
                     // left paddle (p1)
