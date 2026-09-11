@@ -892,6 +892,13 @@
   function safeGet(key){ try{ return localStorage.getItem(key); }catch(e){ return null; } }
   function safeSet(key, val){ try{ localStorage.setItem(key, val); }catch(e){} }
 
+  // Nome a mostrar da conta (quando autenticado), usado como sugestão quando
+  // ainda não há nenhum nome guardado neste aparelho.
+  var accountDisplayName = '';
+  fetch('/api/account/me').then(function(r){ return r.ok ? r.json() : null; }).then(function(data){
+    if (data && data.displayName) accountDisplayName = data.displayName;
+  }).catch(function(){});
+
   function loadCachedBoard(){
     var raw = safeGet(STORAGE_KEY);
     if (!raw) return [];
@@ -1452,7 +1459,7 @@
   // ---------- WIRE UP ----------
   document.getElementById('playBtn').addEventListener('click', function(){
     sfxClick();
-    els.nameInput.value = state.playerName || safeGet(NAME_KEY) || '';
+    els.nameInput.value = state.playerName || safeGet(NAME_KEY) || accountDisplayName || '';
     showOverlay('setupOverlay');
     setTimeout(function(){ els.nameInput.focus(); }, 200);
   });

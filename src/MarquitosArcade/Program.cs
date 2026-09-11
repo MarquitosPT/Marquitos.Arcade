@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using MarquitosArcade.Account;
 using MarquitosArcade.Components;
 using MarquitosArcade.Components.Account;
 using MarquitosArcade.Data;
@@ -72,5 +73,6 @@ app.MapRazorComponents<App>()
 app.MapAdditionalIdentityEndpoints();
 
 app.MapScoresEndpoints();
+app.MapAccountEndpoints();
 
 app.Run();
