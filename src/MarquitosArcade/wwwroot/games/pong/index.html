@@ -212,10 +212,10 @@
 <body>
     <div id="wrap">
         <div class="topBar">
-            <a class="topBtn" href="/" style="text-decoration:none; display:inline-block;">← ARCADE</a>
-            <a class="topBtn" href="/pontuacoes?jogo=pong#pong" style="text-decoration:none; display:inline-block;">🏆</a>
-            <button class="topBtn" id="pauseBtn">II</button>
-            <button class="topBtn" id="endBtn">✕ SAIR</button>
+            <a class="topBtn" id="arcadeLink" href="/" style="text-decoration:none; display:inline-block;">← ARCADE</a>
+            <a class="topBtn" id="scoresLink" href="/pontuacoes?jogo=pong#pong" style="text-decoration:none; display:inline-block;">🏆</a>
+            <button class="topBtn" id="pauseBtn" style="display:none;">II</button>
+            <button class="topBtn" id="endBtn" style="display:none;">✕ SAIR</button>
         </div>
         <canvas id="game"></canvas>
 
@@ -296,6 +296,15 @@
             }
 
             const topBar = document.querySelector('.topBar');
+            const arcadeLink = document.getElementById('arcadeLink');
+            const scoresLink = document.getElementById('scoresLink');
+
+            function setInGameControls(inGame) {
+                arcadeLink.style.display = inGame ? 'none' : 'inline-block';
+                scoresLink.style.display = inGame ? 'none' : 'inline-block';
+                pauseBtn.style.display = inGame ? 'inline-block' : 'none';
+                endBtn.style.display = inGame ? 'inline-block' : 'none';
+            }
 
             let W, H, DPR;
             let topInset = 0; // espaço reservado no topo para não sobrepor os botões da barra de topo
@@ -576,6 +585,7 @@
             function startGame() {
                 ensureAudio();
                 startScreen.style.display = 'none';
+                setInGameControls(true);
                 scoreP = 0; scoreA = 0;
                 layout();
                 running = true;
@@ -590,6 +600,7 @@
                 paused = false;
                 pauseScreen.style.display = 'none';
                 startScreen.style.display = 'flex';
+                setInGameControls(false);
             }
 
             startBtn.addEventListener('click', startGame);
