@@ -9,8 +9,10 @@
             <span class="topnav-title">Game Arcade</span>
         </a>
         <div class="topnav-links">
-            <NavLink href="/" Match="NavLinkMatch.All">Jogos</NavLink>
-            <NavLink href="/pontuacoes" Match="NavLinkMatch.Prefix">Pontuações</NavLink>
+            <div class="topnav-scroll">
+                <NavLink href="/" Match="NavLinkMatch.All">Jogos</NavLink>
+                <NavLink href="/pontuacoes" Match="NavLinkMatch.Prefix">Pontuações</NavLink>
+            </div>
             <AuthorizeView>
                 <Authorized>
                     <details class="topnav-dropdown">
