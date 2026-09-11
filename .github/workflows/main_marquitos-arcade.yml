@@ -1,7 +1,7 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy .NET app to Azure Web App - marquitos-arcade
+name: Build and deploy ASP.Net Core app to Azure Web App - marquitos-arcade
 
 on:
   push:
@@ -18,22 +18,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up .NET SDK
+      - name: Set up .NET Core
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          dotnet-version: '10.x'
 
-      - name: Restore, build, and publish
-        run: |
-          dotnet restore MarquitosArcade.slnx
-          dotnet build MarquitosArcade.slnx --configuration Release --no-restore
-          dotnet publish src/MarquitosArcade/MarquitosArcade.csproj --configuration Release --no-build --output ./publish
+      - name: Build with dotnet
+        run: dotnet build --configuration Release
+
+      - name: dotnet publish
+        run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/myapp
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
-          name: dotnet-app
-          path: ./publish
+          name: .net-app
+          path: ${{env.DOTNET_ROOT}}/myapp
 
   deploy:
     runs-on: ubuntu-latest
@@ -46,19 +46,20 @@ jobs:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
-          name: dotnet-app
-
+          name: .net-app
+      
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_05844E1801214BE5912B41121D6EEF9F }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_BFB0FD99C698428C9BE3C1F0237C0295 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_0A06FA2E4961438FA97A2F59DC94C474 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_A203877C6C2D41C3B8047E08029E9786 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_06380B3B1A1148C99A8E88EB01C0696A }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_0FAC22E49C1142419E9438C23C27CE8B }}
 
-      - name: 'Deploy to Azure Web App'
-        uses: azure/webapps-deploy@v3
+      - name: Deploy to Azure Web App
         id: deploy-to-webapp
+        uses: azure/webapps-deploy@v3
         with:
           app-name: 'marquitos-arcade'
           slot-name: 'Production'
           package: .
+          
