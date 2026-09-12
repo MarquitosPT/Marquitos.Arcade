@@ -619,6 +619,10 @@ body::before {
   flex: none;
 }
 
+.hero-cta:has(.hero-cta-icon) {
+  padding-left: 1rem;
+}
+
 .hero-cta:hover,
 .tile-action:hover,
 .account-shell .btn:hover {
