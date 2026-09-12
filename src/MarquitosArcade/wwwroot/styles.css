@@ -220,6 +220,19 @@ body {
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* Comportamento de WebApp: sem seleção de texto acidental em todo o
+     site (exceto nos campos de formulário, ver abaixo). */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input,
+textarea,
+select,
+[contenteditable="true"],
+[contenteditable=""] {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 h1,
@@ -248,10 +261,11 @@ a {
    comportamento nativo dos links (abrir em novo separador, etc.). */
 a,
 button,
-summary {
+summary,
+img {
   -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  user-select: none;
+  -webkit-user-drag: none;
+  user-drag: none;
 }
 
 :focus-visible {
