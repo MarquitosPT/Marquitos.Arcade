@@ -33,70 +33,118 @@
         </div>
 
         <div class="game-grid">
-            <article class="game-card">
-                <div class="game-card-top">
-                    <span class="tag live">Já disponível</span>
-                    <span class="game-emoji" aria-hidden="true">🍽️</span>
-                </div>
-                <h3>Tasca do Zé</h3>
-                <p>
-                    Gere os pedidos da tasca, prepara os pratos certos e serve os
-                    clientes antes que percam a paciência.
-                </p>
-                <div class="game-card-actions">
-                    <a class="tile-action" href="/games/tasca-do-ze/">Jogar agora</a>
-                    <a class="tile-action ghost" href="/pontuacoes?jogo=tasca-do-ze#tasca-do-ze">🏆 Pontuações</a>
-                </div>
-            </article>
+            @foreach (var game in Catalog)
+            {
+                <article class="game-card @game.Theme @(game.IsPlayable ? "" : "muted")">
+                    <div class="game-cover">
+                        <img src="@game.Cover" alt="Ecrã de jogo: @game.Title" width="960" height="540"
+                             loading="lazy" decoding="async" />
+                        <span class="cover-crt" aria-hidden="true"></span>
 
-            <article class="game-card">
-                <div class="game-card-top">
-                    <span class="tag beta">Novo</span>
-                    <span class="game-emoji" aria-hidden="true">🏓</span>
-                </div>
-                <h3>Pong Retro</h3>
-                <p>
-                    Releitura neon do clássico Pong, com modo 1 jogador (vs. CPU) ou
-                    2 jogadores no mesmo ecrã.
-                </p>
-                <div class="game-card-actions">
-                    <a class="tile-action" href="/games/pong/">Experimentar</a>
-                    <a class="tile-action ghost" href="/pontuacoes?jogo=pong#pong">🏆 Pontuações</a>
-                </div>
-            </article>
+                        @if (game.IsPlayable)
+                        {
+                            <span class="tag @game.TagKind">@game.TagText</span>
+                            <a class="cover-link" href="@game.PlayUrl" aria-label="Jogar @game.Title">
+                                <span class="cover-play" aria-hidden="true">▶</span>
+                            </a>
+                        }
+                        else
+                        {
+                            <span class="cover-stamp">@game.TagText</span>
+                        }
 
-            <article class="game-card">
-                <div class="game-card-top">
-                    <span class="tag beta">Novo</span>
-                    <span class="game-emoji" aria-hidden="true">🏎️</span>
-                </div>
-                <h3>Pixel Racing</h3>
-                <p>
-                    Corridas arcade em pistas curtas com boost, drift e torneios.
-                    Até 4 carros na pista — tu e 3 adversários CPU.
-                </p>
-                <div class="game-card-actions">
-                    <a class="tile-action" href="/games/pixel-racing/">Jogar agora</a>
-                    <a class="tile-action ghost" href="/pontuacoes?jogo=pixel-racing#pixel-racing">🏆 Pontuações</a>
-                </div>
-            </article>
+                        <div class="game-marquee">
+                            <span class="marquee-emoji" aria-hidden="true">@game.Emoji</span>
+                            <div class="marquee-text">
+                                <h3>@game.Title</h3>
+                                <span class="marquee-tagline">@game.Tagline</span>
+                            </div>
+                        </div>
+                    </div>
 
-            <article class="game-card muted">
-                <div class="game-card-top">
-                    <span class="tag soon">Em breve</span>
-                    <span class="game-emoji" aria-hidden="true">🧩</span>
-                </div>
-                <h3>Maze Run</h3>
-                <p>
-                    Labirintos rápidos com inimigos IA e níveis progressivamente mais
-                    desafiantes.
-                </p>
-                <div class="game-card-actions">
-                    <button class="tile-action muted" type="button" disabled>
-                        A caminho
-                    </button>
-                </div>
-            </article>
+                    <div class="game-card-body">
+                        <p>@game.Description</p>
+                        <div class="game-card-actions">
+                            @if (game.IsPlayable)
+                            {
+                                <a class="tile-action" href="@game.PlayUrl">@game.PlayLabel</a>
+                                <a class="tile-action ghost" href="/pontuacoes?jogo=@game.Slug#@game.Slug">🏆 Pontuações</a>
+                            }
+                            else
+                            {
+                                <button class="tile-action muted" type="button" disabled>A caminho</button>
+                            }
+                        </div>
+                    </div>
+                </article>
+            }
         </div>
     </section>
 </main>
+
+@code {
+    /// <summary>Um jogo do catálogo da arcada.</summary>
+    /// <param name="Slug">Pasta do jogo em <c>wwwroot/games/</c> e id usado nas pontuações.</param>
+    /// <param name="Theme">Classe CSS com a cor e o lettering do jogo.</param>
+    /// <param name="Cover">Capa 16:9 gerada por <c>tools/covers/</c>.</param>
+    private sealed record ArcadeGame(
+        string Slug,
+        string Title,
+        string Tagline,
+        string Description,
+        string Emoji,
+        string Theme,
+        string Cover,
+        string TagText,
+        string TagKind,
+        bool IsPlayable = true,
+        string PlayLabel = "Jogar agora")
+    {
+        public string PlayUrl => $"/games/{Slug}/";
+    }
+
+    private static readonly ArcadeGame[] Catalog =
+    [
+        new("tasca-do-ze",
+            "Tasca do Zé",
+            "o teu turno na cozinha",
+            "Gere os pedidos da tasca, prepara os pratos certos e serve os clientes antes que percam a paciência.",
+            "🍽️",
+            "theme-tasca",
+            "/covers/tasca-do-ze.webp",
+            "Já disponível",
+            "live"),
+
+        new("pong",
+            "Pong Retro",
+            "retro • arcade",
+            "Releitura neon do clássico Pong, com modo 1 jogador (vs. CPU) ou 2 jogadores no mesmo ecrã.",
+            "🏓",
+            "theme-pong",
+            "/covers/pong.webp",
+            "Novo",
+            "beta",
+            PlayLabel: "Experimentar"),
+
+        new("pixel-racing",
+            "Pixel Racing",
+            "boost • drift • torneios",
+            "Corridas arcade em pistas curtas com boost, drift e torneios. Até 4 carros na pista — tu e 3 adversários CPU.",
+            "🏎️",
+            "theme-racing",
+            "/covers/pixel-racing.webp",
+            "Novo",
+            "beta"),
+
+        new("maze-run",
+            "Maze Run",
+            "labirintos & perseguições",
+            "Labirintos rápidos com inimigos IA e níveis progressivamente mais desafiantes.",
+            "🧩",
+            "theme-maze",
+            "/covers/maze-run.svg",
+            "Em breve",
+            "soon",
+            IsPlayable: false)
+    ];
+}

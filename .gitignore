@@ -4,3 +4,6 @@ obj/
 src/MarquitosArcade/Data/app.db
 src/MarquitosArcade/Data/app.db-*
 /.vs
+
+# Ferramentas Node (tools/)
+node_modules/
