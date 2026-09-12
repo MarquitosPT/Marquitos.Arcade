@@ -18,8 +18,14 @@
 // do servidor sem noção do tema escolhido no browser. Sem reação a
 // isso, o atributo `data-theme` acaba por ser removido nesse processo
 // e o tema "perde-se" a cada ação, apesar de continuar gravado em
-// localStorage. Por isso reaplicamos o tema guardado sempre que o
-// Blazor termina uma dessas navegações (evento `enhancedload`).
+// localStorage.
+//
+// Este script corre antes do `blazor.web.js` (carregado no fim do
+// <body>), pelo que o objeto global `Blazor` ainda não existe aqui. Por
+// isso expomos `window.__arcadeTheme.reapply`, chamado a partir de um
+// script inline depois do `blazor.web.js` (ver App.razor) com
+// `Blazor.addEventListener('enhancedload', ...)`, a forma correta de
+// reagir ao fim de cada enhanced navigation.
 (() => {
   const STORAGE_KEY = "arcade-theme";
   const CYCLE = ["system", "light", "dark"];
@@ -75,8 +81,5 @@
 
   darkQuery.addEventListener("change", syncBarColor);
 
-  // Reaplica o tema guardado a seguir a cada enhanced navigation (troca
-  // de página ou submissão de formulário), que substitui o documento por
-  // markup vindo do servidor e apaga o `data-theme` posto pelo cliente.
-  document.addEventListener("enhancedload", () => apply(read()));
+  window.__arcadeTheme = { reapply: () => apply(read()) };
 })();
