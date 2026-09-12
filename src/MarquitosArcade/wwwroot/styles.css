@@ -1563,14 +1563,16 @@ tbody tr:last-child td {
   box-shadow: none;
 }
 
-/* Experiência: texto a branco no tema escuro em vez de vermelho. */
+/* Experiência: texto a branco e fundo mais opaco no tema escuro. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .account-shell .btn-danger {
+    background: color-mix(in srgb, var(--danger) 55%, transparent);
     color: #fff;
   }
 }
 
 :root[data-theme="dark"] .account-shell .btn-danger {
+  background: color-mix(in srgb, var(--danger) 55%, transparent);
   color: #fff;
 }
 
