@@ -1012,7 +1012,7 @@ main {
   border-radius: 999px;
   /* Padding assimétrico: as maiúsculas assentam no topo da caixa de
      linha e o letter-spacing sobra à direita da última letra. */
-  padding: 0.34rem 0.6rem 0.28rem 0.75rem;
+  padding: 0.34rem 0.4rem 0.28rem 0.5rem;
   font-size: 0.68rem;
   line-height: 1;
   letter-spacing: 0.16em;
