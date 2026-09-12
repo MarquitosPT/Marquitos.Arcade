@@ -539,9 +539,9 @@ body::before {
   top: 100%;
   right: 0;
   margin-top: 0.5rem;
-  background: var(--glass-bg-strong);
+  background: var(--bg-2);
   border-radius: var(--radius);
-  box-shadow: var(--glass-shadow-lg);
+  box-shadow: 0 24px 48px -16px rgba(0, 0, 0, 0.55), 0 8px 20px -10px rgba(0, 0, 0, 0.4);
   min-width: 190px;
   overflow: hidden;
   z-index: 500;
@@ -563,7 +563,7 @@ body::before {
   width: 100%;
   text-align: left;
   padding: 0.7rem 1rem;
-  color: var(--text);
+  color: var(--bar-text-muted);
   text-decoration: none;
   font-family: inherit;
   font-weight: 600;
@@ -606,6 +606,7 @@ body::before {
   color: #fff;
   background: var(--btn-bg);
   box-shadow:
+    var(--glass-shadow-sm),
     0 12px 26px -14px var(--accent-glow),
     inset 0 1px 0 rgba(255, 255, 255, 0.28);
   transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
@@ -617,6 +618,7 @@ body::before {
   transform: translateY(-2px);
   color: #fff;
   box-shadow:
+    var(--glass-shadow-sm),
     0 18px 34px -14px var(--accent-glow),
     inset 0 1px 0 rgba(255, 255, 255, 0.32);
 }
