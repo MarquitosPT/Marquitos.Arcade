@@ -25,10 +25,10 @@
   /* fundo e auroras */
   --bg: #eceffa;
   --bg-2: #f7f9ff;
-  --aurora-1: rgba(82, 116, 250, 0.42);
-  --aurora-2: rgba(0, 186, 255, 0.36);
-  --aurora-3: rgba(150, 72, 240, 0.32);
-  --aurora-4: rgba(255, 176, 32, 0.28);
+  --aurora-1: rgba(82, 116, 250, 0.27);
+  --aurora-2: rgba(0, 186, 255, 0.23);
+  --aurora-3: rgba(150, 72, 240, 0.21);
+  --aurora-4: rgba(255, 176, 32, 0.18);
   --grid-line: rgba(20, 24, 43, 0.05);
 
   /* texto */
@@ -97,10 +97,10 @@
 
     --bg: #06080f;
     --bg-2: #0b0f1e;
-    --aurora-1: rgba(96, 122, 255, 0.55);
-    --aurora-2: rgba(0, 209, 255, 0.4);
-    --aurora-3: rgba(160, 70, 255, 0.4);
-    --aurora-4: rgba(0, 240, 190, 0.24);
+    --aurora-1: rgba(96, 122, 255, 0.36);
+    --aurora-2: rgba(0, 209, 255, 0.26);
+    --aurora-3: rgba(160, 70, 255, 0.26);
+    --aurora-4: rgba(0, 240, 190, 0.16);
     --grid-line: rgba(255, 255, 255, 0.04);
 
     --text: #e8ecff;
@@ -149,10 +149,10 @@
 
   --bg: #06080f;
   --bg-2: #0b0f1e;
-  --aurora-1: rgba(96, 122, 255, 0.55);
-  --aurora-2: rgba(0, 209, 255, 0.4);
-  --aurora-3: rgba(160, 70, 255, 0.4);
-  --aurora-4: rgba(0, 240, 190, 0.24);
+  --aurora-1: rgba(96, 122, 255, 0.36);
+  --aurora-2: rgba(0, 209, 255, 0.26);
+  --aurora-3: rgba(160, 70, 255, 0.26);
+  --aurora-4: rgba(0, 240, 190, 0.16);
   --grid-line: rgba(255, 255, 255, 0.04);
 
   --text: #e8ecff;
