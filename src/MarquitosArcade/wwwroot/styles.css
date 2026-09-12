@@ -818,7 +818,6 @@ body::before {
   gap: 0.1rem;
   padding: 0.55rem 0.95rem;
   border-radius: var(--radius);
-  box-shadow: inset 0 1px 0 var(--glass-highlight);
 }
 
 .hero-stats strong {
