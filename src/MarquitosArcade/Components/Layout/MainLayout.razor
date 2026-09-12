@@ -32,6 +32,28 @@
                     <a href="Account/Login" class="@AccountActiveClass">Entrar</a>
                 </NotAuthorized>
             </AuthorizeView>
+
+            @* Ciclo sistema -> claro -> escuro, tratado por wwwroot/theme.js.
+               O ícone visível é escolhido por CSS a partir do data-theme do
+               <html>, por isso este markup é estático e não precisa de
+               render mode interativo. *@
+            <button type="button" class="theme-toggle" data-theme-toggle
+                    title="Tema: sistema / claro / escuro" aria-label="Mudar o tema do site">
+                <svg class="theme-icon theme-icon-auto" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="8" />
+                    <path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor" stroke="none" />
+                </svg>
+                <svg class="theme-icon theme-icon-light" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="4.2" />
+                    <path d="M12 2.5v2.2M12 19.3v2.2M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6" />
+                </svg>
+                <svg class="theme-icon theme-icon-dark" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M20 14.2A8.4 8.4 0 0 1 9.8 4a8.4 8.4 0 1 0 10.2 10.2z" />
+                </svg>
+            </button>
         </div>
     </nav>
 
@@ -40,7 +62,7 @@
     </div>
 
     <footer class="site-footer">
-        <p>Game Arcade - by MarquitosPT</p>
+        <p>Game Arcade — by MarquitosPT</p>
     </footer>
 </div>
 

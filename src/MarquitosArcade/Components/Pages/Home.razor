@@ -21,6 +21,11 @@
                 <a class="hero-cta" href="#catalogo">Ver jogos ↓</a>
                 <a class="hero-cta secondary" href="/pontuacoes">🏆 Ver pontuações</a>
             </div>
+            <ul class="hero-stats">
+                <li><strong>@Catalog.Count(g => g.IsPlayable)</strong><span>a jogar já</span></li>
+                <li><strong>@Catalog.Length</strong><span>no catálogo</span></li>
+                <li><strong>24/7</strong><span>sempre aberta</span></li>
+            </ul>
         </div>
     </div>
 </header>

@@ -6,7 +6,8 @@ Blazor Web App (.NET 10, render mode Interactive Server) com ASP.NET Core Identi
 
 ## Estrutura
 
-- `src/MarquitosArcade/Components/Pages/Home.razor`, `wwwroot/styles.css`: portal principal com branding e catálogo de jogos. O catálogo é gerado a partir do array `Catalog` no `@code` da página — cada jogo é um cartão com a sua capa, o título em overlay e a cor/lettering próprios (classes `.theme-*`). `styles.css` é a folha de estilos global do site — cobre o portal, a página de pontuações e as páginas de conta (`/Account/...`); os jogos têm os seus próprios estilos, autocontidos.
+- `src/MarquitosArcade/Components/Pages/Home.razor`, `wwwroot/styles.css`: portal principal com branding e catálogo de jogos. O catálogo é gerado a partir do array `Catalog` no `@code` da página — cada jogo é um cartão com a sua capa, o título em overlay e a cor/lettering próprios (classes `.theme-*`). `styles.css` é a folha de estilos global do site — cobre o portal, a página de pontuações e as páginas de conta (`/Account/...`); os jogos têm os seus próprios estilos, autocontidos. Ver [Tema](#tema-glass-claro-e-escuro).
+- `src/MarquitosArcade/wwwroot/theme.js`: escolha do tema claro/escuro (ver [Tema](#tema-glass-claro-e-escuro)).
 - `src/MarquitosArcade/wwwroot/covers/`: capas 16:9 dos jogos (WebP) usadas no catálogo — são screenshots reais de cada jogo, gerados por `tools/covers/` (ver [Capas dos jogos](#capas-dos-jogos)).
 - `src/MarquitosArcade/wwwroot/pontuacoes.html`, `pontuacoes.js`: página dedicada às pontuações, com um painel por jogo carregado dinamicamente a partir da API.
 - `src/MarquitosArcade/wwwroot/games/tasca-do-ze/`: mini-jogo "Tasca do Zé" (gestão de pedidos), com leaderboard persistido via `/api/scores/tasca-do-ze`.
@@ -14,6 +15,22 @@ Blazor Web App (.NET 10, render mode Interactive Server) com ASP.NET Core Identi
 - `src/MarquitosArcade/Scores/ScoresEndpoints.cs`: endpoint genérico `GET/POST /api/scores/:gameId`, persistido na tabela `Scores` (EF Core + SQLite). Se o pedido vier de um utilizador autenticado, o nome do leaderboard vem da conta (evita spoofing de nomes); caso contrário aceita o nome livre submetido pelo jogo.
 - `src/MarquitosArcade/Data/`: `ApplicationDbContext`, `ApplicationUser` e as migrations do EF Core.
 - `src/MarquitosArcade/Components/Account/`: páginas de login/registo/gestão de conta scaffolded pelo template Identity do ASP.NET Core (login em `/Account/Login`, registo em `/Account/Register`, gestão em `/Account/Manage`). Sem confirmação por email — não há servidor de email configurado, por isso ficaria a bloquear amigos convidados.
+
+## Tema (glass, claro e escuro)
+
+O site usa um tema "glass": superfícies de vidro fosco (`backdrop-filter`) sobre um fundo animado de auroras de néon, em duas variantes — clara e escura.
+
+O estado do tema vive no atributo `data-theme` do `<html>`:
+
+| `data-theme`     | significado                                    |
+| ---------------- | ---------------------------------------------- |
+| *(sem atributo)* | segue o sistema (`prefers-color-scheme`)       |
+| `light`          | claro, por escolha explícita do utilizador     |
+| `dark`           | escuro, por escolha explícita do utilizador    |
+
+O botão na barra de topo (`MainLayout.razor`) cicla entre os três estados. A lógica está em `wwwroot/theme.js`, carregado no `<head>` antes do primeiro paint para não haver "flash" do tema errado, e guarda a escolha em `localStorage`. O ícone visível do botão é escolhido por CSS a partir do `data-theme` — nada de JS a repintar DOM, por isso sobrevive à *enhanced navigation* do Blazor (que troca o `<body>` sem recarregar a página) sem o site precisar de render mode interativo.
+
+Em `styles.css` as cores são todas tokens CSS (`--bg`, `--glass-bg`, `--accent`, ...) definidos três vezes: no `:root` (claro, a base), no `@media (prefers-color-scheme: dark)` restringido a `:root:not([data-theme="light"])`, e em `:root[data-theme="dark"]`. Nenhuma cor pode ter a sua única definição dentro do media query, senão a escolha explícita do utilizador deixa de ganhar. Para acrescentar uma cor nova, acrescenta-a nos três sítios.
 
 ## Correr localmente
 
@@ -39,7 +56,7 @@ Se algum jogo precisar de lógica de servidor muito diferente (ex. websockets pa
 1. Criar `src/MarquitosArcade/wwwroot/games/<slug>/index.html` (pode ser um ficheiro único autocontido, como os atuais, com os seus próprios estilos).
 2. Se precisar de leaderboard persistente, chamar `GET/POST /api/scores/<slug>`.
 3. Gerar a capa do jogo: acrescentar uma receita ao array `GAMES` em `tools/covers/capture-covers.mjs` e correr o script (ver [Capas dos jogos](#capas-dos-jogos)).
-4. Adicionar uma entrada ao array `Catalog` em `Components/Pages/Home.razor` (slug, título, tagline, descrição, emoji, tema e capa) e, se o tema for novo, uma classe `.theme-<jogo>` em `styles.css` com a cor (`--game-accent`) e o lettering do jogo.
+4. Adicionar uma entrada ao array `Catalog` em `Components/Pages/Home.razor` (slug, título, tagline, descrição, emoji, tema e capa) e, se o tema for novo, uma classe `.theme-<jogo>` em `styles.css` com a cor (`--game-accent`), o fundo da capa (`--cover-bg`) e o lettering do jogo.
 5. Adicionar o jogo ao array `Games` em `Components/Pages/Pontuacoes.razor` para aparecer na página de pontuações.
 
 ## Capas dos jogos

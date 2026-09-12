@@ -10,13 +10,15 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon3_16x16.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon3.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <meta name="theme-color" content="#123a5e" />
-    <meta name="msapplication-TileColor" content="#123a5e" />
+    <meta name="theme-color" content="#eceffa" />
+    <meta name="msapplication-TileColor" content="#6a5bf6" />
     <meta name="msapplication-config" content="/browserconfig.xml" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Marquitos Arcade" />
     <ResourcePreloader />
+    @* Aplica o tema guardado antes do primeiro paint (sem flash do tema errado). *@
+    <script src="@Assets["theme.js"]"></script>
     <link rel="stylesheet" href="@Assets["styles.css"]" />
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["MarquitosArcade.styles.css"]" />
