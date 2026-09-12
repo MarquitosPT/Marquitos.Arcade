@@ -102,7 +102,7 @@
         string Cover,
         string? Badge = null,
         bool IsPlayable = true,
-        string PlayLabel = "Jogar agora")
+        string PlayLabel = "Jogar")
     {
         public string PlayUrl => $"/games/{Slug}/";
     }
@@ -124,8 +124,7 @@
             "🏓",
             "theme-pong",
             "/covers/pong.webp",
-            Badge: "Novo",
-            PlayLabel: "Experimentar"),
+            Badge: "Novo"),
 
         new("pixel-racing",
             "Pixel Racing",
