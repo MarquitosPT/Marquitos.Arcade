@@ -17,13 +17,13 @@
         <p>
             <strong>Ao eliminar estes dados, a tua conta será removida permanentemente e não poderá ser recuperada.</strong>
         </p>
-        <form action="Account/Manage/DownloadPersonalData" method="post">
-            <AntiforgeryToken />
-            <button class="btn btn-primary" type="submit">Transferir</button>
-        </form>
-        <p>
+        <div class="personal-data-actions">
+            <form action="Account/Manage/DownloadPersonalData" method="post">
+                <AntiforgeryToken />
+                <button class="btn btn-primary" type="submit">Transferir</button>
+            </form>
             <a href="Account/Manage/DeletePersonalData" class="btn btn-danger">Eliminar</a>
-        </p>
+        </div>
     </div>
 </div>
 
