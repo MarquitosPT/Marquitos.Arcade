@@ -613,6 +613,16 @@ body::before {
   transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
 }
 
+.hero-cta-icon {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+}
+
+.hero-cta:has(.hero-cta-icon) {
+  padding-left: 1rem;
+}
+
 .hero-cta:hover,
 .tile-action:hover,
 .account-shell .btn:hover {
