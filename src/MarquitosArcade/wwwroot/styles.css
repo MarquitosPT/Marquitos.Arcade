@@ -748,6 +748,10 @@ td {
     font-size: 0.85rem;
 }
 
+.score-col {
+  text-align: right;
+}
+
 .empty-state {
   color: var(--muted);
   text-align: center;
