@@ -1741,6 +1741,22 @@ tbody tr:last-child td {
 }
 
 .account-shell .nav-pills .nav-link.active {
+  color: var(--accent-strong);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+/* No tema escuro o contraste do "vidro" já é suficiente por si só;
+   o destaque roxo (pensado para o tema claro) fica novamente subtil. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .account-shell .nav-pills .nav-link.active {
+    color: var(--text-strong);
+    background: var(--glass-bg-soft);
+    border-color: var(--glass-border);
+  }
+}
+
+:root[data-theme="dark"] .account-shell .nav-pills .nav-link.active {
   color: var(--text-strong);
   background: var(--glass-bg-soft);
   border-color: var(--glass-border);
