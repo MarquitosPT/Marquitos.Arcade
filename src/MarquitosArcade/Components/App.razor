@@ -30,6 +30,13 @@
     <Routes />
     <ReconnectModal />
     <script src="@Assets["_framework/blazor.web.js"]"></script>
+    @* A enhanced navigation do Blazor substitui o conteúdo por fetch e
+       pode apagar o `data-theme` posto no <html> por wwwroot/theme.js
+       (o servidor não tem noção da escolha do cliente). Reaplicamos o
+       tema guardado a seguir a cada uma dessas navegações. *@
+    <script>
+        Blazor.addEventListener('enhancedload', () => window.__arcadeTheme?.reapply());
+    </script>
     <script src="@Assets["Components/Account/Shared/PasskeySubmit.razor.js"]" type="module"></script>
     <script src="@Assets["topnav-dropdown.js"]"></script>
 </body>
