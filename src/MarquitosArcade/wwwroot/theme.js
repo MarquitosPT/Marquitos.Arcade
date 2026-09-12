@@ -2,7 +2,7 @@
 //
 // Este script corre no <head>, antes do primeiro paint, para o tema
 // escolhido ser aplicado sem "flash" do tema errado. O estado vive no
-// atributo `data-theme` do <html>:
+// atributo `data-theme` do <html>, persistido em localStorage:
 //
 //   (sem atributo)      -> segue o sistema (prefers-color-scheme)
 //   data-theme="light"  -> claro, por escolha do utilizador
@@ -10,8 +10,16 @@
 //
 // O ícone do botão é escolhido por CSS a partir desse atributo (ver
 // .theme-icon em styles.css), por isso o clique só tem de mexer no
-// <html> - nada aqui repinta DOM e tudo sobrevive à enhanced navigation
-// do Blazor, que troca o <body> sem recarregar a página.
+// <html> - nada aqui repinta DOM.
+//
+// A navegação entre páginas (e os posts de formulário, como sair da
+// conta) passam pela "enhanced navigation" do Blazor: o conteúdo é
+// substituído por fetch, sem recarregar a página, e o HTML novo vem
+// do servidor sem noção do tema escolhido no browser. Sem reação a
+// isso, o atributo `data-theme` acaba por ser removido nesse processo
+// e o tema "perde-se" a cada ação, apesar de continuar gravado em
+// localStorage. Por isso reaplicamos o tema guardado sempre que o
+// Blazor termina uma dessas navegações (evento `enhancedload`).
 (() => {
   const STORAGE_KEY = "arcade-theme";
   const CYCLE = ["system", "light", "dark"];
@@ -66,4 +74,9 @@
   });
 
   darkQuery.addEventListener("change", syncBarColor);
+
+  // Reaplica o tema guardado a seguir a cada enhanced navigation (troca
+  // de página ou submissão de formulário), que substitui o documento por
+  // markup vindo do servidor e apaga o `data-theme` posto pelo cliente.
+  document.addEventListener("enhancedload", () => apply(read()));
 })();
