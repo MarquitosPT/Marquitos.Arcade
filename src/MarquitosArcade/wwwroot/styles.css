@@ -1667,7 +1667,7 @@ tbody tr:last-child td {
 .account-shell .nav-pills .nav-link {
   display: block;
   padding: 0.6rem 0.9rem;
-  border-radius: var(--radius-sm);
+  border-radius: 999px;
   border: 1px solid transparent;
   color: var(--muted);
   text-decoration: none;
@@ -1683,10 +1683,9 @@ tbody tr:last-child td {
 }
 
 .account-shell .nav-pills .nav-link.active {
-  color: #fff;
-  background: linear-gradient(135deg, var(--btn-from), var(--btn-to));
-  border-color: transparent;
-  box-shadow: 0 10px 22px -14px var(--accent-glow);
+  color: var(--text-strong);
+  background: var(--glass-bg-soft);
+  border-color: var(--glass-border);
 }
 
 /* tabelas (logins externos, passkeys, etc.) */
