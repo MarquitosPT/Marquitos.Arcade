@@ -1558,7 +1558,7 @@ tbody tr:last-child td {
 
 .account-shell .btn-danger {
   background: var(--glass-bg);
-  border-color: var(--glass-border);
+  border-color: color-mix(in srgb, var(--danger) 50%, transparent);
   color: var(--danger);
   box-shadow: none;
 }
