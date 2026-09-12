@@ -28,7 +28,6 @@
                             <th>#</th>
                             <th>Jogador</th>
                             <th>Pontuação</th>
-                            <th>Data</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -37,7 +36,7 @@
                         }
                         @if (scores.Count == 0)
                         {
-                            <tr><td colspan="4" class="empty-state">Ainda não há pontuações registadas. Sê o primeiro! 🎮</td></tr>
+                            <tr><td colspan="3" class="empty-state">Ainda não há pontuações registadas. Sê o primeiro! 🎮</td></tr>
                         }
                         else
                         {
@@ -49,7 +48,6 @@
                                     <td>@medal</td>
                                     <td>@entry.Name</td>
                                     <td>@entry.Score</td>
-                                    <td>@FormatDate(entry.Ts)</td>
                                 </tr>
                             }
                         }
@@ -79,14 +77,5 @@
         {
             Scores[game.Id] = await ScoresEndpoints.GetTopScoresAsync(Db, game.Id);
         }
-    }
-
-    private static string FormatDate(long ts)
-    {
-        if (ts == 0)
-            return "—";
-
-        var date = DateTimeOffset.FromUnixTimeMilliseconds(ts).UtcDateTime;
-        return date.ToString("dd/MM/yyyy HH:mm");
     }
 }
