@@ -270,7 +270,7 @@ body::before {
     radial-gradient(42% 42% at 86% 10%, var(--aurora-2), transparent 72%),
     radial-gradient(46% 46% at 74% 84%, var(--aurora-3), transparent 72%),
     radial-gradient(36% 36% at 18% 88%, var(--aurora-4), transparent 72%);
-  filter: blur(34px) saturate(125%);
+  filter: blur(34px) saturate(110%);
   animation: aurora-drift 32s ease-in-out infinite alternate;
 }
 
