@@ -43,14 +43,17 @@
 
                         @if (game.IsPlayable)
                         {
-                            <span class="tag @game.TagKind">@game.TagText</span>
+                            @if (game.Badge is not null)
+                            {
+                                <span class="cover-badge">@game.Badge</span>
+                            }
                             <a class="cover-link" href="@game.PlayUrl" aria-label="Jogar @game.Title">
                                 <span class="cover-play" aria-hidden="true">▶</span>
                             </a>
                         }
                         else
                         {
-                            <span class="cover-stamp">@game.TagText</span>
+                            <span class="cover-stamp">Em breve</span>
                         }
 
                         <div class="game-marquee">
@@ -87,6 +90,8 @@
     /// <param name="Slug">Pasta do jogo em <c>wwwroot/games/</c> e id usado nas pontuações.</param>
     /// <param name="Theme">Classe CSS com a cor e o lettering do jogo.</param>
     /// <param name="Cover">Capa 16:9 gerada por <c>tools/covers/</c>.</param>
+    /// <param name="Badge">Etiqueta opcional no canto da capa (ex.: "Novo").</param>
+    /// <param name="IsPlayable">Jogos por lançar não têm link e levam o carimbo "Em breve".</param>
     private sealed record ArcadeGame(
         string Slug,
         string Title,
@@ -95,8 +100,7 @@
         string Emoji,
         string Theme,
         string Cover,
-        string TagText,
-        string TagKind,
+        string? Badge = null,
         bool IsPlayable = true,
         string PlayLabel = "Jogar agora")
     {
@@ -111,9 +115,7 @@
             "Gere os pedidos da tasca, prepara os pratos certos e serve os clientes antes que percam a paciência.",
             "🍽️",
             "theme-tasca",
-            "/covers/tasca-do-ze.webp",
-            "Já disponível",
-            "live"),
+            "/covers/tasca-do-ze.webp"),
 
         new("pong",
             "Pong Retro",
@@ -122,8 +124,7 @@
             "🏓",
             "theme-pong",
             "/covers/pong.webp",
-            "Novo",
-            "beta",
+            Badge: "Novo",
             PlayLabel: "Experimentar"),
 
         new("pixel-racing",
@@ -133,8 +134,7 @@
             "🏎️",
             "theme-racing",
             "/covers/pixel-racing.webp",
-            "Novo",
-            "beta"),
+            Badge: "Novo"),
 
         new("maze-run",
             "Maze Run",
@@ -143,8 +143,6 @@
             "🧩",
             "theme-maze",
             "/covers/maze-run.svg",
-            "Em breve",
-            "soon",
             IsPlayable: false)
     ];
 }
