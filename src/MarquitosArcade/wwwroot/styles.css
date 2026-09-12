@@ -541,7 +541,7 @@ body::before {
   margin-top: 0.5rem;
   background: var(--bg-2);
   border-radius: var(--radius);
-  box-shadow: var(--glass-shadow-lg);
+  box-shadow: 0 24px 48px -16px rgba(0, 0, 0, 0.55), 0 8px 20px -10px rgba(0, 0, 0, 0.4);
   min-width: 190px;
   overflow: hidden;
   z-index: 500;
