@@ -1,20 +1,38 @@
+/* Aviso de erro do circuito Blazor, em vidro como o resto do site. */
 #blazor-error-ui {
-    color-scheme: light only;
-    background: lightyellow;
-    bottom: 0;
-    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
-    box-sizing: border-box;
     display: none;
-    left: 0;
-    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
     position: fixed;
-    width: 100%;
+    left: 50%;
+    bottom: 1rem;
+    transform: translateX(-50%);
+    width: min(560px, calc(100% - 2rem));
+    box-sizing: border-box;
+    padding: 0.85rem 2.4rem 0.85rem 1.1rem;
+    border-radius: 16px;
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.5));
+    background: var(--glass-bg-strong, rgba(255, 255, 255, 0.85));
+    backdrop-filter: blur(18px) saturate(180%);
+    -webkit-backdrop-filter: blur(18px) saturate(180%);
+    box-shadow: 0 24px 50px -24px rgba(0, 0, 0, 0.6);
+    color: var(--text, #141828);
+    font-size: 0.9rem;
     z-index: 1000;
 }
+
+    #blazor-error-ui .reload {
+        color: var(--accent, #6a5bf6);
+        font-weight: 700;
+        margin-left: 0.4rem;
+    }
 
     #blazor-error-ui .dismiss {
         cursor: pointer;
         position: absolute;
-        right: 0.75rem;
-        top: 0.5rem;
+        right: 0.85rem;
+        top: 0.75rem;
+        opacity: 0.6;
+    }
+
+    #blazor-error-ui .dismiss:hover {
+        opacity: 1;
     }

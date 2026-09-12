@@ -3,26 +3,28 @@
 
 <PageTitle>Erro</PageTitle>
 
-<h1 class="text-danger">Erro.</h1>
-<h2 class="text-danger">Ocorreu um erro ao processar o teu pedido.</h2>
+<main class="page-shell">
+    <h1 class="text-danger">Erro.</h1>
+    <h2 class="text-danger">Ocorreu um erro ao processar o teu pedido.</h2>
 
-@if (ShowRequestId)
-{
+    @if (ShowRequestId)
+    {
+        <p>
+            <strong>ID do pedido:</strong> <code>@RequestId</code>
+        </p>
+    }
+
+    <h3>Modo de desenvolvimento</h3>
     <p>
-        <strong>ID do pedido:</strong> <code>@RequestId</code>
+        Ao mudar para o ambiente de <strong>Development</strong>, será apresentada informação mais detalhada sobre o erro ocorrido.
     </p>
-}
-
-<h3>Modo de desenvolvimento</h3>
-<p>
-    Ao mudar para o ambiente de <strong>Development</strong>, será apresentada informação mais detalhada sobre o erro ocorrido.
-</p>
-<p>
-    <strong>O ambiente de Development não deve estar ativo em aplicações implementadas em produção.</strong>
-    Pode resultar na exposição de informação sensível de exceções aos utilizadores finais.
-    Para depuração local, ativa o ambiente de <strong>Development</strong> definindo a variável de ambiente <strong>ASPNETCORE_ENVIRONMENT</strong> como <strong>Development</strong>
-    e reinicia a aplicação.
-</p>
+    <p>
+        <strong>O ambiente de Development não deve estar ativo em aplicações implementadas em produção.</strong>
+        Pode resultar na exposição de informação sensível de exceções aos utilizadores finais.
+        Para depuração local, ativa o ambiente de <strong>Development</strong> definindo a variável de ambiente <strong>ASPNETCORE_ENVIRONMENT</strong> como <strong>Development</strong>
+        e reinicia a aplicação.
+    </p>
+</main>
 
 @code{
     [CascadingParameter]

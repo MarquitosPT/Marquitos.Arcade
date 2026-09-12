@@ -18,7 +18,7 @@
     {
         <section class="game-panel @(game.Id == HighlightId ? "highlight" : "")" id="@game.Id">
             <div class="game-panel-head">
-                <h2><span aria-hidden="true">@game.Emoji</span> @game.Name</h2>
+                <h2><span class="panel-emoji" aria-hidden="true">@game.Emoji</span> @game.Name</h2>
                 <a class="refresh-btn" href="/pontuacoes?jogo=@game.Id#@game.Id">↻ Atualizar</a>
             </div>
             <div class="table-wrap">
@@ -44,8 +44,8 @@
                             {
                                 var entry = scores[i];
                                 var medal = i switch { 0 => "🥇", 1 => "🥈", 2 => "🥉", _ => (i + 1).ToString() };
-                                <tr>
-                                    <td>@medal</td>
+                                <tr class="@(i < 3 ? $"rank-{i + 1}" : null)">
+                                    <td class="rank-col">@medal</td>
                                     <td>@entry.Name</td>
                                     <td class="score-col">@entry.Score</td>
                                 </tr>
