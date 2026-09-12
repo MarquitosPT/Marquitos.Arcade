@@ -62,7 +62,6 @@
   --gold: #cf8a00;
   --ok: #12916a;
   --danger: #d3352b;
-  --danger-btn-tint: 20%;
   --ring: rgba(106, 91, 246, 0.32);
   --accent-glow: rgba(106, 91, 246, 0.35);
   --btn-from: #6a5bf6;
@@ -128,7 +127,6 @@
     --gold: #ffc14d;
     --ok: #3fdca0;
     --danger: #ff5252;
-    --danger-btn-tint: 4%;
     --ring: rgba(139, 124, 255, 0.4);
     --accent-glow: rgba(139, 124, 255, 0.45);
     --btn-from: #6d5efc;
@@ -180,7 +178,6 @@
   --gold: #ffc14d;
   --ok: #3fdca0;
   --danger: #ff5252;
-  --danger-btn-tint: 4%;
   --ring: rgba(139, 124, 255, 0.4);
   --accent-glow: rgba(139, 124, 255, 0.45);
   --btn-from: #6d5efc;
@@ -1560,10 +1557,21 @@ tbody tr:last-child td {
 }
 
 .account-shell .btn-danger {
-  background: color-mix(in srgb, var(--danger) var(--danger-btn-tint), var(--glass-bg));
-  border-color: color-mix(in srgb, var(--danger) 38%, transparent);
+  background: color-mix(in srgb, var(--danger) 20%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 50%, transparent);
   color: var(--danger);
   box-shadow: none;
+}
+
+/* Experiência: texto a branco no tema escuro em vez de vermelho. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .account-shell .btn-danger {
+    color: #fff;
+  }
+}
+
+:root[data-theme="dark"] .account-shell .btn-danger {
+  color: #fff;
 }
 
 .account-shell .btn-danger:hover {
