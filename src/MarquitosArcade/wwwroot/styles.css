@@ -778,7 +778,7 @@ body::before {
   font-weight: 800;
   margin-top: 0.8rem;
   max-width: 14ch;
-  line-height: 1.03;
+  line-height: 1.2;
   letter-spacing: -0.035em;
   background: linear-gradient(120deg, var(--text-strong) 20%, var(--accent) 60%, var(--accent-2));
   -webkit-background-clip: text;
