@@ -11,7 +11,7 @@ public record ScoreDto(string Name, int Score, long Ts);
 
 public static class ScoresEndpoints
 {
-    private const int TopCount = 20;
+    private const int TopCount = 10;
     private static readonly Regex GameIdPattern = new("[^a-z0-9-]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     public static void MapScoresEndpoints(this IEndpointRouteBuilder app)
@@ -67,14 +67,32 @@ public static class ScoresEndpoints
         });
     }
 
-    public static Task<List<ScoreDto>> GetTopScoresAsync(ApplicationDbContext db, string gameId) =>
-        db.Scores
+    public static async Task<List<ScoreDto>> GetTopScoresAsync(ApplicationDbContext db, string gameId)
+    {
+        var allScores = await db.Scores
             .Where(s => s.GameId == gameId)
             .OrderByDescending(s => s.Score)
             .ThenBy(s => s.CreatedAtUtc)
-            .Take(TopCount)
-            .Select(s => new ScoreDto(s.PlayerName, s.Score, ToUnixMillis(s.CreatedAtUtc)))
             .ToListAsync();
+
+        // Um utilizador registado só pode aparecer com a sua melhor pontuação;
+        // pontuações anónimas (sem UserId) contam sempre individualmente.
+        var seenUserIds = new HashSet<string>();
+        var topScores = new List<ScoreEntry>();
+        foreach (var entry in allScores)
+        {
+            if (entry.UserId is not null && !seenUserIds.Add(entry.UserId))
+                continue;
+
+            topScores.Add(entry);
+            if (topScores.Count == TopCount)
+                break;
+        }
+
+        return topScores
+            .Select(s => new ScoreDto(s.PlayerName, s.Score, ToUnixMillis(s.CreatedAtUtc)))
+            .ToList();
+    }
 
     private static string? SanitizeGameId(string gameId)
     {
