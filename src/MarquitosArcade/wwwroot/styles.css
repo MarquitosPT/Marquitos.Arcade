@@ -426,7 +426,7 @@ main {
   pointer-events: none;
   border: 2px solid rgba(255, 255, 255, 0.75);
   border-radius: 10px;
-  background: rgba(6, 12, 22, 0.25);
+  background: rgba(6, 12, 22, 0.42);
   color: #fff;
   font-family: "Baloo 2", "Segoe UI", sans-serif;
   font-weight: 800;
@@ -437,9 +437,13 @@ main {
 .cover-badge {
   top: 0.7rem;
   left: 0.7rem;
-  padding: 0.2rem 0.4rem 0.2rem 0.55rem;
+  display: flex;
+  align-items: center;
+  /* Padding assimétrico: as maiúsculas do Baloo 2 assentam no topo da caixa
+     de linha e o letter-spacing sobra à direita da última letra. */
+  padding: 0.36rem 0.4rem 0.24rem 0.55rem;
   font-size: 0.7rem;
-  line-height: 1.2;
+  line-height: 1;
   letter-spacing: 0.16em;
 }
 
@@ -447,9 +451,10 @@ main {
   top: 45%;
   left: 50%;
   transform: translate(-50%, -50%) rotate(-7deg);
-  padding: 0.35rem 0.75rem 0.35rem 0.9rem;
+  padding: 0.4rem 0.75rem 0.3rem 0.9rem;
   border-width: 3px;
   font-size: 0.95rem;
+  line-height: 1;
   letter-spacing: 0.22em;
 }
 
