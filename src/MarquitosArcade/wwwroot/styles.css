@@ -248,10 +248,13 @@ a {
    comportamento nativo dos links (abrir em novo separador, etc.). */
 a,
 button,
-summary {
+summary,
+img {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
+  -webkit-user-drag: none;
+  user-drag: none;
 }
 
 :focus-visible {
