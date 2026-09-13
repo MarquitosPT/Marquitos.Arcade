@@ -9,7 +9,7 @@ Blazor Web App (.NET 10, render mode Interactive Server) com ASP.NET Core Identi
 - `src/MarquitosArcade/Components/Pages/Home.razor`, `wwwroot/styles.css`: portal principal com branding e catálogo de jogos. O catálogo é gerado a partir do array `Catalog` no `@code` da página — cada jogo é um cartão com a sua capa, o título em overlay e a cor/lettering próprios (classes `.theme-*`). `styles.css` é a folha de estilos global do site — cobre o portal, a página de pontuações e as páginas de conta (`/Account/...`); cada jogo tem as suas próprias folhas de estilo, em `games/<slug>/css/`. Ver [Tema](#tema-glass-claro-e-escuro).
 - `src/MarquitosArcade/wwwroot/theme.js`: escolha do tema claro/escuro (ver [Tema](#tema-glass-claro-e-escuro)).
 - `src/MarquitosArcade/wwwroot/covers/`: capas 16:9 dos jogos (WebP) usadas no catálogo — são screenshots reais de cada jogo, gerados por `tools/covers/` (ver [Capas dos jogos](#capas-dos-jogos)).
-- `src/MarquitosArcade/wwwroot/pontuacoes.html`, `pontuacoes.js`: página dedicada às pontuações, com um painel por jogo carregado dinamicamente a partir da API.
+- `src/MarquitosArcade/Components/Pages/Pontuacoes.razor`: página dedicada às pontuações em `/pontuacoes`, com um painel por jogo (array `Games` no `@code`). Lê os tops diretamente da base de dados no servidor, via `ScoresEndpoints.GetTopScoresAsync` — o mesmo método que serve o endpoint `GET /api/scores/:gameId`, mas sem passar por HTTP.
 - `src/MarquitosArcade/wwwroot/games/<slug>/`: um jogo por pasta, cada um com o seu `index.html` (só markup), `css/`, `js/` (módulos ES) e `assets/`. Ver [Estrutura de um jogo](#estrutura-de-um-jogo) e, para o porquê desta organização em vez de um projeto .NET por jogo, [docs/estrutura-dos-jogos.md](docs/estrutura-dos-jogos.md).
   - `tasca-do-ze/`: mini-jogo "Tasca do Zé" (gestão de pedidos), com leaderboard persistido via `/api/scores/tasca-do-ze`.
   - `pong/`: Pong Retro, com modo 1 jogador (vs. CPU, pontuação submetida via `/api/scores/pong`) e 2 jogadores.
@@ -160,7 +160,17 @@ Jogos que ainda não existem não têm screenshot: o `Maze Run` usa um labirinto
 
 ## Pontuações
 
-Não há dashboard na página principal — as pontuações vivem todas em `pontuacoes.html`, que gera um painel por jogo (a partir do array `GAMES` em `pontuacoes.js`) e busca o leaderboard de cada um via `GET /api/scores/:gameId`.
+Não há dashboard na página principal — as pontuações vivem todas em
+`Components/Pages/Pontuacoes.razor`, que gera um painel por jogo a partir do
+array `Games` no `@code` da página.
+
+A página é renderizada no servidor e lê os tops diretamente da base de dados com
+`ScoresEndpoints.GetTopScoresAsync`. É o mesmo método por trás de
+`GET /api/scores/:gameId`, mas chamado sem passar por HTTP: os jogos é que usam
+o endpoint, a partir do browser.
+
+O parâmetro `?jogo=<slug>` destaca o painel desse jogo — é o que o botão 🏆 da
+barra de topo dos jogos usa, junto com a âncora `#<slug>`.
 
 ## Deploy (Azure App Service)
 
