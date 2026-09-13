@@ -1,0 +1,32 @@
+/* Reset, página e canvas em ecrã inteiro. */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    background: #050308;
+    overflow: hidden;
+    font-family: 'Courier New', monospace;
+    touch-action: none;
+}
+
+#wrap {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+canvas {
+    background: #050308;
+    display: block;
+}

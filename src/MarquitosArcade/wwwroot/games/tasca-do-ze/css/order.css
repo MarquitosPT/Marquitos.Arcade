@@ -1,0 +1,134 @@
+/* Cartão do pedido ativo e campainha de servir. */
+
+main {
+    flex: 1;
+    min-height: 0;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow: hidden;
+}
+
+.order-card {
+    flex: 0 0 auto;
+    background: var(--massa-card);
+    border-radius: 14px;
+    padding: 10px 12px;
+    box-shadow: 0 3px 10px rgba(30,40,20,0.08);
+    border: 1px solid #ecdfc4;
+}
+
+.order-card.sweet {
+        border-color: #f0d3e2;
+    }
+
+.order-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.order-head .emoji {
+        font-size: 1.5rem;
+    }
+
+.order-head h2 {
+        font-family: 'Fraunces',serif;
+        font-size: 1rem;
+        margin: 0;
+        font-weight: 700;
+        line-height: 1.15;
+    }
+
+.order-head .for {
+        font-size: 0.7rem;
+        color: #8a8071;
+        font-weight: 700;
+    }
+
+.req-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 8px;
+}
+
+.req-chip {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 7px 2px 5px;
+    border-radius: 14px;
+    background: #f1e8d3;
+    font-size: 0.66rem;
+    font-weight: 700;
+    color: #7a6c4f;
+    border: 1px solid #e3d5b3;
+}
+
+.req-chip.done {
+        background: #e5f1e1;
+        color: var(--ok);
+        border-color: #c9e4c2;
+    }
+
+.req-chip .ico {
+        font-size: 0.82rem;
+    }
+
+.req-chip .tick {
+        font-size: 0.68rem;
+    }
+
+.bell-btn {
+    margin-top: 8px;
+    width: 100%;
+    border: none;
+    border-radius: 11px;
+    padding: 8px;
+    font-family: 'Nunito',sans-serif;
+    font-weight: 800;
+    font-size: 0.82rem;
+    letter-spacing: 0.3px;
+    color: #fff;
+    background: #c9c2ac;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: transform .1s, background .2s;
+}
+
+.bell-btn.ready {
+        background: var(--tijolo);
+        box-shadow: 0 4px 0 var(--tijolo-dark);
+    }
+
+.bell-btn.ready.sweet {
+            background: var(--rosa);
+            box-shadow: 0 4px 0 var(--rosa-dark);
+        }
+
+.bell-btn.ready:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 var(--tijolo-dark);
+        }
+
+.bell-btn.shake {
+        animation: shake .3s;
+    }
+
+@keyframes shake {
+    0%,100% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-6px);
+    }
+
+    75% {
+        transform: translateX(6px);
+    }
+}

@@ -1,0 +1,55 @@
+/* Ecrãs sobrepostos: menu, pausa e resultados. */
+
+#startScreen, #pauseScreen, #resultScreen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(ellipse at 50% 20%, rgba(60,20,80,0.55), rgba(4,3,8,0.96) 70%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    z-index: 10;
+    text-align: center;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+#pauseScreen, #resultScreen { display: none; }
+
+/* O ecrã de pausa tem menos espaço do que o menu, por isso o título é menor. */
+#pauseScreen .title {
+    font-size: 8vw;
+}
+
+.title {
+    font-size: 11vw;
+    letter-spacing: 0.12em;
+    font-weight: bold;
+    color: #ffcf3f;
+    text-shadow: 0 0 6px #ff7a1a, 0 0 22px #ff2fa0, 0 4px 0 #7a1a45;
+    margin-bottom: 2px;
+    animation: pulseGlow 1.8s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+    0%, 100% { text-shadow: 0 0 6px #ff7a1a, 0 0 22px #ff2fa0, 0 4px 0 #7a1a45; }
+    50% { text-shadow: 0 0 14px #ffe27a, 0 0 34px #00e5ff, 0 4px 0 #7a1a45; }
+}
+
+.sub {
+    font-size: 3.2vw;
+    opacity: 0.75;
+    margin-bottom: 20px;
+    letter-spacing: 0.25em;
+    color: #00e5ff;
+}
+
+#hint {
+    margin-top: 16px;
+    font-size: 2.6vw;
+    opacity: 0.55;
+}

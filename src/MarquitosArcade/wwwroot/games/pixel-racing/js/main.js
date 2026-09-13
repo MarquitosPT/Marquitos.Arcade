@@ -1,0 +1,144 @@
+// Pixel Racing — ponto de entrada.
+//
+// Monta o viewport, liga os controlos e corre o ciclo principal. O ciclo arranca
+// logo no carregamento da página, mesmo em menu: é ele que desenha a pista por
+// trás do ecrã inicial.
+
+import { createButtonGroup, createLoop, createViewport } from '/lib/arcade/index.js';
+import { bindPlayerNameInput } from '/lib/arcade/scores.js';
+
+import { MODE_QUICK, MODE_TOURNAMENT, NAME_STORAGE_KEY, TOURNAMENT_TRACKS } from './config.js';
+import { sfx } from './audio.js';
+import { attachControls, setPauseHandler } from './input.js';
+import { resetParticles, updateConfetti, updateParticles } from './particles.js';
+import { returnToMenuAbort, startRace, togglePause, updateCamera, updateRace } from './race.js';
+import { drawCountdown, drawFinishOverlay, initRenderer, render } from './render.js';
+import { setReturnToMenuHandler, showResultScreen } from './results.js';
+import { setupParticipants } from './cars.js';
+import { race, session } from './state.js';
+import { els, overlays, topBar, topBarEl } from './ui.js';
+
+const playerName = bindPlayerNameInput(els.playerNameInput, NAME_STORAGE_KEY, { fallback: 'Tu' });
+
+// ---------- Viewport ----------
+
+const viewport = createViewport(els.game, {
+    topBar: topBarEl,
+    topBarGap: 6,
+    onResize(v) {
+        race.view = v;
+    }
+});
+initRenderer(viewport);
+
+// ---------- Ciclo principal ----------
+
+const loop = createLoop(
+    (dt) => {
+        race.globalClock += dt;
+
+        switch (race.phase) {
+            case 'countdown':
+                stepCountdown(dt);
+                break;
+            case 'racing':
+                // Em pausa a corrida não avança, mas a câmara e as partículas sim:
+                // o fundo do ecrã de pausa fica vivo em vez de congelado.
+                if (!race.paused) updateRace(dt);
+                updateCamera(dt);
+                updateParticles(dt);
+                render();
+                break;
+            case 'finishOverlay':
+                stepFinishOverlay(dt);
+                break;
+            case 'result':
+                updateConfetti(dt);
+                render();
+                break;
+            default:
+                render();
+        }
+    },
+    // dt em segundos. O teto de 50ms evita que um separador em segundo plano
+    // devolva um salto de vários segundos e atire os carros para fora da pista.
+    { scale: 1000, maxDelta: 0.05 }
+);
+
+function stepCountdown(dt) {
+    race.countdownTimer += dt;
+    if (race.countdownTimer >= 1) {
+        race.countdownTimer = 0;
+        if (race.countdownValue > 0) {
+            sfx.tick();
+            race.countdownValue--;
+        } else {
+            sfx.go();
+            race.phase = 'racing';
+            loop.resetDelta(); // o primeiro frame de corrida começa do zero
+        }
+    }
+    drawCountdown();
+}
+
+/**
+ * Depois de o jogador cortar a meta, os adversários continuam a correr durante
+ * 1,3s antes dos resultados — vê-se quem chega a seguir em vez de o ecrã congelar.
+ */
+function stepFinishOverlay(dt) {
+    updateCamera(dt);
+    updateParticles(dt);
+    race.finishTimer -= dt;
+    drawFinishOverlay();
+    if (race.finishTimer <= 0) showResultScreen();
+}
+
+// ---------- Menu ----------
+
+createButtonGroup(els.modeRow, '.modeBtn', (mode) => {
+    session.mode = mode;
+    // A escolha de pista só faz sentido na corrida rápida: o torneio corre as três.
+    els.trackRow.style.display = mode === MODE_QUICK ? 'flex' : 'none';
+});
+
+createButtonGroup(els.trackRow, '.trackBtn', (track) => {
+    session.trackIdx = parseInt(track, 10);
+});
+
+createButtonGroup(els.diffRow, '.diffBtn', (level) => {
+    session.difficulty = parseFloat(level);
+});
+
+els.startBtn.addEventListener('click', () => {
+    setupParticipants(playerName.remember());
+    session.raceIndex = 0;
+    session.tracks = session.mode === MODE_TOURNAMENT ? [...TOURNAMENT_TRACKS] : [session.trackIdx];
+    startRace(session.tracks[0]);
+});
+
+setReturnToMenuHandler((action) => {
+    if (action === 'again') {
+        setupParticipants(playerName.remember());
+        session.raceIndex = 0;
+        startRace(session.tracks[0]);
+        return;
+    }
+    race.phase = 'menu';
+    resetParticles();
+    overlays.show('start');
+    topBar.setInGame(false);
+});
+
+// ---------- Barra de topo e pausa ----------
+
+setPauseHandler(togglePause);
+attachControls(els.game);
+
+els.pauseBtn.addEventListener('click', togglePause);
+els.resumeBtn.addEventListener('click', togglePause);
+els.quitBtn.addEventListener('click', returnToMenuAbort);
+els.endBtn.addEventListener('click', () => {
+    if (race.phase === 'racing' || race.paused) returnToMenuAbort();
+});
+
+loop.start();

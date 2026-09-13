@@ -1,0 +1,89 @@
+/* Botões, linhas de opções e campo do nome do jogador. */
+
+.btn {
+    background: #fff;
+    color: #000;
+    border: none;
+    padding: 16px 46px;
+    font-family: inherit;
+    font-size: 4.6vw;
+    letter-spacing: 0.2em;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.btnOutline {
+    background: transparent;
+    color: #fff;
+    border: 2px solid #fff;
+    padding: 14px 40px;
+    font-family: inherit;
+    font-size: 4vw;
+    letter-spacing: 0.15em;
+    margin-top: 14px;
+}
+
+.row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.modeBtn {
+    background: transparent;
+    color: #fff;
+    border: 2px solid #fff;
+    padding: 12px 20px;
+    font-family: inherit;
+    font-size: 3.8vw;
+    letter-spacing: 0.1em;
+}
+
+    .modeBtn.active {
+        background: #fff;
+        color: #000;
+    }
+
+.diffBtn {
+    background: transparent;
+    color: #fff;
+    border: 2px solid #888;
+    padding: 9px 16px;
+    font-family: inherit;
+    font-size: 3.2vw;
+    letter-spacing: 0.1em;
+}
+
+    .diffBtn.active {
+        background: #fff;
+        color: #000;
+        border-color: #fff;
+    }
+
+#diffRow {
+    display: flex;
+}
+
+#nameRow {
+    display: flex;
+}
+
+.nameInput {
+    background: transparent;
+    border: 2px solid #fff;
+    color: #fff;
+    padding: 10px 16px;
+    font-family: inherit;
+    font-size: 3.4vw;
+    text-align: center;
+    letter-spacing: 0.05em;
+    width: 100%;
+    max-width: 280px;
+}
+
+    .nameInput::placeholder {
+        color: rgba(255,255,255,0.5);
+    }

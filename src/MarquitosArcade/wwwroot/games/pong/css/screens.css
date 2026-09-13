@@ -1,0 +1,56 @@
+/* Ecrãs sobrepostos ao jogo: menu inicial e pausa. */
+
+#startScreen, #pauseScreen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.92);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    z-index: 10;
+    text-align: center;
+    padding: 20px;
+}
+
+#pauseScreen {
+    display: none;
+}
+
+/* O ecrã de pausa é mais estreito do que o menu, por isso o título é menor. */
+#pauseScreen .title {
+    font-size: 9vw;
+}
+
+.title {
+    font-size: 12vw;
+    letter-spacing: 0.3em;
+    margin-bottom: 6px;
+    text-shadow: 0 0 15px #fff;
+}
+
+.sub {
+    font-size: 3.6vw;
+    opacity: 0.7;
+    margin-bottom: 30px;
+    letter-spacing: 0.1em;
+}
+
+#hint {
+    margin-top: 22px;
+    font-size: 2.8vw;
+    opacity: 0.5;
+}
+
+#rotateWarning {
+    display: none;
+    color: #fff;
+    font-size: 4vw;
+    letter-spacing: 0.1em;
+    margin: 20px 0;
+    max-width: 80%;
+}
