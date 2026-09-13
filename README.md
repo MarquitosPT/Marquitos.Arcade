@@ -2,6 +2,8 @@
 
 Coleção de jogos casuais online desenvolvidos nos GameStudios do MarquitosPT compilados numa Arcada.
 
+**Em linha: [arcade.marquitos.pt](https://arcade.marquitos.pt)**
+
 Blazor Web App (.NET 10, render mode Interactive Server) com ASP.NET Core Identity e SQLite, em `src/MarquitosArcade/`. Substituiu o antigo servidor Node/Express + `scores.json` que o site usava originalmente — o site é multi-página (não uma SPA) e o iOS Safari reavalia o modo standalone da PWA a cada navegação de página completa; a "enhanced navigation" do Blazor evita esse full page reload. A mudança também abriu caminho para login de amigos e leaderboard persistido em BD.
 
 ## Estrutura
@@ -181,4 +183,4 @@ barra de topo dos jogos usa, junto com a âncora `#<slug>`.
 
 ## Deploy (Azure App Service)
 
-O workflow `.github/workflows/main_marquitos-arcade.yml` publica `src/MarquitosArcade` e faz deploy para o App Service `marquitos-arcade` a cada push em `main`. Para a base de dados sobreviver a deploys, a connection string (`ConnectionStrings__DefaultConnection`) deve apontar para um caminho persistente do App Service (ex.: `/home/data/app.db`), não para dentro da pasta de conteúdo publicada.
+O workflow `.github/workflows/main_marquitos-arcade.yml` publica `src/MarquitosArcade` e faz deploy para o App Service `marquitos-arcade` a cada push em `main`. O site é servido em [arcade.marquitos.pt](https://arcade.marquitos.pt), um domínio próprio apontado a esse App Service — o workflow refere-o pelo nome (`app-name`), não pelo endereço, por isso mudar de domínio não mexe no deploy. Para a base de dados sobreviver a deploys, a connection string (`ConnectionStrings__DefaultConnection`) deve apontar para um caminho persistente do App Service (ex.: `/home/data/app.db`), não para dentro da pasta de conteúdo publicada.
