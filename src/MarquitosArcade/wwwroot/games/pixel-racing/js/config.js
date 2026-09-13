@@ -8,6 +8,15 @@ export const GAME_ID = 'pixel-racing';
 export const NAME_STORAGE_KEY = 'pixelRacingPlayerName_v1';
 
 export const PLAYER_COLOR = '#00e5ff';
+
+/**
+ * Tipos de letra do HUD desenhado no canvas — os mesmos do menu (ver css/theme.css),
+ * para o jogo não ter uma cara dentro e outra fora da corrida. Se as fontes do
+ * Google não carregarem, o canvas cai na alternativa do sistema como o CSS.
+ */
+export const FONT_DISPLAY = "'Outfit', 'Segoe UI', system-ui, sans-serif";
+export const FONT_BODY = "'Plus Jakarta Sans', system-ui, sans-serif";
+
 export const CPU_COLORS = ['#ff6a1a', '#ff2fa0', '#7cff2f'];
 export const CPU_NAMES = ['Raio', 'Fúria', 'Trovão', 'Faísca', 'Nitro', 'Sombra', 'Foguete', 'Turbo', 'Relâmpago', 'Cobra', 'Ciclone', 'Fantasma'];
 

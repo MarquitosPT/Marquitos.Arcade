@@ -7,7 +7,7 @@
 import { createButtonGroup, createLoop, createViewport } from '/lib/arcade/index.js';
 import { bindPlayerNameInput } from '/lib/arcade/scores.js';
 
-import { MODE_QUICK, MODE_TOURNAMENT, NAME_STORAGE_KEY, TOURNAMENT_TRACKS } from './config.js';
+import { MODE_TOURNAMENT, NAME_STORAGE_KEY, TOURNAMENT_TRACKS } from './config.js';
 import { sfx } from './audio.js';
 import { attachControls, setPauseHandler } from './input.js';
 import { resetParticles, updateConfetti, updateParticles } from './particles.js';
@@ -15,8 +15,9 @@ import { returnToMenuAbort, startRace, togglePause, updateCamera, updateRace } f
 import { drawCountdown, drawFinishOverlay, initRenderer, render } from './render.js';
 import { setReturnToMenuHandler, showResultScreen } from './results.js';
 import { setupParticipants } from './cars.js';
+import { createMenu } from './menu.js';
 import { race, session } from './state.js';
-import { els, overlays, topBar, topBarEl } from './ui.js';
+import { els, topBar, topBarEl } from './ui.js';
 
 const playerName = bindPlayerNameInput(els.playerNameInput, NAME_STORAGE_KEY, { fallback: 'Tu' });
 
@@ -95,19 +96,17 @@ function stepFinishOverlay(dt) {
 
 // ---------- Menu ----------
 
-createButtonGroup(els.modeRow, '.modeBtn', (mode) => {
-    session.mode = mode;
-    // A escolha de pista só faz sentido na corrida rápida: o torneio corre as três.
-    els.trackRow.style.display = mode === MODE_QUICK ? 'flex' : 'none';
-});
+const menu = createMenu({ playerName });
 
-createButtonGroup(els.trackRow, '.trackBtn', (track) => {
-    session.trackIdx = parseInt(track, 10);
-});
+// O modo não arranca a corrida: leva ao ecrã seguinte, onde se escolhe a pista
+// (corrida simples) e a dificuldade.
+createButtonGroup(els.modeRow, '.modeBtn', (mode) => menu.showSetup(mode));
 
 createButtonGroup(els.diffRow, '.diffBtn', (level) => {
     session.difficulty = parseFloat(level);
 });
+
+els.backBtn.addEventListener('click', () => menu.showMenu());
 
 els.startBtn.addEventListener('click', () => {
     setupParticipants(playerName.remember());
@@ -125,7 +124,7 @@ setReturnToMenuHandler((action) => {
     }
     race.phase = 'menu';
     resetParticles();
-    overlays.show('start');
+    menu.showMenu();
     topBar.setInGame(false);
 });
 

@@ -191,6 +191,9 @@ const GAMES = [
         menuSelector: '#startScreen',
         async play(page) {
             await page.fill('#playerNameInput', 'MARQUITOS');
+            // O menu tem dois passos: o modo leva ao ecrã da pista e da dificuldade.
+            await page.click('.modeBtn[data-mode="quick"]');
+            await page.click('.trackCard[data-value="1"]');
             await page.click('#startBtn');
             await waitForRacing(page);
             await page.keyboard.down('ArrowUp');
@@ -208,8 +211,8 @@ const GAMES = [
             // Correr três voltas a sério levaria quase um minuto. Em vez disso,
             // arranca-se uma corrida e força-se a chegada à meta pelos próprios
             // módulos do jogo — o ecrã de resultados é montado pelo código real.
-            await page.click('.modeBtn[data-mode="tournament"]');
             await page.fill('#playerNameInput', 'MARQUITOS');
+            await page.click('.modeBtn[data-mode="tournament"]');
             await page.click('#startBtn');
             await waitForRacing(page);
 

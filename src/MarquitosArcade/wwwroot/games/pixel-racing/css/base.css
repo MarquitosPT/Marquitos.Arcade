@@ -8,12 +8,26 @@
     user-select: none;
 }
 
+/*
+ * O `hidden` do HTML tem de ganhar às regras de `display` das classes — é assim
+ * que se esconde o campo do nome a quem tem sessão iniciada.
+ */
+[hidden] {
+    display: none !important;
+}
+
+/* O texto do campo do nome tem de poder ser selecionado para se editar. */
+input {
+    user-select: text;
+}
+
 html, body {
     width: 100%;
     height: 100%;
-    background: #050308;
+    background: #070912;
     overflow: hidden;
-    font-family: 'Courier New', monospace;
+    font-family: var(--font-body);
+    color: var(--text);
     touch-action: none;
 }
 
@@ -27,6 +41,24 @@ html, body {
 }
 
 canvas {
-    background: #050308;
+    background: #070912;
     display: block;
+}
+
+/*
+ * O vidro precisa de alguma coisa por trás para desfocar. Em cheio é a pista
+ * desenhada no canvas; antes do primeiro frame (e no smoke-test, que esconde o
+ * canvas para o screenshot do menu sair igual), são estas auroras que evitam o
+ * vidro sobre o vazio.
+ */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(46vw 46vw at 16% 18%, rgba(109, 94, 252, 0.3), transparent 68%),
+        radial-gradient(40vw 40vw at 84% 24%, rgba(53, 224, 255, 0.2), transparent 66%),
+        radial-gradient(52vw 52vw at 50% 96%, rgba(255, 93, 158, 0.18), transparent 70%);
 }

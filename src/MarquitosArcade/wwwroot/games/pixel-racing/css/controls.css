@@ -1,73 +1,340 @@
-/* Botões, seletores de modo/pista/dificuldade e campo do nome. */
+/* Botões, cartões de modo e de pista, dificuldade e campo do nome. */
+
+button,
+input {
+    font-family: inherit;
+    color: inherit;
+}
+
+button { cursor: pointer; }
+
+:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+}
+
+/* ---------- Botões ---------- */
 
 .btn {
-    background: linear-gradient(180deg, #ffcf3f, #ff7a1a);
-    color: #1a0d00;
+    width: 100%;
+    padding: 15px 28px;
+    font-family: var(--font-display);
+    font-size: clamp(15px, 4vw, 17px);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--on-accent);
     border: none;
-    padding: 14px 40px;
-    font-family: inherit;
-    font-size: 4vw;
-    letter-spacing: 0.15em;
-    font-weight: bold;
-    cursor: pointer;
-    margin-top: 12px;
-    border-radius: 6px;
-    box-shadow: 0 0 14px rgba(255,122,26,0.6);
+    border-radius: var(--radius-pill);
+    background: linear-gradient(100deg, var(--accent), var(--accent-2));
+    box-shadow: 0 16px 34px -16px var(--glow), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
 }
+
+.btn:hover { filter: brightness(1.06); box-shadow: 0 20px 40px -16px var(--glow), inset 0 1px 0 rgba(255, 255, 255, 0.45); }
+.btn:active { transform: translateY(1px) scale(0.995); }
 
 .btnOutline {
-    background: transparent;
-    color: #fff;
-    border: 2px solid #00e5ff;
-    padding: 12px 30px;
-    font-family: inherit;
-    font-size: 3.4vw;
-    letter-spacing: 0.1em;
-    margin-top: 10px;
-    border-radius: 6px;
+    width: 100%;
+    padding: 13px 24px;
+    font-family: var(--font-display);
+    font-size: clamp(13px, 3.4vw, 15px);
+    font-weight: 600;
+    border: 1px solid var(--glass-border-strong);
+    border-radius: var(--radius-pill);
+    background: var(--glass-bg-soft);
+    transition: background 0.2s ease, border-color 0.2s ease;
 }
 
-.row {
+.btnOutline:hover { background: var(--glass-bg-hover); border-color: var(--accent); }
+
+.iconBtn {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    background: var(--glass-bg-soft);
+    transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.iconBtn:hover { background: var(--glass-bg-hover); }
+.iconBtn:active { transform: scale(0.94); }
+
+/* ---------- Nome do jogador / conta ---------- */
+
+/*
+ * O nome só aparece a quem não tem sessão iniciada, e isso só se sabe depois da
+ * resposta de /api/account/me. Até lá o espaço fica reservado e o conteúdo
+ * invisível (`is-pending`), para não haver salto de layout nem piscar do campo
+ * a quem afinal já está autenticado.
+ */
+.nameSlot {
+    width: 100%;
+    min-height: 74px;
+    display: grid;
+    place-items: center;
+}
+
+.nameSlot > * {
+    grid-area: 1 / 1;
+    width: 100%;
+    transition: opacity 0.25s ease;
+}
+
+.nameSlot.is-pending > * { opacity: 0; }
+
+.field {
     display: flex;
-    gap: 8px;
-    margin-bottom: 14px;
-    flex-wrap: wrap;
-    justify-content: center;
+    flex-direction: column;
+    gap: 7px;
+    width: 100%;
+    text-align: left;
 }
 
-.modeBtn, .trackBtn, .diffBtn {
-    background: transparent;
-    color: #fff;
-    border: 2px solid #666;
-    padding: 10px 16px;
-    font-family: inherit;
-    font-size: 3.2vw;
-    letter-spacing: 0.06em;
-    border-radius: 6px;
-    cursor: pointer;
+.fieldLabel {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--faint);
 }
-
-.modeBtn.active, .trackBtn.active, .diffBtn.active {
-    background: #00e5ff;
-    color: #04202a;
-    border-color: #00e5ff;
-    box-shadow: 0 0 10px rgba(0,229,255,0.7);
-}
-
-.trackBtn { font-size: 2.9vw; }
 
 .nameInput {
-    background: rgba(255,255,255,0.05);
-    border: 2px solid #fff;
-    color: #fff;
-    padding: 10px 16px;
-    font-family: inherit;
-    font-size: 3.2vw;
-    text-align: center;
-    letter-spacing: 0.05em;
     width: 100%;
-    max-width: 280px;
-    border-radius: 6px;
+    padding: 13px 16px;
+    font-size: 15px;
+    font-weight: 600;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    background: rgba(255, 255, 255, 0.07);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.nameInput::placeholder { color: rgba(255,255,255,0.5); }
+.nameInput::placeholder { color: var(--faint); font-weight: 400; }
+
+.nameInput:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--ring);
+}
+
+.playerChip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 14px 9px 9px;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-pill);
+    background: var(--glass-bg-soft);
+    text-align: left;
+}
+
+.chipAvatar {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 30px;
+    height: 30px;
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--on-accent);
+    border-radius: 50%;
+    background: linear-gradient(140deg, var(--accent), var(--accent-2));
+}
+
+.chipText { font-size: 13px; color: var(--muted); }
+.chipText b { color: var(--text); font-weight: 700; }
+
+/* ---------- Escolha do modo ---------- */
+
+.modeGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+.modeBtn {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    padding: 15px 16px;
+    text-align: left;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    background: var(--glass-bg-soft);
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.modeBtn:hover {
+    background: var(--glass-bg-hover);
+    border-color: var(--glass-border-strong);
+    transform: translateY(-2px);
+    box-shadow: var(--glass-shadow-sm);
+}
+
+.modeBtn:active { transform: translateY(0) scale(0.995); }
+
+.modeIcon {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    font-size: 21px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.modeText { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+
+.modeName {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.modeDesc {
+    font-size: 12px;
+    line-height: 1.35;
+    color: var(--muted);
+}
+
+.modeGo {
+    flex: none;
+    font-size: 18px;
+    color: var(--faint);
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.modeBtn:hover .modeGo { color: var(--accent); transform: translateX(3px); }
+
+/* ---------- Escolha da pista ---------- */
+
+.trackGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+    width: 100%;
+}
+
+.trackCard {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 12px;
+    text-align: left;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    background: var(--glass-bg-soft);
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.trackCard:hover { background: var(--glass-bg-hover); transform: translateY(-2px); }
+
+.trackCard.active {
+    border-color: var(--accent);
+    background: linear-gradient(150deg, rgba(53, 224, 255, 0.18), rgba(139, 124, 255, 0.1));
+    box-shadow: 0 0 0 1px var(--accent), 0 18px 36px -22px var(--glow);
+}
+
+/* No campeonato as pistas mostram-se pela ordem em que se correm, sem escolha. */
+.trackCard.is-static { cursor: default; }
+.trackCard.is-static:hover { background: var(--glass-bg-soft); transform: none; }
+
+.trackShape {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: var(--radius-sm);
+    background: rgba(6, 9, 20, 0.45);
+}
+
+.trackShape .trackLine {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 7;
+    stroke-linejoin: round;
+    opacity: 0.85;
+}
+
+.trackShape .trackEdge {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.16);
+    stroke-width: 15;
+    stroke-linejoin: round;
+}
+
+.trackShape .trackStart {
+    stroke: #fff;
+    stroke-width: 5;
+    stroke-linecap: round;
+}
+
+.trackCard.active .trackShape .trackLine { opacity: 1; }
+
+.trackInfo { display: flex; flex-direction: column; gap: 2px; }
+
+.trackName {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.trackMeta {
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    color: var(--muted);
+}
+
+.trackOrder {
+    align-self: flex-start;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid rgba(53, 224, 255, 0.35);
+    border-radius: var(--radius-pill);
+    background: rgba(53, 224, 255, 0.1);
+}
+
+/* ---------- Dificuldade ---------- */
+
+.segmented {
+    display: flex;
+    gap: 4px;
+    width: 100%;
+    padding: 4px;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-pill);
+    background: rgba(6, 9, 20, 0.35);
+}
+
+.diffBtn {
+    flex: 1;
+    padding: 10px 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    border: none;
+    border-radius: var(--radius-pill);
+    background: transparent;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.diffBtn:hover { color: var(--text); background: var(--glass-bg-soft); }
+
+.diffBtn.active {
+    color: var(--on-accent);
+    background: linear-gradient(100deg, var(--accent), var(--accent-2));
+    box-shadow: 0 8px 20px -12px var(--glow);
+}

@@ -21,6 +21,7 @@
 
 import { chromium } from 'playwright';
 import { mkdir, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -96,6 +97,7 @@ const GAMES = [
         scale: 2,
         async play(page) {
             await page.fill('#playerNameInput', 'MARQUITOS');
+            await page.click('.modeBtn[data-mode="quick"]');
             await page.click('#startBtn');
             await page.addStyleTag({ content: HIDE_ARCADE_CHROME });
             await sleep(3600); // contagem decrescente
@@ -168,7 +170,22 @@ async function toWebp(page, pngBuffer) {
     return Buffer.from(base64, 'base64');
 }
 
-const browser = await chromium.launch({ args: ['--hide-scrollbars'] });
+/**
+ * Onde está o Chromium — o mesmo critério do smoke-test dos jogos: alguns
+ * ambientes trazem-no pré-instalado e desligam o download do Playwright.
+ * Devolve null para o Playwright resolver sozinho.
+ */
+function findChromium() {
+    if (process.env.ARCADE_CHROMIUM) return process.env.ARCADE_CHROMIUM;
+    const preinstalled = '/opt/pw-browsers/chromium';
+    return existsSync(preinstalled) ? preinstalled : null;
+}
+
+const executablePath = findChromium();
+const browser = await chromium.launch({
+    args: ['--hide-scrollbars'],
+    ...(executablePath ? { executablePath } : {})
+});
 await mkdir(OUT_DIR, { recursive: true });
 
 for (const game of GAMES) {

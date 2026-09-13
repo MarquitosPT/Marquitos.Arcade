@@ -4,6 +4,8 @@
 // para uma vitória folgada valer mais do que uma à tangente, e para o modo
 // torneio (três corridas) poder somar.
 
+import { escapeHtml } from '/lib/arcade/index.js';
+
 import { MODE_TOURNAMENT, RACE_POINTS } from './config.js';
 import { fmtTime, ordinal } from './format.js';
 import { muteEngine } from './audio.js';
@@ -19,7 +21,8 @@ const TIME_BONUS_PER_MS = 25;
 /** Multiplicador dos pontos de posição na pontuação do leaderboard. */
 const POSITION_WEIGHT = 20;
 
-const medal = (rank) => (rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '4️⃣');
+/** Medalha do pódio; a partir do 4.º lugar é o próprio número. */
+const medal = (rank) => (rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : ordinal(rank));
 
 /** Chamado quando o jogador pede para voltar ao menu. Registado pelo main.js. */
 let onReturnToMenu = () => {};
@@ -57,60 +60,77 @@ export function showResultScreen() {
 }
 
 function renderRaceEnd(playerEntry, raceTimeMs, raceScore, isTournament) {
-    let html = `<div class="sub" style="letter-spacing:0.15em;">${race.track.name.toUpperCase()}</div>`;
-    html += `<div class="bannerText" style="margin-bottom:10px;">${medal(playerEntry.rank)} ${ordinal(playerEntry.rank)} LUGAR</div>`;
-    html += '<table class="resultTable"><tbody>';
-    for (const entry of race.finishSnapshot) {
-        html += `<tr class="${entry.key === 'player' ? 'me' : ''}"><td class="medal">${medal(entry.rank)}</td>`
-            + `<td><span class="swatch" style="background:${entry.color}"></span>${entry.name}</td></tr>`;
-    }
-    html += '</tbody></table>';
+    let html = `<div class="resultHead">
+        <div class="resultMedal">${medal(playerEntry.rank)}</div>
+        <div class="bannerText">${ordinal(playerEntry.rank)} lugar</div>
+        <div class="sub">${escapeHtml(race.track.name)}</div>
+    </div>`;
+    html += resultTable(race.finishSnapshot.map((entry) => ({
+        key: entry.key, rank: entry.rank, name: entry.name, color: entry.color
+    })));
 
     if (isTournament) {
-        html += `<div class="sectionLabel" style="margin-top:14px;">CLASSIFICAÇÃO DO TORNEIO — CORRIDA ${session.raceIndex + 1}/${session.tracks.length}</div>`;
-        html += standingsTable(currentStandings());
-        html += '<button class="btn" id="nextRaceBtn">PRÓXIMA CORRIDA →</button>';
+        html += `<div class="sectionLabel">Campeonato · corrida ${session.raceIndex + 1} de ${session.tracks.length}</div>`;
+        html += resultTable(standingsRows());
+        html += '<div class="resultActions"><button class="btn" id="nextRaceBtn">Próxima corrida →</button></div>';
     } else {
-        html += `<div class="sectionLabel" style="margin-top:10px;">Tempo: ${fmtTime(raceTimeMs)} · Pontos: ${raceScore}</div>`;
-        html += '<button class="btn" id="againBtn">CORRIDA OUTRA VEZ</button><button class="btnOutline" id="menuBtn">MENU</button>';
+        html += statRow([['Tempo', fmtTime(raceTimeMs)], ['Pontos', `+${raceScore}`]]);
+        html += '<div class="resultActions">'
+            + '<button class="btn" id="againBtn">Correr outra vez</button>'
+            + '<button class="btnOutline" id="menuBtn">Menu</button>'
+            + '</div>';
     }
     return html;
 }
 
 function renderTournamentEnd() {
-    const standings = currentStandings();
-    const playerFinal = standings.findIndex((s) => s.key === 'player') + 1;
+    const rows = standingsRows();
+    const playerFinal = rows.findIndex((row) => row.key === 'player') + 1;
 
-    let html = '<div class="bannerText" style="margin-bottom:6px;">🏁 TORNEIO CONCLUÍDO</div>';
-    html += `<div class="sub" style="letter-spacing:0.15em;">${playerFinal === 1 ? 'CAMPEÃO DA ARCADE!' : `${ordinal(playerFinal)} LUGAR NO TORNEIO`}</div>`;
-    html += standingsTable(standings);
-    html += `<div class="sectionLabel" style="margin-top:10px;">Pontuação total: ${session.playerScore}</div>`;
-    html += '<button class="btn" id="menuBtn">VOLTAR AO MENU</button>';
+    let html = `<div class="resultHead">
+        <div class="resultMedal">${playerFinal === 1 ? '🏆' : medal(playerFinal)}</div>
+        <div class="bannerText">Campeonato concluído</div>
+        <div class="sub">${playerFinal === 1 ? 'Campeão da arcade!' : `${ordinal(playerFinal)} lugar no campeonato`}</div>
+    </div>`;
+    html += resultTable(rows);
+    html += statRow([['Pontuação total', String(session.playerScore)]]);
+    html += '<div class="resultActions"><button class="btn" id="menuBtn">Voltar ao menu</button></div>';
 
     scores.submitQuietly(session.participants[0].name, session.playerScore);
     if (playerFinal <= 3) spawnConfetti();
     return html;
 }
 
-/** Participantes por pontos de campeonato, do primeiro para o último. */
-function currentStandings() {
-    return Object.keys(session.tournamentPoints)
-        .map((key) => ({
-            key,
-            points: session.tournamentPoints[key],
-            info: session.participants.find((p) => p.key === key)
-        }))
-        .sort((a, b) => b.points - a.points);
+/** Métricas do fim da corrida, em cartões lado a lado. */
+function statRow(stats) {
+    const cells = stats
+        .map(([label, value]) => `<div class="stat"><span class="statLabel">${label}</span><span class="statValue">${value}</span></div>`)
+        .join('');
+    return `<div class="statRow">${cells}</div>`;
 }
 
-function standingsTable(standings) {
-    let html = '<table class="resultTable"><tbody>';
-    standings.forEach((entry, index) => {
-        html += `<tr class="${entry.key === 'player' ? 'me' : ''}"><td class="medal">${medal(index + 1)}</td>`
-            + `<td><span class="swatch" style="background:${entry.info.color}"></span>${entry.info.name}</td>`
-            + `<td>${entry.points} pts</td></tr>`;
-    });
-    return `${html}</tbody></table>`;
+/** Participantes por pontos de campeonato, do primeiro para o último. */
+function standingsRows() {
+    return session.participants
+        .map((p) => ({ key: p.key, name: p.name, color: p.color, points: session.tournamentPoints[p.key] || 0 }))
+        .sort((a, b) => b.points - a.points)
+        .map((row, index) => ({ ...row, rank: index + 1 }));
+}
+
+/**
+ * Tabela de uma classificação. Serve a da corrida e a do campeonato: a única
+ * diferença é a coluna dos pontos, que só existe quando as linhas os trazem.
+ * @param {Array<{ key: string, rank: number, name: string, color: string, points?: number }>} rows
+ */
+function resultTable(rows) {
+    const body = rows.map((row) => {
+        const points = row.points === undefined ? '' : `<td class="points">${row.points} pts</td>`;
+        return `<tr class="${row.key === 'player' ? 'me' : ''}">`
+            + `<td class="medal">${medal(row.rank)}</td>`
+            + `<td class="name"><span class="swatch" style="background:${row.color};color:${row.color}"></span>${escapeHtml(row.name)}</td>`
+            + `${points}</tr>`;
+    }).join('');
+    return `<table class="resultTable"><tbody>${body}</tbody></table>`;
 }
 
 /** Os botões são recriados a cada resultado, por isso ligam-se depois do innerHTML. */
