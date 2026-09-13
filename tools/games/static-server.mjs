@@ -61,7 +61,17 @@ export function startStaticServer(root, { port = 0 } = {}) {
 
     return new Promise((resolve) => {
         server.listen(port, '127.0.0.1', () => {
-            resolve({ server, port: server.address().port, close: () => new Promise((r) => server.close(r)) });
+            resolve({
+                server,
+                port: server.address().port,
+                // server.close() sozinho espera que as ligações keep-alive se
+                // desliguem, o que pode nunca acontecer e deixa o processo preso.
+                // closeAllConnections() corta-as primeiro.
+                close: () => new Promise((done) => {
+                    server.closeAllConnections?.();
+                    server.close(done);
+                })
+            });
         });
     });
 }

@@ -24,6 +24,9 @@ concurrency:
 jobs:
   smoke-test:
     runs-on: ubuntu-latest
+    # Rede de segurança: se o teste encravar, a execução falha em minutos em vez
+    # de ficar pendurada até ao limite de 6 horas do GitHub.
+    timeout-minutes: 15
     permissions:
       contents: read # necessário para o actions/checkout
 
@@ -51,6 +54,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Correr o smoke-test
+        timeout-minutes: 10
         run: node smoke-test.mjs --out screenshots
 
       # Numa falha, as fotografias dizem logo em que ecrã o jogo se perdeu.

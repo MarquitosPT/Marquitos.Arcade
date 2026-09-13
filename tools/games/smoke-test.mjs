@@ -60,6 +60,13 @@ const WWWROOT = resolve(argValue('--root', DEFAULT_WWWROOT));
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/** Espera por um elemento ou por uma navegação. Curto de propósito: um jogo partido
+ *  tem de falhar em segundos, não ao fim dos 30s por omissão do Playwright. */
+const SELECTOR_TIMEOUT_MS = 10000;
+const NAVIGATION_TIMEOUT_MS = 20000;
+/** Teto por cenário. Protege contra um guião que encrave à espera de algo que não vem. */
+const SCENARIO_TIMEOUT_MS = 120000;
+
 /**
  * Torna o jogo determinístico: Math.random passa a ser um gerador com semente
  * fixa (mulberry32). Sem isto, o ângulo da bola, os pedidos e os carros mudam a
@@ -185,7 +192,7 @@ const GAMES = [
         async play(page) {
             await page.fill('#playerNameInput', 'MARQUITOS');
             await page.click('#startBtn');
-            await sleep(3600); // contagem decrescente
+            await waitForRacing(page);
             await page.keyboard.down('ArrowUp');
             await sleep(1200);
             await page.keyboard.up('ArrowUp');
@@ -204,7 +211,7 @@ const GAMES = [
             await page.click('.modeBtn[data-mode="tournament"]');
             await page.fill('#playerNameInput', 'MARQUITOS');
             await page.click('#startBtn');
-            await sleep(4200); // contagem decrescente + arranque
+            await waitForRacing(page);
 
             const afterFirstRace = await page.evaluate(async () => {
                 const { race } = await import('/games/pixel-racing/js/state.js');
@@ -218,7 +225,7 @@ const GAMES = [
             await page.waitForSelector('#nextRaceBtn');
             await sleep(500);
             await page.click('#nextRaceBtn');
-            await sleep(4200);
+            await waitForRacing(page);
 
             // Segunda e terceira corridas, para chegar ao fim do torneio.
             for (let i = 0; i < 2; i++) {
@@ -232,7 +239,7 @@ const GAMES = [
                 const next = await page.$('#nextRaceBtn');
                 if (next) {
                     await next.click();
-                    await sleep(4200);
+                    await waitForRacing(page);
                 }
             }
 
@@ -270,6 +277,39 @@ async function tapIngredient(page, requirement) {
     return false;
 }
 
+/** Rejeita se a promessa não resolver dentro do prazo. */
+function withTimeout(promise, ms, message) {
+    let timer;
+    const limit = new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`${message} (${ms}ms)`)), ms);
+    });
+    return Promise.race([promise, limit]).finally(() => clearTimeout(timer));
+}
+
+/**
+ * Espera que o Pixel Racing esteja mesmo a correr, em vez de dormir um tempo fixo.
+ *
+ * O delta-time do jogo está limitado a 50ms por frame; num runner lento, com menos
+ * frames por segundo, o relógio do jogo anda mais devagar do que o relógio real e
+ * a contagem decrescente demora mais do que os 4 segundos nominais.
+ */
+async function waitForRacing(page) {
+    // Atenção: o predicado de waitForFunction TEM de ser síncrono. Se for `async`,
+    // o Playwright vê a Promise devolvida, considera-a verdadeira e devolve o
+    // controlo de imediato — a espera não esperava nada. Por isso o módulo é
+    // carregado à parte com evaluate (esse, sim, aguarda a Promise) e deixa o
+    // objeto de estado numa global para o predicado o ler sem ser assíncrono.
+    await page.evaluate(async () => {
+        const { race } = await import('/games/pixel-racing/js/state.js');
+        window.__arcadeRace = race;
+    });
+    await page.waitForFunction(
+        () => window.__arcadeRace && window.__arcadeRace.phase === 'racing',
+        undefined,
+        { timeout: 30000 }
+    );
+}
+
 /** True se o canvas tem mais do que uma cor — ou seja, o jogo desenhou alguma coisa. */
 async function canvasHasContent(page) {
     return page.evaluate(() => {
@@ -289,6 +329,8 @@ async function runGame(browser, game, baseUrl) {
     const problems = [];
     const context = await browser.newContext({ viewport: game.viewport, deviceScaleFactor: 1 });
     await context.addInitScript(SEED_RANDOM);
+    context.setDefaultTimeout(SELECTOR_TIMEOUT_MS);
+    context.setDefaultNavigationTimeout(NAVIGATION_TIMEOUT_MS);
     const page = await context.newPage();
 
     // Ruído esperado, que não é uma regressão do jogo: o backend falso responde
@@ -335,7 +377,7 @@ async function runGame(browser, game, baseUrl) {
             }));
         }
 
-        await game.play(page);
+        await withTimeout(game.play(page), SCENARIO_TIMEOUT_MS, 'o guião demorou demasiado');
         if (game.canvas && !(await canvasHasContent(page))) problems.push('o canvas não desenhou nada');
         shots.game = await page.screenshot({ animations: 'disabled' });
     } catch (err) {
