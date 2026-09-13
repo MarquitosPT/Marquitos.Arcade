@@ -2,6 +2,8 @@
 
 Coleção de jogos casuais online desenvolvidos nos GameStudios do MarquitosPT compilados numa Arcada.
 
+**Em linha: [arcade.marquitos.pt](https://arcade.marquitos.pt)**
+
 Blazor Web App (.NET 10, render mode Interactive Server) com ASP.NET Core Identity e SQLite, em `src/MarquitosArcade/`. Substituiu o antigo servidor Node/Express + `scores.json` que o site usava originalmente — o site é multi-página (não uma SPA) e o iOS Safari reavalia o modo standalone da PWA a cada navegação de página completa; a "enhanced navigation" do Blazor evita esse full page reload. A mudança também abriu caminho para login de amigos e leaderboard persistido em BD.
 
 ## Estrutura
@@ -49,7 +51,7 @@ As migrações do EF Core aplicam-se automaticamente no arranque (`Database.Migr
 
 A arcada usa **um único processo ASP.NET Core** para todos os jogos, em vez de um serviço por jogo. Razões:
 
-- O Azure App Service `marquitos-arcade.azurewebsites.net` corre um único App Service — ter vários serviços implicaria vários Web Apps ou um proxy reverso à frente deles, complexidade desnecessária para jogos casuais de baixo tráfego.
+- A arcada corre num único Azure App Service (`marquitos-arcade`) — ter vários serviços implicaria vários Web Apps ou um proxy reverso à frente deles, complexidade desnecessária para jogos casuais de baixo tráfego.
 - Os jogos são maioritariamente estáticos (HTML/CSS/JS/canvas no browser); só precisam de backend para o leaderboard persistente. O endpoint `/api/scores/:gameId` é genérico e serve qualquer jogo novo sem duplicar código de servidor.
 - Uma única base SQLite simplifica o deploy e o backup.
 
@@ -181,4 +183,14 @@ barra de topo dos jogos usa, junto com a âncora `#<slug>`.
 
 ## Deploy (Azure App Service)
 
-O workflow `.github/workflows/main_marquitos-arcade.yml` publica `src/MarquitosArcade` e faz deploy para o App Service `marquitos-arcade` a cada push em `main`. Para a base de dados sobreviver a deploys, a connection string (`ConnectionStrings__DefaultConnection`) deve apontar para um caminho persistente do App Service (ex.: `/home/data/app.db`), não para dentro da pasta de conteúdo publicada.
+O workflow `.github/workflows/main_marquitos-arcade.yml` publica `src/MarquitosArcade` e faz deploy para o App Service `marquitos-arcade` a cada push em `main`. O site é servido em [arcade.marquitos.pt](https://arcade.marquitos.pt), um domínio próprio apontado a esse App Service.
+
+O domínio próprio não é cosmético. O Azure já não dá a Web Apps novas um endereço
+simples: gera um sufixo único por app, do género
+`marquitos-arcade-<sufixo>.spaincentral-01.azurewebsites.net`. Se a Web App for
+recriada, esse endereço muda. Por isso o README não o refere, e o workflow também
+não: identifica o destino pelo **nome** do App Service (`app-name: 'marquitos-arcade'`),
+que se mantém. Recriar a Web App com o mesmo nome não obriga a mexer no deploy;
+só é preciso reapontar o DNS.
+
+Para a base de dados sobreviver a deploys, a connection string (`ConnectionStrings__DefaultConnection`) deve apontar para um caminho persistente do App Service (ex.: `/home/data/app.db`), não para dentro da pasta de conteúdo publicada.
