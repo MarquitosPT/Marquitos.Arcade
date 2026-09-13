@@ -1,0 +1,57 @@
+/* Tokens de cor, tipografia e o fundo de azulejo da tasca. */
+
+:root {
+    --azulejo-deep: #123a5e;
+    --azulejo-mid: #1f5c8a;
+    --tijolo: #c1442e;
+    --tijolo-dark: #9c3423;
+    --rosa: #c1467e;
+    --rosa-dark: #9c3564;
+    --massa: #f6ecd9;
+    --massa-card: #fffaf0;
+    --tinta: #23211d;
+    --ok: #4c8c4a;
+}
+
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+body {
+    font-family: 'Nunito', system-ui, sans-serif;
+    background: var(--massa);
+    color: var(--tinta);
+    overflow-x: hidden;
+    user-select: none;
+}
+
+.azulejo-bg {
+    background-color: var(--azulejo-deep);
+    background-image: radial-gradient(circle at 10px 10px, rgba(255,255,255,0.10) 2.5px, transparent 3px), radial-gradient(circle at 30px 30px, rgba(255,255,255,0.10) 2.5px, transparent 3px), linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px);
+    background-size: 40px 40px, 40px 40px, 20px 20px, 20px 20px;
+    flex: 0 0 auto;
+}
+
+#app {
+    max-width: 480px;
+    margin: 0 auto;
+    position: relative;
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}

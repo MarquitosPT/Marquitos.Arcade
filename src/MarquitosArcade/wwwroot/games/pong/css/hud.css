@@ -1,0 +1,26 @@
+/* Barra de topo: voltar à arcada, pontuações, pausa e sair. */
+
+.topBar {
+    position: absolute;
+    top: max(12px, env(safe-area-inset-top));
+    right: 12px;
+    display: flex;
+    gap: 8px;
+    z-index: 20;
+}
+
+.topBtn {
+    color: #fff;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid #666;
+    font-family: inherit;
+    font-size: 14px;
+    padding: 6px 14px;
+    letter-spacing: 0.1em;
+}
+
+/* Os links da barra (← ARCADE / 🏆) são <a>, e sem isto vinham sublinhados. */
+a.topBtn {
+    text-decoration: none;
+    display: inline-block;
+}

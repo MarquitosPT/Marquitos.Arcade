@@ -6,12 +6,16 @@ Blazor Web App (.NET 10, render mode Interactive Server) com ASP.NET Core Identi
 
 ## Estrutura
 
-- `src/MarquitosArcade/Components/Pages/Home.razor`, `wwwroot/styles.css`: portal principal com branding e catálogo de jogos. O catálogo é gerado a partir do array `Catalog` no `@code` da página — cada jogo é um cartão com a sua capa, o título em overlay e a cor/lettering próprios (classes `.theme-*`). `styles.css` é a folha de estilos global do site — cobre o portal, a página de pontuações e as páginas de conta (`/Account/...`); os jogos têm os seus próprios estilos, autocontidos. Ver [Tema](#tema-glass-claro-e-escuro).
+- `src/MarquitosArcade/Components/Pages/Home.razor`, `wwwroot/styles.css`: portal principal com branding e catálogo de jogos. O catálogo é gerado a partir do array `Catalog` no `@code` da página — cada jogo é um cartão com a sua capa, o título em overlay e a cor/lettering próprios (classes `.theme-*`). `styles.css` é a folha de estilos global do site — cobre o portal, a página de pontuações e as páginas de conta (`/Account/...`); cada jogo tem as suas próprias folhas de estilo, em `games/<slug>/css/`. Ver [Tema](#tema-glass-claro-e-escuro).
 - `src/MarquitosArcade/wwwroot/theme.js`: escolha do tema claro/escuro (ver [Tema](#tema-glass-claro-e-escuro)).
 - `src/MarquitosArcade/wwwroot/covers/`: capas 16:9 dos jogos (WebP) usadas no catálogo — são screenshots reais de cada jogo, gerados por `tools/covers/` (ver [Capas dos jogos](#capas-dos-jogos)).
 - `src/MarquitosArcade/wwwroot/pontuacoes.html`, `pontuacoes.js`: página dedicada às pontuações, com um painel por jogo carregado dinamicamente a partir da API.
-- `src/MarquitosArcade/wwwroot/games/tasca-do-ze/`: mini-jogo "Tasca do Zé" (gestão de pedidos), com leaderboard persistido via `/api/scores/tasca-do-ze`.
-- `src/MarquitosArcade/wwwroot/games/pong/`: Pong Retro, com modo 1 jogador (vs. CPU, pontuação submetida via `/api/scores/pong`) e 2 jogadores.
+- `src/MarquitosArcade/wwwroot/games/<slug>/`: um jogo por pasta, cada um com o seu `index.html` (só markup), `css/`, `js/` (módulos ES) e `assets/`. Ver [Estrutura de um jogo](#estrutura-de-um-jogo) e, para o porquê desta organização em vez de um projeto .NET por jogo, [docs/estrutura-dos-jogos.md](docs/estrutura-dos-jogos.md).
+  - `tasca-do-ze/`: mini-jogo "Tasca do Zé" (gestão de pedidos), com leaderboard persistido via `/api/scores/tasca-do-ze`.
+  - `pong/`: Pong Retro, com modo 1 jogador (vs. CPU, pontuação submetida via `/api/scores/pong`) e 2 jogadores.
+  - `pixel-racing/`: Pixel Racing, corrida rápida ou torneio de três pistas, com pontuação via `/api/scores/pixel-racing`.
+- `src/MarquitosArcade/wwwroot/lib/arcade/`: SDK partilhado pelos jogos (áudio, leaderboard, armazenamento, viewport do canvas, ciclo de jogo, barra de topo). Módulos ES sem dependências externas.
+- `tools/games/smoke-test.mjs`: smoke-test dos jogos em Chromium headless. Ver [Testar os jogos](#testar-os-jogos).
 - `src/MarquitosArcade/Scores/ScoresEndpoints.cs`: endpoint genérico `GET/POST /api/scores/:gameId`, persistido na tabela `Scores` (EF Core + SQLite). Se o pedido vier de um utilizador autenticado, o nome do leaderboard vem da conta (evita spoofing de nomes); caso contrário aceita o nome livre submetido pelo jogo.
 - `src/MarquitosArcade/Data/`: `ApplicationDbContext`, `ApplicationUser` e as migrations do EF Core.
 - `src/MarquitosArcade/Components/Account/`: páginas de login/registo/gestão de conta scaffolded pelo template Identity do ASP.NET Core (login em `/Account/Login`, registo em `/Account/Register`, gestão em `/Account/Manage`). Sem confirmação por email — não há servidor de email configurado, por isso ficaria a bloquear amigos convidados.
@@ -51,13 +55,88 @@ A arcada usa **um único processo ASP.NET Core** para todos os jogos, em vez de 
 
 Se algum jogo precisar de lógica de servidor muito diferente (ex. websockets para multiplayer em tempo real), faz sentido isolá-lo num serviço próprio nessa altura — não antes.
 
+## Estrutura de um jogo
+
+Cada jogo é uma pasta com os seus ficheiros — não um projeto .NET. O porquê dessa
+escolha (e quando é que vale a pena mudar) está em
+[docs/estrutura-dos-jogos.md](docs/estrutura-dos-jogos.md).
+
+```
+wwwroot/games/<slug>/
+  index.html        markup apenas — sem <style> nem <script> inline
+  css/              uma folha por zona do ecrã (base, hud, screens, ...)
+  js/
+    main.js         ponto de entrada, carregado com <script type="module">
+    config.js       constantes de afinação, sem lógica
+    state.js        estado mutável da partida
+    ...             um módulo por área (física, desenho, controlos, áudio)
+  assets/           PNG, SVG e sons deste jogo
+```
+
+Regras que mantêm isto arrumado:
+
+- **`index.html` é só markup.** Zero CSS e zero JavaScript inline.
+- **Um módulo, um assunto.** Se um ficheiro precisa de duas frases para se descrever, são dois módulos.
+- **Números de afinação vivem no `config.js`**, não espalhados pelo código.
+- **O que é comum a dois jogos vai para o SDK** em `wwwroot/lib/arcade/`.
+
+### SDK partilhado
+
+Os jogos importam o que têm em comum de `wwwroot/lib/arcade/`, por caminho absoluto:
+
+```js
+import { createViewport, createLoop } from '/lib/arcade/index.js';
+import { createScoreClient } from '/lib/arcade/scores.js';
+```
+
+| Módulo        | O que resolve                                                    |
+| ------------- | ---------------------------------------------------------------- |
+| `audio.js`    | Ciclo de vida do `AudioContext` e bips sintetizados              |
+| `scores.js`   | Cliente de `/api/scores/:gameId`, cache offline e nome do jogador |
+| `storage.js`  | `localStorage` que não rebenta em Safari privado                 |
+| `viewport.js` | Canvas em ecrã inteiro, nítido em Retina e por baixo do notch     |
+| `loop.js`     | Ciclo `requestAnimationFrame` com delta-time limitado            |
+| `dom.js`      | Seletores, `escapeHtml`, grupos de ecrãs e de botões             |
+| `topbar.js`   | Barra de topo comum (arcada, pontuações, pausa, sair)            |
+| `math.js`     | `clamp`, `lerp`, ângulos, aleatórios, `shuffle`                  |
+
+## Testar os jogos
+
+`tools/games/smoke-test.mjs` abre cada jogo num Chromium headless, joga-o durante
+alguns segundos e falha se houver erro de JavaScript, módulo ou folha de estilos
+que não carregue, ecrã inicial em branco, ou canvas que não chegue a desenhar.
+
+Serve os ficheiros com um servidor estático próprio, por isso **não é preciso ter
+o ASP.NET a correr nem o SDK do .NET instalado**. Os pedidos a `/api/*` respondem
+503 de propósito — os jogos têm de aguentar o servidor em baixo, e isso fica assim
+coberto pelo teste.
+
+```bash
+cd tools/games
+npm install
+
+node smoke-test.mjs                     # todos os jogos
+node smoke-test.mjs --only pong         # só um
+```
+
+Para refactors, o par `--out`/`--compare` compara os ecrãs antes e depois. O ecrã
+de menu é determinístico e tem de bater certo ao pixel; os fotogramas de jogo
+variam com o relógio e são informativos:
+
+```bash
+git worktree add /tmp/antes HEAD
+node smoke-test.mjs --root /tmp/antes/src/MarquitosArcade/wwwroot --out /tmp/ref
+node smoke-test.mjs --out /tmp/novo --compare /tmp/ref
+```
+
 ## Adicionar um jogo novo
 
-1. Criar `src/MarquitosArcade/wwwroot/games/<slug>/index.html` (pode ser um ficheiro único autocontido, como os atuais, com os seus próprios estilos).
-2. Se precisar de leaderboard persistente, chamar `GET/POST /api/scores/<slug>`.
-3. Gerar a capa do jogo: acrescentar uma receita ao array `GAMES` em `tools/covers/capture-covers.mjs` e correr o script (ver [Capas dos jogos](#capas-dos-jogos)).
-4. Adicionar uma entrada ao array `Catalog` em `Components/Pages/Home.razor` (slug, título, tagline, descrição, emoji, tema e capa) e, se o tema for novo, uma classe `.theme-<jogo>` em `styles.css` com a cor (`--game-accent`), o fundo da capa (`--cover-bg`) e o lettering do jogo.
-5. Adicionar o jogo ao array `Games` em `Components/Pages/Pontuacoes.razor` para aparecer na página de pontuações.
+1. Criar `src/MarquitosArcade/wwwroot/games/<slug>/` com a estrutura acima. O `pong/` é o mais pequeno dos três e serve bem de modelo.
+2. Se precisar de leaderboard persistente, usar `createScoreClient('<slug>')` do SDK, que fala com `GET/POST /api/scores/<slug>`.
+3. Acrescentar o jogo ao array `GAMES` em `tools/games/smoke-test.mjs`, com um guião que o jogue durante alguns segundos.
+4. Gerar a capa do jogo: acrescentar uma receita ao array `GAMES` em `tools/covers/capture-covers.mjs` e correr o script (ver [Capas dos jogos](#capas-dos-jogos)).
+5. Adicionar uma entrada ao array `Catalog` em `Components/Pages/Home.razor` (slug, título, tagline, descrição, emoji, tema e capa) e, se o tema for novo, uma classe `.theme-<jogo>` em `styles.css` com a cor (`--game-accent`), o fundo da capa (`--cover-bg`) e o lettering do jogo.
+6. Adicionar o jogo ao array `Games` em `Components/Pages/Pontuacoes.razor` para aparecer na página de pontuações.
 
 ## Capas dos jogos
 

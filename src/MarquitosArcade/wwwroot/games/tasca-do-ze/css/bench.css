@@ -1,0 +1,96 @@
+/* Bancada de ingredientes: separadores salgados/doces e grelha. */
+
+.bench-tabs {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 8px;
+}
+
+.bench-tab {
+    flex: 1;
+    border: none;
+    border-radius: 12px;
+    padding: 10px 6px;
+    text-align: center;
+    font-family: 'Nunito',sans-serif;
+    font-weight: 800;
+    font-size: 0.78rem;
+    letter-spacing: 0.2px;
+    background: #f1e8d3;
+    color: #7a6c4f;
+}
+
+.bench-tab.active {
+        background: var(--tijolo);
+        color: #fff;
+    }
+
+.bench-tab.active.sweet {
+            background: var(--rosa);
+        }
+
+.bench-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+}
+
+.bench-category {
+    display: none;
+}
+
+.bench-category.active {
+        display: block;
+    }
+
+.bench {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.ing-btn {
+    background: #fff;
+    border: 1px solid #e6dcc4;
+    border-radius: 12px;
+    padding: 8px 4px 6px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    font-family: 'Nunito',sans-serif;
+}
+
+.ing-btn .ico {
+        font-size: 1.5rem;
+    }
+
+.ing-btn .lbl {
+        font-size: 0.58rem;
+        font-weight: 700;
+        color: #665c48;
+        line-height: 1.1;
+    }
+
+.ing-btn:active {
+        transform: scale(0.94);
+        background: #f4efe0;
+    }
+
+.ing-btn.wrong {
+        animation: wrongflash .35s;
+    }
+
+@keyframes wrongflash {
+    0%,100% {
+        background: #fff;
+    }
+
+    40% {
+        background: #fbdcd6;
+        border-color: #e39184;
+    }
+}

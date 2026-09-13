@@ -1,0 +1,19 @@
+/* Tabela de classificação no fim da corrida e do campeonato. */
+
+table.resultTable {
+    border-collapse: collapse;
+    margin: 10px auto 6px;
+    width: min(92vw, 480px);
+}
+
+table.resultTable td {
+    padding: 7px 10px;
+    font-size: 3vw;
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+}
+
+table.resultTable .me { color: #00e5ff; font-weight: bold; }
+
+table.resultTable .medal { font-size: 3.6vw; width: 1.6em; }
+
+table.resultTable .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
