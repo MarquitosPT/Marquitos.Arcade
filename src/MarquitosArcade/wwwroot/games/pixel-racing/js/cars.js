@@ -6,7 +6,7 @@
 // algoritmos de condução.
 
 import { shuffle, rand } from '/lib/arcade/math.js';
-import { CPU_COLORS, CPU_NAMES, PLAYER_COLOR } from './config.js';
+import { CAR_COLORS, CPU_NAMES, PLAYER_COLOR } from './config.js';
 import { session } from './state.js';
 
 export function makeCar(key, name, color) {
@@ -20,13 +20,18 @@ export function makeCar(key, name, color) {
     };
 }
 
-export function setupParticipants(playerName) {
+/**
+ * Monta a grelha: o jogador com o nome e a cor que escolheu, e três CPU com
+ * nomes e cores sorteados de entre os que sobram.
+ */
+export function setupParticipants(playerName, playerColor = PLAYER_COLOR) {
     const cpuNames = shuffle(CPU_NAMES).slice(0, 3);
+    const cpuColors = shuffle(CAR_COLORS.filter((c) => c.value !== playerColor)).slice(0, 3);
     session.participants = [
-        { key: 'player', name: playerName, color: PLAYER_COLOR },
-        { key: 'cpu1', name: cpuNames[0], color: CPU_COLORS[0] },
-        { key: 'cpu2', name: cpuNames[1], color: CPU_COLORS[1] },
-        { key: 'cpu3', name: cpuNames[2], color: CPU_COLORS[2] }
+        { key: 'player', name: playerName, color: playerColor },
+        { key: 'cpu1', name: cpuNames[0], color: cpuColors[0].value },
+        { key: 'cpu2', name: cpuNames[1], color: cpuColors[1].value },
+        { key: 'cpu3', name: cpuNames[2], color: cpuColors[2].value }
     ];
     session.tournamentPoints = { player: 0, cpu1: 0, cpu2: 0, cpu3: 0 };
     session.playerScore = 0;

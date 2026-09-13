@@ -10,7 +10,9 @@
 // vidro: o menu é uma janela para a pista, não um cartaz.
 
 import { escapeHtml } from '/lib/arcade/index.js';
-import { LAPS_REQUIRED, MODE_TOURNAMENT, TOURNAMENT_TRACKS } from './config.js';
+import { readText, writeText } from '/lib/arcade/storage.js';
+
+import { CAR_COLORS, COLOR_STORAGE_KEY, LAPS_REQUIRED, MODE_TOURNAMENT, TOURNAMENT_TRACKS } from './config.js';
 import { race, session } from './state.js';
 import { THEME_INFO, TRACKS } from './tracks.js';
 import { els, overlays } from './ui.js';
@@ -79,6 +81,15 @@ function trackCard(track, { index, order = null }) {
     </${tag}>`;
 }
 
+/**
+ * Amostras de cor. Ficam no ecrã de preparação, ao lado da pista e da
+ * dificuldade — é onde se afina a corrida que está prestes a começar.
+ */
+function colorSwatches() {
+    return CAR_COLORS.map((color) => `<button type="button" class="colorBtn" data-value="${color.value}"
+        style="--swatch: ${color.value}" title="${color.name}" aria-label="Cor ${color.name}"></button>`).join('');
+}
+
 /** A pista que se vê por trás do vidro enquanto se escolhe. */
 function previewTrack(index) {
     race.track = TRACKS[index];
@@ -103,6 +114,32 @@ export function createMenu({ playerName }) {
             }
             els.nameSlot.classList.remove('is-pending');
         });
+    }
+
+    /**
+     * A cor escolhida fica guardada neste aparelho, como o nome: quem gosta de
+     * correr de verde não quer voltar a escolher verde a cada visita.
+     */
+    function bindColors() {
+        const stored = readText(COLOR_STORAGE_KEY);
+        if (CAR_COLORS.some((color) => color.value === stored)) session.playerColor = stored;
+
+        els.colorRow.innerHTML = colorSwatches();
+        markColor();
+
+        els.colorRow.addEventListener('click', (event) => {
+            const swatch = event.target.closest('.colorBtn');
+            if (!swatch) return;
+            session.playerColor = swatch.dataset.value;
+            writeText(COLOR_STORAGE_KEY, session.playerColor);
+            markColor();
+        });
+    }
+
+    function markColor() {
+        for (const swatch of els.colorRow.querySelectorAll('.colorBtn')) {
+            swatch.classList.toggle('active', swatch.dataset.value === session.playerColor);
+        }
     }
 
     function showMenu() {
@@ -143,6 +180,7 @@ export function createMenu({ playerName }) {
     });
 
     bindAccount();
+    bindColors();
     previewTrack(session.trackIdx);
 
     return { showMenu, showSetup };

@@ -6,8 +6,27 @@
 
 export const GAME_ID = 'pixel-racing';
 export const NAME_STORAGE_KEY = 'pixelRacingPlayerName_v1';
+export const COLOR_STORAGE_KEY = 'pixelRacingPlayerColor_v1';
 
-export const PLAYER_COLOR = '#00e5ff';
+/**
+ * Paleta do jogo. O jogador escolhe a sua cor no ecrã de preparação e os
+ * adversários ficam com três das restantes — daí ser uma paleta só, e não uma
+ * lista para o jogador e outra para os CPU: assim nunca há dois carros da mesma
+ * cor na pista, que é o que faz falta para se perceber quem é quem de relance.
+ */
+export const CAR_COLORS = [
+    { name: 'Ciano', value: '#00e5ff' },
+    { name: 'Lima', value: '#7cff2f' },
+    { name: 'Laranja', value: '#ff6a1a' },
+    { name: 'Rosa', value: '#ff2fa0' },
+    { name: 'Violeta', value: '#a07cff' },
+    { name: 'Dourado', value: '#ffc14d' },
+    { name: 'Vermelho', value: '#ff4d4d' },
+    { name: 'Branco', value: '#f2f6ff' }
+];
+
+/** Cor por omissão do carro do jogador, enquanto não escolher outra. */
+export const PLAYER_COLOR = CAR_COLORS[0].value;
 
 /**
  * Tipos de letra do HUD desenhado no canvas — os mesmos do menu (ver css/theme.css),
@@ -17,7 +36,6 @@ export const PLAYER_COLOR = '#00e5ff';
 export const FONT_DISPLAY = "'Outfit', 'Segoe UI', system-ui, sans-serif";
 export const FONT_BODY = "'Plus Jakarta Sans', system-ui, sans-serif";
 
-export const CPU_COLORS = ['#ff6a1a', '#ff2fa0', '#7cff2f'];
 export const CPU_NAMES = ['Raio', 'Fúria', 'Trovão', 'Faísca', 'Nitro', 'Sombra', 'Foguete', 'Turbo', 'Relâmpago', 'Cobra', 'Ciclone', 'Fantasma'];
 
 export const MODE_QUICK = 'quick';
