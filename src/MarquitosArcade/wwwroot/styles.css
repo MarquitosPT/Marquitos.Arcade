@@ -41,7 +41,7 @@
   --glass-bg: rgba(255, 255, 255, 0.55);
   --glass-bg-strong: rgba(255, 255, 255, 0.78);
   --glass-bg-soft: rgba(255, 255, 255, 0.34);
-  --dropdown-menu-bg: rgba(255, 255, 255, 0.97);
+  --dropdown-menu-bg: rgba(255, 255, 255, 0.88);
   --glass-border: rgba(255, 255, 255, 0.75);
   --glass-highlight: rgba(255, 255, 255, 0.9);
   --glass-shadow: 0 20px 44px -22px rgba(18, 22, 48, 0.45);
@@ -112,7 +112,7 @@
     --glass-bg: rgba(255, 255, 255, 0.06);
     --glass-bg-strong: rgba(14, 18, 36, 0.78);
     --glass-bg-soft: rgba(255, 255, 255, 0.035);
-    --dropdown-menu-bg: rgba(10, 13, 26, 0.97);
+    --dropdown-menu-bg: rgba(10, 13, 26, 0.85);
     --glass-border: rgba(255, 255, 255, 0.13);
     --glass-highlight: rgba(255, 255, 255, 0.14);
     --glass-shadow: 0 24px 50px -24px rgba(0, 0, 0, 0.85);
@@ -165,7 +165,7 @@
   --glass-bg: rgba(255, 255, 255, 0.06);
   --glass-bg-strong: rgba(14, 18, 36, 0.78);
   --glass-bg-soft: rgba(255, 255, 255, 0.035);
-  --dropdown-menu-bg: rgba(10, 13, 26, 0.97);
+  --dropdown-menu-bg: rgba(10, 13, 26, 0.85);
   --glass-border: rgba(255, 255, 255, 0.13);
   --glass-highlight: rgba(255, 255, 255, 0.14);
   --glass-shadow: 0 24px 50px -24px rgba(0, 0, 0, 0.85);
@@ -574,8 +574,8 @@ body::before {
   min-width: 190px;
   overflow: hidden;
   z-index: 500;
-  backdrop-filter: blur(var(--blur-strong)) saturate(180%);
-  -webkit-backdrop-filter: blur(var(--blur-strong)) saturate(180%);
+  backdrop-filter: blur(38px) saturate(180%);
+  -webkit-backdrop-filter: blur(38px) saturate(180%);
   animation: pop-in 0.16s ease-out;
 }
 
