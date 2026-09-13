@@ -41,6 +41,7 @@
   --glass-bg: rgba(255, 255, 255, 0.55);
   --glass-bg-strong: rgba(255, 255, 255, 0.78);
   --glass-bg-soft: rgba(255, 255, 255, 0.34);
+  --dropdown-menu-bg: rgba(255, 255, 255, 0.97);
   --glass-border: rgba(255, 255, 255, 0.75);
   --glass-highlight: rgba(255, 255, 255, 0.9);
   --glass-shadow: 0 20px 44px -22px rgba(18, 22, 48, 0.45);
@@ -111,6 +112,7 @@
     --glass-bg: rgba(255, 255, 255, 0.06);
     --glass-bg-strong: rgba(14, 18, 36, 0.78);
     --glass-bg-soft: rgba(255, 255, 255, 0.035);
+    --dropdown-menu-bg: rgba(10, 13, 26, 0.97);
     --glass-border: rgba(255, 255, 255, 0.13);
     --glass-highlight: rgba(255, 255, 255, 0.14);
     --glass-shadow: 0 24px 50px -24px rgba(0, 0, 0, 0.85);
@@ -163,6 +165,7 @@
   --glass-bg: rgba(255, 255, 255, 0.06);
   --glass-bg-strong: rgba(14, 18, 36, 0.78);
   --glass-bg-soft: rgba(255, 255, 255, 0.035);
+  --dropdown-menu-bg: rgba(10, 13, 26, 0.97);
   --glass-border: rgba(255, 255, 255, 0.13);
   --glass-highlight: rgba(255, 255, 255, 0.14);
   --glass-shadow: 0 24px 50px -24px rgba(0, 0, 0, 0.85);
@@ -565,7 +568,7 @@ body::before {
   top: 100%;
   right: 0;
   margin-top: 0.5rem;
-  background: var(--glass-bg-strong);
+  background: var(--dropdown-menu-bg);
   border-radius: var(--radius);
   box-shadow: 0 24px 48px -16px rgba(0, 0, 0, 0.55), 0 8px 20px -10px rgba(0, 0, 0, 0.4);
   min-width: 190px;
