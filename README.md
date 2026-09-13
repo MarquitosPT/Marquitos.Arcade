@@ -15,7 +15,7 @@ Blazor Web App (.NET 10, render mode Interactive Server) com ASP.NET Core Identi
   - `pong/`: Pong Retro, com modo 1 jogador (vs. CPU, pontuação submetida via `/api/scores/pong`) e 2 jogadores.
   - `pixel-racing/`: Pixel Racing, corrida rápida ou torneio de três pistas, com pontuação via `/api/scores/pixel-racing`.
 - `src/MarquitosArcade/wwwroot/lib/arcade/`: SDK partilhado pelos jogos (áudio, leaderboard, armazenamento, viewport do canvas, ciclo de jogo, barra de topo). Módulos ES sem dependências externas.
-- `tools/games/smoke-test.mjs`: smoke-test dos jogos em Chromium headless. Ver [Testar os jogos](#testar-os-jogos).
+- `tools/games/smoke-test.mjs`: smoke-test dos jogos em Chromium headless, corrido em cada pull request por `.github/workflows/jogos-smoke-test.yml`. Ver [Testar os jogos](#testar-os-jogos).
 - `src/MarquitosArcade/Scores/ScoresEndpoints.cs`: endpoint genérico `GET/POST /api/scores/:gameId`, persistido na tabela `Scores` (EF Core + SQLite). Se o pedido vier de um utilizador autenticado, o nome do leaderboard vem da conta (evita spoofing de nomes); caso contrário aceita o nome livre submetido pelo jogo.
 - `src/MarquitosArcade/Data/`: `ApplicationDbContext`, `ApplicationUser` e as migrations do EF Core.
 - `src/MarquitosArcade/Components/Account/`: páginas de login/registo/gestão de conta scaffolded pelo template Identity do ASP.NET Core (login em `/Account/Login`, registo em `/Account/Register`, gestão em `/Account/Manage`). Sem confirmação por email — não há servidor de email configurado, por isso ficaria a bloquear amigos convidados.
@@ -114,10 +114,17 @@ coberto pelo teste.
 ```bash
 cd tools/games
 npm install
+npx playwright install chromium         # só na primeira vez
 
 node smoke-test.mjs                     # todos os jogos
 node smoke-test.mjs --only pong         # só um
 ```
+
+Corre em cada pull request pelo workflow `.github/workflows/jogos-smoke-test.yml`
+— o workflow de deploy só arranca depois do merge em `main`, por isso sem isto
+nada verificava uma mudança antes de entrar. Se falhar, os screenshots de cada
+jogo ficam anexados à execução como artefacto, para se ver em que ecrã o jogo se
+perdeu.
 
 Para refactors, o par `--out`/`--compare` compara os ecrãs antes e depois. O ecrã
 de menu é determinístico e tem de bater certo ao pixel; os fotogramas de jogo

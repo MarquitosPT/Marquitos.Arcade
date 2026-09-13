@@ -7,3 +7,6 @@ src/MarquitosArcade/Data/app.db-*
 
 # Ferramentas Node (tools/)
 node_modules/
+
+# Screenshots do smoke-test dos jogos (tools/games/smoke-test.mjs --out)
+tools/games/screenshots/

@@ -1,0 +1,63 @@
+# Smoke-test dos jogos da arcada.
+#
+# Corre em cada pull request porque o workflow de deploy só arranca depois do
+# merge em main — sem isto, nada verificava uma mudança antes de entrar.
+#
+# Os jogos são 100% cliente (canvas, requestAnimationFrame, Web Audio), por isso
+# o teste não precisa do SDK do .NET nem do site a correr: o próprio script serve
+# o wwwroot com um servidor estático. Ver tools/games/smoke-test.mjs.
+
+name: Smoke-test dos jogos
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Um push novo no mesmo PR cancela a execução anterior, que já não interessa.
+concurrency:
+  group: smoke-test-jogos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # necessário para o actions/checkout
+
+    defaults:
+      run:
+        working-directory: tools/games
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar o Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: tools/games/package-lock.json
+
+      - name: Instalar dependências
+        run: npm ci
+
+      # Sem cache do browser de propósito: o --with-deps também instala
+      # bibliotecas de sistema, que não vivem na pasta que daria para cachear.
+      # Meio cache seria mais frágil do que os ~30s que pouparia.
+      - name: Instalar o Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Correr o smoke-test
+        run: node smoke-test.mjs --out screenshots
+
+      # Numa falha, as fotografias dizem logo em que ecrã o jogo se perdeu.
+      - name: Guardar os screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-dos-jogos
+          path: tools/games/screenshots/
+          retention-days: 7

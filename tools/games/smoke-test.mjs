@@ -26,14 +26,24 @@
 
 import { chromium } from 'playwright';
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { startStaticServer } from './static-server.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_WWWROOT = resolve(HERE, '../../src/MarquitosArcade/wwwroot');
-// O container traz o Chromium pré-instalado; o download do Playwright está desligado.
-const CHROMIUM = process.env.ARCADE_CHROMIUM || '/opt/pw-browsers/chromium';
+/**
+ * Onde está o Chromium. Alguns ambientes (containers de desenvolvimento) trazem-no
+ * pré-instalado e desligam o download do Playwright; noutros (CI, máquina local
+ * depois de `npx playwright install`) quem sabe o caminho é o próprio Playwright.
+ * Devolve null para o Playwright resolver sozinho.
+ */
+function findChromium() {
+    if (process.env.ARCADE_CHROMIUM) return process.env.ARCADE_CHROMIUM;
+    const preinstalled = '/opt/pw-browsers/chromium';
+    return existsSync(preinstalled) ? preinstalled : null;
+}
 
 const args = process.argv.slice(2);
 const argValue = (name, fallback = null) => {
@@ -358,7 +368,8 @@ async function main() {
 
     const { port, close } = await startStaticServer(WWWROOT);
     const baseUrl = `http://127.0.0.1:${port}`;
-    const browser = await chromium.launch({ executablePath: CHROMIUM });
+    const executablePath = findChromium();
+    const browser = await chromium.launch(executablePath ? { executablePath } : {});
 
     if (OUT) await mkdir(OUT, { recursive: true });
 
