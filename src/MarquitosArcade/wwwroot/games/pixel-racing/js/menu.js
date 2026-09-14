@@ -13,6 +13,7 @@ import { escapeHtml } from '/lib/arcade/index.js';
 import { readText, writeText } from '/lib/arcade/storage.js';
 
 import { CAR_COLORS, COLOR_STORAGE_KEY, LAPS_REQUIRED, MODE_TOURNAMENT, TOURNAMENT_TRACKS } from './config.js';
+import { menuZoom } from './race.js';
 import { race, session } from './state.js';
 import { THEME_INFO, TRACKS } from './tracks.js';
 import { els, overlays } from './ui.js';
@@ -95,6 +96,7 @@ function previewTrack(index) {
     race.track = TRACKS[index];
     race.camera.x = race.track.cx;
     race.camera.y = race.track.cy;
+    race.zoom = menuZoom();
 }
 
 export function createMenu({ playerName }) {

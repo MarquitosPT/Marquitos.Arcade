@@ -72,5 +72,11 @@ export const CAM_FOLLOW = 6;
  */
 export const ZOOM = 0.7;
 export const ZOOM_NARROW = 0.6;
+/**
+ * Até onde o fundo do menu se pode afastar para mostrar a pista toda. Abaixo
+ * disto a pista ficava um risco no meio do ecrã, e num telemóvel ao alto vale
+ * mais ver bem um pedaço do que mal o traçado inteiro.
+ */
+export const MENU_ZOOM_MIN = 0.3;
 export const NARROW_WIDTH = 520;
 export const RACE_POINTS = [30, 20, 12, 6];
