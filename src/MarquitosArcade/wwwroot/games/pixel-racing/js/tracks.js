@@ -2,9 +2,11 @@
 //
 // Uma pista é uma elipse deformada por harmónicos de seno: com dois ou três
 // termos saem curvas com carácter (uma chicane, uma curva dupla) sem ninguém ter
-// de desenhar pontos à mão. A partir dos 420 pontos da linha central derivam-se
-// as tangentes, as normais (para as bordas e as colisões), o comprimento total
-// (para a distância percorrida) e a caixa envolvente (para o minimapa).
+// de desenhar pontos à mão. Os 420 pontos da linha central começam a meio do
+// lado de baixo e seguem no sentido contrário ao dos ponteiros do relógio; deles
+// derivam-se as tangentes, as normais (para as bordas e as colisões), o
+// comprimento total (para a distância percorrida) e a caixa envolvente (para o
+// minimapa).
 
 import { rand } from '/lib/arcade/math.js';
 
@@ -12,7 +14,11 @@ function buildTrack(def) {
     const N = 420;
     const pts = [];
     for (let i = 0; i < N; i++) {
-        const t = (i / N) * Math.PI * 2;
+        // A partida fica a meio do lado de baixo (t = PI/2) e o ângulo diminui
+        // com o índice, para a corrida seguir no sentido contrário ao dos
+        // ponteiros do relógio. O traçado é o mesmo: muda só por onde se começa
+        // e para que lado se anda.
+        const t = Math.PI / 2 - (i / N) * Math.PI * 2;
         let r = 1;
         for (const h of def.harmonics) r += h.amp * Math.sin(h.freq * t + (h.phase || 0));
         pts.push({
