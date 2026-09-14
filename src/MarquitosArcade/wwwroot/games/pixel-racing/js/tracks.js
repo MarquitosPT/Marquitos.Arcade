@@ -93,6 +93,16 @@ function buildTrack(def) {
     const pads = [];
     for (let i = 0; i < padCount; i++) pads.push(Math.floor(N * (i + 0.66) / padCount));
 
+    // Uma poça de óleo a meio caminho entre cada par de postos de turbo, de um
+    // lado e do outro alternadamente: ficam repartidas pela pista, longe da
+    // meta, e sempre com meia pista livre para quem as vir a tempo.
+    const oils = [];
+    for (let i = 0; i < pads.length - 1; i++) {
+        const idx = Math.floor((pads[i] + pads[i + 1]) / 2);
+        const offset = (i % 2 === 0 ? 1 : -1) * def.halfWidth * 0.42;
+        oils.push({ idx, offset, x: pts[idx].x + norm[idx].x * offset, y: pts[idx].y + norm[idx].y * offset });
+    }
+
     // A decoração acompanha o tamanho do terreno, para uma pista maior não ficar
     // com o mesmo punhado de arbustos espalhado por muito mais chão.
     const decor = [];
@@ -110,7 +120,7 @@ function buildTrack(def) {
         }
     }
 
-    return { ...def, pts, tang, norm, total, N, bbox, pads, decor };
+    return { ...def, pts, tang, norm, total, N, bbox, pads, oils, decor };
 }
 
 export const TRACKS = [

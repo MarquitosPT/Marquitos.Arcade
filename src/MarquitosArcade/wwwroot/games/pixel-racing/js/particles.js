@@ -58,6 +58,17 @@ export function spawnWallDust(car) {
     }
 }
 
+/** Salpico escuro de quem está a patinar em cima de uma poça de óleo. */
+export function spawnOilSpray(car) {
+    for (let i = 0; i < 2; i++) {
+        spawnParticle({
+            type: 'smoke', x: car.x + rand(-10, 10), y: car.y + rand(-10, 10),
+            vx: rand(-60, 60), vy: rand(-60, 60), life: rand(0.25, 0.5), maxLife: 0.5,
+            size: rand(3, 7), color: 'rgba(40,35,55,'
+        });
+    }
+}
+
 export function spawnImpactSpark(x, y) {
     for (let i = 0; i < 10; i++) {
         const a = rand(0, Math.PI * 2);

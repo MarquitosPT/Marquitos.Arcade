@@ -60,6 +60,10 @@ export const sfx = {
         beep(700, 0.08, 'triangle', 0.2);
         beep(1050, 0.14, 'triangle', 0.2, 0.08);
     },
+    /** Entrada numa poça de óleo: um deslizar para baixo, a perder o pé. */
+    oil: () => {
+        for (let i = 0; i < 5; i++) beep(420 - i * 60, 0.1, 'triangle', 0.13, i * 0.045);
+    },
     /** Encontrão noutro carro. */
     bump: () => beep(110, 0.1, 'square', 0.2),
     /** Embate na parede. */

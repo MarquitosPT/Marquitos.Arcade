@@ -6,7 +6,7 @@
 // transformação, por isso fica em coordenadas de ecrã.
 
 import { clamp } from '/lib/arcade/math.js';
-import { CAR_LEN, CAR_W, FONT_DISPLAY, LAPS_REQUIRED, MAX_SPEED } from './config.js';
+import { CAR_LEN, CAR_W, FONT_DISPLAY, LAPS_REQUIRED, MAX_SPEED, OIL_RADIUS } from './config.js';
 import { THEME_COLORS } from './tracks.js';
 import { drawConfetti, drawParticles, hasConfetti } from './particles.js';
 import { buttonRects, keys, touchState } from './input.js';
@@ -260,6 +260,37 @@ function drawTrack() {
         ctx.rotate(ang0);
         ctx.fillStyle = s % 2 === 0 ? '#111' : '#eee';
         ctx.fillRect(-6, -((race.track.halfWidth * 2) / steps) / 2, 12, (race.track.halfWidth * 2) / steps);
+        ctx.restore();
+    }
+
+    // Poças de óleo: mancha escura com um brilho irisado por cima, desenhada com
+    // o raio a ondular para não parecer um círculo pintado. O contorno acompanha
+    // de perto o raio que as deteta, senão apanhavam o carro fora do que se vê.
+    for (const oil of race.track.oils) {
+        ctx.save();
+        ctx.translate(oil.x, oil.y);
+        ctx.beginPath();
+        for (let a = 0; a <= 36; a++) {
+            const ang = (a / 36) * Math.PI * 2;
+            const r = OIL_RADIUS * (0.94 + 0.1 * Math.sin(3 * ang + oil.idx) + 0.04 * Math.sin(5 * ang));
+            const x = Math.cos(ang) * r, y = Math.sin(ang) * r;
+            if (a === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        const sheen = ctx.createRadialGradient(0, 0, 4, 0, 0, OIL_RADIUS);
+        sheen.addColorStop(0, 'rgba(8,6,12,0.95)');
+        sheen.addColorStop(0.7, 'rgba(20,15,30,0.9)');
+        sheen.addColorStop(1, 'rgba(32,24,48,0.75)');
+        ctx.fillStyle = sheen;
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(150,120,255,0.35)';
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.ellipse(-OIL_RADIUS * 0.2, -OIL_RADIUS * 0.16, OIL_RADIUS * 0.42, OIL_RADIUS * 0.24, 0.6, 0, Math.PI * 2);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(110,230,190,0.3)';
+        ctx.stroke();
         ctx.restore();
     }
 
