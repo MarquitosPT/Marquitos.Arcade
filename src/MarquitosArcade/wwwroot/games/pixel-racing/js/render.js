@@ -319,10 +319,11 @@ function drawCar(car) {
     drawWheel(-L * 0.28, -hw * 1.02, L, W, 0);
     drawWheel(-L * 0.28, hw * 1.02, L, W, 0);
 
-    // Asa dianteira, por baixo do corpo para só assomarem as pontas.
-    ctx.fillStyle = '#1b1f2b';
+    // Asa dianteira, por baixo do corpo para só assomarem as pontas. Na cor da
+    // carroçaria e não em preto: preta desaparecia contra o asfalto, e o carro
+    // ficava sem frente.
     rrect(L * 0.44, -hw * 0.86, L * 0.07, W * 0.86, 2);
-    ctx.fill();
+    paintBodyPart(car.color, hw * 0.86);
 
     ctx.transform(1, 0, lean, 1, 0, 0);
 
@@ -405,6 +406,26 @@ function drawCar(car) {
  * carroçaria, e visto de cima tapa a traseira) e leva a mesma sombra e o mesmo
  * gradiente de volume do resto do carro, senão ler-se-ia como um autocolante.
  */
+/**
+ * Pinta a peça que estiver no caminho atual na cor da carroçaria, com o mesmo
+ * gradiente de volume e o mesmo contorno do corpo — é o que faz uma asa parecer
+ * parte do carro e não uma peça solta.
+ * @param {number} span Meia-altura da peça, para o gradiente bater certo com o do corpo.
+ */
+function paintBodyPart(color, span) {
+    ctx.fillStyle = color;
+    ctx.fill();
+    const shade = ctx.createLinearGradient(0, -span, 0, span);
+    shade.addColorStop(0, 'rgba(255, 255, 255, 0.38)');
+    shade.addColorStop(0.45, 'rgba(255, 255, 255, 0.06)');
+    shade.addColorStop(1, 'rgba(0, 0, 0, 0.32)');
+    ctx.fillStyle = shade;
+    ctx.fill();
+    ctx.lineWidth = 1.1;
+    ctx.strokeStyle = 'rgba(6, 9, 20, 0.6)';
+    ctx.stroke();
+}
+
 function drawRearWing(L, W, color) {
     const hw = W / 2;
     const span = hw * 1.2;
@@ -422,17 +443,7 @@ function drawRearWing(L, W, color) {
     ctx.fill();
 
     rrect(-L * 0.58, -span, L * 0.13, span * 2, 2);
-    ctx.fillStyle = color;
-    ctx.fill();
-    const shade = ctx.createLinearGradient(0, -span, 0, span);
-    shade.addColorStop(0, 'rgba(255, 255, 255, 0.38)');
-    shade.addColorStop(0.45, 'rgba(255, 255, 255, 0.06)');
-    shade.addColorStop(1, 'rgba(0, 0, 0, 0.32)');
-    ctx.fillStyle = shade;
-    ctx.fill();
-    ctx.lineWidth = 1.1;
-    ctx.strokeStyle = 'rgba(6, 9, 20, 0.6)';
-    ctx.stroke();
+    paintBodyPart(color, span);
 }
 
 /** Chama do boost: sai pelo escape, na direção contrária ao andamento. */
