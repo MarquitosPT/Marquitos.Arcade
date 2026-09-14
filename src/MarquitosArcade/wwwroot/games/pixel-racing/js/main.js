@@ -11,7 +11,7 @@ import { MODE_TOURNAMENT, NAME_STORAGE_KEY, TOURNAMENT_TRACKS } from './config.j
 import { sfx } from './audio.js';
 import { attachControls, setPauseHandler } from './input.js';
 import { resetParticles, updateConfetti, updateParticles } from './particles.js';
-import { returnToMenuAbort, startRace, togglePause, updateCamera, updateRace } from './race.js';
+import { baseZoom, returnToMenuAbort, startRace, togglePause, updateCamera, updateRace } from './race.js';
 import { drawCountdown, drawFinishOverlay, initRenderer, render } from './render.js';
 import { setReturnToMenuHandler, showResultScreen } from './results.js';
 import { setupParticipants } from './cars.js';
@@ -28,6 +28,10 @@ const viewport = createViewport(els.game, {
     topBarGap: 6,
     onResize(v) {
         race.view = v;
+        // Fora da corrida ninguém está a mexer na câmara, e a aproximação de base
+        // depende da largura do ecrã: aplica-se aqui para o fundo do menu não
+        // ficar com o enquadramento do tamanho de ecrã anterior.
+        if (race.phase !== 'racing') race.zoom = baseZoom();
     }
 });
 initRenderer(viewport);

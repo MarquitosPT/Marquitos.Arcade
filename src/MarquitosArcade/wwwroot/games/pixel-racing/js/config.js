@@ -50,7 +50,7 @@ export const LAPS_REQUIRED = 3;
  * dois: mexer no comprimento sem mexer no raio dá carros que se encostam sem se
  * tocarem, ou que embatem no ar.
  */
-export const CAR_LEN = 38, CAR_W = 20, CAR_RADIUS = 17;
+export const CAR_LEN = 57, CAR_W = 30, CAR_RADIUS = 26;
 export const MAX_SPEED = 380;
 export const BOOST_MULT = 1.5;
 export const ACCEL = 320;
@@ -63,6 +63,14 @@ export const DRIFT_MIN_SPEED = 80;
 export const BOOST_DRAIN = 42, BOOST_REGEN = 7;
 export const DRIFT_CHARGE_RATE = 60, DRIFT_TO_BOOST = 0.7, DRIFT_PERFECT = 60;
 export const CAM_FOLLOW = 6;
-/** Aproximação da câmara. Quanto maior, mais perto da ação e menos pista à vista. */
+/**
+ * Aproximação da câmara. Quanto maior, mais perto da ação e menos pista à vista.
+ *
+ * Em ecrãs estreitos afasta-se: o telemóvel tem menos pixels, e com a mesma
+ * aproximação do monitor via-se um pedaço de pista pequeno de mais para
+ * antecipar as curvas. O limiar é o mesmo que o HUD usa para encolher.
+ */
 export const ZOOM = 0.7;
+export const ZOOM_NARROW = 0.6;
+export const NARROW_WIDTH = 520;
 export const RACE_POINTS = [30, 20, 12, 6];
