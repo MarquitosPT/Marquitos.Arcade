@@ -8,16 +8,26 @@ import { clamp, lerpAngle } from '/lib/arcade/math.js';
 import {
     ACCEL, BOOST_DRAIN, BOOST_MULT, BOOST_REGEN, BRAKE_DECEL, BUMP_DAMP, CAR_RADIUS,
     DRIFT_CHARGE_RATE, DRIFT_MIN_SPEED, DRIFT_PERFECT, DRIFT_TO_BOOST, DRIFT_TURN_MULT,
-    GRIP_DRIFT, GRIP_NORMAL, GRIP_OIL, MAX_SPEED, OFFTRACK_DAMP, OIL_RADIUS, OIL_SPIN,
-    OIL_TIME, TURN_RATE, WALL_STEER_BLEND
+    GRIP_DRIFT, GRIP_NORMAL, GRIP_OIL, MAX_SPEED, OFFROAD_DECEL, OFFROAD_SPEED, OFFTRACK_DAMP,
+    OIL_RADIUS, OIL_SPIN, OIL_TIME, TURN_RATE, WALL_STEER_BLEND
 } from './config.js';
 import { findNearestIdx } from './tracks.js';
 import { sfx } from './audio.js';
 import {
     spawnBoostFlame, spawnDriftPerfectBurst, spawnDriftSpark, spawnImpactSpark,
-    spawnOilSpray, spawnPadBurst, spawnSmoke, spawnWallDust
+    spawnOffroadDust, spawnOilSpray, spawnPadBurst, spawnSmoke, spawnWallDust
 } from './particles.js';
 import { bumpShake, race } from './state.js';
+
+/**
+ * Distância do carro à linha central, com sinal. Acima de `halfWidth` já vai
+ * fora do alcatrão, na escapatória; acima de `halfWidth + runoff` está contra a
+ * barreira.
+ */
+function lateralOffset(car) {
+    const p = race.track.pts[car.idx], n = race.track.norm[car.idx];
+    return (car.x - p.x) * n.x + (car.y - p.y) * n.y;
+}
 
 export function integrateCar(car, dt, isPlayer) {
     const wantsDrift = car.driftHold && Math.abs(car.steerInput) > 0.15 && car.speed > DRIFT_MIN_SPEED;
@@ -42,6 +52,17 @@ export function integrateCar(car, dt, isPlayer) {
     if (car.brakeHeld) car.speed -= BRAKE_DECEL * dt;
     else car.speed += ACCEL * dt;
     car.speed = clamp(car.speed, -MAX_SPEED * 0.35, maxSpeedNow);
+
+    // Fora do alcatrão o carro atola-se: a velocidade desce até um quarto da
+    // máxima, mas desce a travar em vez de cair de repente — sair da pista custa
+    // tempo a recuperar, que é o castigo, e não um empurrão seco.
+    car.offTrack = Math.abs(lateralOffset(car)) > race.track.halfWidth;
+    if (car.offTrack) {
+        const cap = MAX_SPEED * OFFROAD_SPEED;
+        if (car.speed > cap) car.speed = Math.max(cap, car.speed - OFFROAD_DECEL * dt);
+        car.dustTimer -= dt;
+        if (car.dustTimer <= 0 && car.speed > 40) { spawnOffroadDust(car); car.dustTimer = 0.05; }
+    }
 
     car.velAngle = lerpAngle(car.velAngle, car.facing, 1 - Math.exp(-grip * dt));
     car.x += Math.cos(car.velAngle) * car.speed * dt;
@@ -110,9 +131,9 @@ export function computeProgress(car) {
 }
 
 export function wallCollision(car) {
-    const p = race.track.pts[car.idx], n = race.track.norm[car.idx], tg = race.track.tang[car.idx];
-    const offset = (car.x - p.x) * n.x + (car.y - p.y) * n.y;
-    const limit = race.track.halfWidth - CAR_RADIUS * 0.7;
+    const n = race.track.norm[car.idx], tg = race.track.tang[car.idx];
+    const offset = lateralOffset(car);
+    const limit = race.track.halfWidth + race.track.runoff - CAR_RADIUS * 0.7;
     if (Math.abs(offset) > limit) {
         const sign = offset > 0 ? 1 : -1;
         car.x -= (offset - sign * limit) * n.x;

@@ -18,6 +18,7 @@
 // percorrida) e a caixa envolvente (para o minimapa).
 
 import { rand } from '/lib/arcade/math.js';
+import { BARRIER_SPACING, RUNOFF } from './config.js';
 
 /** Distância entre pontos da linha central, em unidades do mundo. */
 const STEP = 6.9;
@@ -103,6 +104,22 @@ function buildTrack(def) {
         oils.push({ idx, offset, x: pts[idx].x + norm[idx].x * offset, y: pts[idx].y + norm[idx].y * offset });
     }
 
+    // Barreiras ao longo do limite da escapatória, dos dois lados e a passo
+    // constante. Não travam nada por si — são a cara do limite, para se ver até
+    // onde é que o carro pode ir sem ter de haver uma linha pintada no chão.
+    const barrierAt = def.halfWidth + RUNOFF + 12;
+    const step = Math.max(1, Math.round(BARRIER_SPACING / (total / N)));
+    const barriers = [];
+    for (const side of [1, -1]) {
+        for (let i = 0; i < N; i += step) {
+            const p = pts[i], n = norm[i], tg = tang[i];
+            barriers.push({
+                x: p.x + n.x * barrierAt * side, y: p.y + n.y * barrierAt * side,
+                angle: Math.atan2(tg.y, tg.x), variant: (i / step) % 3
+            });
+        }
+    }
+
     // A decoração acompanha o tamanho do terreno, para uma pista maior não ficar
     // com o mesmo punhado de arbustos espalhado por muito mais chão.
     const decor = [];
@@ -114,13 +131,13 @@ function buildTrack(def) {
             const y = rand(bbox.minY - 260, bbox.maxY + 260);
             let tooClose = false;
             for (let k = 0; k < N; k += 14) {
-                if (Math.hypot(pts[k].x - x, pts[k].y - y) < def.halfWidth + 55) { tooClose = true; break; }
+                if (Math.hypot(pts[k].x - x, pts[k].y - y) < barrierAt + 55) { tooClose = true; break; }
             }
             if (!tooClose) decor.push({ x, y, size: rand(10, 26), variant: Math.random() });
         }
     }
 
-    return { ...def, pts, tang, norm, total, N, bbox, pads, oils, decor };
+    return { ...def, runoff: RUNOFF, barrierAt, pts, tang, norm, total, N, bbox, pads, oils, barriers, decor };
 }
 
 export const TRACKS = [
@@ -149,9 +166,9 @@ export const THEME_INFO = {
 };
 
 export const THEME_COLORS = {
-    grass: { terrain: '#0d2b12', asphalt: '#2a2e3a', decor: '#123a1c' },
-    sand: { terrain: '#2c1a10', asphalt: '#332c22', decor: '#5b4326' },
-    night: { terrain: '#0a0820', asphalt: '#181422', decor: '#ff2fa0' }
+    grass: { terrain: '#0d2b12', runoff: '#2e3a2a', asphalt: '#2a2e3a', decor: '#123a1c' },
+    sand: { terrain: '#2c1a10', runoff: '#4a3826', asphalt: '#332c22', decor: '#5b4326' },
+    night: { terrain: '#0a0820', runoff: '#241c33', asphalt: '#181422', decor: '#ff2fa0' }
 };
 
 export function findNearestIdx(track, x, y, hint) {

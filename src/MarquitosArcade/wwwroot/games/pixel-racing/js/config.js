@@ -56,13 +56,27 @@ export const BOOST_MULT = 1.5;
 export const ACCEL = 320;
 export const BRAKE_DECEL = 460;
 /**
- * Quanto da velocidade sobra depois de raspar na berma. Um embate custa tempo
+ * A escapatória: a faixa de terreno para lá do alcatrão onde ainda se pode
+ * andar. Sair da pista deixou de ser bater numa parede invisível — passa a ser
+ * atolar-se: a velocidade cai para `OFFROAD_SPEED` da máxima, mas cai com o
+ * travão de `OFFROAD_DECEL` e não de repente, para se sentir o carro a enterrar.
+ * Ao fim da escapatória há mesmo barreira (pneus, pedras, rails), e é aí que
+ * `OFFTRACK_DAMP` entra.
+ */
+export const RUNOFF = 70;
+export const OFFROAD_SPEED = 0.25;
+export const OFFROAD_DECEL = 700;
+/** Espaçamento das barreiras ao longo do limite da escapatória. */
+export const BARRIER_SPACING = 88;
+
+/**
+ * Quanto da velocidade sobra depois de raspar na barreira do fim da escapatória. Um embate custa tempo
  * por atirar o carro para fora da trajetória, e não por lhe matar a velocidade:
  * ficar quase parado a cada toque castigava duas vezes a mesma asneira.
  */
 export const OFFTRACK_DAMP = 0.82;
 /**
- * Quanto é que o embate na berma alinha o nariz do carro com a parede. A 1 o
+ * Quanto é que o embate na barreira alinha o nariz do carro com ela. A 1 o
  * carro perdia por completo a direção que o jogador lhe estava a dar; a meio
  * caminho, raspa na berma e continua a apontar mais ou menos para onde queria.
  */
