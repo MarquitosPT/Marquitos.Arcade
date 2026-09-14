@@ -6,7 +6,7 @@
 // transformação, por isso fica em coordenadas de ecrã.
 
 import { clamp } from '/lib/arcade/math.js';
-import { CAR_LEN, CAR_W, FONT_DISPLAY, LAPS_REQUIRED, MAX_SPEED } from './config.js';
+import { CAR_LEN, CAR_W, FONT_DISPLAY, LAPS_REQUIRED, MAX_SPEED, OIL_RADIUS } from './config.js';
 import { THEME_COLORS } from './tracks.js';
 import { drawConfetti, drawParticles, hasConfetti } from './particles.js';
 import { buttonRects, keys, touchState } from './input.js';
@@ -171,14 +171,15 @@ function drawVignette() {
 const KERB_WIDTH = 13, KERB_DASH = 26;
 
 /**
- * Traça no contexto a borda da pista (`side` a 1 de um lado, -1 do outro) e
- * devolve o seu comprimento — é dele que sai o passo do tracejado.
+ * Traça no contexto uma das margens (`side` a 1 de um lado, -1 do outro), à
+ * distância `width` da linha central, e devolve o seu comprimento — é dele que
+ * sai o passo do tracejado das guias.
  */
-function edgePath(side) {
-    const { N, pts, norm, halfWidth } = race.track;
+function edgePath(side, width = race.track.halfWidth) {
+    const { N, pts, norm } = race.track;
     const at = (i) => {
         const idx = i % N, p = pts[idx], n = norm[idx];
-        return { x: p.x + n.x * halfWidth * side, y: p.y + n.y * halfWidth * side };
+        return { x: p.x + n.x * width * side, y: p.y + n.y * width * side };
     };
     let prev = at(0), len = 0;
     ctx.beginPath();
@@ -192,27 +193,71 @@ function edgePath(side) {
     return len;
 }
 
-function drawTrack() {
-    const colors = THEME_COLORS[race.track.theme];
+/** Fita fechada a `width` de cada lado da linha central (ida por fora, volta por dentro). */
+function ribbonPath(width) {
+    const { N, pts, norm } = race.track;
     ctx.beginPath();
-    for (let i = 0; i <= race.track.N; i++) {
-        const idx = i % race.track.N; const p = race.track.pts[idx], n = race.track.norm[idx];
-        const ox = p.x + n.x * race.track.halfWidth, oy = p.y + n.y * race.track.halfWidth;
-        if (i === 0) ctx.moveTo(ox, oy); else ctx.lineTo(ox, oy);
+    for (let i = 0; i <= N; i++) {
+        const idx = i % N, p = pts[idx], n = norm[idx];
+        const x = p.x + n.x * width, y = p.y + n.y * width;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     }
-    for (let i = race.track.N; i >= 0; i--) {
-        const idx = i % race.track.N; const p = race.track.pts[idx], n = race.track.norm[idx];
-        ctx.lineTo(p.x - n.x * race.track.halfWidth, p.y - n.y * race.track.halfWidth);
+    for (let i = N; i >= 0; i--) {
+        const idx = i % N, p = pts[idx], n = norm[idx];
+        ctx.lineTo(p.x - n.x * width, p.y - n.y * width);
     }
     ctx.closePath();
+}
+
+/**
+ * Barreira do limite da escapatória, com a cara do ambiente: pilhas de pneus na
+ * relva, pedras no deserto, rails de luz à noite.
+ */
+function drawBarrier(theme, b) {
     ctx.save();
-    // A pista fica assente no terreno em vez de pintada por cima dele.
+    ctx.translate(b.x, b.y);
+    ctx.rotate(b.angle);
+    if (theme === 'grass') {
+        for (const dx of [-13, 13]) {
+            ctx.fillStyle = '#14141a';
+            ctx.beginPath(); ctx.arc(dx, 0, 11, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#2b2b34';
+            ctx.beginPath(); ctx.arc(dx, 0, 5, 0, Math.PI * 2); ctx.fill();
+        }
+    } else if (theme === 'sand') {
+        const r = [13, 9, 11][b.variant];
+        ctx.fillStyle = '#5a4c3e';
+        ctx.beginPath(); ctx.ellipse(-10, 2, r, r * 0.8, 0.4, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(11, -2, r * 0.8, r * 0.65, -0.3, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#7a6a58';
+        ctx.beginPath(); ctx.ellipse(-12, -1, r * 0.5, r * 0.35, 0.4, 0, Math.PI * 2); ctx.fill();
+    } else {
+        // De noite o limite é um rail corrido (ver drawTrack); aqui ficam só os
+        // prumos que o seguram.
+        ctx.fillStyle = 'rgba(255,47,160,0.6)';
+        ctx.shadowColor = '#ff2fa0'; ctx.shadowBlur = 6;
+        ctx.fillRect(-2.5, -8, 5, 16);
+    }
+    ctx.restore();
+}
+
+function drawTrack() {
+    const colors = THEME_COLORS[race.track.theme];
+
+    // A escapatória por baixo e o alcatrão por cima: é a escapatória que fica
+    // com a sombra, por ser ela o contorno de tudo o que está assente no terreno.
+    ribbonPath(race.track.halfWidth + race.track.runoff);
+    ctx.save();
     ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
     ctx.shadowBlur = 30;
     ctx.shadowOffsetY = 10;
-    ctx.fillStyle = colors.asphalt;
+    ctx.fillStyle = colors.runoff;
     ctx.fill();
     ctx.restore();
+
+    ribbonPath(race.track.halfWidth);
+    ctx.fillStyle = colors.asphalt;
+    ctx.fill();
     if (race.track.theme === 'night') {
         ctx.save();
         ctx.lineWidth = 3;
@@ -263,6 +308,37 @@ function drawTrack() {
         ctx.restore();
     }
 
+    // Poças de óleo: mancha escura com um brilho irisado por cima, desenhada com
+    // o raio a ondular para não parecer um círculo pintado. O contorno acompanha
+    // de perto o raio que as deteta, senão apanhavam o carro fora do que se vê.
+    for (const oil of race.track.oils) {
+        ctx.save();
+        ctx.translate(oil.x, oil.y);
+        ctx.beginPath();
+        for (let a = 0; a <= 36; a++) {
+            const ang = (a / 36) * Math.PI * 2;
+            const r = OIL_RADIUS * (0.94 + 0.1 * Math.sin(3 * ang + oil.idx) + 0.04 * Math.sin(5 * ang));
+            const x = Math.cos(ang) * r, y = Math.sin(ang) * r;
+            if (a === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        const sheen = ctx.createRadialGradient(0, 0, 4, 0, 0, OIL_RADIUS);
+        sheen.addColorStop(0, 'rgba(8,6,12,0.95)');
+        sheen.addColorStop(0.7, 'rgba(20,15,30,0.9)');
+        sheen.addColorStop(1, 'rgba(32,24,48,0.75)');
+        ctx.fillStyle = sheen;
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(150,120,255,0.35)';
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.ellipse(-OIL_RADIUS * 0.2, -OIL_RADIUS * 0.16, OIL_RADIUS * 0.42, OIL_RADIUS * 0.24, 0.6, 0, Math.PI * 2);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(110,230,190,0.3)';
+        ctx.stroke();
+        ctx.restore();
+    }
+
     for (const padIdx of race.track.pads) {
         const p = race.track.pts[padIdx];
         const pulse = 1 + 0.15 * Math.sin(race.globalClock * 5 + padIdx);
@@ -278,6 +354,18 @@ function drawTrack() {
         ctx.fillText('⚡', 0, 1);
         ctx.restore();
     }
+
+    if (race.track.theme === 'night') {
+        // Cada margem por si: uma fita fechada fecharia de uma ponta à outra e
+        // deixava um risco atravessado na meta.
+        ctx.save();
+        ctx.strokeStyle = 'rgba(0,229,255,0.45)';
+        ctx.lineWidth = 4;
+        ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 10;
+        for (const side of [1, -1]) { edgePath(side, race.track.barrierAt); ctx.stroke(); }
+        ctx.restore();
+    }
+    for (const b of race.track.barriers) drawBarrier(race.track.theme, b);
 }
 
 function drawCars() {

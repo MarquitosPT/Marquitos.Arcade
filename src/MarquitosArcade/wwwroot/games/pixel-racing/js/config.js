@@ -55,13 +55,52 @@ export const MAX_SPEED = 380;
 export const BOOST_MULT = 1.5;
 export const ACCEL = 320;
 export const BRAKE_DECEL = 460;
-export const OFFTRACK_DAMP = 0.5;
+/**
+ * A escapatória: a faixa de terreno para lá do alcatrão onde ainda se pode
+ * andar. Sair da pista deixou de ser bater numa parede invisível — passa a ser
+ * atolar-se: a velocidade cai para `OFFROAD_SPEED` da máxima, mas cai com o
+ * travão de `OFFROAD_DECEL` e não de repente, para se sentir o carro a enterrar.
+ * Ao fim da escapatória há mesmo barreira (pneus, pedras, rails), e é aí que
+ * `OFFTRACK_DAMP` entra.
+ */
+export const RUNOFF = 70;
+export const OFFROAD_SPEED = 0.25;
+export const OFFROAD_DECEL = 700;
+/** Espaçamento das barreiras ao longo do limite da escapatória. */
+export const BARRIER_SPACING = 88;
+
+/**
+ * Quanto da velocidade sobra depois de raspar na barreira do fim da escapatória. Um embate custa tempo
+ * por atirar o carro para fora da trajetória, e não por lhe matar a velocidade:
+ * ficar quase parado a cada toque castigava duas vezes a mesma asneira.
+ */
+export const OFFTRACK_DAMP = 0.82;
+/**
+ * Quanto é que o embate na barreira alinha o nariz do carro com ela. A 1 o
+ * carro perdia por completo a direção que o jogador lhe estava a dar; a meio
+ * caminho, raspa na berma e continua a apontar mais ou menos para onde queria.
+ */
+export const WALL_STEER_BLEND = 0.5;
+/** Quanto da velocidade sobra a cada frame de encontrão com outro carro. */
+export const BUMP_DAMP = 0.975;
 export const GRIP_NORMAL = 9, GRIP_DRIFT = 3.0;
 export const TURN_RATE = 2.8;
 export const DRIFT_TURN_MULT = 1.3;
 export const DRIFT_MIN_SPEED = 80;
 export const BOOST_DRAIN = 42, BOOST_REGEN = 7;
 export const DRIFT_CHARGE_RATE = 60, DRIFT_TO_BOOST = 0.7, DRIFT_PERFECT = 60;
+/**
+ * Poças de óleo: o contrário dos postos de turbo. Quem lhes passa por cima fica
+ * sem aderência e com o carro a rodar para um dos lados, sorteado à entrada —
+ * `OIL_SPIN` é a rotação no instante em que se entra, e vai-se desvanecendo até
+ * `OIL_TIME` acabar. Ficam encostadas a um dos lados da pista, para serem um
+ * obstáculo a contornar e não uma armadilha inevitável.
+ */
+export const OIL_RADIUS = 46;
+export const OIL_TIME = 1.0;
+export const OIL_SPIN = 2.0;
+export const GRIP_OIL = 1.2;
+
 export const CAM_FOLLOW = 6;
 /**
  * Aproximação da câmara. Quanto maior, mais perto da ação e menos pista à vista.

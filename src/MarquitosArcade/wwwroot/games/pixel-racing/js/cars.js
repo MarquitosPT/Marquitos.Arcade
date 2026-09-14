@@ -15,6 +15,7 @@ export function makeCar(key, name, color) {
         x: 0, y: 0, facing: 0, velAngle: 0, speed: 0,
         steerInput: 0, driftHold: false, boostHold: false, brakeHeld: false,
         boost: 0, driftCharge: 0, wasDrifting: false,
+        oilTimer: 0, oilSpin: 1, offTrack: false, dustTimer: 0,
         idx: 0, totalDistance: 0, lap: 0, lastPadIdx: -1,
         speedMult: 1, ai: null, smokeTimer: 0
     };

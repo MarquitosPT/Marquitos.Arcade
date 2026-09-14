@@ -58,6 +58,34 @@ export function spawnWallDust(car) {
     }
 }
 
+/** Cor do pó levantado na escapatória, consoante o terreno da pista. */
+const DUST_COLOR = { grass: 'rgba(120,150,90,', sand: 'rgba(190,160,110,', night: 'rgba(120,100,150,' };
+
+/** Pó de quem saiu do alcatrão e vai a arrastar-se pela escapatória. */
+export function spawnOffroadDust(car) {
+    const back = -CAR_LEN * 0.5;
+    const x = car.x + Math.cos(car.velAngle) * back, y = car.y + Math.sin(car.velAngle) * back;
+    const color = DUST_COLOR[race.track.theme] || DUST_COLOR.grass;
+    for (let i = 0; i < 2; i++) {
+        spawnParticle({
+            type: 'smoke', x: x + rand(-CAR_W / 2, CAR_W / 2), y: y + rand(-CAR_W / 2, CAR_W / 2),
+            vx: rand(-45, 45), vy: rand(-45, 45), life: rand(0.3, 0.6), maxLife: 0.6,
+            size: rand(4, 9), color
+        });
+    }
+}
+
+/** Salpico escuro de quem está a patinar em cima de uma poça de óleo. */
+export function spawnOilSpray(car) {
+    for (let i = 0; i < 2; i++) {
+        spawnParticle({
+            type: 'smoke', x: car.x + rand(-10, 10), y: car.y + rand(-10, 10),
+            vx: rand(-60, 60), vy: rand(-60, 60), life: rand(0.25, 0.5), maxLife: 0.5,
+            size: rand(3, 7), color: 'rgba(40,35,55,'
+        });
+    }
+}
+
 export function spawnImpactSpark(x, y) {
     for (let i = 0; i < 10; i++) {
         const a = rand(0, Math.PI * 2);
