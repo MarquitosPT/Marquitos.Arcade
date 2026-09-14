@@ -1,26 +1,74 @@
 // Construção das pistas.
 //
-// Uma pista é uma elipse deformada por harmónicos de seno: com dois ou três
-// termos saem curvas com carácter (uma chicane, uma curva dupla) sem ninguém ter
-// de desenhar pontos à mão. A partir dos 420 pontos da linha central derivam-se
-// as tangentes, as normais (para as bordas e as colisões), o comprimento total
-// (para a distância percorrida) e a caixa envolvente (para o minimapa).
+// Uma pista é uma superelipse deformada por harmónicos de seno. A superelipse
+// (o expoente `edge`) estica os lados em rectas e junta a viragem nos cantos; os
+// harmónicos põem curvas pelo meio para o traçado não ser um oval. Com dois ou
+// três termos saem pistas com carácter — uma chicane, uma curva dupla, uma recta
+// grande — sem ninguém ter de desenhar pontos à mão.
+//
+// A curva é amostrada em fino e só depois cortada em pontos igualmente
+// espaçados (STEP). Assim cada índice vale sempre a mesma distância, esteja numa
+// recta ou numa curva, e uma pista maior fica simplesmente com mais pontos: é
+// disso que dependem o avanço na volta, os postos de turbo, a antecipação dos
+// CPU e o espaçamento das guias.
+//
+// Os pontos da linha central começam a meio do lado de baixo e seguem no sentido
+// contrário ao dos ponteiros do relógio; deles derivam-se as tangentes, as
+// normais (para as bordas e as colisões), o comprimento total (para a distância
+// percorrida) e a caixa envolvente (para o minimapa).
 
 import { rand } from '/lib/arcade/math.js';
 
-function buildTrack(def) {
-    const N = 420;
-    const pts = [];
-    for (let i = 0; i < N; i++) {
-        const t = (i / N) * Math.PI * 2;
-        let r = 1;
-        for (const h of def.harmonics) r += h.amp * Math.sin(h.freq * t + (h.phase || 0));
-        pts.push({
-            x: def.cx + def.rx * r * Math.cos(t),
-            y: def.cy + def.ry * r * Math.sin(t)
-        });
+/** Distância entre pontos da linha central, em unidades do mundo. */
+const STEP = 6.9;
+/** Amostragem fina usada antes de cortar a linha central por distância. */
+const RAW = 6000;
+
+/**
+ * Ponto do traçado no ângulo `t`. Com `edge` a 2 é uma elipse; acima disso os
+ * lados achatam-se em recta e a viragem concentra-se nos cantos.
+ */
+function shapePoint(def, t) {
+    let r = 1;
+    for (const h of def.harmonics) r += h.amp * Math.sin(h.freq * t + (h.phase || 0));
+    const e = 2 / (def.edge || 2);
+    const c = Math.cos(t), s = Math.sin(t);
+    return {
+        x: def.cx + def.rx * r * Math.sign(c) * Math.abs(c) ** e,
+        y: def.cy + def.ry * r * Math.sign(s) * Math.abs(s) ** e
+    };
+}
+
+/**
+ * Linha central a passo constante. A partida fica a meio do lado de baixo
+ * (t = PI/2) e o ângulo diminui, para a corrida seguir no sentido contrário ao
+ * dos ponteiros do relógio.
+ */
+function centerLine(def) {
+    const raw = [];
+    for (let i = 0; i < RAW; i++) raw.push(shapePoint(def, Math.PI / 2 - (i / RAW) * Math.PI * 2));
+    const cum = [0];
+    for (let i = 1; i <= RAW; i++) {
+        const a = raw[i - 1], b = raw[i % RAW];
+        cum.push(cum[i - 1] + Math.hypot(b.x - a.x, b.y - a.y));
     }
-    const tang = [], norm = [], segLen = [];
+    const perimeter = cum[RAW];
+    const N = Math.round(perimeter / STEP);
+    const pts = [];
+    for (let i = 0, k = 0; i < N; i++) {
+        const d = (i / N) * perimeter;
+        while (cum[k + 1] < d) k++;
+        const f = (d - cum[k]) / (cum[k + 1] - cum[k]);
+        const a = raw[k], b = raw[(k + 1) % RAW];
+        pts.push({ x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f });
+    }
+    return pts;
+}
+
+function buildTrack(def) {
+    const pts = centerLine(def);
+    const N = pts.length;
+    const tang = [], norm = [];
     for (let i = 0; i < N; i++) {
         const p0 = pts[(i - 1 + N) % N], p1 = pts[(i + 1) % N];
         let dx = p1.x - p0.x, dy = p1.y - p0.y;
@@ -37,11 +85,21 @@ function buildTrack(def) {
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     for (const p of pts) { minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y); }
     const bbox = { minX, maxX, minY, maxY, w: maxX - minX, h: maxY - minY };
-    const pads = [Math.floor(N * 0.22), Math.floor(N * 0.52), Math.floor(N * 0.82)];
 
+    // Um posto de turbo a cada ~1600 unidades, repartidos por igual e nenhum em
+    // cima da meta: numa pista comprida, três postos fixos ficavam longe demais
+    // uns dos outros para o turbo contar.
+    const padCount = Math.max(3, Math.round(total / 1600));
+    const pads = [];
+    for (let i = 0; i < padCount; i++) pads.push(Math.floor(N * (i + 0.66) / padCount));
+
+    // A decoração acompanha o tamanho do terreno, para uma pista maior não ficar
+    // com o mesmo punhado de arbustos espalhado por muito mais chão.
     const decor = [];
     if (def.theme !== 'night') {
-        for (let i = 0; i < 70; i++) {
+        const area = (bbox.w + 520) * (bbox.h + 520);
+        const count = Math.round(area / 28000);
+        for (let i = 0; i < count; i++) {
             const x = rand(bbox.minX - 260, bbox.maxX + 260);
             const y = rand(bbox.minY - 260, bbox.maxY + 260);
             let tooClose = false;
@@ -56,9 +114,18 @@ function buildTrack(def) {
 }
 
 export const TRACKS = [
-    buildTrack({ id: 'neon', name: 'Circuito Neon', cx: 800, cy: 600, rx: 560, ry: 340, halfWidth: 100, theme: 'grass', harmonics: [{ freq: 2, amp: 0.05, phase: 0 }] }),
-    buildTrack({ id: 'hairpin', name: 'Curva Dupla', cx: 800, cy: 600, rx: 520, ry: 300, halfWidth: 92, theme: 'sand', harmonics: [{ freq: 3, amp: 0.22, phase: 0.6 }] }),
-    buildTrack({ id: 'chicane', name: 'Deserto Rápido', cx: 800, cy: 600, rx: 600, ry: 260, halfWidth: 96, theme: 'night', harmonics: [{ freq: 2, amp: 0.10, phase: 0 }, { freq: 5, amp: 0.05, phase: 1.2 }] })
+    buildTrack({
+        id: 'neon', name: 'Circuito Neon', cx: 800, cy: 600, rx: 1070, ry: 715, halfWidth: 100, theme: 'grass',
+        edge: 3.0, harmonics: [{ freq: 3, amp: 0.14, phase: -0.15 }, { freq: 4, amp: 0.04, phase: 1.3 }]
+    }),
+    buildTrack({
+        id: 'hairpin', name: 'Curva Dupla', cx: 800, cy: 600, rx: 1080, ry: 690, halfWidth: 92, theme: 'sand',
+        edge: 2.7, harmonics: [{ freq: 4, amp: 0.14, phase: 3.3 }, { freq: 5, amp: 0.035, phase: 4.4 }]
+    }),
+    buildTrack({
+        id: 'chicane', name: 'Deserto Rápido', cx: 800, cy: 600, rx: 1120, ry: 620, halfWidth: 96, theme: 'night',
+        edge: 3.1, harmonics: [{ freq: 3, amp: 0.085, phase: -0.11 }, { freq: 5, amp: 0.044, phase: 3.14 }, { freq: 9, amp: 0.015, phase: -0.44 }]
+    })
 ];
 
 /**

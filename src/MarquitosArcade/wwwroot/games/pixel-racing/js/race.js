@@ -1,7 +1,7 @@
 // Arranque, decurso e fim de uma corrida.
 
 import { clamp, shuffle } from '/lib/arcade/math.js';
-import { CAM_FOLLOW, LAPS_REQUIRED, MAX_SPEED, NARROW_WIDTH, ZOOM, ZOOM_NARROW } from './config.js';
+import { CAM_FOLLOW, LAPS_REQUIRED, MAX_SPEED, MENU_ZOOM_MIN, NARROW_WIDTH, ZOOM, ZOOM_NARROW } from './config.js';
 import { TRACKS } from './tracks.js';
 import { makeCar, makePersonality } from './cars.js';
 import { muteEngine, resumeAudio, sfx, updateEngineSound } from './audio.js';
@@ -15,6 +15,24 @@ import { overlays, topBar } from './ui.js';
 /** Aproximação de base para o ecrã atual (ver ZOOM no config). */
 export function baseZoom() {
     return race.view && race.view.width < NARROW_WIDTH ? ZOOM_NARROW : ZOOM;
+}
+
+/**
+ * Enquadramento do fundo do menu: a pista inteira à vista. Com a aproximação da
+ * corrida via-se só o relvado do meio, que não diz nada a quem está a escolher
+ * onde correr.
+ *
+ * Num ecrã estreito a pista inteira caberia tão pequena que deixava de se ler,
+ * e por isso há um limite: aí mostra-se um pedaço grande em vez do todo.
+ */
+export function menuZoom() {
+    if (!race.view || !race.track) return baseZoom();
+    // A caixa envolvente é da linha central: o alcatrão ainda se estende meia
+    // largura para cada lado, e é isso que a folga tem de acomodar.
+    const { w, h } = race.track.bbox;
+    const margin = race.track.halfWidth * 2 + 120;
+    const fit = Math.min(race.view.width / (w + margin), race.view.height / (h + margin));
+    return clamp(fit, MENU_ZOOM_MIN, baseZoom());
 }
 
 export function startRace(trackIdx) {

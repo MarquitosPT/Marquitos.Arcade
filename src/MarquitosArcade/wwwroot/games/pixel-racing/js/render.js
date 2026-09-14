@@ -163,6 +163,35 @@ function drawVignette() {
     ctx.restore();
 }
 
+/**
+ * Guias da pista: uma linha branca contínua com o vermelho tracejado por cima,
+ * em vez de um bloco pintado a cada tantos pontos. Assim a guia lê-se como uma
+ * linha só, sem os intervalos de alcatrão que se viam entre blocos.
+ */
+const KERB_WIDTH = 13, KERB_DASH = 26;
+
+/**
+ * Traça no contexto a borda da pista (`side` a 1 de um lado, -1 do outro) e
+ * devolve o seu comprimento — é dele que sai o passo do tracejado.
+ */
+function edgePath(side) {
+    const { N, pts, norm, halfWidth } = race.track;
+    const at = (i) => {
+        const idx = i % N, p = pts[idx], n = norm[idx];
+        return { x: p.x + n.x * halfWidth * side, y: p.y + n.y * halfWidth * side };
+    };
+    let prev = at(0), len = 0;
+    ctx.beginPath();
+    ctx.moveTo(prev.x, prev.y);
+    for (let i = 1; i <= N; i++) {
+        const q = at(i);
+        ctx.lineTo(q.x, q.y);
+        len += Math.hypot(q.x - prev.x, q.y - prev.y);
+        prev = q;
+    }
+    return len;
+}
+
 function drawTrack() {
     const colors = THEME_COLORS[race.track.theme];
     ctx.beginPath();
@@ -186,31 +215,31 @@ function drawTrack() {
     ctx.restore();
     if (race.track.theme === 'night') {
         ctx.save();
-        ctx.strokeStyle = 'rgba(0,229,255,0.5)';
         ctx.lineWidth = 3;
         ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 8;
-        ctx.beginPath();
-        for (let i = 0; i <= race.track.N; i++) { const idx = i % race.track.N; const p = race.track.pts[idx], n = race.track.norm[idx]; const x = p.x + n.x * race.track.halfWidth, y = p.y + n.y * race.track.halfWidth; if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
-        ctx.stroke();
+        ctx.strokeStyle = 'rgba(0,229,255,0.5)';
+        edgePath(1); ctx.stroke();
         ctx.strokeStyle = 'rgba(255,47,160,0.5)';
-        ctx.beginPath();
-        for (let i = 0; i <= race.track.N; i++) { const idx = i % race.track.N; const p = race.track.pts[idx], n = race.track.norm[idx]; const x = p.x - n.x * race.track.halfWidth, y = p.y - n.y * race.track.halfWidth; if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
-        ctx.stroke();
+        edgePath(-1); ctx.stroke();
         ctx.restore();
     } else {
-        for (let i = 0; i < race.track.N; i += 6) {
-            const color = (Math.floor(i / 6) % 2 === 0) ? '#e6e6e6' : '#d81e1e';
-            const p = race.track.pts[i], n = race.track.norm[i], tg = race.track.tang[i];
-            const ang = Math.atan2(tg.y, tg.x);
-            for (const side of [1, -1]) {
-                ctx.save();
-                ctx.translate(p.x + n.x * race.track.halfWidth * side, p.y + n.y * race.track.halfWidth * side);
-                ctx.rotate(ang);
-                ctx.fillStyle = color;
-                ctx.fillRect(-5, -6, 10, 12);
-                ctx.restore();
-            }
+        ctx.save();
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = KERB_WIDTH;
+        for (const side of [1, -1]) {
+            const len = edgePath(side);
+            ctx.setLineDash([]);
+            ctx.strokeStyle = '#e6e6e6';
+            ctx.stroke();
+            // O passo é o mais perto de KERB_DASH que divide a borda num número
+            // par de troços: se não dividisse, o vermelho e o branco encontravam-se
+            // ao fechar a volta e ficava ali uma emenda à vista.
+            const dash = len / (2 * Math.max(1, Math.round(len / (2 * KERB_DASH))));
+            ctx.setLineDash([dash, dash]);
+            ctx.strokeStyle = '#d81e1e';
+            ctx.stroke();
         }
+        ctx.restore();
     }
 
     ctx.setLineDash([14, 14]);
