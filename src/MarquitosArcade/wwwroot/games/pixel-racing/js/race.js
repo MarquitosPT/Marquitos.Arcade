@@ -18,9 +18,11 @@ export function startRace(trackIdx) {
     race.player = race.cars[0];
     for (const c of race.cars) if (c.key !== 'player') c.ai = makePersonality();
 
+    // Duas filas de dois. A distância entre filas acompanha o comprimento do
+    // carro: com carros maiores, 55 unidades deixavam as filas a tocar-se.
     const gridOffsets = shuffle([
-        { back: 0, side: -34 }, { back: 0, side: 34 },
-        { back: 55, side: -34 }, { back: 55, side: 34 }
+        { back: 0, side: -36 }, { back: 0, side: 36 },
+        { back: 66, side: -36 }, { back: 66, side: 36 }
     ]);
     const p0 = race.track.pts[0], t0 = race.track.tang[0], n0 = race.track.norm[0];
     race.cars.forEach((car, i) => {
