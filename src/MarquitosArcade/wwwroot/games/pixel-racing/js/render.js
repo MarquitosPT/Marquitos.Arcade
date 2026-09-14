@@ -260,8 +260,9 @@ function drawCars() {
 }
 
 /**
- * Silhueta do carro vista de cima: bico afilado, ombros largos e traseira
- * quadrada. Tudo em frações de `CAR_LEN`/`CAR_W`, por isso mudar o tamanho do
+ * Silhueta do carro vista de cima: bico afilado, ombros largos e a traseira a
+ * estreitar depois dos pontoons, para as rodas de trás ficarem à vista como num
+ * monolugar. Tudo em frações de `CAR_LEN`/`CAR_W`, por isso mudar o tamanho do
  * carro no config não obriga a redesenhar nada aqui.
  */
 function carBodyPath(L, W) {
@@ -272,14 +273,26 @@ function carBodyPath(L, W) {
     ctx.lineTo(L * 0.44, hw * 0.36);
     ctx.quadraticCurveTo(L * 0.30, hw * 0.5, L * 0.22, hw * 0.86);
     ctx.lineTo(L * 0.1, hw);
-    ctx.lineTo(-L * 0.26, hw);
-    ctx.quadraticCurveTo(-L * 0.45, hw * 0.94, -L * 0.47, hw * 0.72);
-    ctx.lineTo(-L * 0.47, -hw * 0.72);
-    ctx.quadraticCurveTo(-L * 0.45, -hw * 0.94, -L * 0.26, -hw);
+    ctx.lineTo(-L * 0.08, hw);
+    ctx.quadraticCurveTo(-L * 0.2, hw * 0.92, -L * 0.28, hw * 0.5);
+    ctx.lineTo(-L * 0.44, hw * 0.44);
+    ctx.quadraticCurveTo(-L * 0.48, hw * 0.42, -L * 0.48, hw * 0.2);
+    ctx.lineTo(-L * 0.48, -hw * 0.2);
+    ctx.quadraticCurveTo(-L * 0.48, -hw * 0.42, -L * 0.44, -hw * 0.44);
+    ctx.lineTo(-L * 0.28, -hw * 0.5);
+    ctx.quadraticCurveTo(-L * 0.2, -hw * 0.92, -L * 0.08, -hw);
     ctx.lineTo(L * 0.1, -hw);
     ctx.lineTo(L * 0.22, -hw * 0.86);
     ctx.quadraticCurveTo(L * 0.30, -hw * 0.5, L * 0.44, -hw * 0.36);
     ctx.closePath();
+}
+
+/** Braços que ligam as rodas ao corpo — sem eles a roda fica a flutuar ao lado. */
+function drawSuspension(x, L, W) {
+    const hw = W / 2;
+    ctx.fillStyle = '#1b1f2b';
+    ctx.fillRect(x - L * 0.025, -hw, L * 0.05, hw * 0.6);
+    ctx.fillRect(x - L * 0.025, hw * 0.4, L * 0.05, hw * 0.6);
 }
 
 function drawWheel(x, y, L, W, steer) {
@@ -314,6 +327,8 @@ function drawCar(car) {
     ctx.ellipse(-1, 4, L * 0.52, W * 0.56, 0, 0, Math.PI * 2);
     ctx.fill();
 
+    drawSuspension(L * 0.28, L, W);
+    drawSuspension(-L * 0.28, L, W);
     drawWheel(L * 0.28, -hw * 1.02, L, W, steer);
     drawWheel(L * 0.28, hw * 1.02, L, W, steer);
     drawWheel(-L * 0.28, -hw * 1.02, L, W, 0);
@@ -386,10 +401,11 @@ function drawCar(car) {
     const braking = car.brakeHeld && car.speed > 0;
     ctx.fillStyle = braking ? '#ff4438' : 'rgba(190, 46, 40, 0.8)';
     if (braking) { ctx.shadowColor = '#ff4438'; ctx.shadowBlur = 10; }
-    // À frente do aileron, senão ficavam tapados por ele.
-    rrect(-L * 0.38, -W * 0.3, L * 0.05, W * 0.18, 1.5);
+    // À frente do aileron (senão ficavam tapados) e encostados ao eixo: com a
+    // traseira estreita, mais para fora já saíam do corpo.
+    rrect(-L * 0.38, -W * 0.2, L * 0.05, W * 0.1, 1.5);
     ctx.fill();
-    rrect(-L * 0.38, W * 0.12, L * 0.05, W * 0.18, 1.5);
+    rrect(-L * 0.38, W * 0.1, L * 0.05, W * 0.1, 1.5);
     ctx.fill();
     ctx.shadowBlur = 0;
 
