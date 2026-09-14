@@ -319,10 +319,8 @@ function drawCar(car) {
     drawWheel(-L * 0.28, -hw * 1.02, L, W, 0);
     drawWheel(-L * 0.28, hw * 1.02, L, W, 0);
 
-    // Asas, por baixo do corpo para só assomarem as pontas.
+    // Asa dianteira, por baixo do corpo para só assomarem as pontas.
     ctx.fillStyle = '#1b1f2b';
-    rrect(-L * 0.52, -hw * 1.06, L * 0.1, W * 1.06, 2);
-    ctx.fill();
     rrect(L * 0.44, -hw * 0.86, L * 0.07, W * 0.86, 2);
     ctx.fill();
 
@@ -387,15 +385,54 @@ function drawCar(car) {
     const braking = car.brakeHeld && car.speed > 0;
     ctx.fillStyle = braking ? '#ff4438' : 'rgba(190, 46, 40, 0.8)';
     if (braking) { ctx.shadowColor = '#ff4438'; ctx.shadowBlur = 10; }
-    rrect(-L * 0.45, -W * 0.3, L * 0.05, W * 0.18, 1.5);
+    // À frente do aileron, senão ficavam tapados por ele.
+    rrect(-L * 0.38, -W * 0.3, L * 0.05, W * 0.18, 1.5);
     ctx.fill();
-    rrect(-L * 0.45, W * 0.12, L * 0.05, W * 0.18, 1.5);
+    rrect(-L * 0.38, W * 0.12, L * 0.05, W * 0.18, 1.5);
     ctx.fill();
     ctx.shadowBlur = 0;
+
+    drawRearWing(L, W, car.color);
 
     ctx.restore();
 
     if (car.boostHold && car.boost > 0) drawBoostFlame(car, L, W);
+}
+
+/**
+ * Aileron traseiro: dois suportes laterais, um flap e o plano principal, mais
+ * largo do que o carro. Vai por cima do corpo (um aileron está acima da
+ * carroçaria, e visto de cima tapa a traseira) e leva a mesma sombra e o mesmo
+ * gradiente de volume do resto do carro, senão ler-se-ia como um autocolante.
+ */
+function drawRearWing(L, W, color) {
+    const hw = W / 2;
+    const span = hw * 1.2;
+
+    ctx.fillStyle = 'rgba(6, 9, 20, 0.35)';
+    rrect(-L * 0.58, -span + 3, L * 0.16, span * 2, 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#1b1f2b';
+    rrect(-L * 0.60, -span, L * 0.24, W * 0.1, 2);
+    ctx.fill();
+    rrect(-L * 0.60, span - W * 0.1, L * 0.24, W * 0.1, 2);
+    ctx.fill();
+    rrect(-L * 0.43, -span * 0.84, L * 0.055, span * 1.68, 1.5);
+    ctx.fill();
+
+    rrect(-L * 0.58, -span, L * 0.13, span * 2, 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    const shade = ctx.createLinearGradient(0, -span, 0, span);
+    shade.addColorStop(0, 'rgba(255, 255, 255, 0.38)');
+    shade.addColorStop(0.45, 'rgba(255, 255, 255, 0.06)');
+    shade.addColorStop(1, 'rgba(0, 0, 0, 0.32)');
+    ctx.fillStyle = shade;
+    ctx.fill();
+    ctx.lineWidth = 1.1;
+    ctx.strokeStyle = 'rgba(6, 9, 20, 0.6)';
+    ctx.stroke();
 }
 
 /** Chama do boost: sai pelo escape, na direção contrária ao andamento. */
