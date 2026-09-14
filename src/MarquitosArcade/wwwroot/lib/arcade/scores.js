@@ -30,14 +30,19 @@ export function fetchAccountDisplayName() {
  * com o nome da conta quando a resposta chegar (sem pisar o que o jogador
  * já tenha começado a escrever entretanto).
  *
- * @returns {{ current(): string, remember(name?: string): string }}
+ * @returns {{ current(): string, remember(name?: string): string, account: Promise<string> }}
  *   `current()` devolve o nome escrito, cortado, ou 'Anónimo' se vazio.
  *   `remember()` grava-o para a próxima visita e devolve-o.
+ *   `account` resolve com o nome da conta autenticada, ou '' se for visitante —
+ *   é a mesma resposta que preenche o campo, partilhada para o jogo poder
+ *   esconder o campo do nome a quem já tem sessão iniciada sem pedir duas vezes.
  */
 export function bindPlayerNameInput(input, storageKey, { fallback = 'Anónimo' } = {}) {
+    const account = fetchAccountDisplayName();
+
     if (input) {
         input.value = readText(storageKey) || '';
-        fetchAccountDisplayName().then((displayName) => {
+        account.then((displayName) => {
             if (displayName && !input.value) input.value = displayName;
         });
     }
@@ -48,6 +53,7 @@ export function bindPlayerNameInput(input, storageKey, { fallback = 'Anónimo' }
 
     return {
         current,
+        account,
         remember(name) {
             const value = name === undefined ? current() : name;
             writeText(storageKey, value);

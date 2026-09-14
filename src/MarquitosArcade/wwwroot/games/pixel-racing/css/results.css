@@ -1,19 +1,119 @@
-/* Tabela de classificação no fim da corrida e do campeonato. */
+/* Ecrã de fim de corrida e de fim de campeonato. */
+
+#resultBody {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+}
+
+.resultHead {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.resultMedal {
+    font-size: clamp(38px, 11vw, 52px);
+    line-height: 1;
+    filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.55));
+}
+
+.bannerText {
+    font-family: var(--font-display);
+    font-size: clamp(21px, 6vw, 28px);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    background: linear-gradient(100deg, #ffffff 20%, var(--accent) 70%, var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
 
 table.resultTable {
-    border-collapse: collapse;
-    margin: 10px auto 6px;
-    width: min(92vw, 480px);
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 6px;
 }
 
 table.resultTable td {
-    padding: 7px 10px;
-    font-size: 3vw;
-    border-bottom: 1px solid rgba(255,255,255,0.12);
+    padding: 10px 12px;
+    font-size: 14px;
+    background: var(--glass-bg-soft);
+    border-top: 1px solid var(--glass-border);
+    border-bottom: 1px solid var(--glass-border);
 }
 
-table.resultTable .me { color: #00e5ff; font-weight: bold; }
+table.resultTable td:first-child {
+    border-left: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
 
-table.resultTable .medal { font-size: 3.6vw; width: 1.6em; }
+table.resultTable td:last-child {
+    text-align: right;
+    border-right: 1px solid var(--glass-border);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
 
-table.resultTable .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+table.resultTable tr.me td {
+    color: var(--text);
+    font-weight: 700;
+    background: linear-gradient(100deg, rgba(53, 224, 255, 0.16), rgba(139, 124, 255, 0.1));
+    border-color: rgba(53, 224, 255, 0.4);
+}
+
+table.resultTable td.name { text-align: left; }
+table.resultTable .medal { width: 1.8em; font-size: 17px; text-align: center; }
+table.resultTable .points { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+table.resultTable .swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-right: 8px;
+    border-radius: 50%;
+    vertical-align: middle;
+    box-shadow: 0 0 10px currentColor;
+}
+
+/* Tempo, pontos e outras métricas do fim da corrida. */
+.statRow {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+}
+
+.stat {
+    flex: 1;
+    padding: 10px 8px;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    background: var(--glass-bg-soft);
+}
+
+.statLabel {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--faint);
+}
+
+.statValue {
+    display: block;
+    margin-top: 2px;
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.resultActions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}

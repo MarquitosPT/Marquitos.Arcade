@@ -1,7 +1,7 @@
 // Arranque, decurso e fim de uma corrida.
 
 import { clamp, shuffle } from '/lib/arcade/math.js';
-import { CAM_FOLLOW, LAPS_REQUIRED, MAX_SPEED, ZOOM } from './config.js';
+import { CAM_FOLLOW, LAPS_REQUIRED, MAX_SPEED, NARROW_WIDTH, ZOOM, ZOOM_NARROW } from './config.js';
 import { TRACKS } from './tracks.js';
 import { makeCar, makePersonality } from './cars.js';
 import { muteEngine, resumeAudio, sfx, updateEngineSound } from './audio.js';
@@ -12,15 +12,22 @@ import { carCollisions, computeProgress, integrateCar, wallCollision } from './p
 import { race, session } from './state.js';
 import { overlays, topBar } from './ui.js';
 
+/** Aproximação de base para o ecrã atual (ver ZOOM no config). */
+export function baseZoom() {
+    return race.view && race.view.width < NARROW_WIDTH ? ZOOM_NARROW : ZOOM;
+}
+
 export function startRace(trackIdx) {
     race.track = TRACKS[trackIdx];
     race.cars = session.participants.map(p => makeCar(p.key, p.name, p.color));
     race.player = race.cars[0];
     for (const c of race.cars) if (c.key !== 'player') c.ai = makePersonality();
 
+    // Duas filas de dois. Os afastamentos acompanham o tamanho do carro: com
+    // carros maiores, as filas e os lugares lado a lado passavam a tocar-se.
     const gridOffsets = shuffle([
-        { back: 0, side: -34 }, { back: 0, side: 34 },
-        { back: 55, side: -34 }, { back: 55, side: 34 }
+        { back: 0, side: -40 }, { back: 0, side: 40 },
+        { back: 78, side: -40 }, { back: 78, side: 40 }
     ]);
     const p0 = race.track.pts[0], t0 = race.track.tang[0], n0 = race.track.norm[0];
     race.cars.forEach((car, i) => {
@@ -35,6 +42,7 @@ export function startRace(trackIdx) {
     });
 
     race.camera.x = race.player.x; race.camera.y = race.player.y;
+    race.zoom = baseZoom();
     resetParticles();
     race.clock = 0;
     race.countdownValue = 3;
@@ -92,7 +100,8 @@ export function updateRace(dt) {
 export function updateCamera(dt) {
     race.camera.x += (race.player.x - race.camera.x) * Math.min(1, CAM_FOLLOW * dt);
     race.camera.y += (race.player.y - race.camera.y) * Math.min(1, CAM_FOLLOW * dt);
-    const targetZoom = (race.player.boostHold && race.player.boost > 0) ? ZOOM * 0.92 : ZOOM;
+    const base = baseZoom();
+    const targetZoom = (race.player.boostHold && race.player.boost > 0) ? base * 0.92 : base;
     race.zoom += (targetZoom - race.zoom) * Math.min(1, 4 * dt);
     race.shake.amount *= Math.exp(-8 * dt);
     race.shake.x = (Math.random() - 0.5) * race.shake.amount;

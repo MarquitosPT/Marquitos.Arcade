@@ -15,7 +15,7 @@ Blazor Web App (.NET 10, render mode Interactive Server) com ASP.NET Core Identi
 - `src/MarquitosArcade/wwwroot/games/<slug>/`: um jogo por pasta, cada um com o seu `index.html` (só markup), `css/`, `js/` (módulos ES) e `assets/`. Ver [Estrutura de um jogo](#estrutura-de-um-jogo) e, para o porquê desta organização em vez de um projeto .NET por jogo, [docs/estrutura-dos-jogos.md](docs/estrutura-dos-jogos.md).
   - `tasca-do-ze/`: mini-jogo "Tasca do Zé" (gestão de pedidos), com leaderboard persistido via `/api/scores/tasca-do-ze`.
   - `pong/`: Pong Retro, com modo 1 jogador (vs. CPU, pontuação submetida via `/api/scores/pong`) e 2 jogadores.
-  - `pixel-racing/`: Pixel Racing, corrida rápida ou torneio de três pistas, com pontuação via `/api/scores/pixel-racing`.
+  - `pixel-racing/`: Pixel Racing, corrida simples ou campeonato de três pistas, com pontuação via `/api/scores/pixel-racing`. O menu tem dois passos: o primeiro ecrã pergunta só o nome (a quem não tem sessão iniciada) e o modo; a pista, a cor do carro e a dificuldade ficam no ecrã seguinte, já a saber o que se vai correr. A cor sai da paleta única de `CAR_COLORS` e os adversários ficam com três das restantes, por isso nunca há dois carros da mesma cor na pista.
 - `src/MarquitosArcade/wwwroot/lib/arcade/`: SDK partilhado pelos jogos (áudio, leaderboard, armazenamento, viewport do canvas, ciclo de jogo, barra de topo). Módulos ES sem dependências externas.
 - `tools/games/smoke-test.mjs`: smoke-test dos jogos em Chromium headless, corrido em cada pull request por `.github/workflows/jogos-smoke-test.yml`. Ver [Testar os jogos](#testar-os-jogos).
 - `src/MarquitosArcade/Scores/ScoresEndpoints.cs`: endpoint genérico `GET/POST /api/scores/:gameId`, persistido na tabela `Scores` (EF Core + SQLite). Se o pedido vier de um utilizador autenticado, o nome do leaderboard vem da conta (evita spoofing de nomes); caso contrário aceita o nome livre submetido pelo jogo.
@@ -37,6 +37,16 @@ O estado do tema vive no atributo `data-theme` do `<html>`:
 O botão na barra de topo (`MainLayout.razor`) cicla entre os três estados. A lógica está em `wwwroot/theme.js`, carregado no `<head>` antes do primeiro paint para não haver "flash" do tema errado, e guarda a escolha em `localStorage`. O ícone visível do botão é escolhido por CSS a partir do `data-theme` — nada de JS a repintar DOM, por isso sobrevive à *enhanced navigation* do Blazor (que troca o `<body>` sem recarregar a página) sem o site precisar de render mode interativo.
 
 Em `styles.css` as cores são todas tokens CSS (`--bg`, `--glass-bg`, `--accent`, ...) definidos três vezes: no `:root` (claro, a base), no `@media (prefers-color-scheme: dark)` restringido a `:root:not([data-theme="light"])`, e em `:root[data-theme="dark"]`. Nenhuma cor pode ter a sua única definição dentro do media query, senão a escolha explícita do utilizador deixa de ganhar. Para acrescentar uma cor nova, acrescenta-a nos três sítios.
+
+Os jogos têm folhas de estilo próprias, mas seguem a mesma linguagem. O Pixel
+Racing é o exemplo: os ecrãs são painéis de vidro por cima da pista — o
+`backdrop-filter` desfoca o canvas que está a desenhar por trás, por isso o menu
+mostra a pista escolhida, viva, em vez de um fundo pintado. Os tokens estão em
+`games/pixel-racing/css/theme.css` e ali só existe a variante escura (o mundo do
+jogo é escuro em todas as pistas, e vidro claro por cima dele não teria
+contraste). O HUD, esse, é desenhado no canvas, onde não há `backdrop-filter`:
+o vidro é imitado à mão com fundo translúcido, contorno de 1px e um risco de luz
+no topo (`glassPanel` em `js/render.js`).
 
 ## Correr localmente
 
@@ -94,7 +104,7 @@ import { createScoreClient } from '/lib/arcade/scores.js';
 | Módulo        | O que resolve                                                    |
 | ------------- | ---------------------------------------------------------------- |
 | `audio.js`    | Ciclo de vida do `AudioContext` e bips sintetizados              |
-| `scores.js`   | Cliente de `/api/scores/:gameId`, cache offline e nome do jogador |
+| `scores.js`   | Cliente de `/api/scores/:gameId`, cache offline, nome do jogador e da conta |
 | `storage.js`  | `localStorage` que não rebenta em Safari privado                 |
 | `viewport.js` | Canvas em ecrã inteiro, nítido em Retina e por baixo do notch     |
 | `loop.js`     | Ciclo `requestAnimationFrame` com delta-time limitado            |

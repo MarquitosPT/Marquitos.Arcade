@@ -10,68 +10,132 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon3_16x16.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon3.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <meta name="theme-color" content="#0b0710" />
+    <meta name="theme-color" content="#070912" />
     <meta name="msapplication-TileColor" content="#123a5e" />
     <meta name="msapplication-config" content="/browserconfig.xml" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Marquitos Arcade" />
 
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" />
+
+    <link rel="stylesheet" href="css/theme.css" />
     <link rel="stylesheet" href="css/base.css" />
     <link rel="stylesheet" href="css/hud.css" />
     <link rel="stylesheet" href="css/screens.css" />
     <link rel="stylesheet" href="css/controls.css" />
     <link rel="stylesheet" href="css/results.css" />
-    <link rel="stylesheet" href="css/desktop.css" />
 </head>
 
 <body>
     <div id="wrap">
         <div class="topBar">
-            <a class="topBtn" id="arcadeLink" href="/">← ARCADE</a>
-            <a class="topBtn" id="scoresLink" href="/pontuacoes?jogo=pixel-racing#pixel-racing">🏆</a>
-            <button class="topBtn" id="pauseBtn">II</button>
-            <button class="topBtn" id="endBtn">✕ SAIR</button>
+            <a class="topBtn" id="arcadeLink" href="/">
+                <span class="topIcon">←</span><span class="topLabel">Arcade</span>
+            </a>
+            <a class="topBtn" id="scoresLink" href="/pontuacoes?jogo=pixel-racing#pixel-racing">
+                <span class="topIcon">🏆</span><span class="topLabel">Pontuações</span>
+            </a>
+            <button class="topBtn" id="pauseBtn" aria-label="Pausa">
+                <span class="topIcon">❚❚</span>
+            </button>
+            <button class="topBtn topBtn--quit" id="endBtn">
+                <span class="topIcon">✕</span><span class="topLabel">Sair</span>
+            </button>
         </div>
         <canvas id="game"></canvas>
 
-        <div id="startScreen">
-            <div class="title">PIXEL RACING</div>
-            <div class="sub">BOOST • DRIFT • TORNEIOS</div>
+        <!-- Ecrã 1: só o essencial — quem és e o que queres correr. -->
+        <div id="startScreen" class="screen">
+            <div class="panel">
+                <div class="brand">
+                    <span class="brandBadge">🏎️</span>
+                    <h1 class="title">Pixel Racing</h1>
+                    <p class="sub">Boost · Drift · Campeonato</p>
+                </div>
 
-            <div class="row" id="modeRow">
-                <button class="modeBtn active" data-mode="quick">CORRIDA RÁPIDA</button>
-                <button class="modeBtn" data-mode="tournament">TORNEIO (3 PISTAS)</button>
+                <!-- O nome só se pede a visitantes: com sessão iniciada vem da conta. -->
+                <div class="nameSlot is-pending" id="nameSlot">
+                    <label class="field" id="nameRow" for="playerNameInput">
+                        <span class="fieldLabel">O teu nome</span>
+                        <input type="text" id="playerNameInput" class="nameInput" placeholder="Como queres aparecer no quadro"
+                               maxlength="20" autocomplete="nickname" spellcheck="false">
+                    </label>
+                    <div class="playerChip" id="accountRow" hidden>
+                        <span class="chipAvatar" id="accountInitial"></span>
+                        <span class="chipText">A correr como <b id="accountName"></b></span>
+                    </div>
+                </div>
+
+                <div class="modeGrid" id="modeRow">
+                    <button class="modeBtn" data-mode="quick">
+                        <span class="modeIcon">🏁</span>
+                        <span class="modeText">
+                            <span class="modeName">Corrida simples</span>
+                            <span class="modeDesc">Uma pista à tua escolha</span>
+                        </span>
+                        <span class="modeGo">→</span>
+                    </button>
+                    <button class="modeBtn" data-mode="tournament">
+                        <span class="modeIcon">🏆</span>
+                        <span class="modeText">
+                            <span class="modeName">Campeonato</span>
+                            <span class="modeDesc">Três pistas seguidas, pontos por corrida</span>
+                        </span>
+                        <span class="modeGo">→</span>
+                    </button>
+                </div>
             </div>
-
-            <div id="trackRow" class="row">
-                <button class="trackBtn active" data-track="0">🌿 Circuito Neon</button>
-                <button class="trackBtn" data-track="1">🏜️ Curva Dupla</button>
-                <button class="trackBtn" data-track="2">🌆 Deserto Rápido</button>
-            </div>
-
-            <div class="row" id="nameRow">
-                <input type="text" id="playerNameInput" class="nameInput" placeholder="O TEU NOME" maxlength="20">
-            </div>
-
-            <div class="row" id="diffRow">
-                <button class="diffBtn" data-lvl="0.80">FÁCIL</button>
-                <button class="diffBtn active" data-lvl="0.95">MÉDIO</button>
-                <button class="diffBtn" data-lvl="1.08">DIFÍCIL</button>
-            </div>
-
-            <button class="btn" id="startBtn">ARRANCAR</button>
-            <div id="hint">3 adversários CPU · Arrasta ou usa as setas · Segura DRIFT nas curvas para ganhar BOOST</div>
         </div>
 
-        <div id="pauseScreen">
-            <div class="title">PAUSA</div>
-            <button class="btn" id="resumeBtn">CONTINUAR</button>
-            <button class="btnOutline" id="quitBtn">SAIR PARA O MENU</button>
+        <!-- Ecrã 2: pista (só na corrida simples), dificuldade e arranque. -->
+        <div id="setupScreen" class="screen">
+            <div class="panel panel--wide">
+                <div class="panelHead">
+                    <button class="iconBtn" id="backBtn" aria-label="Voltar ao menu">←</button>
+                    <div class="panelHeadText">
+                        <h2 class="panelTitle" id="setupTitle">Corrida simples</h2>
+                        <p class="panelSub" id="setupSub">Escolhe a pista</p>
+                    </div>
+                </div>
+
+                <div class="trackGrid" id="trackRow"></div>
+
+                <div class="field">
+                    <span class="fieldLabel">A cor do teu carro</span>
+                    <div class="colorRow" id="colorRow"></div>
+                </div>
+
+                <div class="field">
+                    <span class="fieldLabel">Dificuldade dos adversários</span>
+                    <div class="segmented" id="diffRow">
+                        <button class="diffBtn" data-lvl="0.80">Fácil</button>
+                        <button class="diffBtn active" data-lvl="0.95">Médio</button>
+                        <button class="diffBtn" data-lvl="1.08">Difícil</button>
+                    </div>
+                </div>
+
+                <button class="btn" id="startBtn">Arrancar</button>
+                <p id="hint">3 adversários CPU · setas ou arrasta no ecrã · segura DRIFT nas curvas para carregar o BOOST</p>
+            </div>
         </div>
 
-        <div id="resultScreen">
-            <div id="resultBody"></div>
+        <div id="pauseScreen" class="screen">
+            <div class="panel panel--narrow">
+                <h2 class="title">Pausa</h2>
+                <p class="sub">A corrida está à tua espera</p>
+                <button class="btn" id="resumeBtn">Continuar</button>
+                <button class="btnOutline" id="quitBtn">Sair para o menu</button>
+            </div>
+        </div>
+
+        <div id="resultScreen" class="screen">
+            <div class="panel panel--wide">
+                <div id="resultBody"></div>
+            </div>
         </div>
     </div>
 

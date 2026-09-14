@@ -1,0 +1,51 @@
+/*
+ * Tokens do Pixel Racing — variante "glass" do tema da arcada.
+ *
+ * As cores acompanham as do portal (wwwroot/styles.css): o mesmo violeta de
+ * acento, o mesmo ciano. Aqui só existe a variante escura: os ecrãs do jogo
+ * estão sempre por cima da pista, que é escura em todas as pistas, e um vidro
+ * claro por cima dela não teria contraste. Por isso nada de media query de
+ * `prefers-color-scheme` — se um dia houver uma variante clara, entra aqui e
+ * nos mesmos tokens, não espalhada pelas outras folhas.
+ */
+
+:root {
+    /* acentos — o ciano é o do carro do jogador (PLAYER_COLOR no config.js) */
+    --accent: #35e0ff;
+    --accent-2: #8b7cff;
+    --accent-3: #ff5d9e;
+    --gold: #ffc14d;
+    --on-accent: #04131c;
+
+    /* texto */
+    --text: #eef2ff;
+    --muted: rgba(238, 242, 255, 0.66);
+    --faint: rgba(238, 242, 255, 0.42);
+
+    /* vidro */
+    --glass-bg: linear-gradient(155deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04) 60%);
+    --glass-bg-soft: rgba(255, 255, 255, 0.06);
+    --glass-bg-hover: rgba(255, 255, 255, 0.11);
+    --glass-border: rgba(255, 255, 255, 0.16);
+    --glass-border-strong: rgba(255, 255, 255, 0.28);
+    --glass-shadow: 0 34px 70px -30px rgba(0, 0, 0, 0.9);
+    --glass-shadow-sm: 0 14px 30px -18px rgba(0, 0, 0, 0.85);
+    --blur: 24px;
+    --blur-soft: 10px;
+
+    /* o véu que separa o vidro da pista que está a ser desenhada por trás */
+    --scrim: radial-gradient(ellipse at 50% 18%, rgba(52, 30, 96, 0.55), rgba(4, 6, 14, 0.84) 68%);
+
+    --ring: rgba(53, 224, 255, 0.45);
+    --glow: rgba(53, 224, 255, 0.35);
+
+    /* geometria */
+    --radius-sm: 12px;
+    --radius: 18px;
+    --radius-lg: 26px;
+    --radius-pill: 999px;
+
+    /* tipografia */
+    --font-display: "Outfit", "Segoe UI", system-ui, sans-serif;
+    --font-body: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+}

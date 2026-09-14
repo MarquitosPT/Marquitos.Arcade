@@ -1,55 +1,136 @@
-/* Ecrãs sobrepostos: menu, pausa e resultados. */
+/*
+ * Ecrãs sobrepostos: menu, escolha de pista, pausa e resultados.
+ *
+ * Todos têm a mesma anatomia — um véu que cobre o ecrã (`.screen`) e um painel
+ * de vidro ao centro (`.panel`). O `backdrop-filter` do painel desfoca o que
+ * está por trás, que é a pista a ser desenhada em tempo real: o menu fica com a
+ * pista escolhida lá atrás, viva, em vez de um fundo pintado.
+ */
 
-#startScreen, #pauseScreen, #resultScreen {
+.screen {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: radial-gradient(ellipse at 50% 20%, rgba(60,20,80,0.55), rgba(4,3,8,0.96) 70%);
-    display: flex;
+    inset: 0;
+    z-index: 10;
+    display: none;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    color: #fff;
-    z-index: 10;
-    text-align: center;
-    padding: 20px;
+    padding: calc(env(safe-area-inset-top) + 58px) 16px calc(env(safe-area-inset-bottom) + 16px);
     overflow-y: auto;
+    background: var(--scrim);
+    -webkit-backdrop-filter: blur(var(--blur-soft));
+    backdrop-filter: blur(var(--blur-soft));
+    text-align: center;
 }
 
-#pauseScreen, #resultScreen { display: none; }
+/* O JS mostra um ecrã de cada vez (createOverlays); o menu é o que arranca. */
+#startScreen { display: flex; }
 
-/* O ecrã de pausa tem menos espaço do que o menu, por isso o título é menor. */
-#pauseScreen .title {
-    font-size: 8vw;
+.panel {
+    position: relative;
+    width: min(100%, 420px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    margin: auto;
+    padding: clamp(20px, 4.5vw, 30px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: blur(var(--blur)) saturate(150%);
+    backdrop-filter: blur(var(--blur)) saturate(150%);
+    box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    animation: panelIn 0.35s cubic-bezier(0.2, 0.9, 0.25, 1) both;
+}
+
+.panel--wide { width: min(100%, 560px); }
+.panel--narrow { width: min(100%, 340px); }
+
+@keyframes panelIn {
+    from { opacity: 0; transform: translateY(14px) scale(0.98); }
+    to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .panel { animation: none; }
+}
+
+/* ---------- Marca, títulos ---------- */
+
+.brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.brandBadge {
+    display: grid;
+    place-items: center;
+    width: 54px;
+    height: 54px;
+    margin-bottom: 2px;
+    font-size: 26px;
+    border: 1px solid var(--glass-border-strong);
+    border-radius: 18px;
+    background: linear-gradient(150deg, rgba(53, 224, 255, 0.28), rgba(139, 124, 255, 0.22));
+    box-shadow: 0 12px 28px -14px var(--glow), inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
 .title {
-    font-size: 11vw;
-    letter-spacing: 0.12em;
-    font-weight: bold;
-    color: #ffcf3f;
-    text-shadow: 0 0 6px #ff7a1a, 0 0 22px #ff2fa0, 0 4px 0 #7a1a45;
-    margin-bottom: 2px;
-    animation: pulseGlow 1.8s ease-in-out infinite;
-}
-
-@keyframes pulseGlow {
-    0%, 100% { text-shadow: 0 0 6px #ff7a1a, 0 0 22px #ff2fa0, 0 4px 0 #7a1a45; }
-    50% { text-shadow: 0 0 14px #ffe27a, 0 0 34px #00e5ff, 0 4px 0 #7a1a45; }
+    font-family: var(--font-display);
+    font-size: clamp(30px, 8vw, 44px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    background: linear-gradient(100deg, #ffffff 18%, var(--accent) 58%, var(--accent-2) 96%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
 }
 
 .sub {
-    font-size: 3.2vw;
-    opacity: 0.75;
-    margin-bottom: 20px;
-    letter-spacing: 0.25em;
-    color: #00e5ff;
+    font-size: clamp(12px, 3.2vw, 14px);
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+}
+
+.panelHead {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    text-align: left;
+}
+
+.panelHeadText { flex: 1; }
+
+.panelTitle {
+    font-family: var(--font-display);
+    font-size: clamp(19px, 5vw, 24px);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+.panelSub {
+    margin-top: 2px;
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.sectionLabel {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--faint);
 }
 
 #hint {
-    margin-top: 16px;
-    font-size: 2.6vw;
-    opacity: 0.55;
+    max-width: 42ch;
+    font-size: clamp(11px, 2.8vw, 12.5px);
+    line-height: 1.5;
+    color: var(--faint);
 }

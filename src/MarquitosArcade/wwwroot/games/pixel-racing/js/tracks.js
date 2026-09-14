@@ -61,6 +61,16 @@ export const TRACKS = [
     buildTrack({ id: 'chicane', name: 'Deserto Rápido', cx: 800, cy: 600, rx: 600, ry: 260, halfWidth: 96, theme: 'night', harmonics: [{ freq: 2, amp: 0.10, phase: 0 }, { freq: 5, amp: 0.05, phase: 1.2 }] })
 ];
 
+/**
+ * Cara de cada ambiente no menu: o emoji e o nome do terreno. Fica aqui, ao lado
+ * das cores, para uma pista nova só ter de se descrever num sítio.
+ */
+export const THEME_INFO = {
+    grass: { emoji: '🌿', label: 'Relva' },
+    sand: { emoji: '🏜️', label: 'Areia' },
+    night: { emoji: '🌃', label: 'Noite' }
+};
+
 export const THEME_COLORS = {
     grass: { terrain: '#0d2b12', asphalt: '#2a2e3a', decor: '#123a1c' },
     sand: { terrain: '#2c1a10', asphalt: '#332c22', decor: '#5b4326' },

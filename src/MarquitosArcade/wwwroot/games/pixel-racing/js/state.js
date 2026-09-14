@@ -4,7 +4,7 @@
 // menu até se voltar ao menu (é ela que guarda os pontos do torneio entre
 // corridas); a `race` é reposta a cada arranque de corrida.
 
-import { MODE_QUICK, ZOOM } from './config.js';
+import { MODE_QUICK, PLAYER_COLOR, ZOOM } from './config.js';
 import { TRACKS } from './tracks.js';
 
 export const session = {
@@ -15,6 +15,8 @@ export const session = {
     tracks: [0],
     /** Índice da corrida atual dentro de `tracks`. */
     raceIndex: 0,
+    /** Cor do carro do jogador, escolhida no ecrã de preparação. */
+    playerColor: PLAYER_COLOR,
     /** Multiplicador de velocidade dos adversários. */
     difficulty: 0.95,
     /** [{ key, name, color }] — o jogador é sempre o índice 0. */
