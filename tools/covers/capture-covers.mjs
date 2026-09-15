@@ -43,7 +43,7 @@ const ONLY = argValue('--only', null);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 /** Esconde a barra da arcada (← ARCADE / 🏆) — não faz parte do jogo em si. */
 const HIDE_ARCADE_CHROME = '.topBar { display: none !important; }';
-/** O ecrã de arranque está no ar 3s de propósito; isto é só a rede de segurança. */
+/** O ecrã de arranque está no ar 2s de propósito; isto é só a rede de segurança. */
 const SPLASH_TIMEOUT_MS = 20000;
 
 const GAMES = [

@@ -3,7 +3,7 @@
 // A parte visível é toda do splash.css — este módulo só trata do tempo.
 // O que ele resolve é a tensão entre duas coisas que se querem ao mesmo tempo:
 //
-//   - o ecrã tem de estar no ar um mínimo de tempo (por omissão 3s), mesmo
+//   - o ecrã tem de estar no ar um mínimo de tempo (por omissão 2s), mesmo
 //     quando o jogo já está pronto em 200ms. É de propósito: dá à arcada o
 //     arranque de uma consola em vez de um salto seco para o menu;
 //   - e não pode ficar preso quando alguma coisa demora ou rebenta.
@@ -20,7 +20,7 @@ import { readSessionText, writeSessionText } from './storage.js';
 
 const DEFAULTS = {
     /** Quanto tempo o ecrã fica no ar, no mínimo. */
-    minDuration: 3000,
+    minDuration: 2000,
     /** Teto absoluto: passado isto sai, com ou sem `ready()`. */
     maxDuration: 12000,
     /** Fração até onde a barra cresce sem `ready()`. */

@@ -12,7 +12,7 @@
 //   <div id="arcadeSplash" class="arcade-splash" data-splash-once="session">
 //
 //   data-splash-once="session"  mostra uma vez por separador (o portal)
-//   data-splash-min="3000"      tempo mínimo no ar, em ms
+//   data-splash-min="2000"      tempo mínimo no ar, em ms
 //
 // Fica em window.__arcadeSplash, como o window.__arcadeTheme do theme.js: é
 // assim que o main.js de cada jogo avisa que já montou o menu

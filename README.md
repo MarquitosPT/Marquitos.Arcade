@@ -57,13 +57,13 @@ barra a crescer, sobre um fundo de raios e pixel art (`wwwroot/lib/arcade/splash
 `Components/App.razor` no portal, no `index.html` de cada jogo —, porque tem de
 estar pintado no primeiro frame, antes de correr JavaScript nenhum.
 
-**Fica no ar 3 segundos, mesmo quando já está tudo pronto.** É de propósito: dá à
+**Fica no ar 2 segundos, mesmo quando já está tudo pronto.** É de propósito: dá à
 arcada um arranque de consola em vez de um salto seco para o menu. O `splash.js`
 gere três relógios para isso não se virar contra o jogador:
 
 | Relógio       | O que faz                                                        |
 | ------------- | ---------------------------------------------------------------- |
-| `minDuration` | O chão. 3s por omissão; muda-se com `data-splash-min` no markup. |
+| `minDuration` | O chão. 2s por omissão; muda-se com `data-splash-min` no markup. |
 | `ready()`     | O conteúdo por baixo está montado. Sem ele a barra pára nos 92%. |
 | `maxDuration` | O teto. Aos 12s desiste de esperar e sai na mesma.               |
 
@@ -79,7 +79,7 @@ arranque sai na mesma e vê-se o erro em vez de uma barra eterna.
 Duas diferenças entre o portal e os jogos:
 
 - **O portal arranca uma vez por separador** (`data-splash-once="session"`). Sem
-  isto, ir de `/` para `/pontuacoes` custava 3 segundos de cada vez. Os jogos não
+  isto, ir de `/` para `/pontuacoes` custava 2 segundos de cada vez. Os jogos não
   levam o atributo, por isso arrancam sempre que se abre um.
 - **O portal precisa do `reapply()`.** Pela mesma razão que o tema (ver acima), a
   enhanced navigation ressincroniza o `<body>` com o HTML do servidor — e esse
