@@ -1,0 +1,363 @@
+/* =====================================================================
+   Ecrã de arranque da Marquitos Arcade
+   ---------------------------------------------------------------------
+   O mesmo ecrã serve o portal (Components/App.razor) e os jogos
+   (games/<slug>/index.html): logótipo ao centro sobre um fundo de
+   arcada, "A CARREGAR..." e uma barra que cresce.
+
+   Três regras moldaram este ficheiro:
+
+   1. Tem de estar pintado no primeiro frame. Por isso o fundo é todo
+      feito de gradientes e de sprites SVG embutidos no próprio CSS --
+      nenhum pedido extra, nenhuma fonte externa. A única imagem é o
+      logótipo, e essa aparece com fade para a espera não se notar.
+   2. Tem de servir retrato e paisagem. Nada aqui tem tamanho fixo: o
+      palco mede-se em vmin/dvh e os enfeites mudam de sítio no
+      `@media (orientation: portrait)` para não caírem por cima do
+      logótipo num ecrã estreito.
+   3. Tem cores próprias, sempre escuras. Ao contrário do resto do site
+      (ver "Tema" no README) este ecrã não segue o claro/escuro: a arte
+      da arcada é escura, e trocar de tema a meio do arranque daria um
+      flash. Os tokens abaixo vivem só neste ficheiro.
+   ===================================================================== */
+
+.arcade-splash {
+  --splash-deep: #06021c;
+  --splash-mid: #1b1063;
+  --splash-glow: rgba(124, 92, 255, 0.55);
+  --splash-ink: #e8ecff;
+  --splash-ink-dim: #cfd8ff;
+  --splash-accent: #7c5cff;
+  --splash-accent-2: #22d3ee;
+
+  /* Sprites de pixel art, em SVG embutido (ver regra 1 no topo). */
+  --splash-star: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 9' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffc21f' d='M4 0h1v1H4M3 1h3v2H3M0 3h9v1H0M1 4h7v1H1M2 5h5v2H2M1 7h2v1H1M6 7h2v1H6M0 8h2v1H0M7 8h2v1H7'/%3E%3Cpath fill='%23fff0b0' d='M3 1h1v2H3M1 4h2v1H1'/%3E%3C/svg%3E");
+  --splash-heart: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 7' shape-rendering='crispEdges'%3E%3Cpath fill='%23ff2e74' d='M1 0h2v1H1M5 0h2v1H5M0 1h8v3H0M1 4h6v1H1M2 5h4v1H2M3 6h2v1H3'/%3E%3Cpath fill='%23ff8ab3' d='M1 1h2v1H1'/%3E%3C/svg%3E");
+  --splash-invader-cyan: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 11 8' shape-rendering='crispEdges'%3E%3Cpath fill='%2338bdf8' d='M2 0h1v1H2M8 0h1v1H8M3 1h1v1H3M7 1h1v1H7M2 2h7v1H2M1 3h2v1H1M4 3h3v1H4M8 3h2v1H8M0 4h11v1H0M0 5h1v1H0M2 5h7v1H2M10 5h1v1H10M0 6h1v1H0M2 6h1v1H2M8 6h1v1H8M10 6h1v1H10M3 7h2v1H3M6 7h2v1H6'/%3E%3C/svg%3E");
+  --splash-invader-violet: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 11 8' shape-rendering='crispEdges'%3E%3Cpath fill='%23a78bfa' d='M2 0h1v1H2M8 0h1v1H8M3 1h1v1H3M7 1h1v1H7M2 2h7v1H2M1 3h2v1H1M4 3h3v1H4M8 3h2v1H8M0 4h11v1H0M0 5h1v1H0M2 5h7v1H2M10 5h1v1H10M0 6h1v1H0M2 6h1v1H2M8 6h1v1H8M10 6h1v1H10M3 7h2v1H3M6 7h2v1H6'/%3E%3C/svg%3E");
+  --splash-dust: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120' shape-rendering='crispEdges'%3E%3Cg opacity='.6'%3E%3Crect x='11' y='18' width='3' height='3' fill='%238b7dff'/%3E%3Crect x='73' y='9' width='2' height='2' fill='%23ffffff'/%3E%3Crect x='46' y='52' width='3' height='3' fill='%23ff5fa2'/%3E%3Crect x='97' y='38' width='2' height='2' fill='%2338bdf8'/%3E%3Crect x='28' y='86' width='2' height='2' fill='%23ffffff'/%3E%3Crect x='88' y='101' width='3' height='3' fill='%238b7dff'/%3E%3Crect x='60' y='114' width='2' height='2' fill='%2338bdf8'/%3E%3Crect x='6' y='63' width='2' height='2' fill='%23ffffff'/%3E%3C/g%3E%3C/svg%3E");
+
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  isolation: isolate;
+  background-color: var(--splash-deep);
+  background-image:
+    var(--splash-dust),
+    var(--splash-dust),
+    radial-gradient(90% 70% at 50% var(--splash-focus, 46%), var(--splash-glow) 0%, rgba(58, 30, 160, 0.34) 38%, transparent 72%),
+    radial-gradient(150% 120% at 50% 42%, var(--splash-mid) 0%, #100a44 44%, var(--splash-deep) 100%);
+  background-repeat: repeat, repeat, no-repeat, no-repeat;
+  background-position: 0 0, 47px 23px, center, center;
+  background-size: 120px 120px, 197px 197px, auto, auto;
+  color: var(--splash-ink);
+  font-family: "Outfit", "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* O ecrã tapa tudo: nada por baixo deve receber toques nem fazer scroll. */
+  touch-action: none;
+  overscroll-behavior: contain;
+  /* A poeira deriva devagar; o failsafe é a rede de segurança lá do fundo. */
+  animation:
+    arcade-splash-dust 60s linear infinite,
+    arcade-splash-failsafe 1ms linear 15s forwards;
+}
+
+/* `hidden` sozinho perdia para o `display: grid` acima. */
+.arcade-splash[hidden] {
+  display: none !important;
+}
+
+/* Enquanto o ecrã de arranque está no ar, o que está por baixo não faz scroll
+   (em iOS o rubber-band chegava a mostrar a página a meio da animação). */
+:root.arcade-splash-lock,
+:root.arcade-splash-lock body {
+  overflow: hidden;
+}
+
+/* ---------- Raios de luz ---------- */
+
+.arcade-splash-rays {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(190vw, 190vh);
+  height: max(190vw, 190vh);
+  translate: -50% -50%;
+  background: repeating-conic-gradient(
+    from 0deg at 50% 50%,
+    rgba(150, 126, 255, 0.16) 0deg 2.4deg,
+    transparent 2.4deg 10deg
+  );
+  -webkit-mask-image: radial-gradient(closest-side, #000 6%, rgba(0, 0, 0, 0.55) 26%, transparent 62%);
+  mask-image: radial-gradient(closest-side, #000 6%, rgba(0, 0, 0, 0.55) 26%, transparent 62%);
+  animation: arcade-splash-spin 120s linear infinite;
+  pointer-events: none;
+}
+
+/* ---------- Pixel art a flutuar ---------- */
+
+.arcade-splash-pixels {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Duas camadas em vez de uma: assim os quatro sprites flutuam a ritmos
+   diferentes sem precisarem de quatro elementos no markup de cada página. */
+.arcade-splash-pixels::before,
+.arcade-splash-pixels::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 10px rgba(124, 92, 255, 0.5));
+}
+
+.arcade-splash-pixels::before {
+  background-image: var(--splash-star), var(--splash-invader-cyan);
+  background-size: 7.5vmin auto, 8vmin auto;
+  background-position: 12% 26%, 87% 31%;
+  animation: arcade-splash-float-a 7s ease-in-out infinite;
+}
+
+.arcade-splash-pixels::after {
+  background-image: var(--splash-heart), var(--splash-invader-violet);
+  background-size: 7vmin auto, 7vmin auto;
+  background-position: 83% 15%, 9% 55%;
+  animation: arcade-splash-float-b 9s ease-in-out infinite;
+}
+
+/* ---------- Palco (logótipo + carregamento) ---------- */
+
+.arcade-splash-stage {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(14px, 3.2vmin, 30px);
+  width: min(92vw, 780px);
+  padding:
+    calc(16px + env(safe-area-inset-top, 0px))
+    calc(16px + env(safe-area-inset-right, 0px))
+    calc(16px + env(safe-area-inset-bottom, 0px))
+    calc(16px + env(safe-area-inset-left, 0px));
+  text-align: center;
+}
+
+.arcade-splash-logo {
+  width: min(78vw, 560px);
+  max-height: 46dvh;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 14px 34px rgba(8, 4, 40, 0.75));
+  /* Nasce invisível e aparece com o `load` da imagem (ver splash.js): sem isto
+     via-se o alt-text a saltar para o logótipo em ligações lentas. */
+  opacity: 0;
+  scale: 0.94;
+  transition: opacity 500ms ease, scale 700ms cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+.arcade-splash-logo.is-loaded {
+  opacity: 1;
+  scale: 1;
+}
+
+.arcade-splash-caption {
+  margin: 0;
+  font-size: clamp(0.9rem, 2.6vmin, 1.35rem);
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--splash-ink);
+  text-shadow: 0 0 18px rgba(124, 92, 255, 0.7);
+}
+
+.arcade-splash-status {
+  margin: 0;
+  font-size: clamp(0.72rem, 1.9vmin, 0.98rem);
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--splash-ink-dim);
+  /* Pulsa devagar: dá sinal de vida mesmo quando a barra está à espera do
+     servidor e não anda. */
+  animation: arcade-splash-pulse 2s ease-in-out infinite;
+}
+
+.arcade-splash-track {
+  position: relative;
+  width: min(72vw, 440px);
+  height: 14px;
+  border-radius: 999px;
+  background: rgba(7, 4, 30, 0.72);
+  border: 2px solid rgba(146, 122, 255, 0.55);
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.6),
+    0 0 22px rgba(96, 66, 232, 0.45);
+  overflow: hidden;
+}
+
+.arcade-splash-fill {
+  position: relative;
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--splash-accent-2), #4f8bff 45%, var(--splash-accent));
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.75);
+  /* A largura é escrita pelo splash.js a cada frame; a transição só serve para
+     alisar o salto final até aos 100%. */
+  transition: width 140ms linear;
+}
+
+/* Risco de luz a correr por cima do preenchimento, como nas barras de arcada. */
+.arcade-splash-fill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.45) 50%,
+    transparent 60%
+  );
+  background-size: 220% 100%;
+  animation: arcade-splash-sheen 1.6s linear infinite;
+}
+
+/* ---------- Saída ---------- */
+
+.arcade-splash.is-leaving {
+  animation: none;
+  opacity: 0;
+  scale: 1.04;
+  pointer-events: none;
+  transition: opacity 420ms ease, scale 420ms ease;
+}
+
+/* ---------- Retrato ---------- */
+
+@media (orientation: portrait) {
+  .arcade-splash {
+    --splash-focus: 40%;
+  }
+
+  .arcade-splash-logo {
+    width: min(88vw, 460px);
+    max-height: 38dvh;
+  }
+
+  .arcade-splash-track {
+    width: min(80vw, 380px);
+  }
+
+  /* Em retrato o palco cresce na vertical e ia sentar-se em cima dos sprites:
+     por isso saem do meio e vão para as quatro pontas. */
+  .arcade-splash-pixels::before {
+    background-size: 9vmin auto, 9.5vmin auto;
+    background-position: 13% 14%, 86% 80%;
+  }
+
+  .arcade-splash-pixels::after {
+    background-size: 8.5vmin auto, 8.5vmin auto;
+    background-position: 85% 11%, 11% 84%;
+  }
+}
+
+/* Paisagem baixa (telemóvel deitado): o logótipo tem de encolher para caber
+   com a barra, senão a barra sai do ecrã. */
+@media (orientation: landscape) and (max-height: 480px) {
+  .arcade-splash-stage {
+    gap: clamp(10px, 2.4vmin, 18px);
+  }
+
+  .arcade-splash-logo {
+    max-height: 42dvh;
+  }
+
+  .arcade-splash-track {
+    height: 11px;
+  }
+}
+
+/* ---------- Animações ---------- */
+
+@keyframes arcade-splash-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+/* As duas camadas derivam em sentidos contrários, cada uma exatamente um
+   mosaico, para o ciclo fechar sem salto. Dá profundidade ao fundo sem nada
+   que se note. */
+@keyframes arcade-splash-dust {
+  to {
+    background-position: 120px 240px, -150px 417px, center, center;
+  }
+}
+
+@keyframes arcade-splash-float-a {
+  50% {
+    transform: translateY(-1.6vmin);
+  }
+}
+
+@keyframes arcade-splash-float-b {
+  50% {
+    transform: translateY(1.8vmin);
+  }
+}
+
+@keyframes arcade-splash-sheen {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
+}
+
+@keyframes arcade-splash-pulse {
+  50% {
+    opacity: 0.62;
+  }
+}
+
+/* ---------- Failsafe ---------- */
+
+/* Se o splash.js não chegar a correr (módulo em falta, erro de rede), este
+   atraso tira o ecrã da frente em vez de deixar o site bloqueado para sempre.
+   Em funcionamento normal o JavaScript esconde-o muito antes disto (está
+   montado na `animation` do .arcade-splash, lá em cima). */
+@keyframes arcade-splash-failsafe {
+  to {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
+
+/* ---------- Menos movimento ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .arcade-splash {
+    animation: arcade-splash-failsafe 1ms linear 15s forwards;
+  }
+
+  .arcade-splash-rays,
+  .arcade-splash-pixels::before,
+  .arcade-splash-pixels::after,
+  .arcade-splash-fill::after,
+  .arcade-splash-status {
+    animation: none;
+  }
+
+  .arcade-splash-logo {
+    transition: opacity 200ms ease;
+    scale: 1;
+  }
+}

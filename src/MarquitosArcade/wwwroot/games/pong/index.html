@@ -17,6 +17,13 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Marquitos Arcade" />
 
+    <!-- Ecrã de arranque partilhado pela arcada (lib/arcade/splash.*). Vem antes
+         das folhas do jogo porque é o primeiro que se vê, e o logótipo é
+         pré-carregado para não aparecer a meio da animação. -->
+    <link rel="preload" as="image" href="/logo3.png" />
+    <link rel="stylesheet" href="/lib/arcade/splash.css" />
+    <script type="module" src="/lib/arcade/splash-boot.js"></script>
+
     <link rel="stylesheet" href="css/base.css" />
     <link rel="stylesheet" href="css/hud.css" />
     <link rel="stylesheet" href="css/screens.css" />
@@ -24,6 +31,22 @@
 </head>
 
 <body>
+    <!-- Ecrã de arranque: fica no ar pelo menos 3s (ver lib/arcade/splash.js). -->
+    <div id="arcadeSplash" class="arcade-splash">
+        <div class="arcade-splash-rays" aria-hidden="true"></div>
+        <div class="arcade-splash-pixels" aria-hidden="true"></div>
+        <div class="arcade-splash-stage">
+            <img class="arcade-splash-logo" src="/logo3.png" width="512" height="366"
+                 alt="MarquitosPT Game Arcade" fetchpriority="high" decoding="async" />
+            <p class="arcade-splash-caption">Pong Retro</p>
+            <p class="arcade-splash-status" role="status">A carregar&hellip;</p>
+            <div class="arcade-splash-track" role="progressbar" aria-label="Progresso do carregamento"
+                 aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <div class="arcade-splash-fill"></div>
+            </div>
+        </div>
+    </div>
+
     <div id="wrap">
         <div class="topBar">
             <a class="topBtn" id="arcadeLink" href="/">← ARCADE</a>

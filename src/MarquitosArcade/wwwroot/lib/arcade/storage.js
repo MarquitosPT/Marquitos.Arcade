@@ -39,3 +39,26 @@ export function writeJson(key, value) {
         return false;
     }
 }
+
+// ---------- sessionStorage ----------
+//
+// Mesma armadilha do localStorage, mas com o tempo de vida do separador. Serve
+// para coisas que só valem enquanto a visita durar — por exemplo saber que o
+// ecrã de arranque da arcada já foi mostrado nesta sessão (ver splash.js).
+
+export function readSessionText(key) {
+    try {
+        return sessionStorage.getItem(key);
+    } catch {
+        return null;
+    }
+}
+
+export function writeSessionText(key, value) {
+    try {
+        sessionStorage.setItem(key, value);
+        return true;
+    } catch {
+        return false;
+    }
+}

@@ -66,6 +66,8 @@ const SELECTOR_TIMEOUT_MS = 10000;
 const NAVIGATION_TIMEOUT_MS = 20000;
 /** Teto por cenário. Protege contra um guião que encrave à espera de algo que não vem. */
 const SCENARIO_TIMEOUT_MS = 120000;
+/** O ecrã de arranque está no ar 3s de propósito; isto é só a rede de segurança. */
+const SPLASH_TIMEOUT_MS = 20000;
 
 /**
  * Torna o jogo determinístico: Math.random passa a ser um gerador com semente
@@ -334,6 +336,21 @@ async function waitForRacing(page) {
     );
 }
 
+/**
+ * Espera que o ecrã de arranque da arcada saia da frente.
+ *
+ * Cada jogo abre com o logótipo da arcada (lib/arcade/splash.*) a tapar o ecrã
+ * todo durante uns segundos. Sem esperar por ele, o primeiro clique do guião
+ * caía em cima do splash e o screenshot do menu era o splash.
+ *
+ * Devolve false se o jogo nem sequer traz o ecrã de arranque no markup.
+ */
+async function waitForSplash(page) {
+    if (!(await page.$('#arcadeSplash'))) return false;
+    await page.waitForSelector('#arcadeSplash', { state: 'hidden', timeout: SPLASH_TIMEOUT_MS });
+    return true;
+}
+
 /** True se o canvas tem mais do que uma cor — ou seja, o jogo desenhou alguma coisa. */
 async function canvasHasContent(page) {
     return page.evaluate(() => {
@@ -381,6 +398,9 @@ async function runGame(browser, game, baseUrl) {
     const shots = {};
     try {
         await page.goto(`${baseUrl}/games/${game.slug}/`, { waitUntil: 'networkidle' });
+        // O ecrã de arranque tem de estar no markup e tem de se ir embora sozinho:
+        // se ficasse preso, o jogo era injogável e mais nada aqui daria por isso.
+        if (!(await waitForSplash(page))) problems.push('ecrã de arranque em falta');
         await sleep(500);
 
         const hasMenu = await page.evaluate(() => document.body.innerText.trim().length > 0);

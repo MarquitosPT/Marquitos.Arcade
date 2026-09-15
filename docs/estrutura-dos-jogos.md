@@ -104,6 +104,7 @@ Módulos ES sem dependências externas, importáveis por caminho absoluto
 | `loop.js`      | Ciclo `requestAnimationFrame` com delta-time limitado                |
 | `dom.js`       | Seletores, `escapeHtml`, grupos de ecrãs e de botões                 |
 | `topbar.js`    | Barra de topo comum (arcada, pontuações, pausa, sair)                |
+| `splash.js`    | Ecrã de arranque da arcada: tempo mínimo, barra e saída              |
 | `math.js`      | `clamp`, `lerp`, ângulos, aleatórios, `shuffle`                      |
 
 Antes disto, o mesmo `safeGet`/`safeSet` de `localStorage`, o mesmo
