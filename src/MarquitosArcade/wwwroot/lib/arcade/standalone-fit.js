@@ -40,6 +40,33 @@
 
   measure();
   window.addEventListener("resize", measure);
+
+  // Âncora do documento.
+  //
+  // Para a app chegar ao fundo do ecrã, o <body> mede-se em `vh` e passa
+  // do fim do viewport (ver a nota no styles.css). O preço é o documento
+  // voltar a ter uns 59pt por onde rolar — e era a rolar o documento que
+  // o Safari escondia o topo. Os cliques em fragmentos já não lhe tocam
+  // (wwwroot/hash-scroll.js); isto trata do resto, como um arrasto na
+  // barra de topo ou no rodapé.
+  //
+  // Fica de fora o scroll que o iOS faz para revelar um campo por cima do
+  // teclado: aí o movimento é para bem do utilizador e não se desfaz.
+  const typing = () => {
+    const el = document.activeElement;
+    return (
+      el instanceof HTMLElement &&
+      (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))
+    );
+  };
+
+  window.addEventListener(
+    "scroll",
+    () => {
+      if (window.scrollY !== 0 && !typing()) window.scrollTo(0, 0);
+    },
+    { passive: true }
+  );
   // O iOS reporta as dimensões antigas durante a animação de rotação.
   window.addEventListener("orientationchange", () => setTimeout(measure, 300));
 

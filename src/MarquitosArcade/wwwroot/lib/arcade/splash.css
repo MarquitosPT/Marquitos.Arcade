@@ -103,7 +103,8 @@
    Enquanto o arranque está no ar, esse fundo passa a ser o mesmo tom em
    que a arte da arcada acaba, para a faixa deixar de se ver: no Pong,
    que tem o <html> a preto, era um corte a meio de um fundo roxo. */
-:root.arcade-splash-lock {
+:root.arcade-splash-lock,
+:root.arcade-splash-lock body {
   background-color: #06021c; /* = --splash-deep */
 }
 
