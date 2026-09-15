@@ -66,7 +66,7 @@ const SELECTOR_TIMEOUT_MS = 10000;
 const NAVIGATION_TIMEOUT_MS = 20000;
 /** Teto por cenário. Protege contra um guião que encrave à espera de algo que não vem. */
 const SCENARIO_TIMEOUT_MS = 120000;
-/** O ecrã de arranque está no ar 3s de propósito; isto é só a rede de segurança. */
+/** O ecrã de arranque está no ar 2s de propósito; isto é só a rede de segurança. */
 const SPLASH_TIMEOUT_MS = 20000;
 
 /**
