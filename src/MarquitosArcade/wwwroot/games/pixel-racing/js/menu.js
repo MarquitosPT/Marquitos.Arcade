@@ -4,7 +4,8 @@
 // quem não tem sessão iniciada) e o modo; o segundo, já sabendo o modo, mostra
 // as pistas e a dificuldade. Assim quem quer só dar uma volta não passa por uma
 // parede de opções, e o campeonato não obriga a escolher uma pista que vai
-// correr as três.
+// correr as três — aí escolhe-se a taça, e as três pistas dela mostram-se pela
+// ordem em que se correm.
 //
 // A pista selecionada passa a ser a que o ciclo de desenho pinta por trás do
 // vidro: o menu é uma janela para a pista, não um cartaz.
@@ -12,7 +13,7 @@
 import { escapeHtml } from '/lib/arcade/index.js';
 import { readText, writeText } from '/lib/arcade/storage.js';
 
-import { CAR_COLORS, COLOR_STORAGE_KEY, LAPS_REQUIRED, MODE_TOURNAMENT, TOURNAMENT_TRACKS } from './config.js';
+import { CAR_COLORS, COLOR_STORAGE_KEY, LAPS_REQUIRED, MODE_TOURNAMENT, TOURNAMENT_CUPS } from './config.js';
 import { menuZoom } from './race.js';
 import { race, session } from './state.js';
 import { THEME_INFO, TRACKS } from './tracks.js';
@@ -27,6 +28,9 @@ const PREVIEW = { w: 120, h: 76, pad: 12 };
  * que é o que se quer mostrar no cartão.
  */
 const WORLD_UNITS_PER_METRE = 10;
+
+/** Quantos pontinhos tem a escala de perícia (ver `corneringProfile`). */
+const GRADE_STEPS = 4;
 
 /**
  * Desenho da pista para o cartão: a linha central levada a dois traços — um
@@ -66,6 +70,16 @@ function trackMeta(track) {
     return `${theme.emoji} ${theme.label} · ${metres} m`;
 }
 
+/**
+ * O grau de perícia da pista, em pontinhos. O número vem da geometria (ver
+ * `corneringProfile`), portanto o cartão diz mesmo o que a pista exige — quem
+ * escolhe sabe de antemão se vai poder passar a fundo ou se vai ter de travar.
+ */
+function trackGrade(track) {
+    const dots = Array.from({ length: GRADE_STEPS }, (_, i) => `<i class="${i < track.grade ? '' : 'off'}"></i>`).join('');
+    return `<span class="trackGrade" role="img" aria-label="Perícia ${track.grade} de ${GRADE_STEPS}">${dots}</span>`;
+}
+
 function trackCard(track, { index, order = null }) {
     const tag = order === null ? 'button' : 'div';
     const attrs = order === null
@@ -78,6 +92,7 @@ function trackCard(track, { index, order = null }) {
             ${badge}
             <span class="trackName">${escapeHtml(track.name)}</span>
             <span class="trackMeta">${trackMeta(track)}</span>
+            <span class="trackMeta">Perícia ${trackGrade(track)}</span>
         </span>
     </${tag}>`;
 }
@@ -148,7 +163,7 @@ export function createMenu({ playerName }) {
         overlays.show('start');
     }
 
-    /** Segundo ecrã: pista (só na corrida rápida), dificuldade e arranque. */
+    /** Segundo ecrã: taça ou pista (conforme o modo), dificuldade e arranque. */
     function showSetup(mode) {
         session.mode = mode;
         const tournament = mode === MODE_TOURNAMENT;
@@ -158,14 +173,35 @@ export function createMenu({ playerName }) {
             ? `Três pistas seguidas, ${LAPS_REQUIRED} voltas cada`
             : `Escolhe a pista · ${LAPS_REQUIRED} voltas`;
 
-        els.trackRow.innerHTML = tournament
-            ? TOURNAMENT_TRACKS.map((index, order) => trackCard(TRACKS[index], { index, order: order + 1 })).join('')
-            : TRACKS.map((track, index) => trackCard(track, { index })).join('');
-
-        if (tournament) previewTrack(TOURNAMENT_TRACKS[0]);
-        else selectTrack(session.trackIdx);
+        els.cupField.hidden = !tournament;
+        if (tournament) {
+            els.cupRow.innerHTML = TOURNAMENT_CUPS
+                .map((cup, index) => `<button type="button" class="cupBtn" data-value="${index}">${escapeHtml(cup.name)}</button>`)
+                .join('');
+            selectCup(session.cupIdx);
+        } else {
+            els.trackRow.innerHTML = TRACKS.map((track, index) => trackCard(track, { index })).join('');
+            selectTrack(session.trackIdx);
+        }
 
         overlays.show('setup');
+    }
+
+    /**
+     * No campeonato não se escolhe pista: escolhe-se a taça, e as três pistas
+     * dela ficam à vista pela ordem em que se correm. Por trás do vidro mostra-se
+     * a primeira, que é por onde a coisa começa.
+     */
+    function selectCup(index) {
+        session.cupIdx = index;
+        const cup = TOURNAMENT_CUPS[index];
+        for (const button of els.cupRow.querySelectorAll('.cupBtn')) {
+            button.classList.toggle('active', Number(button.dataset.value) === index);
+        }
+        els.trackRow.innerHTML = cup.tracks
+            .map((trackIdx, order) => trackCard(TRACKS[trackIdx], { index: trackIdx, order: order + 1 }))
+            .join('');
+        previewTrack(cup.tracks[0]);
     }
 
     function selectTrack(index) {
@@ -179,6 +215,11 @@ export function createMenu({ playerName }) {
     els.trackRow.addEventListener('click', (event) => {
         const card = event.target.closest('.trackCard[data-value]');
         if (card) selectTrack(Number(card.dataset.value));
+    });
+
+    els.cupRow.addEventListener('click', (event) => {
+        const button = event.target.closest('.cupBtn');
+        if (button) selectCup(Number(button.dataset.value));
     });
 
     bindAccount();

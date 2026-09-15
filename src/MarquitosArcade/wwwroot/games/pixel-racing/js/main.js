@@ -7,7 +7,7 @@
 import { createButtonGroup, createLoop, createViewport } from '/lib/arcade/index.js';
 import { bindPlayerNameInput } from '/lib/arcade/scores.js';
 
-import { MODE_TOURNAMENT, NAME_STORAGE_KEY, TOURNAMENT_TRACKS } from './config.js';
+import { MODE_TOURNAMENT, NAME_STORAGE_KEY, TOURNAMENT_CUPS } from './config.js';
 import { sfx } from './audio.js';
 import { attachControls, setPauseHandler } from './input.js';
 import { resetParticles, updateConfetti, updateParticles } from './particles.js';
@@ -115,7 +115,7 @@ els.backBtn.addEventListener('click', () => menu.showMenu());
 els.startBtn.addEventListener('click', () => {
     setupParticipants(playerName.remember(), session.playerColor);
     session.raceIndex = 0;
-    session.tracks = session.mode === MODE_TOURNAMENT ? [...TOURNAMENT_TRACKS] : [session.trackIdx];
+    session.tracks = session.mode === MODE_TOURNAMENT ? [...TOURNAMENT_CUPS[session.cupIdx].tracks] : [session.trackIdx];
     startRace(session.tracks[0]);
 });
 

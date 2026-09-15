@@ -40,8 +40,16 @@ export const CPU_NAMES = ['Raio', 'Fúria', 'Trovão', 'Faísca', 'Nitro', 'Somb
 
 export const MODE_QUICK = 'quick';
 export const MODE_TOURNAMENT = 'tournament';
-/** Pistas do torneio, pela ordem em que se correm. */
-export const TOURNAMENT_TRACKS = [0, 1, 2];
+/**
+ * As taças do campeonato: três pistas cada, pela ordem em que se correm. São
+ * duas e não uma só com as seis porque um campeonato de seis corridas seguidas
+ * é comprido de mais para uma sentada — e porque assim as pistas apertadas
+ * ficam num campeonato à parte, para quem já conhece as outras.
+ */
+export const TOURNAMENT_CUPS = [
+    { id: 'classica', name: 'Clássica', tracks: [0, 1, 2] },
+    { id: 'pro', name: 'Pro', tracks: [3, 4, 5] }
+];
 
 export const LAPS_REQUIRED = 3;
 /**
