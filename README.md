@@ -19,6 +19,7 @@ Blazor Web App (.NET 10, render mode Interactive Server) com ASP.NET Core Identi
 - `src/MarquitosArcade/wwwroot/lib/arcade/`: SDK partilhado pelos jogos (áudio, leaderboard, armazenamento, viewport do canvas, ciclo de jogo, barra de topo). Módulos ES sem dependências externas.
 - `tools/games/smoke-test.mjs`: smoke-test dos jogos em Chromium headless, corrido em cada pull request por `.github/workflows/jogos-smoke-test.yml`. Ver [Testar os jogos](#testar-os-jogos).
 - `src/MarquitosArcade/Scores/ScoresEndpoints.cs`: endpoint genérico `GET/POST /api/scores/:gameId`, persistido na tabela `Scores` (EF Core + SQLite). Se o pedido vier de um utilizador autenticado, o nome do leaderboard vem da conta (evita spoofing de nomes); caso contrário aceita o nome livre submetido pelo jogo.
+- `src/MarquitosArcade/Web/CachePolicy.cs`: política de cache HTTP — `immutable` para os URLs com impressão digital (`?v=`), `no-cache` para todo o resto. Ver [Cache do browser](#cache-do-browser-e-o-site-afixado-ao-ecrã-principal).
 - `src/MarquitosArcade/Data/`: `ApplicationDbContext`, `ApplicationUser` e as migrations do EF Core.
 - `src/MarquitosArcade/Components/Account/`: páginas de login/registo/gestão de conta scaffolded pelo template Identity do ASP.NET Core (login em `/Account/Login`, registo em `/Account/Register`, gestão em `/Account/Manage`). Sem confirmação por email — não há servidor de email configurado, por isso ficaria a bloquear amigos convidados.
 
@@ -190,6 +191,29 @@ o endpoint, a partir do browser.
 
 O parâmetro `?jogo=<slug>` destaca o painel desse jogo — é o que o botão 🏆 da
 barra de topo dos jogos usa, junto com a âncora `#<slug>`.
+
+## Cache do browser (e o site afixado ao ecrã principal)
+
+Quem afixa a arcada ao ecrã principal do telemóvel nunca faz Ctrl+F5 — se o
+browser guardar um `js/` velho, fica com ele. Para isso não acontecer, o
+`Web/CachePolicy.cs` carimba o `Cache-Control` de todas as respostas:
+
+| resposta                           | `Cache-Control`                       |
+| ---------------------------------- | ------------------------------------- |
+| URL com `?v=` (o que o `@Assets[]` do Blazor gera) | `public, max-age=31536000, immutable` |
+| tudo o resto                       | `no-cache`                            |
+
+`no-cache` não é "não guardes", é "guarda mas pergunta antes de usar": o browser
+revalida com o `ETag` e recebe um `304` vazio quando nada mudou. Por isso os
+ficheiros dos jogos (`games/<slug>/index.html`, `css/`, `js/`), que não têm
+versão no URL, aparecem sempre atualizados a seguir a um deploy sem custo de
+tráfego quando não mudaram.
+
+Consequência prática ao acrescentar ficheiros a um jogo: **não é preciso fazer
+nada**. Não há lista de assets para manter nem hash para escrever à mão.
+
+O porquê desta escolha, e o que faria mudá-la, está em
+[docs/cache-do-browser.md](docs/cache-do-browser.md).
 
 ## Deploy (Azure App Service)
 

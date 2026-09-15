@@ -6,6 +6,7 @@ using MarquitosArcade.Components;
 using MarquitosArcade.Components.Account;
 using MarquitosArcade.Data;
 using MarquitosArcade.Scores;
+using MarquitosArcade.Web;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -61,6 +62,11 @@ else
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
 }
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
+
+// Antes de servir ficheiros: quem já afixou o site ao ecrã principal não faz
+// Ctrl+F5, por isso o servidor tem de dizer explicitamente o que pode ficar em
+// cache e por quanto tempo. Ver MarquitosArcade.Web.CachePolicy.
+app.UseArcadeCachePolicy();
 app.UseAntiforgery();
 
 app.UseDefaultFiles();
