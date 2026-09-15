@@ -18,23 +18,33 @@
     -webkit-tap-highlight-color: transparent;
 }
 
+/* Altura do ecrã, não do viewport.
+ *
+ * Numa app afixada em iOS o viewport de layout é mais curto do que o ecrã pela
+ * altura da barra de estado, e o que sobra em baixo ficava uma faixa lisa — aqui
+ * nunca se deu por ela porque tem a cor do conteúdo. O `--viewport-gap`
+ * (lib/arcade/standalone-fit.js) é essa folga, e é 0 em todo o lado menos aí.
+ *
+ * Não pode haver `overflow: hidden` nem `overflow-x: hidden` aqui: o overflow da
+ * raiz manda no viewport (e, se a raiz for `visible`, manda o do body), e um par
+ * com `hidden` faz do viewport um contentor de scroll, que recorta no fim dele e
+ * traz a faixa de volta. O `clip` abaixo corta na horizontal sem nada disso. */
 html, body {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    height: 100vh;
+    height: calc(100dvh + var(--viewport-gap, 0px));
     margin: 0;
     padding: 0;
-    overflow: hidden;
 }
 
 body {
     font-family: 'Nunito', system-ui, sans-serif;
     background: var(--massa);
     color: var(--tinta);
-    overflow-x: hidden;
+    overflow-x: clip;
     user-select: none;
 }
 
@@ -50,7 +60,7 @@ body {
     margin: 0 auto;
     position: relative;
     height: 100vh;
-    height: 100dvh;
+    height: calc(100dvh + var(--viewport-gap, 0px));
     display: flex;
     flex-direction: column;
     overflow: hidden;
