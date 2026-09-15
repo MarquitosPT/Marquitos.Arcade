@@ -232,10 +232,19 @@
      vh 852   lvh 852   dvh 793   svh 793
 
    Ou seja, o `vh` conta o ecrã todo e o `dvh` só o viewport. É essa a
-   chave: o que estiver em fluxo normal e medido em `vh` passa do fim do
-   viewport e continua a ser pintado, porque cai dentro da moldura da
-   webview. O que for `fixed` é recortado no fim do viewport — foi por
-   isso que esticar o #app fixo não deu nada.
+   chave: o que estiver em fluxo normal e medido para lá do viewport
+   continua a ser pintado, porque cai dentro da moldura da webview. O que
+   for `fixed` é recortado no fim do viewport — foi por isso que esticar o
+   #app fixo não deu nada.
+
+   Mas `100vh` à seca não serve: num browser com barras, `vh` é o viewport
+   *grande*, o de barras recolhidas. Medido no Safari de um iPhone 11
+   (414x896): `vh` 735 para um viewport de 695, ou seja 40pt a mais, e o
+   rodapé ia parar por baixo da barra do browser. Por isso a altura é
+   `100dvh` — que acompanha o viewport que está à vista — mais o
+   `--viewport-gap`, a folga medida por lib/arcade/standalone-fit.js, que
+   só é diferente de zero numa app afixada em iOS. Na afixada dá
+   793+59=852, o ecrã todo; no browser dá 695+0=695, o viewport certo.
 
    Daí este par: o <html> fica com o viewport e o <body> com o ecrã. Nem
    um nem outro pode levar `overflow: hidden`: o overflow da raiz manda no
@@ -245,7 +254,7 @@
    fragmentos é o wwwroot/hash-scroll.js, mais a âncora em
    lib/arcade/standalone-fit.js.
 
-   Num viewport do tamanho certo, `100vh` é a altura do viewport e nada
+   Onde o viewport tem o tamanho certo o `--viewport-gap` é 0px e nada
    disto tem efeito: o documento fica exatamente à medida, sem scroll. */
 html {
   height: 100%;
@@ -258,9 +267,9 @@ body {
   margin: 0;
   padding: 0;
   width: 100%;
-  /* `100vh` e não `100%`: é o que estica o documento até ao fundo real do
-     ecrã (ver a nota no <html>). */
-  height: 100vh;
+  /* Estica o documento até ao fundo real do ecrã na app afixada, sem
+     passar do viewport num browser com barras (ver a nota no <html>). */
+  height: calc(100dvh + var(--viewport-gap, 0px));
   background-color: var(--bg);
   font-family: var(--font-body);
   color: var(--text);
@@ -376,7 +385,7 @@ body::before {
   top: env(safe-area-inset-top, 0px);
   left: env(safe-area-inset-left, 0px);
   right: env(safe-area-inset-right, 0px);
-  height: calc(100vh - env(safe-area-inset-top, 0px));
+  height: calc(100dvh - env(safe-area-inset-top, 0px) + var(--viewport-gap, 0px));
 }
 
 /* Em mobile (PWA/notch), a área de sistema por cima do #app fica com o
