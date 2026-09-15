@@ -21,6 +21,22 @@
       flash. Os tokens abaixo vivem só neste ficheiro.
    ===================================================================== */
 
+/* Tokens partilhados por todos os documentos da arcada (esta folha é a
+   única que o portal e os jogos carregam os dois).
+
+   `--viewport-gap` é medido por lib/arcade/standalone-fit.js: numa app
+   afixada em iOS o viewport de layout fica mais curto do que o ecrã pela
+   altura da barra de estado, e é aqui que essa diferença chega ao CSS.
+   Fora desse caso vale 0px e nada disto tem efeito.
+
+   Os `--probe-*` existem só para o ?debug=viewport conseguir ler as
+   safe areas a partir do JS. */
+:root {
+  --viewport-gap: 0px;
+  --probe-top: env(safe-area-inset-top, 0px);
+  --probe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 .arcade-splash {
   --splash-deep: #06021c;
   --splash-mid: #1b1063;
@@ -39,6 +55,8 @@
 
   position: fixed;
   inset: 0;
+  /* Estica-se até ao fundo real do ecrã quando o viewport fica curto. */
+  bottom: calc(-1 * var(--viewport-gap, 0px));
   z-index: 2147483000;
   display: grid;
   place-items: center;
@@ -74,6 +92,16 @@
 :root.arcade-splash-lock,
 :root.arcade-splash-lock body {
   overflow: hidden;
+}
+
+/* A faixa que sobra por baixo de um viewport curto (ver `--viewport-gap`
+   lá em cima) é pintada com o fundo do <html> — é a única coisa que
+   chega lá, porque o resto do documento é recortado no fim do viewport.
+   Enquanto o arranque está no ar, esse fundo passa a ser o mesmo tom em
+   que a arte da arcada acaba, para a faixa deixar de se ver: no Pong,
+   que tem o <html> a preto, era um corte a meio de um fundo roxo. */
+:root.arcade-splash-lock {
+  background-color: #06021c; /* = --splash-deep */
 }
 
 /* ---------- Raios de luz ---------- */
