@@ -203,6 +203,27 @@ const GAMES = [
     },
     {
         slug: 'pixel-racing',
+        name: 'pixel-racing-taca-pro',
+        viewport: { width: 800, height: 450 },
+        canvas: true,
+        menuSelector: '#startScreen',
+        async play(page) {
+            // A taça Pro: confirma que o seletor de taça troca os cartões pelas
+            // pistas apertadas e que uma delas arranca e se conduz como as outras.
+            await page.fill('#playerNameInput', 'MARQUITOS');
+            await page.click('.modeBtn[data-mode="tournament"]');
+            await page.click('#cupRow .cupBtn[data-value="1"]');
+            const first = await page.textContent('#trackRow .trackName');
+            if (first !== 'Serra Torcida') throw new Error(`taça Pro não trocou as pistas: ${first}`);
+            await page.click('#startBtn');
+            await waitForRacing(page);
+            await page.keyboard.down('ArrowUp');
+            await sleep(1200);
+            await page.keyboard.up('ArrowUp');
+        }
+    },
+    {
+        slug: 'pixel-racing',
         name: 'pixel-racing-resultados',
         viewport: { width: 800, height: 450 },
         canvas: true,

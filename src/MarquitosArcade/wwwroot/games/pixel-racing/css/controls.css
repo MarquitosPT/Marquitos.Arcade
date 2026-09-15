@@ -294,6 +294,23 @@ button { cursor: pointer; }
     color: var(--muted);
 }
 
+/* O grau de perícia sai da geometria da pista (ver corneringProfile); os pontos
+   apagados ficam lá para se ver de quantos é a escala. */
+.trackGrade {
+    display: inline-flex;
+    gap: 2px;
+    vertical-align: -1px;
+}
+
+.trackGrade i {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+}
+
+.trackGrade i.off { background: rgba(238, 242, 255, 0.22); }
+
 .trackOrder {
     align-self: flex-start;
     padding: 2px 8px;
@@ -356,7 +373,7 @@ button { cursor: pointer; }
     transform: rotate(45deg);
 }
 
-/* ---------- Dificuldade ---------- */
+/* ---------- Taça e dificuldade ---------- */
 
 .segmented {
     display: flex;
@@ -368,7 +385,8 @@ button { cursor: pointer; }
     background: rgba(6, 9, 20, 0.35);
 }
 
-.diffBtn {
+.diffBtn,
+.cupBtn {
     flex: 1;
     padding: 10px 6px;
     font-size: 13px;
@@ -380,9 +398,11 @@ button { cursor: pointer; }
     transition: background 0.2s ease, color 0.2s ease;
 }
 
-.diffBtn:hover { color: var(--text); background: var(--glass-bg-soft); }
+.diffBtn:hover,
+.cupBtn:hover { color: var(--text); background: var(--glass-bg-soft); }
 
-.diffBtn.active {
+.diffBtn.active,
+.cupBtn.active {
     color: var(--on-accent);
     background: linear-gradient(100deg, var(--accent), var(--accent-2));
     box-shadow: 0 8px 20px -12px var(--glow);

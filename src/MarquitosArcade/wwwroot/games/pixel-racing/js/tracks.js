@@ -17,13 +17,23 @@
 // normais (para as bordas e as colisões), o comprimento total (para a distância
 // percorrida) e a caixa envolvente (para o minimapa).
 
-import { rand } from '/lib/arcade/math.js';
-import { BARRIER_SPACING, RUNOFF } from './config.js';
+import { normAngle, rand } from '/lib/arcade/math.js';
+import { BARRIER_SPACING, MAX_SPEED, RUNOFF, TURN_RATE } from './config.js';
 
 /** Distância entre pontos da linha central, em unidades do mundo. */
 const STEP = 6.9;
 /** Amostragem fina usada antes de cortar a linha central por distância. */
 const RAW = 6000;
+
+/**
+ * O raio da curva mais fechada que ainda se faz a fundo: à velocidade máxima o
+ * carro roda `TURN_RATE` por segundo, e daí sai o raio que descreve. Abaixo
+ * disto ou se levanta o pé ou se entra a derrapar — é a fronteira entre uma
+ * curva de que nem se dá conta e uma curva a sério.
+ */
+const NO_LIFT_RADIUS = MAX_SPEED / TURN_RATE;
+/** Meio-intervalo, em pontos, com que se mede a curvatura da linha central. */
+const CURVE_WINDOW = 6;
 
 /**
  * Ponto do traçado no ângulo `t`. Com `edge` a 2 é uma elipse; acima disso os
@@ -64,6 +74,32 @@ function centerLine(def) {
         pts.push({ x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f });
     }
     return pts;
+}
+
+/**
+ * Onde é que a pista aperta. O raio de cada ponto sai da rotação da tangente ao
+ * longo de um pedaço fixo de pista — é a mesma conta que o carro faz, ao
+ * contrário, quando tem de escolher a que velocidade entra.
+ *
+ * Daqui saem os dois números que o menu mostra: a curva mais fechada da volta e
+ * o grau de perícia que ela exige. São medidos e não escritos à mão, por isso
+ * uma pista nova descreve-se sozinha e nenhuma pode mentir sobre o que é.
+ */
+function corneringProfile(tang, ds) {
+    const N = tang.length;
+    const span = 2 * CURVE_WINDOW * ds;
+    let minRadius = Infinity;
+    for (let i = 0; i < N; i++) {
+        const a = tang[(i - CURVE_WINDOW + N) % N], b = tang[(i + CURVE_WINDOW) % N];
+        const turn = Math.abs(normAngle(Math.atan2(b.y, b.x) - Math.atan2(a.y, a.x)));
+        if (turn > 1e-6) minRadius = Math.min(minRadius, span / turn);
+    }
+    // Quatro graus, pela folga que a curva mais fechada deixa em relação ao raio
+    // que se faz a fundo: acima de uma vez e meia é uma pista de pé em baixo,
+    // abaixo do próprio raio já não há volta a dar sem travar ou derrapar.
+    const ratio = minRadius / NO_LIFT_RADIUS;
+    const grade = ratio > 1.5 ? 1 : ratio > 1.05 ? 2 : ratio > 0.85 ? 3 : 4;
+    return { minRadius, grade };
 }
 
 function buildTrack(def) {
@@ -137,7 +173,7 @@ function buildTrack(def) {
         }
     }
 
-    return { ...def, runoff: RUNOFF, barrierAt, pts, tang, norm, total, N, bbox, pads, oils, barriers, decor };
+    return { ...def, runoff: RUNOFF, barrierAt, pts, tang, norm, total, N, bbox, pads, oils, barriers, decor, ...corneringProfile(tang, total / N) };
 }
 
 export const TRACKS = [
@@ -152,6 +188,22 @@ export const TRACKS = [
     buildTrack({
         id: 'chicane', name: 'Deserto Rápido', cx: 800, cy: 600, rx: 1120, ry: 620, halfWidth: 96, theme: 'night',
         edge: 3.1, harmonics: [{ freq: 3, amp: 0.085, phase: -0.11 }, { freq: 5, amp: 0.044, phase: 3.14 }, { freq: 9, amp: 0.015, phase: -0.44 }]
+    }),
+
+    // As três de baixo são o degrau seguinte: mais compridas, mais estreitas e
+    // com curvas abaixo do raio que se faz a fundo — nas de cima nunca é preciso
+    // levantar o pé, aqui é, e quem não travar tem de entrar a derrapar.
+    buildTrack({
+        id: 'serra', name: 'Serra Torcida', cx: 800, cy: 600, rx: 1227, ry: 774, halfWidth: 82, theme: 'grass',
+        edge: 3.1, harmonics: [{ freq: 6, amp: 0.06, phase: 2.9 }, { freq: 8, amp: 0.041, phase: -2.11 }, { freq: 12, amp: 0.018, phase: -2.77 }]
+    }),
+    buildTrack({
+        id: 'gancho', name: 'Gancho Noturno', cx: 800, cy: 600, rx: 1226, ry: 734, halfWidth: 84, theme: 'night',
+        edge: 4.26, harmonics: [{ freq: 2, amp: 0.148, phase: -2.39 }, { freq: 4, amp: 0.057, phase: -2.73 }, { freq: 8, amp: 0.01, phase: 0.44 }]
+    }),
+    buildTrack({
+        id: 'dunas', name: 'Dunas Sinuosas', cx: 800, cy: 600, rx: 1265, ry: 739, halfWidth: 86, theme: 'sand',
+        edge: 3.22, harmonics: [{ freq: 4, amp: 0.047, phase: 1.05 }, { freq: 8, amp: 0.04, phase: -2.38 }, { freq: 14, amp: 0.01, phase: -2.24 }]
     })
 ];
 

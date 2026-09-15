@@ -6,7 +6,7 @@
 
 import { escapeHtml } from '/lib/arcade/index.js';
 
-import { MODE_TOURNAMENT, RACE_POINTS } from './config.js';
+import { LAPS_REQUIRED, MODE_TOURNAMENT, RACE_POINTS, TOURNAMENT_CUPS } from './config.js';
 import { fmtTime, ordinal } from './format.js';
 import { muteEngine } from './audio.js';
 import { spawnConfetti } from './particles.js';
@@ -15,11 +15,26 @@ import { scores } from './scores.js';
 import { race, session } from './state.js';
 import { els, overlays, topBar } from './ui.js';
 
-/** Tempo de referência: abaixo disto, cada 25ms poupado vale um ponto. */
-const TIME_BONUS_BASE_MS = 70000;
+/**
+ * Ritmo de referência, em unidades do mundo por segundo. Dele sai o tempo a
+ * bater em cada pista: abaixo dele, cada 25 ms poupado vale um ponto.
+ *
+ * O tempo de referência vem do comprimento da pista e não de um número fixo.
+ * Fixo, a pista mais curta rendia sempre mais pontos do que as outras, e o
+ * quadro de pontuações passava a dizer quem escolheu a pista mais curta em vez
+ * de quem correu melhor. Assim o bónus mede o ritmo que se levou, e as pistas
+ * compridas valem a pena. O valor está afinado para dar os mesmos ~70 s de
+ * sempre nas três pistas originais, para as pontuações já guardadas
+ * continuarem a valer o mesmo que as novas.
+ */
+const REFERENCE_SPEED = 270;
 const TIME_BONUS_PER_MS = 25;
+const referenceMs = (track) => (track.total * LAPS_REQUIRED / REFERENCE_SPEED) * 1000;
 /** Multiplicador dos pontos de posição na pontuação do leaderboard. */
 const POSITION_WEIGHT = 20;
+
+/** A taça que se está a correr, para os resultados dizerem qual foi. */
+const cupName = () => (TOURNAMENT_CUPS[session.cupIdx] || { name: '' }).name;
 
 /** Medalha do pódio; a partir do 4.º lugar é o próprio número. */
 const medal = (rank) => (rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : ordinal(rank));
@@ -38,7 +53,7 @@ export function showResultScreen() {
     const playerEntry = race.finishSnapshot.find((e) => e.key === 'player');
     const raceTimeMs = race.clock * 1000;
     const raceScore = RACE_POINTS[playerEntry.rank - 1] * POSITION_WEIGHT
-        + Math.max(0, Math.floor((TIME_BONUS_BASE_MS - raceTimeMs) / TIME_BONUS_PER_MS));
+        + Math.max(0, Math.floor((referenceMs(race.track) - raceTimeMs) / TIME_BONUS_PER_MS));
     session.playerScore += raceScore;
 
     for (const entry of race.finishSnapshot) {
@@ -70,7 +85,7 @@ function renderRaceEnd(playerEntry, raceTimeMs, raceScore, isTournament) {
     })));
 
     if (isTournament) {
-        html += `<div class="sectionLabel">Campeonato · corrida ${session.raceIndex + 1} de ${session.tracks.length}</div>`;
+        html += `<div class="sectionLabel">Taça ${escapeHtml(cupName())} · corrida ${session.raceIndex + 1} de ${session.tracks.length}</div>`;
         html += resultTable(standingsRows());
         html += '<div class="resultActions"><button class="btn" id="nextRaceBtn">Próxima corrida →</button></div>';
     } else {
@@ -89,7 +104,7 @@ function renderTournamentEnd() {
 
     let html = `<div class="resultHead">
         <div class="resultMedal">${playerFinal === 1 ? '🏆' : medal(playerFinal)}</div>
-        <div class="bannerText">Campeonato concluído</div>
+        <div class="bannerText">Taça ${escapeHtml(cupName())} concluída</div>
         <div class="sub">${playerFinal === 1 ? 'Campeão da arcade!' : `${ordinal(playerFinal)} lugar no campeonato`}</div>
     </div>`;
     html += resultTable(rows);

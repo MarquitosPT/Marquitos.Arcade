@@ -11,6 +11,8 @@ export const session = {
     mode: MODE_QUICK,
     /** Pista escolhida no modo corrida rápida. */
     trackIdx: 0,
+    /** Taça escolhida no modo campeonato (índice em TOURNAMENT_CUPS). */
+    cupIdx: 0,
     /** Pistas desta sessão: uma na corrida rápida, três no torneio. */
     tracks: [0],
     /** Índice da corrida atual dentro de `tracks`. */
