@@ -40,10 +40,21 @@ export function createViewport(canvas, { topBar = null, topBarGap = 10, onResize
         }
     };
 
+    // Numa app afixada em iOS o viewport de layout é mais curto do que o ecrã
+    // pela altura da barra de estado; lib/arcade/standalone-fit.js mede essa
+    // folga e publica-a em `--viewport-gap`. Sem a somar aqui, o canvas ficava
+    // pelo fim do viewport e sobrava uma faixa no fundo do ecrã. Fora desse
+    // caso vale 0 e o canvas continua a medir o viewport.
+    function viewportGap() {
+        const value = getComputedStyle(document.documentElement)
+            .getPropertyValue('--viewport-gap');
+        return parseFloat(value) || 0;
+    }
+
     function measure() {
         viewport.dpr = window.devicePixelRatio || 1;
         viewport.width = window.innerWidth;
-        viewport.height = window.innerHeight;
+        viewport.height = window.innerHeight + viewportGap();
 
         canvas.style.width = `${viewport.width}px`;
         canvas.style.height = `${viewport.height}px`;

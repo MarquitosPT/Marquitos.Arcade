@@ -21,11 +21,23 @@ input {
     user-select: text;
 }
 
+/* Altura do ecrã, não do viewport.
+ *
+ * Numa app afixada em iOS o viewport de layout é mais curto do que o ecrã pela
+ * altura da barra de estado, e o que sobra em baixo ficava uma faixa lisa. O
+ * `--viewport-gap` (lib/arcade/standalone-fit.js) é essa folga, e é 0 em todo o
+ * lado menos aí. O `dvh` é que acompanha o viewport à vista — `100vh` sozinho
+ * não servia, porque num browser com barras conta o viewport *grande* e deixava
+ * o jogo 40pt mais alto do que o que se vê.
+ *
+ * Também não pode haver `overflow: hidden` aqui: o overflow da raiz manda no
+ * viewport (e, se a raiz for `visible`, manda o do body), portanto escondê-lo
+ * volta a recortar e a faixa regressa. Quem trava o arrasto é o
+ * `touch-action: none` logo abaixo. */
 html, body {
     width: 100%;
-    height: 100%;
+    height: calc(100dvh + var(--viewport-gap, 0px));
     background: #070912;
-    overflow: hidden;
     font-family: var(--font-body);
     color: var(--text);
     touch-action: none;
@@ -34,7 +46,7 @@ html, body {
 #wrap {
     position: relative;
     width: 100vw;
-    height: 100vh;
+    height: calc(100dvh + var(--viewport-gap, 0px));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -53,7 +65,9 @@ canvas {
  */
 body::before {
     content: "";
-    position: fixed;
+    /* `absolute` e não `fixed`: um elemento fixo é recortado no fim do
+     * viewport, e as auroras têm de chegar ao fundo do ecrã. */
+    position: absolute;
     inset: 0;
     z-index: 0;
     pointer-events: none;
