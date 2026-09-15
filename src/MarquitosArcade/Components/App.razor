@@ -14,6 +14,8 @@
     <meta name="msapplication-TileColor" content="#6a5bf6" />
     <meta name="msapplication-config" content="/browserconfig.xml" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    @* O equivalente normalizado do anterior (Android/Chrome). *@
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Marquitos Arcade" />
     <ResourcePreloader />
@@ -65,10 +67,14 @@
             // a sincronização do DOM podia trazê-lo de volta já sem ninguém para
             // o tirar (o splash-boot.js só corre uma vez por documento).
             window.__arcadeSplash?.reapply();
+            // E o alvo de um fragmento no URL (ex.: /pontuacoes?jogo=pong#pong)
+            // só existe no DOM depois desta sincronização.
+            window.__arcadeHashScroll?.reapply();
         });
     </script>
     <script src="@Assets["Components/Account/Shared/PasskeySubmit.razor.js"]" type="module"></script>
     <script src="@Assets["topnav-dropdown.js"]"></script>
+    <script src="@Assets["hash-scroll.js"]"></script>
 </body>
 
 </html>
