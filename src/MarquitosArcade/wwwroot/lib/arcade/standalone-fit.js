@@ -77,6 +77,22 @@
 
   let panel = null;
 
+  // Quanto vale cada unidade de viewport, em px. É isto que distingue os
+  // dois caminhos possíveis para a faixa: se o `vh` for maior do que o
+  // `innerHeight`, um elemento em fluxo normal com `height: 100vh` passa
+  // do fim do viewport e é pintado na faixa — ao contrário de um `fixed`,
+  // que o iOS recorta. Se for igual, não há nada a ganhar por aí.
+  function unit(value) {
+    const probe = document.createElement("div");
+    probe.style.cssText =
+      `position:absolute;top:0;left:0;width:0;visibility:hidden;` +
+      `pointer-events:none;height:${value}`;
+    document.body.appendChild(probe);
+    const px = Math.round(probe.getBoundingClientRect().height);
+    probe.remove();
+    return px;
+  }
+
   function render() {
     if (!panel) return;
     const cs = getComputedStyle(root);
@@ -92,6 +108,8 @@
       `viewport-gap ${cs.getPropertyValue("--viewport-gap").trim() || "?"}`,
       `safe-area    topo ${top || "?"}  fundo ${cs.getPropertyValue("--probe-bottom").trim() || "?"}`,
       `css          ${fresh ? "atual" : "EM CACHE, DESATUALIZADO"}`,
+      `unidades     vh ${unit("100vh")}  dvh ${unit("100dvh")}` +
+        `  svh ${unit("100svh")}  lvh ${unit("100lvh")}`,
       `dpr ${window.devicePixelRatio}   ${window.location.pathname}`,
     ].join("\n");
   }
