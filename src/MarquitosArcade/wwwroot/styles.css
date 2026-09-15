@@ -71,6 +71,10 @@
 
   /* barras (topo/rodapé) */
   --bar-bg: rgba(255, 255, 255, 0.6);
+  /* O mesmo tom já composto sobre o --bg. Serve a faixa que fica fora do
+     viewport numa app afixada em iOS (ver o <html> mais abaixo), onde não
+     há nada por trás para o alfa compor. */
+  --bar-solid: #f7f9fd;
   --bar-border: rgba(255, 255, 255, 0.7);
   --bar-text: #1a1f38;
   --bar-text-muted: rgba(26, 31, 56, 0.66);
@@ -137,6 +141,7 @@
     --btn-to: #5443ec;
 
     --bar-bg: rgba(8, 11, 24, 0.55);
+    --bar-solid: #070a14;
     --bar-border: rgba(255, 255, 255, 0.1);
     --bar-text: #eef1ff;
     --bar-text-muted: rgba(238, 241, 255, 0.62);
@@ -190,6 +195,7 @@
   --btn-to: #5443ec;
 
   --bar-bg: rgba(8, 11, 24, 0.55);
+  --bar-solid: #070a14;
   --bar-border: rgba(255, 255, 255, 0.1);
   --bar-text: #eef1ff;
   --bar-text-muted: rgba(238, 241, 255, 0.62);
@@ -223,7 +229,16 @@ html {
   height: 100%;
   overflow: hidden;
   overscroll-behavior: none;
-  background-color: var(--bg);
+  /* Numa app afixada em iOS o viewport de layout é mais curto do que o
+     ecrã pela altura da barra de estado (medido: 793pt de viewport num
+     ecrã de 852pt). O que sobra em baixo fica fora do viewport, onde o
+     recorte do documento não deixa chegar elemento nenhum — só o fundo
+     do <html>, que a canvas pinta para além do viewport. Damos-lhe o tom
+     da barra, já composto, para essa faixa ler como o rodapé a continuar
+     até ao fundo do ecrã, a condizer com a barra do topo. Onde o
+     viewport tem o tamanho certo, esta faixa não existe e o #app tapa
+     isto por completo. */
+  background-color: var(--bar-solid);
 }
 
 body {
@@ -346,10 +361,7 @@ body::before {
   top: env(safe-area-inset-top, 0px);
   left: env(safe-area-inset-left, 0px);
   right: env(safe-area-inset-right, 0px);
-  /* `--viewport-gap` (lib/arcade/standalone-fit.js) é 0px em todo o lado
-     menos numa app afixada em iOS, onde o viewport de layout fica mais
-     curto do que o ecrã pela altura da barra de estado. */
-  height: calc(100dvh - env(safe-area-inset-top, 0px) + var(--viewport-gap, 0px));
+  height: calc(100dvh - env(safe-area-inset-top, 0px));
 }
 
 /* Em mobile (PWA/notch), a área de sistema por cima do #app fica com o

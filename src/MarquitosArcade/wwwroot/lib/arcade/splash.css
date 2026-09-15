@@ -26,11 +26,14 @@
 
    `--viewport-gap` é medido por lib/arcade/standalone-fit.js: numa app
    afixada em iOS o viewport de layout fica mais curto do que o ecrã pela
-   altura da barra de estado, e é aqui que essa diferença chega ao CSS.
-   Fora desse caso vale 0px e nada disto tem efeito.
+   altura da barra de estado. Chegou a servir para esticar o #app e este
+   ecrã até ao fundo, mas medido no aparelho ficou claro que o iOS recorta
+   tudo no fim do viewport — a esticadela não se via e ainda empurrava o
+   rodapé para fora. Hoje o valor é só diagnóstico, para o ?debug=viewport;
+   quem trata da faixa é o fundo do <html> (ver mais abaixo).
 
-   Os `--probe-*` existem só para o ?debug=viewport conseguir ler as
-   safe areas a partir do JS. */
+   Os `--probe-*` existem pela mesma razão, e a ausência deles denuncia um
+   documento preso a CSS antigo. */
 :root {
   --viewport-gap: 0px;
   --probe-top: env(safe-area-inset-top, 0px);
@@ -55,8 +58,6 @@
 
   position: fixed;
   inset: 0;
-  /* Estica-se até ao fundo real do ecrã quando o viewport fica curto. */
-  bottom: calc(-1 * var(--viewport-gap, 0px));
   z-index: 2147483000;
   display: grid;
   place-items: center;
@@ -96,7 +97,9 @@
 
 /* A faixa que sobra por baixo de um viewport curto (ver `--viewport-gap`
    lá em cima) é pintada com o fundo do <html> — é a única coisa que
-   chega lá, porque o resto do documento é recortado no fim do viewport.
+   chega lá, porque o resto do documento é recortado no fim do viewport
+   (confirmado no aparelho: o painel do ?debug=viewport, em `bottom: 0`,
+   acaba aos 793pt num ecrã de 852pt).
    Enquanto o arranque está no ar, esse fundo passa a ser o mesmo tom em
    que a arte da arcada acaba, para a faixa deixar de se ver: no Pong,
    que tem o <html> a preto, era um corte a meio de um fundo roxo. */
