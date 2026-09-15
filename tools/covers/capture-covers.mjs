@@ -43,6 +43,8 @@ const ONLY = argValue('--only', null);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 /** Esconde a barra da arcada (← ARCADE / 🏆) — não faz parte do jogo em si. */
 const HIDE_ARCADE_CHROME = '.topBar { display: none !important; }';
+/** O ecrã de arranque está no ar 3s de propósito; isto é só a rede de segurança. */
+const SPLASH_TIMEOUT_MS = 20000;
 
 const GAMES = [
     {
@@ -110,6 +112,15 @@ const GAMES = [
         clip: () => ({ x: 0, y: 0, width: 800, height: 450 })
     }
 ];
+
+/**
+ * Espera que o ecrã de arranque da arcada (lib/arcade/splash.*) saia da frente.
+ * Cada jogo abre com o logótipo a tapar o ecrã todo durante uns segundos.
+ */
+async function waitForSplash(page) {
+    if (!(await page.$('#arcadeSplash'))) return;
+    await page.waitForSelector('#arcadeSplash', { state: 'hidden', timeout: SPLASH_TIMEOUT_MS });
+}
 
 /** Completa o pedido ativo da Tasca do Zé e toca a campainha. */
 async function serveCurrentOrder(page) {
@@ -197,6 +208,9 @@ for (const game of GAMES) {
     });
     const page = await context.newPage();
     await page.goto(`${BASE}/games/${game.slug}/`, { waitUntil: 'load' });
+    // Sem esperar por ele, a capa saía com o logótipo da arcada em vez do jogo
+    // e o primeiro clique do guião caía em cima do splash.
+    await waitForSplash(page);
     await sleep(900);
     await game.play(page);
 

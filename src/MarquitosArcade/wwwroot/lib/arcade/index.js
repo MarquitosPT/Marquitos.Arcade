@@ -11,6 +11,7 @@ export { $, $$, byId, escapeHtml, createOverlays, createButtonGroup } from './do
 export { createLoop } from './loop.js';
 export { clamp, lerp, lerpAngle, normAngle, pick, rand, shuffle } from './math.js';
 export { bindPlayerNameInput, createScoreClient, fetchAccountDisplayName } from './scores.js';
-export { readJson, readText, writeJson, writeText } from './storage.js';
+export { createSplash } from './splash.js';
+export { readJson, readSessionText, readText, writeJson, writeSessionText, writeText } from './storage.js';
 export { createTopBar } from './topbar.js';
 export { createViewport } from './viewport.js';

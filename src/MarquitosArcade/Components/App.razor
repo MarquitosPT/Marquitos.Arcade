@@ -19,6 +19,12 @@
     <ResourcePreloader />
     @* Aplica o tema guardado antes do primeiro paint (sem flash do tema errado). *@
     <script src="@Assets["theme.js"]"></script>
+    @* Ecrã de arranque da arcada, partilhado com os jogos (wwwroot/lib/arcade/splash.*).
+       Antes do styles.css porque é o primeiro que se vê; o logótipo vai pré-carregado
+       para a barra não chegar ao fim antes da imagem. *@
+    <link rel="preload" as="image" href="@Assets["logo3.png"]" />
+    <link rel="stylesheet" href="@Assets["lib/arcade/splash.css"]" />
+    <script type="module" src="@Assets["lib/arcade/splash-boot.js"]"></script>
     <link rel="stylesheet" href="@Assets["styles.css"]" />
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["MarquitosArcade.styles.css"]" />
@@ -27,6 +33,24 @@
 </head>
 
 <body>
+    @* data-splash-once="session": a arcada arranca uma vez por separador, ao
+       contrário dos jogos, que arrancam de cada vez que se abre um. E
+       data-permanent para a enhanced navigation do Blazor não voltar a
+       injetá-lo em cada navegação (ver o reapply() mais abaixo). *@
+    <div id="arcadeSplash" class="arcade-splash" data-splash-once="session" data-permanent>
+        <div class="arcade-splash-rays" aria-hidden="true"></div>
+        <div class="arcade-splash-pixels" aria-hidden="true"></div>
+        <div class="arcade-splash-stage">
+            <img class="arcade-splash-logo" src="@Assets["logo3.png"]" width="512" height="366"
+                 alt="MarquitosPT Game Arcade" fetchpriority="high" decoding="async" />
+            <p class="arcade-splash-status" role="status">A carregar&hellip;</p>
+            <div class="arcade-splash-track" role="progressbar" aria-label="Progresso do carregamento"
+                 aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <div class="arcade-splash-fill"></div>
+            </div>
+        </div>
+    </div>
+
     <Routes />
     <ReconnectModal />
     <script src="@Assets["_framework/blazor.web.js"]"></script>
@@ -35,7 +59,13 @@
        (o servidor não tem noção da escolha do cliente). Reaplicamos o
        tema guardado a seguir a cada uma dessas navegações. *@
     <script>
-        Blazor.addEventListener('enhancedload', () => window.__arcadeTheme?.reapply());
+        Blazor.addEventListener('enhancedload', () => {
+            window.__arcadeTheme?.reapply();
+            // Pela mesma razão: o HTML de cada página traz o ecrã de arranque, e
+            // a sincronização do DOM podia trazê-lo de volta já sem ninguém para
+            // o tirar (o splash-boot.js só corre uma vez por documento).
+            window.__arcadeSplash?.reapply();
+        });
     </script>
     <script src="@Assets["Components/Account/Shared/PasskeySubmit.razor.js"]" type="module"></script>
     <script src="@Assets["topnav-dropdown.js"]"></script>

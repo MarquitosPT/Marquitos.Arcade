@@ -16,7 +16,7 @@ Blazor Web App (.NET 10, render mode Interactive Server) com ASP.NET Core Identi
   - `tasca-do-ze/`: mini-jogo "Tasca do Zé" (gestão de pedidos), com leaderboard persistido via `/api/scores/tasca-do-ze`.
   - `pong/`: Pong Retro, com modo 1 jogador (vs. CPU, pontuação submetida via `/api/scores/pong`) e 2 jogadores.
   - `pixel-racing/`: Pixel Racing, corrida simples em qualquer uma das seis pistas ou campeonato de três, com pontuação via `/api/scores/pixel-racing`. O menu tem dois passos: o primeiro ecrã pergunta só o nome (a quem não tem sessão iniciada) e o modo; a pista (ou a taça, no campeonato), a cor do carro e a dificuldade ficam no ecrã seguinte, já a saber o que se vai correr. As pistas são geradas por `buildTrack` a partir de uma superelipse com harmónicos, e o grau de perícia que o cartão mostra é medido no traçado (`corneringProfile`) em vez de escrito à mão: as três primeiras fazem-se sem levantar o pé, as três da taça Pro são mais compridas, mais estreitas e têm curvas que obrigam a travar ou a entrar a derrapar. A cor sai da paleta única de `CAR_COLORS` e os adversários ficam com três das restantes, por isso nunca há dois carros da mesma cor na pista.
-- `src/MarquitosArcade/wwwroot/lib/arcade/`: SDK partilhado pelos jogos (áudio, leaderboard, armazenamento, viewport do canvas, ciclo de jogo, barra de topo). Módulos ES sem dependências externas.
+- `src/MarquitosArcade/wwwroot/lib/arcade/`: SDK partilhado pelos jogos (áudio, leaderboard, armazenamento, viewport do canvas, ciclo de jogo, barra de topo, ecrã de arranque). Módulos ES sem dependências externas. O `splash.css`/`splash.js`/`splash-boot.js` são a exceção que também serve o portal — ver [Ecrã de arranque](#ecrã-de-arranque).
 - `tools/games/smoke-test.mjs`: smoke-test dos jogos em Chromium headless, corrido em cada pull request por `.github/workflows/jogos-smoke-test.yml`. Ver [Testar os jogos](#testar-os-jogos).
 - `src/MarquitosArcade/Scores/ScoresEndpoints.cs`: endpoint genérico `GET/POST /api/scores/:gameId`, persistido na tabela `Scores` (EF Core + SQLite). Se o pedido vier de um utilizador autenticado, o nome do leaderboard vem da conta (evita spoofing de nomes); caso contrário aceita o nome livre submetido pelo jogo.
 - `src/MarquitosArcade/Web/CachePolicy.cs`: política de cache HTTP — `immutable` para os URLs com impressão digital (`?v=`), `no-cache` para todo o resto. Ver [Cache do browser](#cache-do-browser-e-o-site-afixado-ao-ecrã-principal).
@@ -48,6 +48,54 @@ jogo é escuro em todas as pistas, e vidro claro por cima dele não teria
 contraste). O HUD, esse, é desenhado no canvas, onde não há `backdrop-filter`:
 o vidro é imitado à mão com fundo translúcido, contorno de 1px e um risco de luz
 no topo (`glassPanel` em `js/render.js`).
+
+## Ecrã de arranque
+
+A arcada e cada jogo abrem com o logótipo em ecrã inteiro, "A carregar..." e uma
+barra a crescer, sobre um fundo de raios e pixel art (`wwwroot/lib/arcade/splash.css`,
+`splash.js` e `splash-boot.js`). O markup vive na página que o mostra — em
+`Components/App.razor` no portal, no `index.html` de cada jogo —, porque tem de
+estar pintado no primeiro frame, antes de correr JavaScript nenhum.
+
+**Fica no ar 3 segundos, mesmo quando já está tudo pronto.** É de propósito: dá à
+arcada um arranque de consola em vez de um salto seco para o menu. O `splash.js`
+gere três relógios para isso não se virar contra o jogador:
+
+| Relógio       | O que faz                                                        |
+| ------------- | ---------------------------------------------------------------- |
+| `minDuration` | O chão. 3s por omissão; muda-se com `data-splash-min` no markup. |
+| `ready()`     | O conteúdo por baixo está montado. Sem ele a barra pára nos 92%. |
+| `maxDuration` | O teto. Aos 12s desiste de esperar e sai na mesma.               |
+
+Quem chama `ready()` é o `main.js` de cada jogo (`window.__arcadeSplash?.ready()`,
+no mesmo espírito do `window.__arcadeTheme` do tema); se ninguém chamar, o `load`
+da página serve de sinal. E o CSS ainda tem um último travão — uma animação que
+esconde o ecrã aos 15s — para o caso de o próprio `splash-boot.js` não chegar a
+correr: um módulo em falta nunca pode deixar o site tapado para sempre. É também
+por isso que o `splash-boot.js` é carregado pelo seu próprio `<script>` e não vem
+pela cadeia de imports do jogo: se o `main.js` rebentar a carregar, o ecrã de
+arranque sai na mesma e vê-se o erro em vez de uma barra eterna.
+
+Duas diferenças entre o portal e os jogos:
+
+- **O portal arranca uma vez por separador** (`data-splash-once="session"`). Sem
+  isto, ir de `/` para `/pontuacoes` custava 3 segundos de cada vez. Os jogos não
+  levam o atributo, por isso arrancam sempre que se abre um.
+- **O portal precisa do `reapply()`.** Pela mesma razão que o tema (ver acima), a
+  enhanced navigation ressincroniza o `<body>` com o HTML do servidor — e esse
+  HTML traz sempre o ecrã de arranque. O `data-permanent` no elemento e o
+  `reapply()` no `enhancedload` garantem que ele não volta do fundo do baú.
+
+O fundo não é uma imagem: são gradientes e sprites SVG embutidos no CSS, para não
+custar nenhum pedido extra logo no arranque. Só o logótipo (`logo3.png`) é um
+ficheiro, e vai com `<link rel="preload">` em todas as páginas. É isso que também
+lhe permite servir retrato e paisagem sem cortes — nada tem tamanho fixo, e em
+`@media (orientation: portrait)` a pixel art sai do meio e vai para as quatro
+pontas, para não cair por cima do logótipo num ecrã estreito.
+
+Ao contrário do resto do site, este ecrã é sempre escuro: a arte da arcada é
+escura e trocar de tema a meio do arranque dava um flash. Os tokens de cor dele
+vivem só no `splash.css`.
 
 ## Correr localmente
 
@@ -111,6 +159,7 @@ import { createScoreClient } from '/lib/arcade/scores.js';
 | `loop.js`     | Ciclo `requestAnimationFrame` com delta-time limitado            |
 | `dom.js`      | Seletores, `escapeHtml`, grupos de ecrãs e de botões             |
 | `topbar.js`   | Barra de topo comum (arcada, pontuações, pausa, sair)            |
+| `splash.js`   | Ecrã de arranque: tempo mínimo, barra de progresso e saída       |
 | `math.js`     | `clamp`, `lerp`, ângulos, aleatórios, `shuffle`                  |
 
 ## Testar os jogos
@@ -152,6 +201,7 @@ node smoke-test.mjs --out /tmp/novo --compare /tmp/ref
 ## Adicionar um jogo novo
 
 1. Criar `src/MarquitosArcade/wwwroot/games/<slug>/` com a estrutura acima. O `pong/` é o mais pequeno dos três e serve bem de modelo.
+   Copiar de lá também o bloco `#arcadeSplash` do `index.html` (trocando o nome do jogo em `.arcade-splash-caption`), os dois `<link>` e o `<script>` do `splash-boot.js` no `<head>`, e o `window.__arcadeSplash?.ready()` no fim do `main.js` — ver [Ecrã de arranque](#ecrã-de-arranque).
 2. Se precisar de leaderboard persistente, usar `createScoreClient('<slug>')` do SDK, que fala com `GET/POST /api/scores/<slug>`.
 3. Acrescentar o jogo ao array `GAMES` em `tools/games/smoke-test.mjs`, com um guião que o jogue durante alguns segundos.
 4. Gerar a capa do jogo: acrescentar uma receita ao array `GAMES` em `tools/covers/capture-covers.mjs` e correr o script (ver [Capas dos jogos](#capas-dos-jogos)).

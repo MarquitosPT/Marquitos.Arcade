@@ -105,3 +105,7 @@ buildMenuGrid();
 buildBench();
 renderHearts();
 showOverlay('mainMenuOverlay');
+
+// O menu está montado: o ecrã de arranque já pode acabar a barra. O tempo
+// mínimo é dele (lib/arcade/splash.js), isto só lhe diz que não falta nada.
+window.__arcadeSplash?.ready();
