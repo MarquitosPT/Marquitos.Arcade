@@ -43,35 +43,100 @@
   // O iOS reporta as dimensões antigas durante a animação de rotação.
   window.addEventListener("orientationchange", () => setTimeout(measure, 300));
 
-  // ?debug=viewport: numa app afixada não há consola, por isso os números
-  // que interessam aparecem por cima de tudo.
-  if (new URLSearchParams(window.location.search).get("debug") === "viewport") {
-    const show = () => {
-      const box = document.getElementById("viewport-debug") ?? (() => {
-        const el = document.createElement("pre");
-        el.id = "viewport-debug";
-        el.style.cssText =
-          "position:fixed;left:0;right:0;bottom:0;z-index:2147483647;margin:0;" +
-          "padding:8px;font:11px/1.45 ui-monospace,monospace;white-space:pre;" +
-          "background:rgba(255,0,110,.92);color:#fff;pointer-events:none";
-        document.body.appendChild(el);
-        return el;
-      })();
-      const inset = (side) =>
-        getComputedStyle(root).getPropertyValue(`--probe-${side}`).trim() || "?";
-      box.textContent = [
-        `standalone   ${window.navigator.standalone === true}`,
-        `innerHeight  ${window.innerHeight}   screen ${window.screen.width}x${window.screen.height}`,
-        `viewport-gap ${getComputedStyle(root).getPropertyValue("--viewport-gap").trim()}`,
-        `safe-area    topo ${inset("top")}  fundo ${inset("bottom")}`,
-        `dpr ${window.devicePixelRatio}`,
-      ].join("\n");
-    };
-    const start = () => {
-      show();
-      window.addEventListener("resize", show);
-    };
-    if (document.body) start();
-    else document.addEventListener("DOMContentLoaded", start, { once: true });
+  // ---- Diagnóstico ----------------------------------------------------
+  //
+  // Numa app afixada não há consola nem barra de endereço, e o `start_url`
+  // do manifesto faz o iOS arrancar sempre em "/" — a query string com que
+  // se adicionou ao ecrã principal perde-se. Por isso o painel liga-se de
+  // três maneiras: pelo `?debug=viewport` num browser normal, pela escolha
+  // guardada, e por um toque com três dedos, que é o único que funciona de
+  // certeza dentro da app afixada (em iOS o armazenamento dela é separado
+  // do Safari, portanto a escolha feita no Safari não transita).
+  const STORE_KEY = "arcade-debug-viewport";
+
+  const stored = () => {
+    try {
+      return window.localStorage.getItem(STORE_KEY) === "1";
+    } catch {
+      return false;
+    }
+  };
+
+  const remember = (on) => {
+    try {
+      if (on) window.localStorage.setItem(STORE_KEY, "1");
+      else window.localStorage.removeItem(STORE_KEY);
+    } catch {
+      /* modo privado: o painel vale só para esta sessão. */
+    }
+  };
+
+  const param = new URLSearchParams(window.location.search).get("debug");
+  if (param === "viewport") remember(true);
+  if (param === "off") remember(false);
+
+  let panel = null;
+
+  function render() {
+    if (!panel) return;
+    const cs = getComputedStyle(root);
+    const top = cs.getPropertyValue("--probe-top").trim();
+    // O `--viewport-gap` não serve de sonda: o measure() acima define-o
+    // sempre, mesmo que o CSS a correr seja antigo. Já os `--probe-*` só
+    // existem no splash.css novo, por isso a ausência deles denuncia uma
+    // app afixada que ficou com CSS em cache.
+    const fresh = top !== "";
+    panel.textContent = [
+      `standalone   ${window.navigator.standalone === true}`,
+      `innerHeight  ${window.innerHeight}   screen ${window.screen.width}x${window.screen.height}`,
+      `viewport-gap ${cs.getPropertyValue("--viewport-gap").trim() || "?"}`,
+      `safe-area    topo ${top || "?"}  fundo ${cs.getPropertyValue("--probe-bottom").trim() || "?"}`,
+      `css          ${fresh ? "atual" : "EM CACHE, DESATUALIZADO"}`,
+      `dpr ${window.devicePixelRatio}   ${window.location.pathname}`,
+    ].join("\n");
   }
+
+  function show() {
+    if (panel || !document.body) return;
+    panel = document.createElement("pre");
+    panel.id = "viewport-debug";
+    panel.style.cssText =
+      "position:fixed;left:0;right:0;bottom:0;z-index:2147483647;margin:0;" +
+      "padding:8px;font:11px/1.45 ui-monospace,monospace;white-space:pre;" +
+      "background:rgba(255,0,110,.92);color:#fff;pointer-events:none";
+    document.body.appendChild(panel);
+    render();
+  }
+
+  function hide() {
+    panel?.remove();
+    panel = null;
+  }
+
+  function toggle() {
+    if (panel) {
+      hide();
+      remember(false);
+    } else {
+      show();
+      remember(true);
+    }
+  }
+
+  // Três dedos ao mesmo tempo: não colide com nada nos jogos nem no site.
+  document.addEventListener(
+    "touchstart",
+    (event) => {
+      if (event.touches.length === 3) toggle();
+    },
+    { passive: true }
+  );
+
+  const start = () => {
+    if (stored()) show();
+    window.addEventListener("resize", render);
+  };
+
+  if (document.body) start();
+  else document.addEventListener("DOMContentLoaded", start, { once: true });
 })();
