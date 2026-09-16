@@ -27,6 +27,8 @@
     // app afixada — ao contrário de `display-mode: standalone`, que também
     // apanha o Android, onde o layout está correto e esticar estragaria.
     const iosStandalone = window.navigator.standalone === true;
+    // Serve a folga do topo em splash.css (--ios-top-clearance).
+    root.toggleAttribute("data-ios-standalone", iosStandalone);
 
     let gap = 0;
     if (iosStandalone && window.screen) {

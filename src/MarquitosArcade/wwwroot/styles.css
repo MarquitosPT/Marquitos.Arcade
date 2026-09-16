@@ -472,8 +472,12 @@ body::before {
   align-items: stretch;
   justify-content: space-between;
   gap: 1rem;
-  min-height: 3.6rem;
-  padding: 0 1.1rem;
+  /* A folga é 0 fora de uma app afixada em iOS (ver --ios-top-clearance).
+     Tem de entrar também no `min-height`: com o `box-sizing: border-box`
+     desta folha, um `padding-top` sozinho comia a área de conteúdo em vez
+     de crescer a barra, e o conteúdo descia só metade. */
+  min-height: calc(3.6rem + var(--ios-top-clearance, 0px));
+  padding: var(--ios-top-clearance, 0px) 1.1rem 0;
   border-width: 0 0 1px;
   border-color: var(--bar-border);
   background: var(--bar-bg);
