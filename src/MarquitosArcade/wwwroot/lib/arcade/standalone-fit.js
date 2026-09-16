@@ -17,6 +17,11 @@
 (() => {
   const root = document.documentElement;
 
+  // Última folga publicada, para só mexer no CSS quando muda de facto.
+  let published = null;
+  // Só depois da primeira medição é que vale a pena avisar quem remede.
+  let settled = false;
+
   function measure() {
     // `navigator.standalone` é específico do iOS e identifica exatamente a
     // app afixada — ao contrário de `display-mode: standalone`, que também
@@ -35,11 +40,39 @@
       if (diff > 0 && diff <= 80) gap = diff;
     }
 
+    if (gap === published) return;
+    published = gap;
     root.style.setProperty("--viewport-gap", `${gap}px`);
+
+    // Quem se dimensiona em JS — o canvas dos jogos, via
+    // lib/arcade/viewport.js — só sabe remedir a um `resize`, e a folga
+    // pode mudar sem que o iOS dispare nenhum. Reentrar aqui é inofensivo:
+    // à segunda a folga já é a mesma e sai-se acima.
+    if (settled) window.dispatchEvent(new Event("resize"));
   }
 
   measure();
+  settled = true;
+
   window.addEventListener("resize", measure);
+
+  // No primeiro arranque de uma app afixada o iOS chega a reportar o
+  // viewport curto e só depois o assenta no ecrã todo, sem disparar
+  // `resize` pelo meio. Uma medição só no <head> ficava com a folga de um
+  // ecrã que já não existe, e a app acabava mais alta do que o ecrã — o
+  // rodapé e os controlos saíam por baixo. Daí remedir enquanto o arranque
+  // decorre; como o ecrã de arranque tapa tudo nos primeiros segundos,
+  // nada disto se vê.
+  const remeasure = () => measure();
+  requestAnimationFrame(() => {
+    measure();
+    requestAnimationFrame(remeasure);
+  });
+  window.addEventListener("load", remeasure, { once: true });
+  window.addEventListener("pageshow", remeasure);
+  window.visualViewport?.addEventListener("resize", remeasure);
+  document.addEventListener("visibilitychange", remeasure);
+  for (const atraso of [150, 600, 1500, 3000]) setTimeout(remeasure, atraso);
 
   // Âncora do documento.
   //
