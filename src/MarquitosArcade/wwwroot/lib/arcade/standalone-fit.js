@@ -17,6 +17,11 @@
 (() => {
   const root = document.documentElement;
 
+  // Última folga publicada, para só mexer no CSS quando muda de facto.
+  let published = null;
+  // Só depois da primeira medição é que vale a pena avisar quem remede.
+  let settled = false;
+
   function measure() {
     // `navigator.standalone` é específico do iOS e identifica exatamente a
     // app afixada — ao contrário de `display-mode: standalone`, que também
@@ -35,11 +40,39 @@
       if (diff > 0 && diff <= 80) gap = diff;
     }
 
+    if (gap === published) return;
+    published = gap;
     root.style.setProperty("--viewport-gap", `${gap}px`);
+
+    // Quem se dimensiona em JS — o canvas dos jogos, via
+    // lib/arcade/viewport.js — só sabe remedir a um `resize`, e a folga
+    // pode mudar sem que o iOS dispare nenhum. Reentrar aqui é inofensivo:
+    // à segunda a folga já é a mesma e sai-se acima.
+    if (settled) window.dispatchEvent(new Event("resize"));
   }
 
   measure();
+  settled = true;
+
   window.addEventListener("resize", measure);
+
+  // No primeiro arranque de uma app afixada o iOS chega a reportar o
+  // viewport curto e só depois o assenta no ecrã todo, sem disparar
+  // `resize` pelo meio. Uma medição só no <head> ficava com a folga de um
+  // ecrã que já não existe, e a app acabava mais alta do que o ecrã — o
+  // rodapé e os controlos saíam por baixo. Daí remedir enquanto o arranque
+  // decorre; como o ecrã de arranque tapa tudo nos primeiros segundos,
+  // nada disto se vê.
+  const remeasure = () => measure();
+  requestAnimationFrame(() => {
+    measure();
+    requestAnimationFrame(remeasure);
+  });
+  window.addEventListener("load", remeasure, { once: true });
+  window.addEventListener("pageshow", remeasure);
+  window.visualViewport?.addEventListener("resize", remeasure);
+  document.addEventListener("visibilitychange", remeasure);
+  for (const atraso of [150, 600, 1500, 3000]) setTimeout(remeasure, atraso);
 
   // Âncora do documento.
   //
@@ -80,27 +113,43 @@
   // certeza dentro da app afixada (em iOS o armazenamento dela é separado
   // do Safari, portanto a escolha feita no Safari não transita).
   const STORE_KEY = "arcade-debug-viewport";
+  const BLUR_KEY = "arcade-debug-noblur";
 
-  const stored = () => {
+  const stored = (key) => {
     try {
-      return window.localStorage.getItem(STORE_KEY) === "1";
+      return window.localStorage.getItem(key) === "1";
     } catch {
       return false;
     }
   };
 
-  const remember = (on) => {
+  const remember = (key, on) => {
     try {
-      if (on) window.localStorage.setItem(STORE_KEY, "1");
-      else window.localStorage.removeItem(STORE_KEY);
+      if (on) window.localStorage.setItem(key, "1");
+      else window.localStorage.removeItem(key);
     } catch {
-      /* modo privado: o painel vale só para esta sessão. */
+      /* modo privado: a escolha vale só para esta sessão. */
     }
   };
 
+  // Tira o `backdrop-filter` a tudo (ver a regra em splash.css), para se
+  // ver se a névoa por trás da barra de estado é nossa ou do sistema.
+  const setBlur = (off) => {
+    root.toggleAttribute("data-no-blur", off);
+    remember(BLUR_KEY, off);
+    render();
+  };
+
   const param = new URLSearchParams(window.location.search).get("debug");
-  if (param === "viewport") remember(true);
-  if (param === "off") remember(false);
+  if (param === "viewport") remember(STORE_KEY, true);
+  if (param === "blur") {
+    remember(STORE_KEY, true);
+    remember(BLUR_KEY, true);
+  }
+  if (param === "off") {
+    remember(STORE_KEY, false);
+    remember(BLUR_KEY, false);
+  }
 
   let panel = null;
 
@@ -137,6 +186,7 @@
       `css          ${fresh ? "atual" : "EM CACHE, DESATUALIZADO"}`,
       `unidades     vh ${unit("100vh")}  dvh ${unit("100dvh")}` +
         `  svh ${unit("100svh")}  lvh ${unit("100lvh")}`,
+      `vidro        ${root.hasAttribute("data-no-blur") ? "DESLIGADO (2 dedos p/ ligar)" : "ligado (2 dedos p/ desligar)"}`,
       `dpr ${window.devicePixelRatio}   ${window.location.pathname}`,
     ].join("\n");
   }
@@ -161,24 +211,31 @@
   function toggle() {
     if (panel) {
       hide();
-      remember(false);
+      remember(STORE_KEY, false);
     } else {
       show();
-      remember(true);
+      remember(STORE_KEY, true);
     }
   }
 
-  // Três dedos ao mesmo tempo: não colide com nada nos jogos nem no site.
   document.addEventListener(
     "touchstart",
     (event) => {
+      // Três dedos: liga e desliga o painel. Não colide com nada nos jogos
+      // nem no site.
       if (event.touches.length === 3) toggle();
+      // Dois dedos: só conta com o painel no ar, senão apanhava um gesto
+      // que se faz sem querer a jogar.
+      else if (event.touches.length === 2 && panel) {
+        setBlur(!root.hasAttribute("data-no-blur"));
+      }
     },
     { passive: true }
   );
 
   const start = () => {
-    if (stored()) show();
+    if (stored(BLUR_KEY)) root.toggleAttribute("data-no-blur", true);
+    if (stored(STORE_KEY)) show();
     window.addEventListener("resize", render);
   };
 
