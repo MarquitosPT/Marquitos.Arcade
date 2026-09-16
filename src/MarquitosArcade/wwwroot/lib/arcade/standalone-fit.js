@@ -169,6 +169,27 @@
     return px;
   }
 
+  // O que o CSS está mesmo a aplicar, não o que devia.
+  //
+  // A linha `css` acima sonda os `--probe-*`, que já existiam antes da regra
+  // do vidro — não serve para saber se o splash.css em uso já a traz. Se
+  // estiver em cache, o atributo muda e não acontece nada, que se confunde
+  // com "o vidro não era a causa". Por isso lemos o valor computado de um
+  // elemento com vidro e do pseudo-elemento que preenche a barra de estado:
+  // com o vidro desligado, ambos têm de dizer `none`.
+  function computedBlur(el, pseudo) {
+    if (!el) return "-";
+    const cs = getComputedStyle(el, pseudo);
+    const v = cs.backdropFilter || cs.webkitBackdropFilter || "none";
+    return v === "none" ? "none" : "ATIVO";
+  }
+
+  function glassState() {
+    const glass = document.querySelector(".topnav, .topBar, .hud, .game-panel");
+    const shell = document.getElementById("app");
+    return `elem:${computedBlur(glass, null)} ::before:${computedBlur(shell, "::before")}`;
+  }
+
   function render() {
     if (!panel) return;
     const cs = getComputedStyle(root);
@@ -186,7 +207,7 @@
       `css          ${fresh ? "atual" : "EM CACHE, DESATUALIZADO"}`,
       `unidades     vh ${unit("100vh")}  dvh ${unit("100dvh")}` +
         `  svh ${unit("100svh")}  lvh ${unit("100lvh")}`,
-      `vidro        ${root.hasAttribute("data-no-blur") ? "DESLIGADO (2 dedos p/ ligar)" : "ligado (2 dedos p/ desligar)"}`,
+      `vidro        ${root.hasAttribute("data-no-blur") ? "DESLIGADO" : "ligado"} (2 dedos)   ${glassState()}`,
       `dpr ${window.devicePixelRatio}   ${window.location.pathname}`,
     ].join("\n");
   }
