@@ -108,6 +108,24 @@
   background-color: #06021c; /* = --splash-deep */
 }
 
+/* Experiência de diagnóstico, ligada pelo ?debug=blur ou por um toque com
+   dois dedos enquanto o painel do ?debug=viewport está no ar (ver
+   lib/arcade/standalone-fit.js).
+
+   Serve para responder a uma pergunta só: a névoa por trás da barra de
+   estado é nossa ou do sistema? O site já põe `backdrop-filter` na barra
+   de topo e no preenchimento da safe area, portanto, se o iOS passou a
+   desenhar vidro nessa faixa, ficam dois empilhados. Com isto desligado:
+   se a névoa desaparecer, é nossa e ajusta-se; se ficar, é do sistema e a
+   saída é dar mais folga por baixo da barra.
+
+   O `*` com `!important` é deliberado — é para apanhar tudo de uma vez,
+   incluindo o vidro dos jogos, sem andar a listar seletores. */
+:root[data-no-blur] * {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
 /* ---------- Raios de luz ---------- */
 
 .arcade-splash-rays {

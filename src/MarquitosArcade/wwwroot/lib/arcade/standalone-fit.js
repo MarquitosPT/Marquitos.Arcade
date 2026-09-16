@@ -113,27 +113,43 @@
   // certeza dentro da app afixada (em iOS o armazenamento dela é separado
   // do Safari, portanto a escolha feita no Safari não transita).
   const STORE_KEY = "arcade-debug-viewport";
+  const BLUR_KEY = "arcade-debug-noblur";
 
-  const stored = () => {
+  const stored = (key) => {
     try {
-      return window.localStorage.getItem(STORE_KEY) === "1";
+      return window.localStorage.getItem(key) === "1";
     } catch {
       return false;
     }
   };
 
-  const remember = (on) => {
+  const remember = (key, on) => {
     try {
-      if (on) window.localStorage.setItem(STORE_KEY, "1");
-      else window.localStorage.removeItem(STORE_KEY);
+      if (on) window.localStorage.setItem(key, "1");
+      else window.localStorage.removeItem(key);
     } catch {
-      /* modo privado: o painel vale só para esta sessão. */
+      /* modo privado: a escolha vale só para esta sessão. */
     }
   };
 
+  // Tira o `backdrop-filter` a tudo (ver a regra em splash.css), para se
+  // ver se a névoa por trás da barra de estado é nossa ou do sistema.
+  const setBlur = (off) => {
+    root.toggleAttribute("data-no-blur", off);
+    remember(BLUR_KEY, off);
+    render();
+  };
+
   const param = new URLSearchParams(window.location.search).get("debug");
-  if (param === "viewport") remember(true);
-  if (param === "off") remember(false);
+  if (param === "viewport") remember(STORE_KEY, true);
+  if (param === "blur") {
+    remember(STORE_KEY, true);
+    remember(BLUR_KEY, true);
+  }
+  if (param === "off") {
+    remember(STORE_KEY, false);
+    remember(BLUR_KEY, false);
+  }
 
   let panel = null;
 
@@ -170,6 +186,7 @@
       `css          ${fresh ? "atual" : "EM CACHE, DESATUALIZADO"}`,
       `unidades     vh ${unit("100vh")}  dvh ${unit("100dvh")}` +
         `  svh ${unit("100svh")}  lvh ${unit("100lvh")}`,
+      `vidro        ${root.hasAttribute("data-no-blur") ? "DESLIGADO (2 dedos p/ ligar)" : "ligado (2 dedos p/ desligar)"}`,
       `dpr ${window.devicePixelRatio}   ${window.location.pathname}`,
     ].join("\n");
   }
@@ -194,24 +211,31 @@
   function toggle() {
     if (panel) {
       hide();
-      remember(false);
+      remember(STORE_KEY, false);
     } else {
       show();
-      remember(true);
+      remember(STORE_KEY, true);
     }
   }
 
-  // Três dedos ao mesmo tempo: não colide com nada nos jogos nem no site.
   document.addEventListener(
     "touchstart",
     (event) => {
+      // Três dedos: liga e desliga o painel. Não colide com nada nos jogos
+      // nem no site.
       if (event.touches.length === 3) toggle();
+      // Dois dedos: só conta com o painel no ar, senão apanhava um gesto
+      // que se faz sem querer a jogar.
+      else if (event.touches.length === 2 && panel) {
+        setBlur(!root.hasAttribute("data-no-blur"));
+      }
     },
     { passive: true }
   );
 
   const start = () => {
-    if (stored()) show();
+    if (stored(BLUR_KEY)) root.toggleAttribute("data-no-blur", true);
+    if (stored(STORE_KEY)) show();
     window.addEventListener("resize", render);
   };
 
