@@ -9,7 +9,7 @@
 
 .topBar {
     position: absolute;
-    top: calc(max(12px, env(safe-area-inset-top)) + var(--ios-top-clearance, 0px));
+    top: max(12px, env(safe-area-inset-top));
     right: max(12px, env(safe-area-inset-right));
     display: flex;
     gap: 8px;

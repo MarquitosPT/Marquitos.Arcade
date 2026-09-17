@@ -36,19 +36,6 @@
    documento preso a CSS antigo. */
 :root {
   --viewport-gap: 0px;
-
-  /* Folga extra por baixo da barra de estado numa app afixada em iOS.
-     O sistema compõe um vidro por cima do topo da webview e o que lá cair
-     sai "lavado" — medido nas capturas de um iPhone 15 Pro: a nitidez da
-     barra de topo cai 15% (gradiente médio 1.72 contra 2.03 no browser,
-     com o mesmo código), e o efeito acaba por volta dos 30pt abaixo do
-     inset. Não é nosso: com o `?debug=blur` a tirar o `backdrop-filter` a
-     tudo, a medida não mexe (1.71 -> 1.72).
-
-     1rem e não os 10px que por aí se sugerem: o texto da barra começa a
-     ~21pt do topo do #app, portanto 10px deixa-o mesmo em cima da
-     fronteira. É um valor só, fácil de afinar. */
-  --ios-top-clearance: 0px;
   --probe-top: env(safe-area-inset-top, 0px);
   --probe-bottom: env(safe-area-inset-bottom, 0px);
 }
@@ -119,14 +106,6 @@
 :root.arcade-splash-lock,
 :root.arcade-splash-lock body {
   background-color: #06021c; /* = --splash-deep */
-}
-
-/* Só em iOS afixado: o atributo vem de lib/arcade/standalone-fit.js, que
-   olha para o `navigator.standalone`. Um `@media (display-mode: standalone)`
-   apanhava também o Android, onde isto não acontece e a folga só encolhia o
-   ecrã sem razão. */
-:root[data-ios-standalone] {
-  --ios-top-clearance: 1rem;
 }
 
 /* Experiência de diagnóstico, ligada pelo ?debug=blur ou por um toque com
