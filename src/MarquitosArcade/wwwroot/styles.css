@@ -1290,6 +1290,32 @@ main {
   font-size: 0.88rem;
 }
 
+/* Nota do fim da home, a fechar o catálogo: discreta, mas é daqui que se
+   chega à política de privacidade (o rodapé é uma barra fina e o link
+   partia-lhe a linha em ecrãs estreitos). */
+
+.home-legal {
+  margin: 2.5rem auto 0;
+  padding-top: 1.3rem;
+  border-top: 1px solid var(--divider);
+  max-width: 62ch;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.7;
+}
+
+.home-legal a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}
+
+.home-legal a:hover {
+  color: var(--accent-strong);
+}
+
 /* ---------- Página de pontuações ---------- */
 
 .page-header {
@@ -1470,17 +1496,6 @@ tbody tr:last-child td {
   color: var(--bar-text-muted);
   font-size: 0.78rem;
   text-align: center;
-}
-
-.site-footer a {
-  color: inherit;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.site-footer a:hover,
-.site-footer a.active {
-  color: var(--accent);
 }
 
 /* ---------- Páginas de conta (/Account/*) ---------- */
