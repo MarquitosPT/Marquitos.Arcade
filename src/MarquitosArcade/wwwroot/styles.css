@@ -1291,10 +1291,10 @@ main {
 }
 
 /* Nota do fim da home, a fechar o catálogo: discreta, mas é daqui que se
-   chega à política de privacidade (o rodapé é uma barra fina e o link
-   partia-lhe a linha em ecrãs estreitos). */
+   chega ao suporte e à política de privacidade (o rodapé é uma barra fina
+   e os links partiam-lhe a linha em ecrãs estreitos). */
 
-.home-legal {
+.home-meta {
   margin: 2.5rem auto 0;
   padding-top: 1.3rem;
   border-top: 1px solid var(--divider);
@@ -1305,15 +1305,41 @@ main {
   line-height: 1.7;
 }
 
-.home-legal a {
+/* Os links em linha própria, e o separador em CSS para nunca ficar
+   pendurado no fim de uma linha. Num ecrã muito estreito empilham-se e o
+   separador desaparece. */
+.home-meta-links {
+  display: block;
+  margin-top: 0.3rem;
+}
+
+.home-meta a {
   color: var(--accent);
   text-decoration: underline;
   text-underline-offset: 2px;
   white-space: nowrap;
 }
 
-.home-legal a:hover {
+.home-meta a:hover {
   color: var(--accent-strong);
+}
+
+.home-meta-links a + a::before {
+  content: "·";
+  display: inline-block;
+  margin: 0 0.5rem;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+@media (max-width: 400px) {
+  .home-meta-links a {
+    display: block;
+  }
+
+  .home-meta-links a + a::before {
+    content: none;
+  }
 }
 
 /* ---------- Página de pontuações ---------- */
@@ -1979,12 +2005,12 @@ tbody tr:last-child td {
   font-size: 0.88rem;
 }
 
-/* ---------- Páginas legais (/privacidade) ---------- */
-/* Texto corrido e longo dentro de um .page-shell: os títulos ganham uma
-   régua a separá-los, e o resto herda a tipografia das páginas simples
-   acima (.page-shell p, strong, code). */
+/* ---------- Páginas de texto corrido (/privacidade, /suporte) ---------- */
+/* Texto longo dentro de um .page-shell: os títulos ganham uma régua a
+   separá-los, e o resto herda a tipografia das páginas simples acima
+   (.page-shell p, strong, code). */
 
-.legal h2 {
+.longform h2 {
   margin: 2.2rem 0 0.8rem;
   padding-bottom: 0.4rem;
   border-bottom: 1px solid var(--divider);
@@ -1997,48 +2023,48 @@ tbody tr:last-child td {
 /* Pela mesma razão do menu "Gerir conta": no tema escuro o tom forte do
    acento escurece em vez de saltar à vista. */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .legal h2 {
+  :root:not([data-theme="light"]) .longform h2 {
     color: var(--accent);
   }
 }
 
-:root[data-theme="dark"] .legal h2 {
+:root[data-theme="dark"] .longform h2 {
   color: var(--accent);
 }
 
-.legal h3 {
+.longform h3 {
   margin: 1.5rem 0 0.5rem;
   font-size: 1rem;
   color: var(--text-strong);
 }
 
-.legal ul {
+.longform ul {
   margin: 0 0 1rem;
   padding-left: 1.3rem;
   color: var(--muted);
 }
 
-.legal li {
+.longform li {
   margin: 0.4rem 0;
   line-height: 1.65;
 }
 
-.legal a {
+.longform a {
   color: var(--accent);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
-.legal a:hover {
+.longform a:hover {
   color: var(--accent-strong);
 }
 
-.legal-updated {
+.longform-updated {
   margin-top: -0.4rem;
   font-size: 0.85rem;
 }
 
-.legal-lead {
+.longform-lead {
   margin: 1.2rem 0 0.4rem;
   padding: 1rem 1.15rem;
   border: 1px solid var(--glass-border);
@@ -2047,16 +2073,16 @@ tbody tr:last-child td {
   color: var(--text);
 }
 
-.legal .table-wrap {
+.longform .table-wrap {
   margin-bottom: 1.2rem;
 }
 
-.legal td {
+.longform td {
   color: var(--muted);
   vertical-align: top;
 }
 
-.legal-version {
+.longform-version {
   margin: 2.4rem 0 0;
   padding-top: 1.1rem;
   border-top: 1px solid var(--divider);
@@ -2123,33 +2149,33 @@ tbody tr:last-child td {
      telemóvel: cada linha passa a bloco e cada célula mostra o cabeçalho
      da sua coluna (o data-label do .razor), em vez de ficar a pedir
      scroll lateral dentro do texto. */
-  .legal table,
-  .legal tbody,
-  .legal tr,
-  .legal td {
+  .longform table,
+  .longform tbody,
+  .longform tr,
+  .longform td {
     display: block;
     width: 100%;
   }
 
-  .legal thead {
+  .longform thead {
     display: none;
   }
 
-  .legal tbody tr {
+  .longform tbody tr {
     padding: 0.7rem 0;
     border-bottom: 1px solid var(--divider);
   }
 
-  .legal tbody tr:last-child {
+  .longform tbody tr:last-child {
     border-bottom: 0;
   }
 
-  .legal td {
+  .longform td {
     padding: 0.3rem 0;
     border-bottom: 0;
   }
 
-  .legal td::before {
+  .longform td::before {
     content: attr(data-label);
     display: block;
     color: var(--muted);
