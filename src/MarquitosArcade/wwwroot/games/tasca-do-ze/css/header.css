@@ -1,7 +1,7 @@
 /* Cabeçalho: marca, botões de pausa/som, vidas e pontuação. */
 
 header {
-    padding: calc(max(14px, env(safe-area-inset-top)) + var(--ios-top-clearance, 0px)) 16px 12px;
+    padding: max(14px, env(safe-area-inset-top)) 16px 12px;
     color: #fff;
     position: relative;
     z-index: 2;
