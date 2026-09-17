@@ -1472,6 +1472,17 @@ tbody tr:last-child td {
   text-align: center;
 }
 
+.site-footer a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.site-footer a:hover,
+.site-footer a.active {
+  color: var(--accent);
+}
+
 /* ---------- Páginas de conta (/Account/*) ---------- */
 /* Estas classes cobrem o vocabulário Bootstrap-like usado pelas páginas
    Identity geradas pelo template do ASP.NET Core, para não terem de ser
@@ -1953,6 +1964,90 @@ tbody tr:last-child td {
   font-size: 0.88rem;
 }
 
+/* ---------- Páginas legais (/privacidade) ---------- */
+/* Texto corrido e longo dentro de um .page-shell: os títulos ganham uma
+   régua a separá-los, e o resto herda a tipografia das páginas simples
+   acima (.page-shell p, strong, code). */
+
+.legal h2 {
+  margin: 2.2rem 0 0.8rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--divider);
+  color: var(--accent-strong);
+  font-size: 1.15rem;
+  letter-spacing: -0.01em;
+  scroll-margin-top: 1rem;
+}
+
+/* Pela mesma razão do menu "Gerir conta": no tema escuro o tom forte do
+   acento escurece em vez de saltar à vista. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .legal h2 {
+    color: var(--accent);
+  }
+}
+
+:root[data-theme="dark"] .legal h2 {
+  color: var(--accent);
+}
+
+.legal h3 {
+  margin: 1.5rem 0 0.5rem;
+  font-size: 1rem;
+  color: var(--text-strong);
+}
+
+.legal ul {
+  margin: 0 0 1rem;
+  padding-left: 1.3rem;
+  color: var(--muted);
+}
+
+.legal li {
+  margin: 0.4rem 0;
+  line-height: 1.65;
+}
+
+.legal a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.legal a:hover {
+  color: var(--accent-strong);
+}
+
+.legal-updated {
+  margin-top: -0.4rem;
+  font-size: 0.85rem;
+}
+
+.legal-lead {
+  margin: 1.2rem 0 0.4rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  background: var(--glass-bg-soft);
+  color: var(--text);
+}
+
+.legal .table-wrap {
+  margin-bottom: 1.2rem;
+}
+
+.legal td {
+  color: var(--muted);
+  vertical-align: top;
+}
+
+.legal-version {
+  margin: 2.4rem 0 0;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--divider);
+  font-size: 0.82rem;
+}
+
 /* ---------- Login / registo: cartão centrado ---------- */
 
 .auth-row {
@@ -2009,6 +2104,46 @@ tbody tr:last-child td {
 }
 
 @media (max-width: 640px) {
+  /* A tabela dos fundamentos de licitude não cabe em três colunas num
+     telemóvel: cada linha passa a bloco e cada célula mostra o cabeçalho
+     da sua coluna (o data-label do .razor), em vez de ficar a pedir
+     scroll lateral dentro do texto. */
+  .legal table,
+  .legal tbody,
+  .legal tr,
+  .legal td {
+    display: block;
+    width: 100%;
+  }
+
+  .legal thead {
+    display: none;
+  }
+
+  .legal tbody tr {
+    padding: 0.7rem 0;
+    border-bottom: 1px solid var(--divider);
+  }
+
+  .legal tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  .legal td {
+    padding: 0.3rem 0;
+    border-bottom: 0;
+  }
+
+  .legal td::before {
+    content: attr(data-label);
+    display: block;
+    color: var(--muted);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
   .account-shell,
   .page-shell {
     padding: 1.5rem 1.2rem 1.8rem;
