@@ -1,0 +1,390 @@
+/* Botões, campo do nome e cartões dos níveis.
+ *
+ * O topo desta folha (botões, campo do nome, chip da conta) é o mesmo do
+ * Pixel Racing: os dois jogos partilham a linguagem, não o ficheiro. */
+
+button,
+input {
+    font-family: inherit;
+    color: inherit;
+}
+
+button { cursor: pointer; }
+
+:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+}
+
+/* ---------- Botões ---------- */
+
+.btn {
+    width: 100%;
+    padding: 15px 28px;
+    font-family: var(--font-display);
+    font-size: clamp(15px, 4vw, 17px);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--on-accent);
+    border: none;
+    border-radius: var(--radius-pill);
+    background: linear-gradient(100deg, var(--accent), var(--accent-2));
+    box-shadow: 0 16px 34px -16px var(--glow), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.btn:hover { filter: brightness(1.06); box-shadow: 0 20px 40px -16px var(--glow), inset 0 1px 0 rgba(255, 255, 255, 0.45); }
+.btn:active { transform: translateY(1px) scale(0.995); }
+
+.btnOutline {
+    width: 100%;
+    padding: 13px 24px;
+    font-family: var(--font-display);
+    font-size: clamp(13px, 3.4vw, 15px);
+    font-weight: 600;
+    border: 1px solid var(--glass-border-strong);
+    border-radius: var(--radius-pill);
+    background: var(--glass-bg-soft);
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.btnOutline:hover { background: var(--glass-bg-hover); border-color: var(--accent); }
+
+.iconBtn {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    background: var(--glass-bg-soft);
+    transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.iconBtn:hover { background: var(--glass-bg-hover); }
+.iconBtn:active { transform: scale(0.94); }
+
+/* ---------- Nome do jogador / conta ---------- */
+
+/*
+ * O nome só aparece a quem não tem sessão iniciada, e isso só se sabe depois da
+ * resposta de /api/account/me. Até lá o espaço fica reservado e o conteúdo
+ * invisível (`is-pending`), para não haver salto de layout nem piscar do campo
+ * a quem afinal já está autenticado.
+ */
+.nameSlot {
+    width: 100%;
+    min-height: 74px;
+    display: grid;
+    place-items: center;
+}
+
+.nameSlot > * {
+    grid-area: 1 / 1;
+    width: 100%;
+    transition: opacity 0.25s ease;
+}
+
+.nameSlot.is-pending > * { opacity: 0; }
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    width: 100%;
+    text-align: left;
+}
+
+.fieldLabel {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--faint);
+}
+
+.nameInput {
+    width: 100%;
+    padding: 13px 16px;
+    font-size: 15px;
+    font-weight: 600;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    background: rgba(255, 255, 255, 0.07);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.nameInput::placeholder { color: var(--faint); font-weight: 400; }
+
+.nameInput:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--ring);
+}
+
+.playerChip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 14px 9px 9px;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-pill);
+    background: var(--glass-bg-soft);
+    text-align: left;
+}
+
+.chipAvatar {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 30px;
+    height: 30px;
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--on-accent);
+    border-radius: 50%;
+    background: linear-gradient(140deg, var(--accent), var(--accent-2));
+}
+
+.chipText { font-size: 13px; color: var(--muted); }
+.chipText b { color: var(--text); font-weight: 700; }
+
+
+/* ---------- Cartões dos níveis ---------- */
+
+/* A grelha dos níveis é agora uma página do carrossel (ver css/carousel.css). */
+
+.levelCard {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    /* Enche a célula da grelha: as células de uma fila têm todas a mesma
+       altura, e sem isto os cartões ficavam a diferir do vizinho pelo píxel
+       que o `aspect-ratio` da caixa do labirinto arredonda. */
+    height: 100%;
+    gap: 8px;
+    padding: 12px;
+    text-align: left;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    background: var(--glass-bg-soft);
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.levelCard:hover { background: var(--glass-bg-hover); transform: translateY(-2px); }
+
+.levelCard.active {
+    border-color: var(--accent);
+    background: linear-gradient(150deg, rgba(53, 224, 255, 0.18), rgba(139, 124, 255, 0.1));
+    box-shadow: 0 0 0 1px var(--accent), 0 18px 36px -22px var(--glow);
+}
+
+/*
+ * Um nível fechado continua a ser um botão — e não um bloco morto — porque
+ * clicar nele responde: o cartão abana e o cartão diz o que falta fazer. Um
+ * `disabled` calado deixava quem joga sem saber porquê.
+ */
+.levelCard.is-locked { cursor: not-allowed; }
+.levelCard.is-locked:hover { background: var(--glass-bg-soft); transform: none; }
+.levelCard.is-locked .levelName,
+.levelCard.is-locked .levelNumber { color: var(--faint); }
+
+.levelCard.shake { animation: cardShake 0.36s ease; }
+
+@keyframes cardShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .levelCard.shake { animation: none; }
+}
+
+/*
+ * A caixa do labirinto tem proporção fixa, e não a do labirinto que lá está
+ * dentro: sem isto um nível quadrado e um nível largo davam cartões de alturas
+ * diferentes, e numa página do carrossel isso é uma fila torta.
+ */
+.levelShape {
+    position: relative;
+    display: block;
+    aspect-ratio: 4 / 3;
+    border-radius: var(--radius-sm);
+    background: rgba(6, 9, 20, 0.45);
+    overflow: hidden;
+}
+
+/*
+ * O labirinto do cartão é desenhado pelas arestas, como no jogo (ver
+ * js/render.js): cada lado de chão que dá para parede leva um risco. A cor vem
+ * do nível, escrita no elemento pelo JS.
+ */
+.mazeShape {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.mazeShape .mazeWalls {
+    fill: none;
+    stroke: var(--level-accent, var(--accent));
+    stroke-width: 0.16;
+    stroke-linecap: round;
+    opacity: 0.9;
+}
+
+.mazeShape.is-locked .mazeWalls {
+    stroke: rgba(238, 242, 255, 0.3);
+    opacity: 0.5;
+}
+
+.levelCard.active .mazeShape .mazeWalls { opacity: 1; }
+
+.levelLock {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font-size: 22px;
+    background: rgba(6, 9, 20, 0.45);
+}
+
+/*
+ * As cinco linhas do cartão, sempre as mesmas e sempre presentes: número, nome,
+ * peças, estado e estrelas. Cada uma tem altura reservada mesmo quando está
+ * vazia — é o que faz os cartões terem todos a mesma altura, em qualquer
+ * página e em qualquer ecrã.
+ */
+.levelInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.levelNumber {
+    min-height: 1em;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--faint);
+}
+
+/*
+ * O nome nunca quebra: os nomes dos níveis são escolhidos curtos (ver LEVELS em
+ * js/levels.js) e isto é a rede — num ecrã muito estreito corta com reticências
+ * em vez de roubar uma linha ao cartão e desalinhar a fila toda.
+ */
+.levelName {
+    min-height: 1.15em;
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* A linha que diz em que pé está o nível: o que falta para o abrir, "Por jogar"
+   ou a melhor marca. */
+.levelState {
+    min-height: 1.25em;
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    color: var(--muted);
+}
+
+/* As estrelas que faltam ficam lá, apagadas: vê-se de quantas é a escala. */
+.levelStars {
+    display: flex;
+    align-items: center;
+    min-height: 13px;
+    gap: 2px;
+    font-size: 11px;
+    line-height: 1;
+    color: var(--gold);
+}
+
+.levelStars i { font-style: normal; }
+.levelStars i.off { color: rgba(238, 242, 255, 0.22); }
+
+/*
+ * As peças que o nível tem — portais, portas, gelo. Aparecem também nos níveis
+ * fechados, de propósito: é o que dá vontade de lá chegar.
+ */
+/* Logo por baixo do nome, e com a altura de um chip mesmo nos níveis que ainda
+   não têm peça nenhuma — senão os primeiros cartões ficavam mais baixos. */
+.levelTags {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    overflow: hidden;
+    min-height: 14px;
+    gap: 4px;
+}
+
+/* Pequenas de propósito: são uma nota de rodapé do cartão, não um botão. O que
+   se lê primeiro é o nome do nível e o estado dele. */
+.levelTag {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 0 5px;
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 14px;
+    color: var(--muted);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-pill);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.levelTag i { font-style: normal; font-size: 8.5px; }
+
+.levelCard.active .levelTag { border-color: var(--glass-border-strong); color: var(--text); }
+
+/*
+ * Telemóvel: os cartões encolhem para caberem quatro por página ao alto (ou uma
+ * fila de três ao comprido) sem o painel ter de rolar. É o texto que encolhe, e
+ * não o labirinto — é ele que se reconhece de relance.
+ */
+/*
+ * Deitado, a caixa do labirinto passa a ser mais larga do que alta: é a altura
+ * que falta, e um labirinto achatado continua a reconhecer-se (o desenho dele
+ * cabe dentro da caixa, ver o `preserveAspectRatio` em js/menu.js).
+ */
+@media (orientation: landscape) and (max-height: 600px) {
+    .levelShape { aspect-ratio: 16 / 9; }
+}
+
+@media (max-width: 560px), (orientation: landscape) and (max-height: 600px) {
+    .levelCard {
+        gap: 6px;
+        padding: 9px;
+    }
+
+    .levelNumber { font-size: 9px; letter-spacing: 0.1em; }
+    .levelName { font-size: 12.5px; }
+    .levelState { font-size: 10px; }
+    .levelStars { min-height: 12px; font-size: 10px; }
+    .levelTag { padding: 0 4px; font-size: 8.5px; line-height: 13px; }
+    .levelTag i { font-size: 8px; }
+    .levelTags { min-height: 13px; gap: 3px; }
+    .levelLock { font-size: 18px; }
+}
+
+/* Para leitores de ecrã: a etiqueta diz "2" com um ícone, e isso sozinho não diz nada. */
+.visuallyHidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}

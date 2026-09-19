@@ -5,6 +5,7 @@ using MarquitosArcade.Account;
 using MarquitosArcade.Components;
 using MarquitosArcade.Components.Account;
 using MarquitosArcade.Data;
+using MarquitosArcade.Progress;
 using MarquitosArcade.Scores;
 using MarquitosArcade.Web;
 
@@ -83,6 +84,7 @@ app.MapRazorComponents<App>()
 app.MapAdditionalIdentityEndpoints();
 
 app.MapScoresEndpoints();
+app.MapProgressEndpoints();
 app.MapAccountEndpoints();
 
 app.Run();

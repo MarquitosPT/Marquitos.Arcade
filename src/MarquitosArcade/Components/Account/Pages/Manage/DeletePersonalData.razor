@@ -22,7 +22,8 @@
         <strong>Ao eliminar estes dados, a tua conta será removida permanentemente e não poderá ser recuperada.</strong>
     </p>
     <p class="mb-0">
-        As pontuações que registaste com esta conta também são apagadas das tabelas de pontuações.
+        As pontuações que registaste com esta conta também são apagadas das tabelas de pontuações,
+        e o progresso que tens guardado nos jogos com níveis desaparece com ela.
     </p>
 </div>
 
@@ -82,12 +83,17 @@
 
         var userId = await UserManager.GetUserIdAsync(user);
 
-        // A conta e as pontuações saem juntas: se a remoção da conta falhar, as
-        // pontuações continuam lá (e vice-versa), por isso vai tudo na mesma transação.
+        // A conta, as pontuações e o progresso saem juntos: se a remoção da conta
+        // falhar, o resto continua lá (e vice-versa), por isso vai tudo na mesma
+        // transação.
         await using var transaction = await Db.Database.BeginTransactionAsync();
 
         var removedScores = await Db.Scores
             .Where(s => s.UserId == userId)
+            .ExecuteDeleteAsync();
+
+        var removedProgress = await Db.GameProgress
+            .Where(p => p.UserId == userId)
             .ExecuteDeleteAsync();
 
         var result = await UserManager.DeleteAsync(user);
@@ -102,7 +108,8 @@
         await SignInManager.SignOutAsync();
 
         Logger.LogInformation(
-            "User with ID '{UserId}' deleted themselves ({ScoreCount} score(s) removed).", userId, removedScores);
+            "User with ID '{UserId}' deleted themselves ({ScoreCount} score(s) and {ProgressCount} progress row(s) removed).",
+            userId, removedScores, removedProgress);
 
         RedirectManager.RedirectToCurrentPage();
     }

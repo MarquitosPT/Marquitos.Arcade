@@ -1,0 +1,106 @@
+/* Reset, página e canvas em ecrã inteiro. (Gémeo do css/base.css do Pixel
+ * Racing: as duas folhas resolvem o mesmo problema de viewport e valem por
+ * inteiro em cada jogo — ver o comentário da altura, aqui em baixo.) */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    /* O `-webkit-` é o que conta em iOS: o Safari só há pouco aceita esta
+       propriedade sem prefixo, e é lá que o toque demorado abre a lupa. */
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/*
+ * O `hidden` do HTML tem de ganhar às regras de `display` das classes — é assim
+ * que se esconde o campo do nome a quem tem sessão iniciada.
+ */
+[hidden] {
+    display: none !important;
+}
+
+/* O texto do campo do nome tem de poder ser selecionado para se editar. */
+input {
+    -webkit-user-select: text;
+    user-select: text;
+}
+
+/* Altura do ecrã, não do viewport.
+ *
+ * Numa app afixada em iOS o viewport de layout é mais curto do que o ecrã pela
+ * altura da barra de estado, e o que sobra em baixo ficava uma faixa lisa. O
+ * `--viewport-gap` (lib/arcade/standalone-fit.js) é essa folga, e é 0 em todo o
+ * lado menos aí. O `dvh` é que acompanha o viewport à vista — `100vh` sozinho
+ * não servia, porque num browser com barras conta o viewport *grande* e deixava
+ * o jogo 40pt mais alto do que o que se vê.
+ *
+ * Também não pode haver `overflow: hidden` aqui: o overflow da raiz manda no
+ * viewport (e, se a raiz for `visible`, manda o do body), portanto escondê-lo
+ * volta a recortar e a faixa regressa. Quem trava o arrasto é o
+ * `touch-action: none` logo abaixo, com o `overscroll-behavior` como rede: o
+ * `touch-action` não se herda, por isso nada diz a uma caixa de scroll lá dentro
+ * (os ecrãs sobrepostos, em css/screens.css) que não pode empurrar o documento
+ * quando chega ao fim. O `none` corta essa propagação e mais a borracha do
+ * Safari, tal como no shell da arcada (wwwroot/styles.css). */
+html, body {
+    /*
+     * O browser aumenta sozinho o corpo de texto de um bloco comprido quando a
+     * página fica larga — é o "font boosting", pensado para páginas de artigo
+     * lidas ao telemóvel. Aqui virava-se contra nós: ao rodar o telemóvel para
+     * o lado, a nota do fim do ecrã dos níveis passava a letra graúda enquanto
+     * tudo à volta ficava igual. O texto deste jogo tem os tamanhos que o CSS
+     * lhe dá, em qualquer orientação.
+     */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    width: 100%;
+    height: calc(100dvh + var(--viewport-gap, 0px));
+    background: #070912;
+    font-family: var(--font-body);
+    color: var(--text);
+    touch-action: none;
+    overscroll-behavior: none;
+}
+
+#wrap {
+    position: relative;
+    width: 100vw;
+    height: calc(100dvh + var(--viewport-gap, 0px));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/*
+ * O canvas é transparente, ao contrário do do Pixel Racing: um labirinto não
+ * enche o ecrã como uma pista enche, e um fundo opaco deixava faixas pretas à
+ * volta dele. Assim o que sobra é o fundo de auroras aqui em baixo, e o jogo
+ * continua a ser a mesma peça de vidro e néon do resto da arcada. Quem limpa o
+ * frame é o `clearRect` do render.js — não pode passar a pintar um fundo.
+ */
+canvas {
+    background: transparent;
+    display: block;
+}
+
+/*
+ * O vidro precisa de alguma coisa por trás para desfocar. Em cheio é o labirinto
+ * desenhado no canvas; antes do primeiro frame (e no smoke-test, que esconde o
+ * canvas para o screenshot do menu sair igual), são estas auroras que evitam o
+ * vidro sobre o vazio.
+ */
+body::before {
+    content: "";
+    /* `absolute` e não `fixed`: um elemento fixo é recortado no fim do
+     * viewport, e as auroras têm de chegar ao fundo do ecrã. */
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(46vw 46vw at 16% 18%, rgba(109, 94, 252, 0.3), transparent 68%),
+        radial-gradient(40vw 40vw at 84% 24%, rgba(53, 224, 255, 0.2), transparent 66%),
+        radial-gradient(52vw 52vw at 50% 96%, rgba(255, 93, 158, 0.18), transparent 70%);
+}

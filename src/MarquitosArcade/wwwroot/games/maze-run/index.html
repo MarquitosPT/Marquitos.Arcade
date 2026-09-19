@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Maze Run | Marquitos Arcade</title>
+    <link rel="icon" type="image/png" sizes="64x64" href="/favicon3_64x64.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon3_32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon3_16x16.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon3.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#070912" />
+    <meta name="msapplication-TileColor" content="#123a5e" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Marquitos Arcade" />
+
+    <!-- Ecrã de arranque partilhado pela arcada (lib/arcade/splash.*). Vem antes
+         das folhas do jogo porque é o primeiro que se vê, e o logótipo é
+         pré-carregado para não aparecer a meio da animação. -->
+    <link rel="preload" as="image" href="/logo3.png" />
+    <link rel="stylesheet" href="/lib/arcade/splash.css" />
+    <!-- Mede o viewport curto das apps afixadas em iOS (ver o ficheiro). -->
+    <script src="/lib/arcade/standalone-fit.js"></script>
+    <script type="module" src="/lib/arcade/splash-boot.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" />
+
+    <link rel="stylesheet" href="css/theme.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/hud.css" />
+    <link rel="stylesheet" href="css/screens.css" />
+    <link rel="stylesheet" href="css/controls.css" />
+    <link rel="stylesheet" href="css/carousel.css" />
+    <link rel="stylesheet" href="css/results.css" />
+</head>
+
+<body>
+    <!-- Ecrã de arranque: fica no ar pelo menos 2s (ver lib/arcade/splash.js). -->
+    <div id="arcadeSplash" class="arcade-splash">
+        <div class="arcade-splash-rays" aria-hidden="true"></div>
+        <div class="arcade-splash-pixels" aria-hidden="true"></div>
+        <div class="arcade-splash-stage">
+            <img class="arcade-splash-logo" src="/logo3.png" width="512" height="366"
+                 alt="MarquitosPT Game Arcade" fetchpriority="high" decoding="async" />
+            <p class="arcade-splash-caption">Maze Run</p>
+            <p class="arcade-splash-status" role="status">A carregar&hellip;</p>
+            <div class="arcade-splash-track" role="progressbar" aria-label="Progresso do carregamento"
+                 aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <div class="arcade-splash-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="wrap">
+        <div class="topBar">
+            <a class="topBtn" id="arcadeLink" href="/">
+                <span class="topIcon">←</span><span class="topLabel">Arcade</span>
+            </a>
+            <a class="topBtn" id="scoresLink" href="/pontuacoes?jogo=maze-run#maze-run">
+                <span class="topIcon">🏆</span><span class="topLabel">Pontuações</span>
+            </a>
+            <button class="topBtn" id="pauseBtn" aria-label="Pausa">
+                <span class="topIcon">❚❚</span>
+            </button>
+            <button class="topBtn topBtn--quit" id="endBtn">
+                <span class="topIcon">✕</span><span class="topLabel">Sair</span>
+            </button>
+        </div>
+        <canvas id="game"></canvas>
+
+        <!-- Ecrã 1: quem és e continuar de onde ficaste. -->
+        <div id="startScreen" class="screen">
+            <div class="panel">
+                <div class="brand">
+                    <span class="brandBadge">🧩</span>
+                    <h1 class="title">Maze Run</h1>
+                    <p class="sub">Labirintos · Cristais · Fuga</p>
+                </div>
+
+                <!-- O nome só se pede a visitantes: com sessão iniciada vem da conta. -->
+                <div class="nameSlot is-pending" id="nameSlot">
+                    <label class="field" id="nameRow" for="playerNameInput">
+                        <span class="fieldLabel">O teu nome</span>
+                        <input type="text" id="playerNameInput" class="nameInput" placeholder="Como queres aparecer no quadro"
+                               maxlength="20" autocomplete="nickname" spellcheck="false">
+                    </label>
+                    <div class="playerChip" id="accountRow" hidden>
+                        <span class="chipAvatar" id="accountInitial"></span>
+                        <span class="chipText">A correr como <b id="accountName"></b></span>
+                    </div>
+                </div>
+
+                <div class="progress">
+                    <span class="progressLine" id="progressLine"></span>
+                    <span class="progressBar" id="progressBar"></span>
+                </div>
+
+                <button class="btn" id="playBtn">Jogar</button>
+                <button class="btnOutline" id="chooseBtn">Escolher nível</button>
+
+                <p id="hint">Apanha todos os cristais para abrir a saída · setas, WASD ou arrasta no ecrã ·
+                    o cristal de gelo congela os guardas, a chave abre a porta trancada e os portais levam-te ao outro lado</p>
+            </div>
+        </div>
+
+        <!-- Ecrã 2: os níveis, abertos e por abrir. -->
+        <div id="levelsScreen" class="screen">
+            <div class="panel panel--wide">
+                <div class="panelHead">
+                    <button class="iconBtn" id="backBtn" aria-label="Voltar ao menu">←</button>
+                    <div class="panelHeadText">
+                        <h2 class="panelTitle" id="levelsTitle">Níveis</h2>
+                        <p class="panelSub" id="levelsSub"></p>
+                    </div>
+                </div>
+
+                <!-- Os níveis vão em páginas: quantos cabem em cada uma é decidido
+                     no css/carousel.css e lido pelo js/carousel.js. -->
+                <div class="levelsCarousel" id="levelsCarousel">
+                    <button class="carouselArrow carouselArrow--prev" id="prevPageBtn" type="button"
+                            aria-label="Níveis anteriores" aria-controls="levelGrid">&lsaquo;</button>
+                    <div class="carouselViewport" id="levelViewport">
+                        <div class="carouselTrack" id="levelGrid"></div>
+                    </div>
+                    <button class="carouselArrow carouselArrow--next" id="nextPageBtn" type="button"
+                            aria-label="Níveis seguintes" aria-controls="levelGrid">&rsaquo;</button>
+                    <div class="carouselDots" id="levelDots" role="tablist" aria-label="Páginas de níveis"></div>
+                </div>
+
+                <p class="progressNote" id="progressNote" hidden>
+                    <span aria-hidden="true">💾</span>
+                    <span>O teu progresso fica só neste aparelho.
+                        <a href="/Account/Login">Inicia sessão</a> para o levares contigo e recomeçares
+                        em qualquer nível já desbloqueado.</span>
+                </p>
+            </div>
+        </div>
+
+        <div id="pauseScreen" class="screen">
+            <div class="panel panel--narrow">
+                <h2 class="title">Pausa</h2>
+                <p class="sub">O labirinto está à tua espera</p>
+                <button class="btn" id="resumeBtn">Continuar</button>
+                <button class="btnOutline" id="quitBtn">Sair para o menu</button>
+            </div>
+        </div>
+
+        <div id="resultScreen" class="screen">
+            <div class="panel panel--wide">
+                <div id="resultBody"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+
+</html>

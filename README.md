@@ -8,7 +8,7 @@ Blazor Web App (.NET 10, render mode Interactive Server) com ASP.NET Core Identi
 
 ## Estrutura
 
-- `src/MarquitosArcade/Components/Pages/Home.razor`, `wwwroot/styles.css`: portal principal com branding e catálogo de jogos. O catálogo é gerado a partir do array `Catalog` no `@code` da página — cada jogo é um cartão com a sua capa, o título em overlay e a cor/lettering próprios (classes `.theme-*`). `styles.css` é a folha de estilos global do site — cobre o portal, a página de pontuações e as páginas de conta (`/Account/...`); cada jogo tem as suas próprias folhas de estilo, em `games/<slug>/css/`. Ver [Tema](#tema-glass-claro-e-escuro).
+- `src/MarquitosArcade/Components/Pages/Home.razor`, `wwwroot/styles.css`: portal principal com branding e catálogo de jogos. O catálogo é gerado a partir do array `Catalog` no `@code` da página — cada jogo é um cartão com a sua capa, o título em overlay e a sua cor (classes `.theme-*`). `styles.css` é a folha de estilos global do site — cobre o portal, a página de pontuações e as páginas de conta (`/Account/...`); cada jogo tem as suas próprias folhas de estilo, em `games/<slug>/css/`. Ver [Tema](#tema-glass-claro-e-escuro).
 - `src/MarquitosArcade/wwwroot/theme.js`: escolha do tema claro/escuro (ver [Tema](#tema-glass-claro-e-escuro)).
 - `src/MarquitosArcade/wwwroot/covers/`: capas 16:9 dos jogos (WebP) usadas no catálogo — são screenshots reais de cada jogo, gerados por `tools/covers/` (ver [Capas dos jogos](#capas-dos-jogos)).
 - `src/MarquitosArcade/Components/Pages/Pontuacoes.razor`: página dedicada às pontuações em `/pontuacoes`, com um painel por jogo (array `Games` no `@code`). Lê os tops diretamente da base de dados no servidor, via `ScoresEndpoints.GetTopScoresAsync` — o mesmo método que serve o endpoint `GET /api/scores/:gameId`, mas sem passar por HTTP.
@@ -16,11 +16,13 @@ Blazor Web App (.NET 10, render mode Interactive Server) com ASP.NET Core Identi
 - `src/MarquitosArcade/wwwroot/games/<slug>/`: um jogo por pasta, cada um com o seu `index.html` (só markup), `css/`, `js/` (módulos ES) e `assets/`. Ver [Estrutura de um jogo](#estrutura-de-um-jogo) e, para o porquê desta organização em vez de um projeto .NET por jogo, [docs/estrutura-dos-jogos.md](docs/estrutura-dos-jogos.md).
   - `tasca-do-ze/`: mini-jogo "Tasca do Zé" (gestão de pedidos), com leaderboard persistido via `/api/scores/tasca-do-ze`.
   - `pong/`: Pong Retro, com modo 1 jogador (vs. CPU, pontuação submetida via `/api/scores/pong`) e 2 jogadores.
+  - `maze-run/`: Maze Run, labirintos por níveis — apanhar os cristais abre a saída, e há guardas a impedi-lo. Pelo caminho há cristais de gelo que os congelam, portais que ligam duas pontas do labirinto e portas trancadas com a sua chave (ver [As peças do Maze Run](#as-peças-do-maze-run)). Os níveis vão-se desbloqueando à medida que se concluem, e o progresso fica guardado na conta de quem tem sessão iniciada (ver [Progresso e níveis](#progresso-e-níveis)). Os labirintos não estão desenhados à mão: saem de uma semente por nível (`buildMaze` em `js/maze.js`), como as pistas do Pixel Racing saem do `buildTrack` — **acrescentar um nível é acrescentar uma entrada ao array `LEVELS` do `js/levels.js`**, e mais nada.
   - `pixel-racing/`: Pixel Racing, corrida simples em qualquer uma das seis pistas ou campeonato de três, com pontuação via `/api/scores/pixel-racing`. O menu tem dois passos: o primeiro ecrã pergunta só o nome (a quem não tem sessão iniciada) e o modo; a pista (ou a taça, no campeonato), a cor do carro e a dificuldade ficam no ecrã seguinte, já a saber o que se vai correr. As pistas são geradas por `buildTrack` a partir de uma superelipse com harmónicos, e o grau de perícia que o cartão mostra é medido no traçado (`corneringProfile`) em vez de escrito à mão: as três primeiras fazem-se sem levantar o pé, as três da taça Pro são mais compridas, mais estreitas e têm curvas que obrigam a travar ou a entrar a derrapar. A cor sai da paleta única de `CAR_COLORS` e os adversários ficam com três das restantes, por isso nunca há dois carros da mesma cor na pista.
 - `src/MarquitosArcade/wwwroot/lib/arcade/`: SDK partilhado pelos jogos (áudio, leaderboard, armazenamento, viewport do canvas, ciclo de jogo, barra de topo, ecrã de arranque). Módulos ES sem dependências externas. O `splash.css`/`splash.js`/`splash-boot.js` são a exceção que também serve o portal — ver [Ecrã de arranque](#ecrã-de-arranque).
 - `tools/games/smoke-test.mjs`: smoke-test dos jogos em Chromium headless, corrido em cada pull request por `.github/workflows/jogos-smoke-test.yml`. Ver [Testar os jogos](#testar-os-jogos).
 - `.github/workflows/build-dotnet.yml`: compila o site (`dotnet build`) em cada pull request — o smoke-test dos jogos não passa pelo compilador. Ver [Compilar o site num pull request](#compilar-o-site-num-pull-request).
 - `src/MarquitosArcade/Scores/ScoresEndpoints.cs`: endpoint genérico `GET/POST /api/scores/:gameId`, persistido na tabela `Scores` (EF Core + SQLite). Se o pedido vier de um utilizador autenticado, o nome do leaderboard vem da conta (evita spoofing de nomes); caso contrário aceita o nome livre submetido pelo jogo.
+- `src/MarquitosArcade/Progress/ProgressEndpoints.cs`: endpoint genérico `GET/PUT /api/progress/:gameId`, para os jogos com níveis. Guarda um JSON opaco por (conta, jogo) na tabela `GameProgress`. Ver [Progresso e níveis](#progresso-e-níveis).
 - `src/MarquitosArcade/Scores/ScoreMaintenance.cs`: limpeza da tabela `Scores` no arranque — apaga as pontuações que ficaram a apontar para contas já eliminadas. Ver [Pontuações](#pontuações).
 - `src/MarquitosArcade/Web/CachePolicy.cs`: política de cache HTTP — `immutable` para os URLs com impressão digital (`?v=`), `no-cache` para todo o resto. Ver [Cache do browser](#cache-do-browser-e-o-site-afixado-ao-ecrã-principal).
 - `src/MarquitosArcade/Data/`: `ApplicationDbContext`, `ApplicationUser` e as migrations do EF Core.
@@ -157,6 +159,7 @@ import { createScoreClient } from '/lib/arcade/scores.js';
 | ------------- | ---------------------------------------------------------------- |
 | `audio.js`    | Ciclo de vida do `AudioContext` e bips sintetizados              |
 | `scores.js`   | Cliente de `/api/scores/:gameId`, cache offline, nome do jogador e da conta |
+| `progress.js` | Cliente de `/api/progress/:gameId`: níveis desbloqueados e marcas, na conta e no aparelho |
 | `storage.js`  | `localStorage` que não rebenta em Safari privado                 |
 | `viewport.js` | Canvas em ecrã inteiro, nítido em Retina e por baixo do notch     |
 | `loop.js`     | Ciclo `requestAnimationFrame` com delta-time limitado            |
@@ -245,14 +248,37 @@ vezes.
 1. Criar `src/MarquitosArcade/wwwroot/games/<slug>/` com a estrutura acima. O `pong/` é o mais pequeno dos três e serve bem de modelo.
    Copiar de lá também o bloco `#arcadeSplash` do `index.html` (trocando o nome do jogo em `.arcade-splash-caption`), os dois `<link>` e o `<script>` do `splash-boot.js` no `<head>`, e o `window.__arcadeSplash?.ready()` no fim do `main.js` — ver [Ecrã de arranque](#ecrã-de-arranque).
 2. Se precisar de leaderboard persistente, usar `createScoreClient('<slug>')` do SDK, que fala com `GET/POST /api/scores/<slug>`.
+   Se tiver níveis a desbloquear, usar também `createProgressClient('<slug>')`, que fala com `GET/PUT /api/progress/<slug>` — ver [Progresso e níveis](#progresso-e-níveis).
 3. Acrescentar o jogo ao array `GAMES` em `tools/games/smoke-test.mjs`, com um guião que o jogue durante alguns segundos.
 4. Gerar a capa do jogo: acrescentar uma receita ao array `GAMES` em `tools/covers/capture-covers.mjs` e correr o script (ver [Capas dos jogos](#capas-dos-jogos)).
-5. Adicionar uma entrada ao array `Catalog` em `Components/Pages/Home.razor` (slug, título, tagline, descrição, emoji, tema e capa) e, se o tema for novo, uma classe `.theme-<jogo>` em `styles.css` com a cor (`--game-accent`), o fundo da capa (`--cover-bg`) e o lettering do jogo.
+5. Adicionar uma entrada ao array `Catalog` em `Components/Pages/Home.razor` (slug, título, tagline, descrição, emoji, tema e capa) e, se o tema for novo, uma classe `.theme-<jogo>` em `styles.css` com a cor (`--game-accent`) e o fundo da capa (`--cover-bg`). Só isso: a tipografia dos cartões é do catálogo e é igual para todos (ver [Cartões do catálogo](#cartões-do-catálogo)).
 6. Adicionar o jogo ao array `Games` em `Components/Pages/Pontuacoes.razor` para aparecer na página de pontuações.
+
+## Cartões do catálogo
+
+Os cartões da home estão numa grelha, e numa grelha **o cartão mais alto de uma
+linha estica os outros**. Por isso duas coisas estão fixas:
+
+- **A tipografia é do catálogo, não de cada jogo.** Todos os títulos e
+  subtítulos usam a mesma letra. Cada jogo já teve o seu lettering próprio (a
+  serifa da Tasca do Zé, a monoespaçada do Pong e do Pixel Racing); lado a lado
+  na grelha a mistura lia-se mal. O que cada um tem de seu é a **cor**
+  (`--game-accent`): pinta o risco por cima do título, o subtítulo e o halo ao
+  passar o rato.
+- **A descrição ocupa sempre três linhas.** Com menos, sobra o espaço; com
+  mais, corta-se com reticências (`line-clamp: 3` em `.game-card-body p`, com um
+  `min-height` de três linhas). Assim os cartões têm todos a mesma altura em
+  qualquer largura, e quem escreve uma descrição nova não tem de contar
+  caracteres — só de saber que o que passar das três linhas não se lê. Na
+  prática, as que lá estão andam pelos 90 caracteres.
+
+O risco da cor tem de ficar **acima** do topo do título: o `bottom` do
+`.game-marquee::before` é menor do que o `padding-top` do `.game-marquee`. Com
+os dois iguais, o risco assenta em cima das letras.
 
 ## Capas dos jogos
 
-Cada cartão do catálogo mostra um screenshot real do jogo — capturado a jogar, não um mockup — com o título em overlay num banner, no lettering e na cor do próprio jogo. As imagens vivem em `wwwroot/covers/<slug>.webp` (16:9, 960x540).
+Cada cartão do catálogo mostra um screenshot real do jogo — capturado a jogar, não um mockup — com o título em overlay num banner, na cor do próprio jogo. As imagens vivem em `wwwroot/covers/<slug>.webp` (16:9, 960x540).
 
 Para as regerar (por exemplo, depois de mudar o aspeto de um jogo):
 
@@ -268,7 +294,10 @@ node capture-covers.mjs --base http://localhost:5000 --only pong   # só um jogo
 
 O script abre cada jogo num Chromium headless, joga-o com o guião definido no array `GAMES`, recorta a zona interessante em 16:9 e grava o WebP. Como os jogos têm elementos aleatórios (pedidos, ângulo da bola, posição dos carros), cada execução dá um fotograma diferente — vale a pena espreitar o resultado antes de fazer commit.
 
-Jogos que ainda não existem não têm screenshot: o `Maze Run` usa um labirinto gerado por `tools/covers/make-maze-placeholder.mjs` (`wwwroot/covers/maze-run.svg`).
+Jogos que ainda não existem não têm screenshot. Enquanto o Maze Run esteve por
+lançar, o cartão dele usou um labirinto desenhado à mão em SVG; agora que o jogo
+existe, a capa é um fotograma dele como a dos outros, e o placeholder (e o script
+que o gerava) saíram do repositório.
 
 ## Pontuações
 
@@ -301,6 +330,229 @@ existe em `AspNetUsers`), a seguir ao `Database.Migrate()` — ver
 `Scores/ScoreMaintenance.cs`. Não há chave estrangeira com `ON DELETE CASCADE`
 entre as duas tabelas porque acrescentá-la obrigaria o SQLite a reconstruir a
 tabela `Scores` e a migration rebentaria logo nestas mesmas linhas órfãs.
+
+## Progresso e níveis
+
+O Maze Run é o primeiro jogo da arcada com níveis que se vão desbloqueando, e
+isso obrigou a uma pergunta que as pontuações não fazem: **onde é que fica
+guardado o que já se abriu?** A resposta são dois sítios, e é de propósito.
+
+| onde                  | quem                            | o que resolve                                           |
+| --------------------- | ------------------------------- | ------------------------------------------------------- |
+| `localStorage`        | toda a gente                    | jogar sem conta, sem rede e sem esperar pelo servidor   |
+| tabela `GameProgress` | quem tem sessão iniciada        | recomeçar em qualquer nível já aberto, noutro aparelho  |
+
+O cliente é o `wwwroot/lib/arcade/progress.js`, partilhado — o Maze Run é o
+primeiro jogo a usá-lo, mas nada nele é do Maze Run. Ele grava sempre no
+aparelho primeiro e manda para o servidor a seguir, com um atraso curto para
+várias mudanças seguidas irem num só pedido (e uma última gravação quando a
+página se esconde, para fechar o separador a meio de um nível não custar o
+nível). Sem sessão iniciada, o servidor responde `stored: false` e o jogo
+continua a jogar-se na mesma — não é um erro, é um jogador sem conta.
+
+**O servidor não sabe o que lá está dentro.** O `GET/PUT /api/progress/:gameId`
+guarda um JSON opaco por (conta, jogo), com um teto de 8 kB, exatamente como o
+jogo o escreveu. É a mesma escolha do endpoint das pontuações: um jogo novo com
+níveis não obriga a mexer no servidor nem a criar uma migration. O que é do jogo
+— a forma do objeto e a regra de junção — vive no `games/maze-run/js/progress.js`.
+
+A regra de junção é a parte que não é óbvia. As duas cópias podem discordar (jogou-se
+sem conta e iniciou-se sessão depois; jogou-se no telemóvel e no computador), e
+quem ganha é **o melhor dos dois, campo a campo**: o nível mais alto aberto, mais
+pontos, melhor tempo, mais estrelas. Nunca a cópia "mais recente" — a mais
+recente pode ser a de um aparelho onde se jogou menos, e ninguém quer perder
+níveis por ter aberto o jogo no sítio errado.
+
+**O progresso guardado tem versão, e um nível novo entra no meio dos que já
+havia.** As marcas estão guardadas pelo número do nível, por isso um progresso
+gravado com outra numeração não diz a verdade sobre esta — o nível 3 de então
+pode ser o 5 de agora. Em vez de o mostrar errado, sobe-se o `VERSION` em
+`games/maze-run/js/progress.js` e recomeça-se; quem faz a recusa é o `accept`
+do cliente do SDK, por onde passa tudo o que se lê, do aparelho e da conta.
+Isto serve enquanto o jogo não estiver no ar: a partir daí, a marca de cada
+nível tem de passar a ficar guardada por um nome próprio do nível, que não muda
+quando ele muda de sítio na lista.
+
+Duas notas que já custariam um bug:
+
+- **O total de pontos não se guarda, soma-se.** É a soma do melhor resultado de
+  cada nível (`totalScore`). Guardado, ficava a discordar de si próprio à
+  primeira junção de duas cópias.
+- **O progresso e a pontuação ficam registados quando o nível acaba**, em
+  `js/level.js`, e não no ecrã de resultados: um ecrã que não chegue a montar-se
+  nunca pode ser a razão de se perder o que se acabou de fazer.
+
+Eliminar a conta apaga também o progresso, na mesma transação que remove o
+utilizador e as pontuações (ver `DeletePersonalData.razor`) — é o que a política
+de privacidade promete. Ao contrário da tabela `Scores`, esta nasceu já com essa
+limpeza feita, por isso não há órfãs antigas para varrer no arranque.
+
+## O carrossel dos níveis
+
+Os níveis do Maze Run não estão numa lista a rolar: estão em páginas, com setas,
+arrasto e as setas do teclado. Uma lista a rolar num telemóvel esconde o que vem
+a seguir atrás do próprio dedo, e num jogo de níveis o que interessa é ver de
+uma vez o que já se abriu e o que falta.
+
+**Quantos cabem numa página decide-o o CSS, não o JavaScript.** As variáveis
+`--page-cols` e `--page-rows` (em `css/carousel.css`) mudam com o media query, e
+o `js/carousel.js` lê-as para repartir os cartões:
+
+| onde                        | por página  |
+| --------------------------- | ----------- |
+| telemóvel ao alto           | 2 × 2 = 4   |
+| telemóvel ao comprido       | 3 × 1 = 3   |
+| tablet e computador         | 3 × 2 = 6   |
+
+Assim a regra de quantos cabem vive num sítio só — quem sabe o tamanho do ecrã é
+o CSS. Ao rodar o aparelho o número muda, e o carrossel refaz as páginas
+mantendo à vista o cartão que lá estava.
+
+**Os cartões têm todos a mesma altura**, e isso não é acaso: cada um tem
+sempre as mesmas cinco linhas, pela mesma ordem e todas presentes mesmo quando
+não há nada para pôr numa delas.
+
+| linha    | o que diz                                                       |
+| -------- | --------------------------------------------------------------- |
+| número   | `Nível 7`                                                        |
+| nome     | uma palavra, que nunca quebra em duas linhas                     |
+| peças    | portais, portas e gelo que o nível tem (vazia nos primeiros)     |
+| estado   | `Conclui o nível 6`, `Por jogar` ou a melhor marca               |
+| estrelas | as três, apagadas no que ainda não se fez                        |
+
+Daí os **nomes dos níveis serem de uma palavra** (`LEVELS` em `js/levels.js`):
+num cartão estreito, um nome que quebre rouba uma linha e desalinha a fila
+toda. O `.levelName` ainda leva `nowrap` com reticências como rede, mas é rede
+— o nome deve caber. As filas usam `grid-auto-rows: 1fr` em vez da altura do
+conteúdo, senão a caixa do labirinto, que tem proporção fixa, arredondava para
+um píxel diferente de fila para fila.
+
+**As setas mudam de sítio conforme o que falta no ecrã.** Ao alto, num ecrã
+estreito, descem para o fundo encostadas à direita, com os pontos das páginas à
+esquerda: nos lados, cada seta roubava uns 40px de largura, quase um terço de um
+cartão. Ao comprido é ao contrário — largura é o que sobra e altura o que falta
+—, por isso voltam aos lados e a linha dos pontos desaparece.
+
+Três armadilhas que este ecrã ensinou:
+
+- **O arrasto é feito à mão, com eventos de ponteiro, e não com o scroll
+  horizontal do browser.** O ecrã onde ele vive trava o gesto lateral
+  (`touch-action: pan-y`, ver `css/screens.css`) para o arrasto não levar o
+  documento atrás, e essa trava alcançaria também um scroll nativo lá dentro: o
+  `touch-action` efetivo é a interseção do elemento com o dos seus antepassados.
+- **Um arrasto acaba sempre com o dedo em cima de um cartão.** Sem o engolir, o
+  clique que se segue começava o nível que calhasse estar por baixo (o
+  `swallowClick` em `js/carousel.js`).
+- **Os media queries desta folha estão todos no fim**, depois das regras que
+  alteram. Com a mesma especificidade ganha a última: um bloco de media query
+  escrito antes da regra base não faz nada, e foi assim que os pontos das
+  páginas continuaram à vista ao comprido apesar do `display: none`.
+
+E uma que não é do carrossel mas apareceu com ele: o browser aumenta sozinho o
+corpo de texto de um bloco comprido quando a página fica larga (o *font
+boosting*, pensado para artigos lidos ao telemóvel). Ao rodar o telemóvel, a
+nota do fim deste ecrã passava a letra graúda enquanto tudo à volta ficava
+igual. Quem o desliga é o `text-size-adjust: 100%` no `css/base.css`.
+
+## As peças do Maze Run
+
+São quarenta e oito níveis, e a curva sobe de quatro em quatro: cada degrau
+apresenta ou aperta uma coisa — o tamanho do labirinto, mais um guarda, uma peça
+nova — e os quatro níveis do degrau dão tempo para a aprender antes do seguinte.
+Do 1 ao 4 há só cristais e dois guardas; o gelo entra no 5, os portais no 9, a
+porta trancada no 17 e a segunda porta no 25.
+
+Quarenta e oito é também o número que enche as páginas do carrossel em todos os
+formatos: 12 páginas de 4 ao alto, 16 de 3 ao comprido, 8 de 6 no computador.
+
+**As sementes dos níveis não foram escolhidas à mão.** Nem todos os labirintos
+dão para trancar (ver a secção a seguir), e uma receita pode sair com uma peça a
+menos sem ninguém dar por isso. Cada semente foi procurada — monta-se o nível,
+verifica-se que cumpre a receita toda, e tenta-se a seguinte até dar. O cenário
+`maze-run-mecanicas` do smoke-test faz a mesma verificação aos quarenta e oito a
+cada execução, por isso uma receita que deixe de cumprir falha o teste em vez de
+chegar a quem joga.
+
+Além dos cristais e dos guardas, um nível pode ter três coisas. Todas se ligam
+pela receita (`js/levels.js`) e nenhuma precisa de um mapa desenhado à mão:
+
+| peça                | o que faz                                                        | campo na receita |
+| ------------------- | ---------------------------------------------------------------- | ---------------- |
+| Cristal de gelo     | congela os guardas uns segundos; congelados não andam nem apanham | `freezers: 2`    |
+| Portal              | liga duas pontas do labirinto; o jogador **e os guardas** usam-no | `portals: 1`     |
+| Porta trancada      | corta o caminho até a sua chave aparecer; também trava os guardas  | `doors: 1`       |
+
+Três decisões que não são óbvias, e o porquê:
+
+- **O gelo repõe, não soma.** Apanhar dois cristais seguidos não dá doze
+  segundos, dá seis outra vez (`FREEZE_SECONDS`). Somar fazia com que guardar
+  cristais valesse mais do que jogar bem, e o nível passava a ganhar-se com o
+  inventário em vez de com o caminho. E não sobrevive a uma vida perdida — era
+  prémio a mais por um erro.
+- **Os guardas atravessam os portais.** É o que impede que um portal seja um
+  botão de fuga: o atalho é de toda a gente. Para isso o mapa de distâncias dos
+  guardas (`distanceField`) trata um portal como uma porta ao lado — sem isso,
+  um guarda passava ao lado do portal sem o ver e o jogador tinha um atalho que
+  a perseguição não conhecia.
+- **A chave abre a porta onde quer que ela esteja.** Obrigar a voltar lá com a
+  chave na mão era um segundo atravessamento do labirinto para uma decisão já
+  tomada.
+
+### O problema difícil: trancar um labirinto cheio de laços
+
+Uma porta só é uma porta se trancar mesmo alguma coisa. A forma ingénua de a
+colocar — escolher uma célula no caminho para a saída — **não funciona**: os
+labirintos são "entrançados" de propósito (o `braid` abre becos sem saída, para
+uma perseguição ter sempre uma volta a dar), e num labirinto com laços fechar
+uma célula ao calhar quase nunca corta o caminho. Dá-se a volta, e a porta passa
+a enfeite.
+
+O que `placeDoors` faz:
+
+1. **A saída vai para o fundo de um beco** quando o nível tem portas. A boca de
+   um beco corta-o do resto por construção — assim existe de certeza onde pôr a
+   porta.
+2. **Procura-se um corte a sério**: cada célula candidata é fechada à
+   experiência e faz-se uma travessia do labirinto; só serve a que deixa mesmo o
+   destino inalcançável. Primeiro no caminho mais curto (barato, quase sempre
+   chega), depois em todo o labirinto. Entre as que servem ganham os corredores
+   — uma porta num cruzamento não se lê.
+3. **A chave fica o mais longe possível da porta**, e não do início. Foi a
+   medida que parecia óbvia e estava errada: a porta está lá ao fundo, longe do
+   início, e a célula mais longe do início que ainda é alcançável é precisamente
+   a que está encostada a ela — a chave calhava colada ao cadeado.
+4. **Com mais do que uma porta, elas encadeiam-se**: a primeira tranca a saída,
+   a segunda tranca a chave da primeira. Quem joga percebe a ordem sem lhe
+   explicarem. Por isso a chave de uma porta que não é a última só pode ir para
+   um sítio onde ainda seja possível cortar o caminho até lá — senão o nível
+   ficava com menos uma porta do que a receita pede.
+
+Nem todos os labirintos dão para isto. **Num nível com portas, a semente
+escolhe-se pelo que sai**: monta-se, conta-se o que lá ficou e troca-se a
+semente até a receita ser cumprida. O cenário `maze-run-mecanicas` do
+smoke-test monta os níveis todos e falha se alguma receita der um nível com
+peças a menos, uma porta que não tranque a saída, uma chave que não se consiga
+alcançar ou uma peça fora do alcance — é a rede que deixa acrescentar níveis sem
+medo.
+
+### Portas e o labirinto que está pintado
+
+As paredes de um nível são pintadas uma vez para um canvas à parte e dali
+copiadas a cada frame (ver `paintMaze` em `js/render.js`). Uma porta que abre
+não pode obrigar a repintar tudo, por isso **uma porta fechada não é parede**:
+a grelha do labirinto (`maze.grid`) é a forma escavada e nunca muda, e as portas
+fechadas vivem num conjunto à parte (`maze.blocked`).
+
+Daí haver duas perguntas diferentes a fazer ao labirinto, e confundi-las dar
+bugs difíceis de ver:
+
+| pergunta               | quem responde       | quem usa                                    |
+| ---------------------- | ------------------- | ------------------------------------------- |
+| "isto é parede?"       | `isWallStatic`      | o desenho das paredes e os cartões do menu  |
+| "dá para passar aqui?" | `isFloor`/`isWall`  | o andar, as saídas de uma célula, os guardas |
+
+Como o mapa dos guardas se refaz a cada frame, uma porta que abre entra nele
+sozinha — não há nada em cache para invalidar.
 
 ## Cache do browser (e o site afixado ao ecrã principal)
 

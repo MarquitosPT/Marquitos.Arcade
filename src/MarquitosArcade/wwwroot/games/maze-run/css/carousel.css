@@ -1,0 +1,183 @@
+/*
+ * Carrossel dos níveis.
+ *
+ * Os níveis não cabem todos de uma vez num telemóvel, e uma lista a rolar
+ * esconde o que vem a seguir atrás do dedo. Em vez disso são páginas: quantos
+ * cabem por página é decidido aqui, no CSS, pelas variáveis `--page-cols` e
+ * `--page-rows`; o JS lê-as e reparte os cartões (ver js/carousel.js). A regra
+ * de quantos cabem é de quem sabe o tamanho do ecrã — o CSS —, e não do JS a
+ * adivinhar larguras.
+ *
+ * Passa-se de página pelas setas, arrastando o dedo ou com as setas do teclado.
+ *
+ * Os media queries estão todos no fim da folha, a seguir às regras que alteram.
+ * É a ordem que importa: com a mesma especificidade ganha a última, e um bloco
+ * de media query escrito antes da regra base não faz nada.
+ */
+
+.levelsCarousel {
+    /* Retrato de telemóvel: dois a dois, quatro por página. */
+    --page-cols: 2;
+    --page-rows: 2;
+
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+        "prev pages next"
+        "dots dots dots";
+    align-items: center;
+    gap: 10px 8px;
+    width: 100%;
+}
+
+/* ---------- As páginas ---------- */
+
+.carouselViewport {
+    grid-area: pages;
+    overflow: hidden;
+    width: 100%;
+}
+
+.carouselTrack {
+    display: flex;
+    align-items: stretch;
+    /* A transição é desligada pelo JS enquanto o dedo está a arrastar. */
+    transition: transform 0.32s cubic-bezier(0.2, 0.9, 0.25, 1);
+    will-change: transform;
+}
+
+.levelPage {
+    flex: 0 0 100%;
+    display: grid;
+    grid-template-columns: repeat(var(--page-cols), minmax(0, 1fr));
+    align-content: start;
+    gap: 10px;
+    /* Todas as filas com a mesma altura, e não a altura do que cada uma tem lá
+       dentro: a caixa do labirinto tem proporção fixa e, em larguras que não
+       dão número redondo, arredondava para um píxel diferente de fila para
+       fila. */
+    grid-auto-rows: 1fr;
+}
+
+/* ---------- Setas ---------- */
+
+.carouselArrow {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    font-family: var(--font-display);
+    font-size: 20px;
+    line-height: 1;
+    color: var(--text);
+    border: 1px solid var(--glass-border);
+    border-radius: 50%;
+    background: var(--glass-bg-soft);
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease, opacity 0.2s ease;
+}
+
+.carouselArrow:hover:not(:disabled) {
+    background: var(--glass-bg-hover);
+    border-color: var(--accent);
+}
+
+.carouselArrow:active:not(:disabled) { transform: scale(0.92); }
+
+/* Numa ponta, a seta fica à vista mas apagada: diz que não há mais para aquele
+   lado sem a lista de páginas saltar de sítio ao desaparecer um botão. */
+.carouselArrow:disabled {
+    opacity: 0.3;
+    cursor: default;
+}
+
+.carouselArrow--prev { grid-area: prev; }
+.carouselArrow--next { grid-area: next; }
+
+/* ---------- Pontos das páginas ---------- */
+
+.carouselDots {
+    grid-area: dots;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 38px;
+}
+
+.carouselDot {
+    width: 7px;
+    height: 7px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgba(238, 242, 255, 0.24);
+    transition: background 0.2s ease, transform 0.2s ease, width 0.2s ease;
+}
+
+.carouselDot:hover { background: rgba(238, 242, 255, 0.45); }
+
+.carouselDot.active {
+    width: 20px;
+    border-radius: var(--radius-pill);
+    background: linear-gradient(100deg, var(--accent), var(--accent-2));
+}
+
+/* Só um ponto significa uma página só: não há nada para navegar. */
+.levelsCarousel.is-single .carouselDots,
+.levelsCarousel.is-single .carouselArrow {
+    display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .carouselTrack { transition: none; }
+}
+
+/* ---------- Quantos cabem em cada página ---------- */
+
+/* Computador e tablet: duas filas de três. */
+@media (min-width: 760px) {
+    .levelsCarousel {
+        --page-cols: 3;
+        --page-rows: 2;
+    }
+}
+
+/*
+ * Retrato estreito: as setas descem para o fundo, encostadas à direita, e os
+ * pontos ficam à esquerda na mesma linha. Nos lados, cada seta roubava uns 40px
+ * à largura — num ecrã de telemóvel isso é quase um terço de um cartão, e os
+ * cartões já lá vão apertados a dois por linha.
+ */
+@media (max-width: 560px) and (orientation: portrait) {
+    .levelsCarousel {
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        grid-template-areas:
+            "pages pages pages"
+            "dots prev next";
+    }
+
+    .carouselDots { justify-content: flex-start; }
+}
+
+/*
+ * Telemóvel deitado. Vem depois da regra dos 760px de propósito: um telemóvel
+ * ao comprido é largo (passa dos 760px) mas é baixo, e só lá cabe uma fila.
+ *
+ * Aqui é ao contrário do retrato: largura é o que sobra e altura é o que falta,
+ * por isso as setas voltam aos lados e a linha de baixo desaparece. Quantas
+ * páginas há dizem-no as setas, que se apagam nas pontas.
+ */
+@media (orientation: landscape) and (max-height: 600px) {
+    .levelsCarousel {
+        --page-cols: 3;
+        --page-rows: 1;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-areas: "prev pages next";
+        gap: 6px;
+    }
+
+    .carouselArrow { width: 32px; height: 32px; font-size: 17px; }
+    .carouselDots { display: none; }
+}

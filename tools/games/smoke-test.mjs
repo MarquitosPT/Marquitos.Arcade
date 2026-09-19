@@ -245,6 +245,262 @@ const GAMES = [
         }
     },
     {
+        slug: 'maze-run',
+        // Ao alto, que é como se joga um labirinto no telemóvel.
+        viewport: { width: 450, height: 800 },
+        canvas: true,
+        menuSelector: '#startScreen',
+        async play(page) {
+            await page.fill('#playerNameInput', 'MARQUITOS');
+            await page.click('#playBtn');
+            await waitForMazePlaying(page);
+            // Umas curvas: confirma que o jogador vira nos cruzamentos e que os
+            // guardas andam sem rebentar a IA.
+            for (const key of ['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp']) {
+                await page.keyboard.press(key);
+                await sleep(500);
+            }
+        }
+    },
+    {
+        slug: 'maze-run',
+        name: 'maze-run-niveis',
+        viewport: { width: 450, height: 800 },
+        canvas: true,
+        menuSelector: '#startScreen',
+        async play(page) {
+            // O ecrã dos níveis: o primeiro aberto, os outros por desbloquear.
+            await page.click('#chooseBtn');
+            await page.waitForSelector('.levelCard');
+            await sleep(500); // o painel entra com uma animação; clicar a meio dela é instável
+            const locked = await page.$$eval('.levelCard.is-locked', (cards) => cards.length);
+            const total = await page.$$eval('.levelCard', (cards) => cards.length);
+            if (total < 2) throw new Error(`só ${total} nível(eis) no ecrã de níveis`);
+            if (locked !== total - 1) throw new Error(`${locked} níveis fechados de ${total} — o primeiro devia ser o único aberto`);
+
+            // O carrossel: os níveis vêm repartidos por páginas e as setas mudam
+            // de página. A que não tem para onde ir fica desativada.
+            const carousel = () => page.evaluate(() => ({
+                paginas: document.querySelectorAll('.levelPage').length,
+                porPagina: document.querySelector('.levelPage')?.childElementCount ?? 0,
+                ativa: [...document.querySelectorAll('.carouselDot')].findIndex((d) => d.classList.contains('active')),
+                prevOff: document.getElementById('prevPageBtn').disabled,
+                nextOff: document.getElementById('nextPageBtn').disabled
+            }));
+
+            const inicio = await carousel();
+            if (inicio.paginas < 2) throw new Error(`os níveis não ficaram em páginas (${inicio.paginas})`);
+            if (inicio.porPagina * inicio.paginas < total) throw new Error('há níveis que não ficaram em página nenhuma');
+            if (inicio.ativa !== 0 || !inicio.prevOff) throw new Error('o carrossel não abriu na primeira página');
+
+            await page.click('#nextPageBtn');
+            await sleep(500);
+            const depois = await carousel();
+            if (depois.ativa !== 1 || depois.prevOff) throw new Error('a seta seguinte não mudou de página');
+
+            await page.click('#prevPageBtn');
+            await sleep(500);
+            if ((await carousel()).ativa !== 0) throw new Error('a seta anterior não voltou atrás');
+            // Um nível fechado não arranca nada.
+            await page.click('.levelCard.is-locked');
+            await sleep(400);
+            if (!(await page.isVisible('#levelsScreen'))) throw new Error('um nível fechado abriu');
+            await page.click('.levelCard:not(.is-locked)');
+            await waitForMazePlaying(page);
+            await sleep(600);
+        }
+    },
+    {
+        slug: 'maze-run',
+        name: 'maze-run-mecanicas',
+        viewport: { width: 500, height: 900 },
+        canvas: true,
+        menuSelector: '#startScreen',
+        // Os níveis com portais, portas e gelo estão fechados de origem; o
+        // progresso guardado é a forma de lá chegar sem os jogar todos. Fica no
+        // 25 de propósito: é o nível que o guião joga, e é assim que o menu o
+        // aponta e o carrossel abre já na página dele.
+        storage: { mazeRunProgress_v1: JSON.stringify({ v: 2, unlocked: 25, levels: {} }) },
+        async play(page) {
+            // Primeiro a montagem: cada receita tem de dar um nível jogável.
+            // É aqui que se apanha uma receita nova que gere uma porta que não
+            // tranca nada, uma chave inalcançável ou um cristal fora do mundo.
+            const broken = await page.evaluate(async () => {
+                const { LEVELS, buildLevelLayout } = await import('/games/maze-run/js/levels.js');
+                const { canReach, cellKey, distanceField } = await import('/games/maze-run/js/maze.js');
+                const problems = [];
+
+                for (const level of LEVELS) {
+                    const layout = buildLevelLayout(level);
+                    const { maze, spawn, exit } = layout;
+                    const say = (what) => problems.push(`nível ${level.id}: ${what}`);
+
+                    if (layout.crystals.length !== level.crystals) say(`${layout.crystals.length} cristais em vez de ${level.crystals}`);
+                    if (layout.freezers.length !== (level.freezers || 0)) say(`${layout.freezers.length} cristais de gelo em vez de ${level.freezers || 0}`);
+                    if (layout.portals.length !== (level.portals || 0)) say(`${layout.portals.length} portais em vez de ${level.portals || 0}`);
+                    if (layout.doors.length !== (level.doors || 0)) say(`${layout.doors.length} portas em vez de ${level.doors || 0}`);
+                    if (layout.guards.length !== level.guards.length) say(`${layout.guards.length} guardas em vez de ${level.guards.length}`);
+
+                    // Uma porta que não tranque a saída é um enfeite.
+                    if (layout.doors.length && canReach(maze, spawn, exit)) say('as portas não trancam a saída');
+
+                    // As chaves têm de sair em cadeia: sempre há uma alcançável.
+                    let opened = 0;
+                    for (let round = 0; round < layout.doors.length; round++) {
+                        const field = distanceField(maze, spawn.x, spawn.y);
+                        const next = layout.doors.find((door) => !door.open && field[door.key.y * maze.cols + door.key.x] >= 0);
+                        if (!next) break;
+                        next.open = true;
+                        maze.blocked.delete(cellKey(next.cell.x, next.cell.y));
+                        opened++;
+                    }
+                    if (opened !== layout.doors.length) say(`só ${opened} de ${layout.doors.length} portas se conseguem abrir`);
+
+                    // Com tudo aberto, tudo tem de estar ao alcance.
+                    const open = distanceField(maze, spawn.x, spawn.y);
+                    const unreachable = [exit, ...layout.crystals, ...layout.freezers, ...layout.guards]
+                        .filter((cell) => open[cell.y * maze.cols + cell.x] < 0);
+                    if (unreachable.length) say(`${unreachable.length} peça(s) fora do alcance`);
+                }
+
+                return problems;
+            });
+            if (broken.length) throw new Error(`receitas com problemas:\n  ${broken.join('\n  ')}`);
+
+            // E agora as peças em jogo, no nível que tem tudo.
+            await page.click('#chooseBtn');
+            await page.waitForSelector('.levelCard[data-value="25"]');
+            await sleep(500);
+            // O 25 é o primeiro que tem portais, duas portas e gelo ao mesmo tempo.
+            await page.click('.levelCard[data-value="25"]');
+            await waitForMazePlaying(page);
+
+            // Portal: entrar num leva ao outro.
+            const hop = await page.evaluate(async () => {
+                const { game } = await import('/games/maze-run/js/state.js');
+                const { exitsFrom } = await import('/games/maze-run/js/maze.js');
+                const portal = game.portals[0];
+                const dir = exitsFrom(game.maze, portal.a.x, portal.a.y)[0];
+                game.player.cx = portal.a.x + dir.x;
+                game.player.cy = portal.a.y + dir.y;
+                game.player.t = 0;
+                game.player.moving = false;
+                game.player.portalHop = false;
+                game.player.queued = { x: -dir.x, y: -dir.y };
+                return { b: portal.b };
+            });
+            await sleep(900);
+            const landed = await page.evaluate(async () => {
+                const { game } = await import('/games/maze-run/js/state.js');
+                return { x: game.player.cx, y: game.player.cy };
+            });
+            const stepsFromTwin = Math.abs(landed.x - hop.b.x) + Math.abs(landed.y - hop.b.y);
+            if (stepsFromTwin > 2) throw new Error(`o portal não saiu do outro lado: ficou em ${landed.x},${landed.y} e o par é ${hop.b.x},${hop.b.y}`);
+
+            // Gelo: congela os guardas, e congelados não apanham ninguém.
+            //
+            // Nos níveis adiantados há guardas que chegam para apanhar o jogador
+            // a meio do guião — e aí o nível está em 'caught' e nada do que se
+            // segue acontece. Daí repor os guardas nos sítios deles e escolher o
+            // cristal mais longe de todos: o que se testa é o gelo, não a sorte.
+            await waitForMazePlaying(page);
+            const frozen = await page.evaluate(async () => {
+                const { game } = await import('/games/maze-run/js/state.js');
+                const { resetGuards } = await import('/games/maze-run/js/enemies.js');
+                resetGuards(game.guards);
+
+                const longe = (cell) => Math.min(...game.guards
+                    .map((g) => Math.hypot(g.walker.cx - cell.x, g.walker.cy - cell.y)));
+                const freezer = game.freezers
+                    .filter((f) => !f.taken)
+                    .sort((a, b) => longe(b) - longe(a))[0];
+
+                game.player.cx = freezer.x;
+                game.player.cy = freezer.y;
+                game.player.t = 0;
+                game.player.moving = false;
+                await new Promise((resolve) => setTimeout(resolve, 300));
+
+                // Um guarda em cima do jogador: sem gelo era uma vida a menos.
+                const guard = game.guards[0];
+                guard.walker.cx = game.player.cx;
+                guard.walker.cy = game.player.cy;
+                guard.walker.t = 0;
+                guard.walker.moving = false;
+                const before = game.guards.map((g) => `${g.walker.cx},${g.walker.cy}`);
+                const livesBefore = game.lives;
+                await new Promise((resolve) => setTimeout(resolve, 700));
+                return {
+                    timer: game.freezeTimer,
+                    lives: game.lives,
+                    lost: livesBefore - game.lives,
+                    phase: game.phase,
+                    moved: game.guards.some((g, i) => `${g.walker.cx},${g.walker.cy}` !== before[i])
+                };
+            });
+            if (!(frozen.timer > 0)) throw new Error('o cristal de gelo não congelou nada');
+            if (frozen.moved) throw new Error('um guarda congelado andou');
+            if (frozen.lost !== 0 || frozen.phase !== 'playing') throw new Error(`um guarda congelado apanhou o jogador (perdeu ${frozen.lost} vida(s), fase ${frozen.phase})`);
+
+            // Porta: fechada não deixa passar, e a chave abre-a.
+            await waitForMazePlaying(page);
+            const door = await page.evaluate(async () => {
+                const { game } = await import('/games/maze-run/js/state.js');
+                const target = game.doors[0];
+                const before = game.maze.isFloor(target.cell.x, target.cell.y);
+                game.player.cx = target.key.x;
+                game.player.cy = target.key.y;
+                game.player.t = 0;
+                game.player.moving = false;
+                await new Promise((resolve) => setTimeout(resolve, 400));
+                return { before, after: game.maze.isFloor(target.cell.x, target.cell.y), open: game.doors[0].open, keys: game.keysTaken };
+            });
+            if (door.before) throw new Error('a porta trancada deixava passar');
+            if (!door.open || !door.after) throw new Error('a chave não abriu a porta');
+            if (door.keys !== 1) throw new Error(`contou ${door.keys} chaves em vez de 1`);
+
+            await sleep(400);
+        }
+    },
+    {
+        slug: 'maze-run',
+        name: 'maze-run-resultados',
+        viewport: { width: 450, height: 800 },
+        canvas: true,
+        menuSelector: '#startScreen',
+        async play(page) {
+            // Jogar o nível a sério levaria um minuto. Em vez disso arranca-se e
+            // força-se a chegada à saída pelos próprios módulos do jogo — o ecrã
+            // de resultados e o desbloqueio são montados pelo código real.
+            await page.click('#playBtn');
+            await waitForMazePlaying(page);
+
+            await page.evaluate(async () => {
+                const { game } = await import('/games/maze-run/js/state.js');
+                for (const crystal of game.crystals) crystal.taken = true;
+                game.collected = game.crystals.length;
+                game.exitOpen = true;
+                game.player.cx = game.layout.exit.x;
+                game.player.cy = game.layout.exit.y;
+                game.player.t = 0;
+                game.player.moving = false;
+            });
+
+            await page.waitForSelector('#nextLevelBtn');
+            await sleep(500);
+
+            const unlocked = await page.evaluate(() => {
+                const raw = localStorage.getItem('mazeRunProgress_v1');
+                return raw ? JSON.parse(raw).unlocked : 0;
+            });
+            if (unlocked < 2) throw new Error(`o nível 2 não ficou desbloqueado (unlocked=${unlocked})`);
+
+            await page.click('#nextLevelBtn');
+            await waitForMazePlaying(page);
+            await sleep(600);
+        }
+    },
+    {
         slug: 'pixel-racing',
         name: 'pixel-racing-resultados',
         viewport: { width: 800, height: 450 },
@@ -357,6 +613,23 @@ async function waitForRacing(page) {
 }
 
 /**
+ * O mesmo para o Maze Run: espera que o nível esteja mesmo a correr, em vez de
+ * dormir o tempo nominal da contagem decrescente (ver a nota do `waitForRacing`
+ * sobre o predicado ter de ser síncrono).
+ */
+async function waitForMazePlaying(page) {
+    await page.evaluate(async () => {
+        const { game } = await import('/games/maze-run/js/state.js');
+        window.__arcadeMaze = game;
+    });
+    await page.waitForFunction(
+        () => window.__arcadeMaze && window.__arcadeMaze.phase === 'playing',
+        undefined,
+        { timeout: 30000 }
+    );
+}
+
+/**
  * Espera que o ecrã de arranque da arcada saia da frente.
  *
  * Cada jogo abre com o logótipo da arcada (lib/arcade/splash.*) a tapar o ecrã
@@ -390,6 +663,18 @@ async function runGame(browser, game, baseUrl) {
     const problems = [];
     const context = await browser.newContext({ viewport: game.viewport, deviceScaleFactor: 1 });
     await context.addInitScript(SEED_RANDOM);
+    // Estado que o jogo já devia ter encontrado no aparelho — por exemplo o
+    // progresso que abre os níveis de um jogo com níveis. Tem de ser escrito
+    // antes de a página abrir, senão o jogo já leu o que lá estava.
+    if (game.storage) {
+        await context.addInitScript((entries) => {
+            try {
+                for (const [key, value] of entries) localStorage.setItem(key, value);
+            } catch {
+                // Armazenamento bloqueado: o cenário corre na mesma, com o que houver.
+            }
+        }, Object.entries(game.storage));
+    }
     context.setDefaultTimeout(SELECTOR_TIMEOUT_MS);
     context.setDefaultNavigationTimeout(NAVIGATION_TIMEOUT_MS);
     const page = await context.newPage();
