@@ -40,9 +40,11 @@ export function fetchAccountDisplayName() {
  * jogo que esconda o campo a quem tem sessão (como o Pixel Racing) depende
  * inteiramente disto.
  *
- * @returns {{ current(): string, remember(name?: string): string, account: Promise<string> }}
- *   `current()` devolve o nome a usar, cortado, ou o `fallback` se não houver.
- *   `remember()` grava-o para a próxima visita e devolve-o.
+ * @returns {{ current(): string, forBoard(): string, remember(name?: string): string, account: Promise<string> }}
+ *   `current()` devolve o nome a mostrar no jogo, cortado, ou o `fallback`.
+ *   `forBoard()` devolve o nome a enviar ao quadro — o mesmo, mas vazio em vez
+ *   do `fallback`, para o servidor decidir (nome da conta, ou "Anónimo").
+ *   `remember()` grava o nome para a próxima visita e devolve-o.
  *   `account` resolve com o nome da conta autenticada, ou '' se for visitante —
  *   é a mesma resposta que preenche o campo, partilhada para o jogo poder
  *   esconder o campo do nome a quem já tem sessão iniciada sem pedir duas vezes.
@@ -67,12 +69,28 @@ export function bindPlayerNameInput(input, storageKey, { fallback = 'Anónimo' }
         });
     }
 
+    /** O nome que o jogador deu, cortado. Vazio se não deu nenhum. */
+    function typedName() {
+        return ((input && input.value) || '').trim();
+    }
+
     function current() {
-        return ((input && input.value) || '').trim() || fallback;
+        return typedName() || fallback;
+    }
+
+    /**
+     * O `fallback` é a etiqueta do jogador dentro do jogo ("Tu" no carro,
+     * "Cozinheiro(a) Anónimo" na cozinha) — não é um nome para uma tabela
+     * pública partilhada pelos três jogos. Quem não deu nome envia vazio e é o
+     * servidor que decide: o nome da conta, ou "Anónimo" para visitantes.
+     */
+    function forBoard() {
+        return typedName();
     }
 
     return {
         current,
+        forBoard,
         account,
         remember(name) {
             const value = name === undefined ? current() : name;

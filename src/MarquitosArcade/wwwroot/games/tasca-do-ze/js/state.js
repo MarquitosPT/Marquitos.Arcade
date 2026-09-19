@@ -5,7 +5,14 @@ import { TUNING } from './config.js';
 export const state = {
     running: false,
     paused: false,
+    /** Nome a mostrar na cozinha: o escrito, ou DEFAULT_PLAYER_NAME. */
     playerName: '',
+    /**
+     * Nome para o quadro de pontuações. Vazio quando o jogador não escreveu
+     * nome — é o servidor que decide (nome da conta, ou "Anónimo"), para os
+     * três jogos da arcada mostrarem a mesma coisa na tabela.
+     */
+    boardName: '',
 
     score: 0,
     lives: TUNING.lives,

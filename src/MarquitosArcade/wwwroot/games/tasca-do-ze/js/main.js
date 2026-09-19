@@ -9,10 +9,16 @@ import { applyMute } from './music.js';
 import { SAVORY, SWEET, buildBench, setBenchCategory } from './bench.js';
 import { renderLeaderboard } from './leaderboard.js';
 import { ringBell, setShiftOverHandler } from './orders.js';
-import { getAccountDisplayName } from './scores.js';
+import { bindPlayerNameInput } from '/lib/arcade/scores.js';
+import { DEFAULT_PLAYER_NAME, NAME_STORAGE_KEY } from './config.js';
 import { state } from './state.js';
-import { endShift, quitToMenu, readStoredPlayerName, rememberPlayerName, startShift, togglePause } from './shift.js';
+import { endShift, quitToMenu, startShift, togglePause } from './shift.js';
 import { els, renderHearts, showOverlay } from './ui.js';
+
+// O campo do nome é do SDK, como nos outros dois jogos: trata do que está
+// guardado neste aparelho, do nome da conta de quem tem sessão iniciada e da
+// ordem entre os dois. Ver /lib/arcade/scores.js.
+const playerName = bindPlayerNameInput(els.nameInput, NAME_STORAGE_KEY, { fallback: DEFAULT_PLAYER_NAME });
 
 // Quando acaba a última vida é o turno que fecha. Registado assim (e não por
 // import direto) para os pedidos não dependerem do ciclo de vida.
@@ -55,8 +61,9 @@ const startBtn = document.getElementById('startBtn');
 
 document.getElementById('playBtn').addEventListener('click', () => {
     sfxClick();
-    // Sugere o nome do turno anterior, o guardado neste aparelho, ou o da conta.
-    els.nameInput.value = state.playerName || readStoredPlayerName() || getAccountDisplayName() || '';
+    // O campo não se mexe aqui: o que lá está é o que o jogador escreveu (ou o
+    // nome da conta). Reescrevê-lo a cada abertura era o que punha o
+    // "Cozinheiro(a) Anónimo" no campo de quem tinha jogado sem dar nome.
     showOverlay('setupOverlay');
     // O foco imediato competiria com a animação de entrada do ecrã.
     setTimeout(() => els.nameInput.focus(), 200);
@@ -71,7 +78,8 @@ document.getElementById('menuBtn').addEventListener('click', backToMainMenu);
 // ---------- Preparação e turno ----------
 
 startBtn.addEventListener('click', () => {
-    rememberPlayerName(els.nameInput.value);
+    state.playerName = playerName.remember();
+    state.boardName = playerName.forBoard();
     startShift();
 });
 

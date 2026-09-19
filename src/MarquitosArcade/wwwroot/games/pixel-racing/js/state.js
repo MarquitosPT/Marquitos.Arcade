@@ -23,6 +23,12 @@ export const session = {
     difficulty: 0.95,
     /** [{ key, name, color }] — o jogador é sempre o índice 0. */
     participants: [],
+    /**
+     * Nome do jogador para o quadro de pontuações. Não é o mesmo que o da
+     * grelha: na pista quem não escreveu nome é "Tu", mas para o quadro vai
+     * vazio, e é o servidor que decide (nome da conta, ou "Anónimo").
+     */
+    playerBoardName: '',
     /** Pontos de campeonato por `key` de participante. */
     tournamentPoints: {},
     /** Pontuação acumulada do jogador, a que vai para o leaderboard. */

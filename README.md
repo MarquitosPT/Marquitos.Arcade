@@ -165,6 +165,32 @@ import { createScoreClient } from '/lib/arcade/scores.js';
 | `splash.js`   | Ecrã de arranque: tempo mínimo, barra de progresso e saída       |
 | `math.js`     | `clamp`, `lerp`, ângulos, aleatórios, `shuffle`                  |
 
+### O nome do jogador
+
+Os três jogos resolvem o nome no mesmo sítio — `bindPlayerNameInput`, no
+`scores.js` do SDK —, para o quadro de pontuações não ficar com três regras
+diferentes. A ordem, da que manda para a que cede:
+
+1. **o que o jogador escrever agora** no campo;
+2. **o nome da conta**, para quem tem sessão iniciada;
+3. **o nome guardado neste aparelho** numa visita anterior;
+4. o **fallback** do jogo (`Tu`, `Anónimo`, `Cozinheiro(a) Anónimo`).
+
+Duas regras que não são óbvias e que já custaram um bug:
+
+- **O fallback nunca é guardado nem lido como nome.** Ele é a etiqueta do
+  jogador dentro do jogo, não um nome escolhido. Guardá-lo fazia-o ganhar ao
+  nome da conta na visita seguinte — era assim que quem tinha sessão iniciada
+  acabava a correr como "Tu" no Pixel Racing.
+- **Ao quadro vai `forBoard()`, não `current()`.** Quem não deu nome envia vazio
+  e é o servidor que decide: o nome da conta, ou "Anónimo". Assim os três jogos
+  mostram a mesma coisa na tabela, em vez de "Tu", "Anónimo" e
+  "Cozinheiro(a) Anónimo" conforme o jogo de origem. O `current()` continua a
+  servir o ecrã — na pista o carro é mesmo "Tu".
+
+O servidor guarda o nome que o jogo enviar, seja quem for o jogador: quem tem de
+garantir que uma pontuação de conta fica com o nome da conta é o cliente.
+
 ## Testar os jogos
 
 `tools/games/smoke-test.mjs` abre cada jogo num Chromium headless, joga-o durante

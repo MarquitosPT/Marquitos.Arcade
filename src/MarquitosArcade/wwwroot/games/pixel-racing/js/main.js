@@ -114,6 +114,7 @@ els.backBtn.addEventListener('click', () => menu.showMenu());
 
 els.startBtn.addEventListener('click', () => {
     setupParticipants(playerName.remember(), session.playerColor);
+    session.playerBoardName = playerName.forBoard();
     session.raceIndex = 0;
     session.tracks = session.mode === MODE_TOURNAMENT ? [...TOURNAMENT_CUPS[session.cupIdx].tracks] : [session.trackIdx];
     startRace(session.tracks[0]);
@@ -122,6 +123,7 @@ els.startBtn.addEventListener('click', () => {
 setReturnToMenuHandler((action) => {
     if (action === 'again') {
         setupParticipants(playerName.remember(), session.playerColor);
+        session.playerBoardName = playerName.forBoard();
         session.raceIndex = 0;
         startRace(session.tracks[0]);
         return;
