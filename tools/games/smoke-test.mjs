@@ -327,7 +327,7 @@ const GAMES = [
             // tranca nada, uma chave inalcançável ou um cristal fora do mundo.
             const broken = await page.evaluate(async () => {
                 const { LEVELS, buildLevelLayout } = await import('/games/maze-run/js/levels.js');
-                const { canReach, cellKey, distanceField } = await import('/games/maze-run/js/maze.js');
+                const { canReach, cellKey, distanceField, exitsFrom } = await import('/games/maze-run/js/maze.js');
                 const problems = [];
 
                 for (const level of LEVELS) {
@@ -343,6 +343,21 @@ const GAMES = [
 
                     // Uma porta que não tranque a saída é um enfeite.
                     if (layout.doors.length && canReach(maze, spawn, exit)) say('as portas não trancam a saída');
+
+                    // Do sítio onde se nasce tem de haver volta a dar: com uma
+                    // saída só, o primeiro guarda que entre no corredor acaba o
+                    // nível antes de ele começar (ver `openStart` em maze.js).
+                    const around = exitsFrom(maze, spawn.x, spawn.y);
+                    if (around.length < 2) say(`o jogador nasce num beco sem saída (${around.length} saída)`);
+                    else {
+                        // Duas saídas não chegam: têm de ligar uma à outra sem
+                        // passar pelo início, senão são dois becos em vez de um.
+                        maze.blocked.add(cellKey(spawn.x, spawn.y));
+                        const sides = around.map((step) => ({ x: spawn.x + step.x, y: spawn.y + step.y }));
+                        const loops = canReach(maze, sides[0], sides[1]);
+                        maze.blocked.delete(cellKey(spawn.x, spawn.y));
+                        if (!loops) say('as saídas do início não fecham laço: não há volta a dar');
+                    }
 
                     // As chaves têm de sair em cadeia: sempre há uma alcançável.
                     let opened = 0;

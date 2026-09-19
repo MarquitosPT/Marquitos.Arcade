@@ -24,7 +24,7 @@
 //   accent       a cor do nível — paredes, HUD e cartão do menu
 
 import { DEFAULT_LIVES, MAX_STARS } from './config.js';
-import { buildMaze, canReach, cellKey, distanceField, exitsFrom, shortestPath, STEPS } from './maze.js';
+import { buildMaze, canReach, cellKey, distanceField, exitsFrom, shortestPath, START, STEPS } from './maze.js';
 
 /**
  * Os guardas:
@@ -505,7 +505,7 @@ export const LEVELS = [
         id: 28,
         name: 'Calabouço',
         hint: 'Vê onde está a saída antes de ires buscar o primeiro cristal.',
-        cols: 19, rows: 15, seed: 964088, braid: 0.39,
+        cols: 19, rows: 15, seed: 964090, braid: 0.39,
         crystals: 13,
         freezers: 2,
         portals: 2,
@@ -950,7 +950,7 @@ export function starsFor(level, { seconds, livesLost }) {
  */
 export function buildLevelLayout(level) {
     const maze = buildMaze(level);
-    const spawn = { x: 1, y: 1 };
+    const spawn = { x: START.x, y: START.y };
     const wantsDoors = (level.doors || 0) > 0;
 
     const fromSpawn = distanceField(maze, spawn.x, spawn.y);
@@ -1022,7 +1022,7 @@ function farthest(maze, field, { deadEnd = false } = {}) {
         return best;
     };
 
-    const best = (deadEnd && pick(true)) || pick(false) || { x: 1, y: 1 };
+    const best = (deadEnd && pick(true)) || pick(false) || { x: START.x, y: START.y };
     return { x: best.x, y: best.y };
 }
 
@@ -1284,7 +1284,7 @@ function placeGuards(maze, field, maxDistance, guards, taken) {
             // outro lado da porta do que um nível com menos guardas do que a
             // receita pede.
             || withDoorsOpen(maze, () => {
-                const open = distanceField(maze, 1, 1);
+                const open = distanceField(maze, START.x, START.y);
                 return pickInBand(maze, open, 4, reachableDistance(maze, open), taken, { deadEnds: false });
             });
         if (!cell) break;
