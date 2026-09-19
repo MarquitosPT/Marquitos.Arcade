@@ -21,10 +21,25 @@ import { createProgressClient } from '/lib/arcade/progress.js';
 import { GAME_ID, PROGRESS_STORAGE_KEY } from './config.js';
 import { levelCount } from './levels.js';
 
-/** Versão da forma do objeto. Subir isto obriga a pensar no que fazer ao antigo. */
-const VERSION = 1;
+/**
+ * Versão do progresso guardado.
+ *
+ * Sobe sempre que os níveis mudam de número — e mudam, porque um nível novo
+ * entra no meio dos que já havia, para a dificuldade crescer mais devagar. As
+ * marcas estão guardadas pelo número do nível, por isso um progresso de uma
+ * numeração antiga não diz a verdade sobre esta: o nível 3 de então pode ser o
+ * 5 de agora. Em vez de o mostrar errado, recomeça-se.
+ *
+ * Se um dia o jogo estiver no ar com gente a jogar, isto deixa de servir: aí a
+ * marca de cada nível passa a ficar guardada por um nome próprio do nível, que
+ * não muda quando ele muda de sítio na lista.
+ */
+const VERSION = 2;
 
 const emptyProgress = () => ({ v: VERSION, unlocked: 1, levels: {} });
+
+/** Progresso de outra numeração vale tanto como não haver progresso nenhum. */
+const currentOrEmpty = (data) => (data && data.v === VERSION ? data : emptyProgress());
 
 /**
  * Junta o que está no aparelho com o que está na conta. Ganha sempre o melhor
@@ -32,14 +47,17 @@ const emptyProgress = () => ({ v: VERSION, unlocked: 1, levels: {} });
  * custar o que se fez, e uma conta usada em dois aparelhos fica com o melhor
  * dos dois.
  */
-function mergeProgress(local, remote) {
+function mergeProgress(rawLocal, rawRemote) {
+    const local = currentOrEmpty(rawLocal);
+    const remote = currentOrEmpty(rawRemote);
     const merged = emptyProgress();
-    merged.unlocked = Math.max(1, local?.unlocked || 1, remote?.unlocked || 1);
+    merged.unlocked = Math.max(1, local.unlocked || 1, remote.unlocked || 1);
 
     for (const source of [local, remote]) {
         for (const [id, entry] of Object.entries(source?.levels || {})) {
             if (!entry || typeof entry !== 'object') continue;
             merged.levels[id] = betterOf(merged.levels[id], entry);
+
         }
     }
 
@@ -85,7 +103,8 @@ function bestMs(a, b) {
 export const progress = createProgressClient(GAME_ID, {
     storageKey: PROGRESS_STORAGE_KEY,
     empty: emptyProgress,
-    merge: mergeProgress
+    merge: mergeProgress,
+    accept: currentOrEmpty
 });
 
 /** Carrega a conta e junta-a ao aparelho. Uma vez, no arranque. */

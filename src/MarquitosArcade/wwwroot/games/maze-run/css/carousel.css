@@ -52,9 +52,11 @@
     grid-template-columns: repeat(var(--page-cols), minmax(0, 1fr));
     align-content: start;
     gap: 10px;
-    /* Sem isto, uma página com menos cartões do que as outras encolhia e a
-       altura do carrossel dava um salto ao mudar de página. */
-    grid-auto-rows: min-content;
+    /* Todas as filas com a mesma altura, e não a altura do que cada uma tem lá
+       dentro: a caixa do labirinto tem proporção fixa e, em larguras que não
+       dão número redondo, arredondava para um píxel diferente de fila para
+       fila. */
+    grid-auto-rows: 1fr;
 }
 
 /* ---------- Setas ---------- */

@@ -161,6 +161,10 @@ button { cursor: pointer; }
     display: flex;
     flex-direction: column;
     align-items: stretch;
+    /* Enche a célula da grelha: as células de uma fila têm todas a mesma
+       altura, e sem isto os cartões ficavam a diferir do vizinho pelo píxel
+       que o `aspect-ratio` da caixa do labirinto arredonda. */
+    height: 100%;
     gap: 8px;
     padding: 12px;
     text-align: left;
@@ -249,9 +253,20 @@ button { cursor: pointer; }
     background: rgba(6, 9, 20, 0.45);
 }
 
-.levelInfo { display: flex; flex-direction: column; gap: 2px; }
+/*
+ * As cinco linhas do cartão, sempre as mesmas e sempre presentes: número, nome,
+ * peças, estado e estrelas. Cada uma tem altura reservada mesmo quando está
+ * vazia — é o que faz os cartões terem todos a mesma altura, em qualquer
+ * página e em qualquer ecrã.
+ */
+.levelInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
 
 .levelNumber {
+    min-height: 1em;
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.14em;
@@ -259,13 +274,25 @@ button { cursor: pointer; }
     color: var(--faint);
 }
 
+/*
+ * O nome nunca quebra: os nomes dos níveis são escolhidos curtos (ver LEVELS em
+ * js/levels.js) e isto é a rede — num ecrã muito estreito corta com reticências
+ * em vez de roubar uma linha ao cartão e desalinhar a fila toda.
+ */
 .levelName {
+    min-height: 1.15em;
     font-family: var(--font-display);
     font-size: 14px;
     font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.levelMeta {
+/* A linha que diz em que pé está o nível: o que falta para o abrir, "Por jogar"
+   ou a melhor marca. */
+.levelState {
+    min-height: 1.25em;
     font-size: 11px;
     letter-spacing: 0.02em;
     color: var(--muted);
@@ -273,9 +300,10 @@ button { cursor: pointer; }
 
 /* As estrelas que faltam ficam lá, apagadas: vê-se de quantas é a escala. */
 .levelStars {
-    display: inline-flex;
+    display: flex;
+    align-items: center;
+    min-height: 13px;
     gap: 2px;
-    margin-top: 2px;
     font-size: 11px;
     line-height: 1;
     color: var(--gold);
@@ -288,11 +316,15 @@ button { cursor: pointer; }
  * As peças que o nível tem — portais, portas, gelo. Aparecem também nos níveis
  * fechados, de propósito: é o que dá vontade de lá chegar.
  */
+/* Logo por baixo do nome, e com a altura de um chip mesmo nos níveis que ainda
+   não têm peça nenhuma — senão os primeiros cartões ficavam mais baixos. */
 .levelTags {
     display: flex;
-    flex-wrap: wrap;
+    align-items: center;
+    flex-wrap: nowrap;
+    overflow: hidden;
+    min-height: 17px;
     gap: 5px;
-    margin-top: 4px;
 }
 
 .levelTag {
@@ -334,10 +366,10 @@ button { cursor: pointer; }
 
     .levelNumber { font-size: 9px; letter-spacing: 0.1em; }
     .levelName { font-size: 12.5px; }
-    .levelMeta { font-size: 10px; }
-    .levelStars { font-size: 10px; }
-    .levelTag { padding: 1px 6px; font-size: 9.5px; }
-    .levelTags { gap: 4px; }
+    .levelState { font-size: 10px; }
+    .levelStars { min-height: 12px; font-size: 10px; }
+    .levelTag { padding: 1px 5px; font-size: 9.5px; }
+    .levelTags { min-height: 15px; gap: 4px; }
     .levelLock { font-size: 18px; }
 }
 

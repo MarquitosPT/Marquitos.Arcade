@@ -58,6 +58,10 @@ function mazePreviewSvg(level, { locked }) {
 }
 
 /** As estrelas do nível, com as que faltam apagadas — vê-se a escala inteira. */
+/**
+ * As estrelas do nível. Aparecem sempre, apagadas nos níveis por fazer: além de
+ * segurarem a altura do cartão, dizem o que há para ganhar ali.
+ */
 function starRow(stars) {
     const filled = Math.max(0, Math.min(MAX_STARS, stars || 0));
     const dots = Array.from({ length: MAX_STARS }, (_, i) => `<i class="${i < filled ? '' : 'off'}">★</i>`).join('');
@@ -74,7 +78,6 @@ function levelTags(level) {
     if (level.portals) tags.push(['\u{1F300}', level.portals, 'portal', 'portais']);
     if (level.doors) tags.push(['\u{1F511}', level.doors, 'porta trancada', 'portas trancadas']);
     if (level.freezers) tags.push(['\u2744', level.freezers, 'cristal de gelo', 'cristais de gelo']);
-    if (!tags.length) return '';
 
     const chips = tags
         .map(([icon, count, one, many]) =>
@@ -84,18 +87,28 @@ function levelTags(level) {
             </span>`)
         .join('');
 
+    // A linha existe mesmo vazia: é o que mantém os cartões todos da mesma
+    // altura, incluindo os primeiros níveis, que ainda não têm peça nenhuma.
     return `<span class="levelTags">${chips}</span>`;
 }
 
+/**
+ * Um cartão de nível.
+ *
+ * Todos têm exatamente as mesmas cinco linhas, pela mesma ordem e sempre
+ * presentes — número, nome, peças, estado e estrelas —, mesmo quando não há nada
+ * para pôr numa delas. É isso que lhes dá a todos a mesma altura, e uma página
+ * do carrossel com cartões de alturas diferentes é uma fila torta.
+ */
 function levelCard(level) {
     const unlocked = isUnlocked(level.id);
     const best = bestOf(level.id);
 
-    const meta = !unlocked
-        ? `<span class="levelMeta">Conclui o nível ${level.id - 1}</span>`
+    const state = !unlocked
+        ? `Conclui o nível ${level.id - 1}`
         : best
-            ? `<span class="levelMeta">${fmtTime(best.ms)} · ${fmtPoints(best.score)} pts</span>`
-            : '<span class="levelMeta">Por jogar</span>';
+            ? `${fmtTime(best.ms)} · ${fmtPoints(best.score)} pts`
+            : 'Por jogar';
 
     // O cartão fechado não leva `disabled` nem `aria-disabled`: ele responde ao
     // clique (abana e diz o que falta), e um controlo que responde não é um
@@ -113,9 +126,9 @@ function levelCard(level) {
         <span class="levelInfo">
             <span class="levelNumber">Nível ${level.id}</span>
             <span class="levelName">${escapeHtml(level.name)}</span>
-            ${meta}
             ${levelTags(level)}
-            ${unlocked && best ? starRow(best.stars) : ''}
+            <span class="levelState">${escapeHtml(state)}</span>
+            ${starRow(best?.stars)}
         </span>
     </button>`;
 }

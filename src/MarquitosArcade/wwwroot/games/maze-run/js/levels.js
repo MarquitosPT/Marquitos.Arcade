@@ -46,14 +46,20 @@ export const PORTAL_COLORS = ['#35e0ff', '#ffc14d', '#ff5d9e'];
 export const DOOR_COLORS = ['#ffc14d', '#5ef3a0', '#ff8a3d'];
 
 /**
- * Os níveis, por ordem. Cada um apresenta uma peça de cada vez e o seguinte
- * conta com ela — é por isso que o 1 não tem nada além do básico e o último tem
- * tudo: quem chega lá já sabe o que cada coisa faz.
+ * Os níveis, por ordem.
+ *
+ * A progressão é aos pares: um nível apresenta uma peça nova, o seguinte
+ * obriga a usá-la antes de aparecer a próxima. É por isso que o 1 não tem nada
+ * além do básico e o 12 tem tudo — quem chega lá já sabe o que cada coisa faz.
+ *
+ * Os nomes são de uma palavra de propósito: no cartão do menu não podem quebrar
+ * em duas linhas, senão desalinham a fila toda (ver `.levelName` em
+ * css/controls.css).
  */
 export const LEVELS = [
     {
         id: 1,
-        name: 'Cripta dos Ecos',
+        name: 'Cripta',
         hint: 'Apanha os cristais todos: é isso que abre a saída.',
         cols: 13, rows: 11, seed: 19070, braid: 0.32,
         crystals: 6,
@@ -63,7 +69,21 @@ export const LEVELS = [
     },
     {
         id: 2,
-        name: 'Corredores de Néon',
+        name: 'Poço',
+        hint: 'Mais um guarda. Não fiques parado no meio de um corredor.',
+        cols: 13, rows: 11, seed: 26410, braid: 0.36,
+        crystals: 7,
+        guards: [
+            { kind: GUARD_ROAM, speed: 0.68 },
+            { kind: GUARD_CHASE, speed: 0.72 },
+            { kind: GUARD_ROAM, speed: 0.66 }
+        ],
+        seconds: 95, par: 48,
+        accent: '#4fd1ff'
+    },
+    {
+        id: 3,
+        name: 'Néon',
         hint: 'O cristal de gelo congela os guardas. Guarda-o para quando precisares.',
         cols: 15, rows: 13, seed: 42110, braid: 0.38,
         crystals: 8,
@@ -77,8 +97,24 @@ export const LEVELS = [
         accent: '#8b7cff'
     },
     {
-        id: 3,
-        name: 'Jardim de Ferro',
+        id: 4,
+        name: 'Fundição',
+        hint: 'Um deles anda à tua frente, não atrás: é o que te corta o caminho.',
+        cols: 15, rows: 13, seed: 33870, braid: 0.42,
+        crystals: 9,
+        freezers: 2,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.78 },
+            { kind: GUARD_CHASE, speed: 0.74 },
+            { kind: GUARD_AMBUSH, speed: 0.76 },
+            { kind: GUARD_ROAM, speed: 0.7 }
+        ],
+        seconds: 110, par: 58,
+        accent: '#a78bff'
+    },
+    {
+        id: 5,
+        name: 'Ferro',
         hint: 'Os portais levam-te ao outro lado num instante — mas os guardas também os usam.',
         cols: 17, rows: 13, seed: 77660, braid: 0.46,
         crystals: 10,
@@ -94,7 +130,24 @@ export const LEVELS = [
         accent: '#5ef3a0'
     },
     {
-        id: 4,
+        id: 6,
+        name: 'Espiral',
+        hint: 'Dois pares de portais. A cor diz-te onde vais sair.',
+        cols: 17, rows: 13, seed: 51940, braid: 0.48,
+        crystals: 10,
+        freezers: 2,
+        portals: 2,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.82 },
+            { kind: GUARD_AMBUSH, speed: 0.8 },
+            { kind: GUARD_AMBUSH, speed: 0.78 },
+            { kind: GUARD_ROAM, speed: 0.76 }
+        ],
+        seconds: 118, par: 65,
+        accent: '#7cff8f'
+    },
+    {
+        id: 7,
         name: 'Fornalha',
         hint: 'A chave abre a porta trancada — e enquanto estiver fechada, nem os guardas passam.',
         cols: 19, rows: 15, seed: 91430, braid: 0.52,
@@ -111,8 +164,26 @@ export const LEVELS = [
         accent: '#ffc14d'
     },
     {
-        id: 5,
-        name: 'Passagem Selada',
+        id: 8,
+        name: 'Cofre',
+        hint: 'A chave está do outro lado do portal. Vai lá e volta antes que te encontrem.',
+        cols: 19, rows: 15, seed: 60007, braid: 0.48,
+        crystals: 12,
+        freezers: 2,
+        portals: 1,
+        doors: 1,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.86 },
+            { kind: GUARD_AMBUSH, speed: 0.84 },
+            { kind: GUARD_AMBUSH, speed: 0.84 },
+            { kind: GUARD_ROAM, speed: 0.8 }
+        ],
+        seconds: 130, par: 74,
+        accent: '#ffb02e'
+    },
+    {
+        id: 9,
+        name: 'Selado',
         hint: 'Duas portas em cadeia: a primeira chave abre o caminho para a segunda.',
         cols: 19, rows: 15, seed: 71234, braid: 0.46,
         crystals: 12,
@@ -128,9 +199,27 @@ export const LEVELS = [
         accent: '#ff8a3d'
     },
     {
-        id: 6,
-        name: 'Roda dos Espelhos',
-        hint: 'Portais, portas e gelo, tudo ao mesmo tempo. Decide antes de entrar no corredor.',
+        id: 10,
+        name: 'Oficina',
+        hint: 'Duas portas e um portal. Decide a ordem antes de entrares no corredor.',
+        cols: 21, rows: 15, seed: 31780, braid: 0.46,
+        crystals: 13,
+        freezers: 3,
+        portals: 1,
+        doors: 2,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.88 },
+            { kind: GUARD_CHASE, speed: 0.86 },
+            { kind: GUARD_AMBUSH, speed: 0.86 },
+            { kind: GUARD_AMBUSH, speed: 0.84 }
+        ],
+        seconds: 145, par: 85,
+        accent: '#ff6f4d'
+    },
+    {
+        id: 11,
+        name: 'Espelhos',
+        hint: 'Portais, portas e gelo, tudo ao mesmo tempo.',
         cols: 21, rows: 17, seed: 24680, braid: 0.4,
         crystals: 14,
         freezers: 3,
@@ -145,6 +234,25 @@ export const LEVELS = [
         ],
         seconds: 155, par: 95,
         accent: '#ff5d9e'
+    },
+    {
+        id: 12,
+        name: 'Abismo',
+        hint: 'O maior de todos, e o mais mal frequentado. Guarda o gelo para o fim.',
+        cols: 21, rows: 17, seed: 37121, braid: 0.44,
+        crystals: 15,
+        freezers: 3,
+        portals: 2,
+        doors: 2,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.92 },
+            { kind: GUARD_CHASE, speed: 0.9 },
+            { kind: GUARD_AMBUSH, speed: 0.9 },
+            { kind: GUARD_AMBUSH, speed: 0.88 },
+            { kind: GUARD_ROAM, speed: 0.84 }
+        ],
+        seconds: 165, par: 100,
+        accent: '#e0457f'
     }
 ];
 

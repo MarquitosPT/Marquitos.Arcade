@@ -363,6 +363,16 @@ pontos, melhor tempo, mais estrelas. Nunca a cópia "mais recente" — a mais
 recente pode ser a de um aparelho onde se jogou menos, e ninguém quer perder
 níveis por ter aberto o jogo no sítio errado.
 
+**O progresso guardado tem versão, e um nível novo entra no meio dos que já
+havia.** As marcas estão guardadas pelo número do nível, por isso um progresso
+gravado com outra numeração não diz a verdade sobre esta — o nível 3 de então
+pode ser o 5 de agora. Em vez de o mostrar errado, sobe-se o `VERSION` em
+`games/maze-run/js/progress.js` e recomeça-se; quem faz a recusa é o `accept`
+do cliente do SDK, por onde passa tudo o que se lê, do aparelho e da conta.
+Isto serve enquanto o jogo não estiver no ar: a partir daí, a marca de cada
+nível tem de passar a ficar guardada por um nome próprio do nível, que não muda
+quando ele muda de sítio na lista.
+
 Duas notas que já custariam um bug:
 
 - **O total de pontos não se guarda, soma-se.** É a soma do melhor resultado de
@@ -398,6 +408,25 @@ Assim a regra de quantos cabem vive num sítio só — quem sabe o tamanho do ec
 o CSS. Ao rodar o aparelho o número muda, e o carrossel refaz as páginas
 mantendo à vista o cartão que lá estava.
 
+**Os cartões têm todos a mesma altura**, e isso não é acaso: cada um tem
+sempre as mesmas cinco linhas, pela mesma ordem e todas presentes mesmo quando
+não há nada para pôr numa delas.
+
+| linha    | o que diz                                                       |
+| -------- | --------------------------------------------------------------- |
+| número   | `Nível 7`                                                        |
+| nome     | uma palavra, que nunca quebra em duas linhas                     |
+| peças    | portais, portas e gelo que o nível tem (vazia nos primeiros)     |
+| estado   | `Conclui o nível 6`, `Por jogar` ou a melhor marca               |
+| estrelas | as três, apagadas no que ainda não se fez                        |
+
+Daí os **nomes dos níveis serem de uma palavra** (`LEVELS` em `js/levels.js`):
+num cartão estreito, um nome que quebre rouba uma linha e desalinha a fila
+toda. O `.levelName` ainda leva `nowrap` com reticências como rede, mas é rede
+— o nome deve caber. As filas usam `grid-auto-rows: 1fr` em vez da altura do
+conteúdo, senão a caixa do labirinto, que tem proporção fixa, arredondava para
+um píxel diferente de fila para fila.
+
 **As setas mudam de sítio conforme o que falta no ecrã.** Ao alto, num ecrã
 estreito, descem para o fundo encostadas à direita, com os pontos das páginas à
 esquerda: nos lados, cada seta roubava uns 40px de largura, quase um terço de um
@@ -426,6 +455,11 @@ nota do fim deste ecrã passava a letra graúda enquanto tudo à volta ficava
 igual. Quem o desliga é o `text-size-adjust: 100%` no `css/base.css`.
 
 ## As peças do Maze Run
+
+São doze níveis, e a progressão é aos pares: um nível apresenta uma peça nova,
+o seguinte obriga a usá-la antes de aparecer a próxima. Doze também é o número
+que enche as páginas do carrossel em todos os formatos — 3 páginas de 4 ao alto,
+4 de 3 ao comprido, 2 de 6 no computador.
 
 Além dos cristais e dos guardas, um nível pode ter três coisas. Todas se ligam
 pela receita (`js/levels.js`) e nenhuma precisa de um mapa desenhado à mão:

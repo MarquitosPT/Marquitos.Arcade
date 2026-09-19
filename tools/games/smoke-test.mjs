@@ -318,7 +318,7 @@ const GAMES = [
         menuSelector: '#startScreen',
         // Os níveis com portais, portas e gelo estão fechados de origem; o
         // progresso guardado é a forma de lá chegar sem os jogar todos.
-        storage: { mazeRunProgress_v1: JSON.stringify({ v: 1, unlocked: 6, levels: {} }) },
+        storage: { mazeRunProgress_v1: JSON.stringify({ v: 2, unlocked: 12, levels: {} }) },
         async play(page) {
             // Primeiro a montagem: cada receita tem de dar um nível jogável.
             // É aqui que se apanha uma receita nova que gere uma porta que não
@@ -367,9 +367,10 @@ const GAMES = [
 
             // E agora as peças em jogo, no nível que tem tudo.
             await page.click('#chooseBtn');
-            await page.waitForSelector('.levelCard[data-value="6"]');
+            await page.waitForSelector('.levelCard[data-value="11"]');
             await sleep(500);
-            await page.click('.levelCard[data-value="6"]');
+            // O 11 é o primeiro que tem portais, portas e gelo ao mesmo tempo.
+            await page.click('.levelCard[data-value="11"]');
             await waitForMazePlaying(page);
 
             // Portal: entrar num leva ao outro.

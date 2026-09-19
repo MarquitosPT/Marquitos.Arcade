@@ -23,6 +23,10 @@ const MAX_JSON_LENGTH = 8 * 1024;
  * @param {() => object} [options.empty] Progresso de quem nunca jogou.
  * @param {(local: object, remote: object) => object} [options.merge] Junta as duas
  *   cópias. Sem ela, a da conta ganha.
+ * @param {(data: object) => object} [options.accept] Passa por aqui tudo o que
+ *   se lê — do aparelho e da conta — antes de o jogo lhe tocar. É a
+ *   oportunidade de recusar (ou converter) um progresso gravado por uma versão
+ *   antiga do jogo, que pode já não querer dizer o mesmo.
  * @param {number} [options.saveDelay=800] Espera antes de gravar no servidor, em ms.
  *   Junta várias mudanças seguidas num só pedido.
  */
@@ -30,6 +34,7 @@ export function createProgressClient(gameId, {
     storageKey = `arcade.progress.${gameId}`,
     empty = () => ({}),
     merge = null,
+    accept = null,
     saveDelay = 800
 } = {}) {
     const endpoint = `/api/progress/${gameId}`;
@@ -44,7 +49,8 @@ export function createProgressClient(gameId, {
 
     function readLocal() {
         const value = readJson(storageKey, null);
-        return isObject(value) ? value : empty();
+        if (!isObject(value)) return empty();
+        return accept ? accept(value) : value;
     }
 
     function writeLocal() {
@@ -64,7 +70,8 @@ export function createProgressClient(gameId, {
             if (res.ok) {
                 const body = await res.json();
                 stored = !!(body && body.stored);
-                remote = isObject(body && body.data) ? body.data : null;
+                const data = isObject(body && body.data) ? body.data : null;
+                remote = data && accept ? accept(data) : data;
             }
         } catch {
             // Sem rede joga-se na mesma, com o que está no aparelho.
