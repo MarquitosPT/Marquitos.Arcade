@@ -31,6 +31,12 @@ const STEPS = [
     { x: -1, y: 0 }
 ];
 
+/**
+ * A célula por onde se começa: é daqui que o backtracker escava e é aqui que o
+ * jogador nasce (ver `buildLevelLayout` em levels.js).
+ */
+export const START = { x: 1, y: 1 };
+
 const toOdd = (value, min) => {
     const clamped = Math.max(min, Math.round(value));
     return clamped % 2 === 0 ? clamped + 1 : clamped;
@@ -43,8 +49,8 @@ const toOdd = (value, min) => {
  * caminho entre quaisquer dois pontos.
  */
 function carve(grid, cols, rows, random) {
-    const stack = [{ x: 1, y: 1 }];
-    grid[1 * cols + 1] = FLOOR;
+    const stack = [{ x: START.x, y: START.y }];
+    grid[START.y * cols + START.x] = FLOOR;
 
     while (stack.length) {
         const current = stack[stack.length - 1];
@@ -109,6 +115,46 @@ function braid(grid, cols, rows, amount, random) {
 }
 
 /**
+ * Garante que a célula de partida tem mais do que uma saída — de preferência
+ * para baixo.
+ *
+ * O `braid` abre os becos ao calhar, mas o beco da partida é o único que quem
+ * joga não pode evitar: nasce-se lá de costas para a parede e, com uma saída
+ * só, um guarda que entre no corredor não deixa jogada nenhuma — não há volta
+ * a dar nem tempo para a procurar, e o nível acaba antes de começar. Por isso
+ * este é o beco que não fica ao critério da semente.
+ *
+ * Para baixo primeiro porque a partida é no canto de cima à esquerda: por cima
+ * e à esquerda é a moldura, e o corredor que já lá está sai quase sempre para
+ * a direita — é a passagem de baixo que dá mesmo a volta.
+ */
+function openStart(grid, cols, rows) {
+    const { x, y } = START;
+    const open = STEPS.filter((step) => grid[(y + step.y) * cols + x + step.x] === FLOOR);
+    if (open.length > 1) return;
+
+    // Baixo, direita, cima, esquerda: a ordem por que se procura por onde abrir.
+    const preferred = [{ x: 0, y: 1 }, { x: 1, y: 0 }, { x: 0, y: -1 }, { x: -1, y: 0 }];
+
+    for (const step of preferred) {
+        const wx = x + step.x;
+        const wy = y + step.y;
+        if (wx <= 0 || wy <= 0 || wx >= cols - 1 || wy >= rows - 1) continue;
+        if (grid[wy * cols + wx] !== WALL) continue;
+
+        // Do outro lado da parede tem de estar corredor, senão abria-se para
+        // dentro da parede — é a mesma regra do `braid`.
+        const bx = x + step.x * 2;
+        const by = y + step.y * 2;
+        if (bx <= 0 || by <= 0 || bx >= cols - 1 || by >= rows - 1) continue;
+        if (grid[by * cols + bx] !== FLOOR) continue;
+
+        grid[wy * cols + wx] = FLOOR;
+        return;
+    }
+}
+
+/**
  * @param {object} recipe
  * @param {number} recipe.cols Largura em células (acertada para ímpar).
  * @param {number} recipe.rows Altura em células (acertada para ímpar).
@@ -123,6 +169,7 @@ export function buildMaze({ cols, rows, seed, braid: braidAmount = 0 }) {
 
     carve(grid, w, h, random);
     braid(grid, w, h, braidAmount, random);
+    openStart(grid, w, h);
 
     const floors = [];
     for (let y = 0; y < h; y++) {
