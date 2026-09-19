@@ -1,7 +1,6 @@
 // Ciclo de vida de um turno: começar, correr, pausar e fechar a cozinha.
 
-import { readText, writeText } from '/lib/arcade/storage.js';
-import { DEFAULT_PLAYER_NAME, NAME_STORAGE_KEY } from './config.js';
+import { DEFAULT_PLAYER_NAME } from './config.js';
 import { resumeAudio, sfxClick, sfxGameOver } from './audio.js';
 import { startMusic, stopMusic } from './music.js';
 import { loseLife, renderQueue, spawnOrder, updatePatienceBar } from './orders.js';
@@ -95,8 +94,11 @@ export function endShift(reason) {
     showOverlay('overOverlay');
 
     const finalScore = state.score;
-    scores.submit(name, finalScore).then((result) => {
-        const isTop = result.board.findIndex((e) => e.name === name && e.score === finalScore) === 0;
+    scores.submit(state.boardName, finalScore).then((result) => {
+        // Compara-se pela pontuação e não pelo nome: o nome que fica no quadro é
+        // o que o servidor decidir (o da conta, ou "Anónimo"), e pode não ser o
+        // que a cozinha mostra aqui ao lado.
+        const isTop = result.board[0]?.score === finalScore;
         els.overPlayerLine.textContent = result.ok && isTop && finalScore > 0
             ? `${name} — novo recorde! 🏆`
             : `${name} — pontos no turno de hoje`;
@@ -107,7 +109,7 @@ export function endShift(reason) {
 /** Sair a meio conta na mesma: a pontuação feita até ali vai para o quadro. */
 export function quitToMenu() {
     if (state.running && state.score > 0) {
-        scores.submit(state.playerName || DEFAULT_PLAYER_NAME, state.score).then((result) => {
+        scores.submit(state.boardName, state.score).then((result) => {
             if (!result.ok) toast(OFFLINE_WARNING);
         });
     }
@@ -125,12 +127,3 @@ export function togglePause() {
     state.paused = !state.paused;
     els.pauseOverlay.classList.toggle('hidden', !state.paused);
 }
-
-/** Guarda o nome escrito no ecrã de preparação e devolve-o já normalizado. */
-export function rememberPlayerName(raw) {
-    state.playerName = (raw || '').trim() || DEFAULT_PLAYER_NAME;
-    writeText(NAME_STORAGE_KEY, state.playerName);
-    return state.playerName;
-}
-
-export const readStoredPlayerName = () => readText(NAME_STORAGE_KEY) || '';

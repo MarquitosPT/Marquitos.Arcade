@@ -97,7 +97,10 @@ function submitCurrentScore() {
     // Só o modo a um jogador conta para o leaderboard — a dois, a pontuação é
     // contra outra pessoa e não mede nada comparável.
     if (!isSinglePlayer() || !state.running || state.scoreP <= 0) return;
-    scores.submitQuietly(playerName.remember(), state.scoreP);
+    // O `remember` guarda o nome para a próxima visita; ao quadro vai o
+    // `forBoard`, que deixa o servidor tratar de quem não escreveu nome.
+    playerName.remember();
+    scores.submitQuietly(playerName.forBoard(), state.scoreP);
 }
 
 // ---------- Ligações aos controlos ----------

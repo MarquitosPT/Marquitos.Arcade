@@ -69,7 +69,7 @@ export function showResultScreen() {
 
     overlays.show('result');
 
-    if (!isTournament) scores.submitQuietly(session.participants[0].name, session.playerScore);
+    if (!isTournament) scores.submitQuietly(session.playerBoardName, session.playerScore);
 
     wireResultButtons();
 }
@@ -111,7 +111,7 @@ function renderTournamentEnd() {
     html += statRow([['Pontuação total', String(session.playerScore)]]);
     html += '<div class="resultActions"><button class="btn" id="menuBtn">Voltar ao menu</button></div>';
 
-    scores.submitQuietly(session.participants[0].name, session.playerScore);
+    scores.submitQuietly(session.playerBoardName, session.playerScore);
     if (playerFinal <= 3) spawnConfetti();
     return html;
 }
