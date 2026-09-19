@@ -24,6 +24,11 @@
         transform: translateX(-50%) translateY(0);
     }
 
+/* O véu não tem nada para rolar, por isso não aceita gesto nenhum: o
+ * `touch-action` não se herda, e sem isto um arrasto sobre a janela ia direito
+ * ao documento e levava tudo de lado. As grelhas lá dentro (`.menu-grid`,
+ * `.lb-list`) têm o seu próprio `pan-y` e continuam a rolar — o que manda é o
+ * `touch-action` da caixa que apanha o gesto, não o dos pais dela. */
 .overlay {
     position: absolute;
     top: 0;
@@ -37,6 +42,8 @@
     justify-content: center;
     z-index: 100;
     padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom));
+    touch-action: none;
+    overscroll-behavior: none;
 }
 
 .overlay.hidden {
@@ -66,6 +73,7 @@
         margin-bottom: 16px;
     }
 
+/* Ver a nota da `.bench-scroll`: rola na vertical e não empurra a página. */
 .menu-grid {
     display: grid;
     grid-template-columns: repeat(3,1fr);
@@ -73,6 +81,10 @@
     margin: 14px 0 18px;
     max-height: 190px;
     overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
 }
 
 .menu-grid div {
@@ -161,6 +173,10 @@
 .lb-list {
     max-height: 320px;
     overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
     margin-bottom: 16px;
     text-align: left;
 }

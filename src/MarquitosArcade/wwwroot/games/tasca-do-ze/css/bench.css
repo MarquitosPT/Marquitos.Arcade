@@ -29,11 +29,17 @@
             background: var(--rosa);
         }
 
+/* A bancada rola na vertical, e só nela: sem o `overflow-x` escrito o eixo em
+ * `visible` passava a `auto` e a grelha aceitava arrasto lateral; sem o
+ * `contain`, chegar ao fim da grelha empurrava a página. */
 .bench-scroll {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
     padding-bottom: 4px;
 }
 

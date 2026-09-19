@@ -37,7 +37,11 @@ input {
  * Também não pode haver `overflow: hidden` aqui: o overflow da raiz manda no
  * viewport (e, se a raiz for `visible`, manda o do body), portanto escondê-lo
  * volta a recortar e a faixa regressa. Quem trava o arrasto é o
- * `touch-action: none` logo abaixo. */
+ * `touch-action: none` logo abaixo, com o `overscroll-behavior` como rede: o
+ * `touch-action` não se herda, por isso nada diz a uma caixa de scroll lá dentro
+ * (os ecrãs sobrepostos, em css/screens.css) que não pode empurrar o documento
+ * quando chega ao fim. O `none` corta essa propagação e mais a borracha do
+ * Safari, tal como no shell da arcada (wwwroot/styles.css). */
 html, body {
     width: 100%;
     height: calc(100dvh + var(--viewport-gap, 0px));
@@ -45,6 +49,7 @@ html, body {
     font-family: var(--font-body);
     color: var(--text);
     touch-action: none;
+    overscroll-behavior: none;
 }
 
 #wrap {

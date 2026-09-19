@@ -19,13 +19,14 @@ export const state = {
     /** Pontuação do adversário (IA, ou o da direita). */
     scoreA: 0,
 
-    // Um jogador: raquetes horizontais, em cima e em baixo.
+    // Campo ao alto: raquetes horizontais, em cima e em baixo.
     player: { x: 0, y: 0 },
     ai: { x: 0, y: 0 },
     paddleW: 0,
     paddleH: 0,
 
-    // Dois jogadores: raquetes verticais, à esquerda e à direita.
+    // Campo ao comprido: raquetes verticais, à esquerda e à direita. A `p1` é
+    // sempre a de quem está a jogar; a `p2` é do segundo jogador ou do CPU.
     p1: { x: 0, y: 0 },
     p2: { x: 0, y: 0 },
     paddleLen: 0,
@@ -36,6 +37,18 @@ export const state = {
 };
 
 export const isSinglePlayer = () => state.mode === MODE_SINGLE;
+
+/**
+ * Qual dos dois campos está em jogo: o de raquetes nos lados (ao comprido) ou o
+ * de raquetes em cima e em baixo (ao alto).
+ *
+ * A dois jogadores é sempre o de lado — cada um fica com a sua metade do ecrã, e
+ * em retrato nem se chega a começar, que o menu pede para rodar. Contra o CPU é a
+ * orientação que manda: ao alto joga-se de baixo para cima, como sempre, e ao
+ * comprido passa a jogar-se de lado, porque as duas raquetes horizontais ficavam
+ * quase encostadas uma à outra num ecrã com 400pt de altura.
+ */
+export const isSideField = () => !isSinglePlayer() || !state.view.isPortrait;
 
 export function resetScores() {
     state.scoreP = 0;

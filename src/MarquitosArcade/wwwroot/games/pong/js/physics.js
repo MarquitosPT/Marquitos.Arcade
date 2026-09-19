@@ -6,19 +6,42 @@
 import { TUNING } from './config.js';
 import { resetBall } from './field.js';
 import { sfx } from './audio.js';
-import { isSinglePlayer, state } from './state.js';
+import { isSideField, isSinglePlayer, state } from './state.js';
 
 export function update(dt) {
     const { ball } = state;
     ball.x += ball.vx * dt;
     ball.y += ball.vy * dt;
 
-    if (isSinglePlayer()) updateSingle(dt);
-    else updateTwoPlayer();
+    if (isSideField()) updateSideField(dt);
+    else updateEndField(dt);
 }
 
-function updateSingle(dt) {
-    // No modo a um jogador a bola tem de poder sair por cima para marcar ponto,
+/**
+ * Persegue um alvo com a velocidade da dificuldade escolhida, sem passar dele.
+ * Serve as duas raquetes do CPU: ao alto corre em x, ao comprido corre em y.
+ * @param {number} value Coordenada atual do bordo da raquete.
+ * @param {number} target Onde a raquete quer ter o seu centro (a bola).
+ * @param {number} half Meia raquete, para o alvo ser o centro e não o bordo.
+ * @param {number} side Lado do ecrã por onde a raquete corre (W ou H).
+ * @param {number} floor Coordenada mínima do bordo da raquete.
+ * @param {number} limit Coordenada máxima do bordo da raquete.
+ * @param {number} dt
+ * @returns {number} A coordenada nova.
+ */
+function chase(value, target, half, side, floor, limit, dt) {
+    const center = value + half;
+    const speed = side * TUNING.ai.speed * state.aiLevel;
+    const { deadZone } = TUNING.ai;
+
+    if (center < target - deadZone) value += Math.min(speed * dt, target - center);
+    else if (center > target + deadZone) value -= Math.min(speed * dt, center - target);
+
+    return Math.min(limit, Math.max(floor, value));
+}
+
+function updateEndField(dt) {
+    // No campo ao alto a bola tem de poder sair por cima para marcar ponto,
     // por isso aqui não há `topInset` a servir de teto — a raquete da IA é que já
     // foi colocada abaixo da barra em `layout()`.
     const { width: W, height: H } = state.view;
@@ -38,12 +61,7 @@ function updateSingle(dt) {
     }
 
     // Adversário: persegue a bola em x, limitado pela dificuldade escolhida.
-    const aiCenter = ai.x + paddleW / 2;
-    const aiSpeed = W * TUNING.single.aiSpeed * state.aiLevel;
-    const deadZone = TUNING.single.aiDeadZone;
-    if (aiCenter < ball.x - deadZone) ai.x += Math.min(aiSpeed * dt, ball.x - aiCenter);
-    else if (aiCenter > ball.x + deadZone) ai.x -= Math.min(aiSpeed * dt, aiCenter - ball.x);
-    ai.x = Math.min(W - paddleW, Math.max(0, ai.x));
+    ai.x = chase(ai.x, ball.x, paddleW / 2, W, 0, W - paddleW, dt);
 
     // Raquete do jogador (em baixo), só quando a bola vem a descer.
     if (ball.vy > 0
@@ -65,10 +83,16 @@ function updateSingle(dt) {
     else if (ball.y + ballR < 0) score('player');
 }
 
-function updateTwoPlayer() {
+function updateSideField(dt) {
     const { width: W, height: H, topInset } = state.view;
     const { ball, p1, p2, paddleLen, paddleThick, ballR } = state;
     const tol = TUNING.hitTolerance;
+
+    // Contra o CPU, a raquete da direita é dele; a dois jogadores, é do segundo
+    // jogador e quem a mexe é o input.
+    if (isSinglePlayer()) {
+        p2.y = chase(p2.y, ball.y, paddleLen / 2, H, topInset, H - paddleLen, dt);
+    }
 
     // Teto (abaixo da barra de topo) e chão.
     if (ball.y - ballR < topInset) {

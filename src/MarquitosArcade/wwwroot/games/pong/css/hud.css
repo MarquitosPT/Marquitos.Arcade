@@ -3,7 +3,9 @@
 .topBar {
     position: absolute;
     top: max(12px, env(safe-area-inset-top));
-    right: 12px;
+    /* Ao comprido o notch passa para um dos lados, e era por baixo dele que os
+       botões iam parar. Ao alto o `env` vale 0 e fica nos 12px de sempre. */
+    right: max(12px, env(safe-area-inset-right));
     display: flex;
     gap: 8px;
     z-index: 20;
