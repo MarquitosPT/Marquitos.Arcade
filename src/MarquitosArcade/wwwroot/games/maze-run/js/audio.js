@@ -18,6 +18,19 @@ export const sfx = {
         audio.beep(420, 0.1, 'triangle', 0.16);
         audio.beep(630, 0.14, 'triangle', 0.16, 0.09);
     },
+    /** Cristal de gelo: escala a subir, cristalina. */
+    freeze: () => {
+        audio.beep(880, 0.08, 'triangle', 0.15);
+        audio.beep(1174, 0.1, 'triangle', 0.15, 0.07);
+        audio.beep(1568, 0.16, 'triangle', 0.13, 0.15);
+    },
+    /** O gelo derreteu: os guardas voltam a andar. */
+    thaw: () => audio.beep(300, 0.14, 'triangle', 0.11),
+    /** Chave apanhada: a porta destrancou-se. */
+    unlock: () => {
+        audio.beep(392, 0.08, 'square', 0.16);
+        audio.beep(587, 0.16, 'square', 0.16, 0.08);
+    },
     /** Apanhado por um guarda. */
     caught: () => {
         audio.beep(180, 0.16, 'sawtooth', 0.2);

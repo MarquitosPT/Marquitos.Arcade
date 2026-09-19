@@ -52,6 +52,9 @@ function renderCleared(result) {
     html += statTable([
         ['Tempo', fmtTime(result.ms) + (result.seconds <= level.par ? ' ✅' : ` · alvo ${level.par}s`)],
         ['Cristais', `${result.collected}/${result.crystals}`],
+        // A linha das chaves só existe onde há portas: um nível sem elas não
+        // tem de explicar que apanhou zero de zero.
+        ...(result.doors ? [['Chaves', `${result.keys}/${result.doors}`]] : []),
         ['Vidas por gastar', String(result.livesLeft)],
         ['Pontos do nível', fmtPoints(result.score)],
         ['Total no jogo', fmtPoints(totalScore())]
@@ -83,6 +86,7 @@ function renderFailed(result) {
     </div>
     ${statTable([
         ['Cristais apanhados', `${result?.collected ?? 0}/${result?.crystals ?? 0}`],
+        ...(result?.doors ? [['Chaves apanhadas', `${result.keys}/${result.doors}`]] : []),
         ['Tempo em jogo', fmtTime(result?.ms || 0)]
     ])}
     <p class="resultHint">${escapeHtml(level?.hint || '')}</p>

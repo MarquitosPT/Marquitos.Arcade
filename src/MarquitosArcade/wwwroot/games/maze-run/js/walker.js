@@ -38,7 +38,13 @@ export function createWalker({ x, y, speed, dir = null }) {
         moving: false,
         speed,
         /** Direção pedida e ainda por aplicar — aplica-se na próxima célula. */
-        queued: null
+        queued: null,
+        /**
+         * Acabou de sair de um portal. Impede o salto imediato de volta: quem
+         * chega ao portal do outro lado está *em cima* dele, e sem isto voltava
+         * para trás no mesmo instante, em círculo.
+         */
+        portalHop: false
     };
 }
 
@@ -98,6 +104,8 @@ export function stepWalker(walker, maze, dt, chooseDir) {
             walker.dir = dir;
             walker.moving = true;
             walker.t = 0;
+            // Saiu da célula: o portal que estiver na próxima já conta outra vez.
+            walker.portalHop = false;
         }
 
         const step = Math.min(remaining, 1 - walker.t);
@@ -109,8 +117,28 @@ export function stepWalker(walker, maze, dt, chooseDir) {
             walker.cy += walker.dir.y;
             walker.t = 0;
             walker.moving = false;
+            enterPortal(walker, maze);
         }
     }
+}
+
+/**
+ * Um portal leva quem chega ao centro da célula para o outro lado, com a mesma
+ * direção. O salto é no centro e não a meio do caminho porque é aí que tudo o
+ * resto acontece — quem vê o salto vê-o onde está habituado a ver as decisões.
+ */
+function enterPortal(walker, maze) {
+    // Chegou aqui por um salto: está em cima do portal de saída, e voltar para
+    // trás no mesmo instante era andar em círculo. A marca levanta-se quando
+    // sair desta célula (ver `stepWalker`).
+    if (walker.portalHop) return;
+
+    const twin = maze.teleport(walker.cx, walker.cy);
+    if (!twin) return;
+
+    walker.cx = twin.x;
+    walker.cy = twin.y;
+    walker.portalHop = true;
 }
 
 /** Distância entre dois caminhantes, em células. */

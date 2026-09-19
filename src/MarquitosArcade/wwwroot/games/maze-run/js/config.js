@@ -54,6 +54,22 @@ export const SCATTER_SECONDS = 5;
 /** Células à frente do jogador que o guarda "emboscador" toma por alvo. */
 export const AMBUSH_LOOKAHEAD = 4;
 
+// ---------- Gelo ----------
+
+/**
+ * Quanto tempo um cristal de gelo deixa os guardas parados.
+ *
+ * Seis segundos é o suficiente para atravessar um corredor comprido ou ir
+ * buscar o cristal que ficou entalado entre dois guardas — e pouco para
+ * resolver um nível. Apanhar outro não soma: repõe a conta. Somar fazia com que
+ * guardar dois ou três cristais valesse mais do que jogar bem, e o nível
+ * passava a ganhar-se com o inventário em vez de com o caminho.
+ */
+export const FREEZE_SECONDS = 6;
+
+/** Últimos segundos do gelo, em que os guardas começam a tremer para avisar. */
+export const FREEZE_WARNING = 2;
+
 // ---------- Ritmo do nível ----------
 
 /** Contagem decrescente antes de arrancar o nível. */
@@ -78,6 +94,13 @@ export const DEFAULT_LIVES = 3;
 // ---------- Pontuação ----------
 
 export const CRYSTAL_POINTS = 100;
+/**
+ * Pontos por cada chave. As chaves valem mais do que um cristal porque não são
+ * opcionais: sem elas a porta não abre e o nível não se acaba. Os cristais de
+ * gelo, esses, não dão pontos nenhuns — o que eles valem são os segundos que
+ * compram, e quem os guardar para a altura certa já ganhou com isso.
+ */
+export const KEY_POINTS = 150;
 /** Pontos por cada segundo que sobra no relógio. */
 export const TIME_POINTS = 10;
 /** Pontos por cada vida que ficou por gastar. */

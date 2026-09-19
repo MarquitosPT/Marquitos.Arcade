@@ -3,6 +3,10 @@
 // Todos andam da mesma maneira (ver walker.js). O que os distingue é a célula
 // que tomam por alvo, e é só isso que um guarda novo precisa de trazer.
 //
+// Quem os manda parar é o level.js, enquanto durar um cristal de gelo: um
+// guarda congelado não anda, não conta o seu relógio de perseguição e não
+// apanha ninguém — dá para lhe passar pelo meio.
+//
 // Perseguir não é ir "na direção" do jogador: é descer um mapa de distâncias do
 // labirinto (ver `distanceField`). Um guarda que vá pela direção certa fica
 // preso na primeira parede e dá voltas parvas; um guarda que desça o mapa
@@ -18,17 +22,20 @@ import { game } from './state.js';
 import { createWalker, isOppositeDir, stepWalker, walkerCell } from './walker.js';
 
 /** Cor de cada tipo, para se perceber de relance com quem se está a lidar. */
-const GUARD_COLORS = {
+export const GUARD_COLORS = {
     [GUARD_ROAM]: '#ff5d9e',
     [GUARD_CHASE]: '#ff8a3d',
     [GUARD_AMBUSH]: '#b78bff'
 };
 
 /** Monta os guardas do nível a partir das colocações do `buildLevelLayout`. */
+/** A cor de um tipo de guarda. O menu também a usa, para o cartão bater certo com o jogo. */
+export const guardColorOf = (kind) => GUARD_COLORS[kind] || '#ff5d9e';
+
 export function createGuards(layout) {
     return layout.guards.map((guard, index) => ({
         kind: guard.kind,
-        color: GUARD_COLORS[guard.kind] || '#ff5d9e',
+        color: guardColorOf(guard.kind),
         home: { x: guard.x, y: guard.y },
         /** Desencontra os primeiros passos de guardas que começam juntos. */
         offset: index * 0.17,

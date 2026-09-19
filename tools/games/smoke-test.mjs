@@ -288,6 +288,138 @@ const GAMES = [
     },
     {
         slug: 'maze-run',
+        name: 'maze-run-mecanicas',
+        viewport: { width: 500, height: 900 },
+        canvas: true,
+        menuSelector: '#startScreen',
+        // Os níveis com portais, portas e gelo estão fechados de origem; o
+        // progresso guardado é a forma de lá chegar sem os jogar todos.
+        storage: { mazeRunProgress_v1: JSON.stringify({ v: 1, unlocked: 6, levels: {} }) },
+        async play(page) {
+            // Primeiro a montagem: cada receita tem de dar um nível jogável.
+            // É aqui que se apanha uma receita nova que gere uma porta que não
+            // tranca nada, uma chave inalcançável ou um cristal fora do mundo.
+            const broken = await page.evaluate(async () => {
+                const { LEVELS, buildLevelLayout } = await import('/games/maze-run/js/levels.js');
+                const { canReach, cellKey, distanceField } = await import('/games/maze-run/js/maze.js');
+                const problems = [];
+
+                for (const level of LEVELS) {
+                    const layout = buildLevelLayout(level);
+                    const { maze, spawn, exit } = layout;
+                    const say = (what) => problems.push(`nível ${level.id}: ${what}`);
+
+                    if (layout.crystals.length !== level.crystals) say(`${layout.crystals.length} cristais em vez de ${level.crystals}`);
+                    if (layout.freezers.length !== (level.freezers || 0)) say(`${layout.freezers.length} cristais de gelo em vez de ${level.freezers || 0}`);
+                    if (layout.portals.length !== (level.portals || 0)) say(`${layout.portals.length} portais em vez de ${level.portals || 0}`);
+                    if (layout.doors.length !== (level.doors || 0)) say(`${layout.doors.length} portas em vez de ${level.doors || 0}`);
+                    if (layout.guards.length !== level.guards.length) say(`${layout.guards.length} guardas em vez de ${level.guards.length}`);
+
+                    // Uma porta que não tranque a saída é um enfeite.
+                    if (layout.doors.length && canReach(maze, spawn, exit)) say('as portas não trancam a saída');
+
+                    // As chaves têm de sair em cadeia: sempre há uma alcançável.
+                    let opened = 0;
+                    for (let round = 0; round < layout.doors.length; round++) {
+                        const field = distanceField(maze, spawn.x, spawn.y);
+                        const next = layout.doors.find((door) => !door.open && field[door.key.y * maze.cols + door.key.x] >= 0);
+                        if (!next) break;
+                        next.open = true;
+                        maze.blocked.delete(cellKey(next.cell.x, next.cell.y));
+                        opened++;
+                    }
+                    if (opened !== layout.doors.length) say(`só ${opened} de ${layout.doors.length} portas se conseguem abrir`);
+
+                    // Com tudo aberto, tudo tem de estar ao alcance.
+                    const open = distanceField(maze, spawn.x, spawn.y);
+                    const unreachable = [exit, ...layout.crystals, ...layout.freezers, ...layout.guards]
+                        .filter((cell) => open[cell.y * maze.cols + cell.x] < 0);
+                    if (unreachable.length) say(`${unreachable.length} peça(s) fora do alcance`);
+                }
+
+                return problems;
+            });
+            if (broken.length) throw new Error(`receitas com problemas:\n  ${broken.join('\n  ')}`);
+
+            // E agora as peças em jogo, no nível que tem tudo.
+            await page.click('#chooseBtn');
+            await page.waitForSelector('.levelCard[data-value="6"]');
+            await sleep(500);
+            await page.click('.levelCard[data-value="6"]');
+            await waitForMazePlaying(page);
+
+            // Portal: entrar num leva ao outro.
+            const hop = await page.evaluate(async () => {
+                const { game } = await import('/games/maze-run/js/state.js');
+                const { exitsFrom } = await import('/games/maze-run/js/maze.js');
+                const portal = game.portals[0];
+                const dir = exitsFrom(game.maze, portal.a.x, portal.a.y)[0];
+                game.player.cx = portal.a.x + dir.x;
+                game.player.cy = portal.a.y + dir.y;
+                game.player.t = 0;
+                game.player.moving = false;
+                game.player.portalHop = false;
+                game.player.queued = { x: -dir.x, y: -dir.y };
+                return { b: portal.b };
+            });
+            await sleep(900);
+            const landed = await page.evaluate(async () => {
+                const { game } = await import('/games/maze-run/js/state.js');
+                return { x: game.player.cx, y: game.player.cy };
+            });
+            const stepsFromTwin = Math.abs(landed.x - hop.b.x) + Math.abs(landed.y - hop.b.y);
+            if (stepsFromTwin > 2) throw new Error(`o portal não saiu do outro lado: ficou em ${landed.x},${landed.y} e o par é ${hop.b.x},${hop.b.y}`);
+
+            // Gelo: congela os guardas, e congelados não apanham ninguém.
+            const frozen = await page.evaluate(async () => {
+                const { game } = await import('/games/maze-run/js/state.js');
+                const freezer = game.freezers[0];
+                game.player.cx = freezer.x;
+                game.player.cy = freezer.y;
+                game.player.t = 0;
+                game.player.moving = false;
+                await new Promise((resolve) => setTimeout(resolve, 300));
+
+                // Um guarda em cima do jogador: sem gelo era uma vida a menos.
+                const guard = game.guards[0];
+                guard.walker.cx = game.player.cx;
+                guard.walker.cy = game.player.cy;
+                guard.walker.t = 0;
+                guard.walker.moving = false;
+                const before = game.guards.map((g) => `${g.walker.cx},${g.walker.cy}`);
+                await new Promise((resolve) => setTimeout(resolve, 700));
+                return {
+                    timer: game.freezeTimer,
+                    lives: game.lives,
+                    phase: game.phase,
+                    moved: game.guards.some((g, i) => `${g.walker.cx},${g.walker.cy}` !== before[i])
+                };
+            });
+            if (!(frozen.timer > 0)) throw new Error('o cristal de gelo não congelou nada');
+            if (frozen.moved) throw new Error('um guarda congelado andou');
+            if (frozen.lives !== 3 || frozen.phase !== 'playing') throw new Error(`um guarda congelado apanhou o jogador (vidas ${frozen.lives}, fase ${frozen.phase})`);
+
+            // Porta: fechada não deixa passar, e a chave abre-a.
+            const door = await page.evaluate(async () => {
+                const { game } = await import('/games/maze-run/js/state.js');
+                const target = game.doors[0];
+                const before = game.maze.isFloor(target.cell.x, target.cell.y);
+                game.player.cx = target.key.x;
+                game.player.cy = target.key.y;
+                game.player.t = 0;
+                game.player.moving = false;
+                await new Promise((resolve) => setTimeout(resolve, 400));
+                return { before, after: game.maze.isFloor(target.cell.x, target.cell.y), open: game.doors[0].open, keys: game.keysTaken };
+            });
+            if (door.before) throw new Error('a porta trancada deixava passar');
+            if (!door.open || !door.after) throw new Error('a chave não abriu a porta');
+            if (door.keys !== 1) throw new Error(`contou ${door.keys} chaves em vez de 1`);
+
+            await sleep(400);
+        }
+    },
+    {
+        slug: 'maze-run',
         name: 'maze-run-resultados',
         viewport: { width: 450, height: 800 },
         canvas: true,
@@ -487,6 +619,18 @@ async function runGame(browser, game, baseUrl) {
     const problems = [];
     const context = await browser.newContext({ viewport: game.viewport, deviceScaleFactor: 1 });
     await context.addInitScript(SEED_RANDOM);
+    // Estado que o jogo já devia ter encontrado no aparelho — por exemplo o
+    // progresso que abre os níveis de um jogo com níveis. Tem de ser escrito
+    // antes de a página abrir, senão o jogo já leu o que lá estava.
+    if (game.storage) {
+        await context.addInitScript((entries) => {
+            try {
+                for (const [key, value] of entries) localStorage.setItem(key, value);
+            } catch {
+                // Armazenamento bloqueado: o cenário corre na mesma, com o que houver.
+            }
+        }, Object.entries(game.storage));
+    }
     context.setDefaultTimeout(SELECTOR_TIMEOUT_MS);
     context.setDefaultNavigationTimeout(NAVIGATION_TIMEOUT_MS);
     const page = await context.newPage();

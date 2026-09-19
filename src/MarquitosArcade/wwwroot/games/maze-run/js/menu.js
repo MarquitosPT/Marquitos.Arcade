@@ -38,11 +38,13 @@ function mazePreviewSvg(level, { locked }) {
     const { maze } = layoutFor(level);
     const segments = [];
 
+    // `isWallStatic`: o cartão mostra a forma do labirinto, e as portas fechadas
+    // não são paredes — quem diz que o nível tem portas é a etiqueta aqui em baixo.
     for (const { x, y } of maze.floors) {
-        if (maze.isWall(x, y - 1)) segments.push(`M${x} ${y}h1`);
-        if (maze.isWall(x, y + 1)) segments.push(`M${x} ${y + 1}h1`);
-        if (maze.isWall(x - 1, y)) segments.push(`M${x} ${y}v1`);
-        if (maze.isWall(x + 1, y)) segments.push(`M${x + 1} ${y}v1`);
+        if (maze.isWallStatic(x, y - 1)) segments.push(`M${x} ${y}h1`);
+        if (maze.isWallStatic(x, y + 1)) segments.push(`M${x} ${y + 1}h1`);
+        if (maze.isWallStatic(x - 1, y)) segments.push(`M${x} ${y}v1`);
+        if (maze.isWallStatic(x + 1, y)) segments.push(`M${x + 1} ${y}v1`);
     }
 
     const width = maze.cols + PREVIEW_PAD * 2;
@@ -59,6 +61,29 @@ function starRow(stars) {
     const filled = Math.max(0, Math.min(MAX_STARS, stars || 0));
     const dots = Array.from({ length: MAX_STARS }, (_, i) => `<i class="${i < filled ? '' : 'off'}">★</i>`).join('');
     return `<span class="levelStars" role="img" aria-label="${filled} de ${MAX_STARS} estrelas">${dots}</span>`;
+}
+
+/**
+ * O que este nível tem além de cristais e guardas. Vale a pena mostrar também
+ * nos níveis fechados: é assim que se vê o que vem a seguir e porque é que vale
+ * a pena lá chegar.
+ */
+function levelTags(level) {
+    const tags = [];
+    if (level.portals) tags.push(['\u{1F300}', level.portals, 'portal', 'portais']);
+    if (level.doors) tags.push(['\u{1F511}', level.doors, 'porta trancada', 'portas trancadas']);
+    if (level.freezers) tags.push(['\u2744', level.freezers, 'cristal de gelo', 'cristais de gelo']);
+    if (!tags.length) return '';
+
+    const chips = tags
+        .map(([icon, count, one, many]) =>
+            `<span class="levelTag" title="${count} ${count === 1 ? one : many}">
+                <i aria-hidden="true">${icon}</i>${count}
+                <span class="visuallyHidden">${count === 1 ? one : many}</span>
+            </span>`)
+        .join('');
+
+    return `<span class="levelTags">${chips}</span>`;
 }
 
 function levelCard(level) {
@@ -88,6 +113,7 @@ function levelCard(level) {
             <span class="levelNumber">Nível ${level.id}</span>
             <span class="levelName">${escapeHtml(level.name)}</span>
             ${meta}
+            ${levelTags(level)}
             ${unlocked && best ? starRow(best.stars) : ''}
         </span>
     </button>`;

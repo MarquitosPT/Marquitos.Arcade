@@ -16,7 +16,7 @@ Blazor Web App (.NET 10, render mode Interactive Server) com ASP.NET Core Identi
 - `src/MarquitosArcade/wwwroot/games/<slug>/`: um jogo por pasta, cada um com o seu `index.html` (só markup), `css/`, `js/` (módulos ES) e `assets/`. Ver [Estrutura de um jogo](#estrutura-de-um-jogo) e, para o porquê desta organização em vez de um projeto .NET por jogo, [docs/estrutura-dos-jogos.md](docs/estrutura-dos-jogos.md).
   - `tasca-do-ze/`: mini-jogo "Tasca do Zé" (gestão de pedidos), com leaderboard persistido via `/api/scores/tasca-do-ze`.
   - `pong/`: Pong Retro, com modo 1 jogador (vs. CPU, pontuação submetida via `/api/scores/pong`) e 2 jogadores.
-  - `maze-run/`: Maze Run, labirintos por níveis — apanhar os cristais abre a saída, e há guardas a impedi-lo. Os níveis vão-se desbloqueando à medida que se concluem, e o progresso fica guardado na conta de quem tem sessão iniciada (ver [Progresso e níveis](#progresso-e-níveis)). Os labirintos não estão desenhados à mão: saem de uma semente por nível (`buildMaze` em `js/maze.js`), como as pistas do Pixel Racing saem do `buildTrack` — **acrescentar um nível é acrescentar uma entrada ao array `LEVELS` do `js/levels.js`**, e mais nada.
+  - `maze-run/`: Maze Run, labirintos por níveis — apanhar os cristais abre a saída, e há guardas a impedi-lo. Pelo caminho há cristais de gelo que os congelam, portais que ligam duas pontas do labirinto e portas trancadas com a sua chave (ver [As peças do Maze Run](#as-peças-do-maze-run)). Os níveis vão-se desbloqueando à medida que se concluem, e o progresso fica guardado na conta de quem tem sessão iniciada (ver [Progresso e níveis](#progresso-e-níveis)). Os labirintos não estão desenhados à mão: saem de uma semente por nível (`buildMaze` em `js/maze.js`), como as pistas do Pixel Racing saem do `buildTrack` — **acrescentar um nível é acrescentar uma entrada ao array `LEVELS` do `js/levels.js`**, e mais nada.
   - `pixel-racing/`: Pixel Racing, corrida simples em qualquer uma das seis pistas ou campeonato de três, com pontuação via `/api/scores/pixel-racing`. O menu tem dois passos: o primeiro ecrã pergunta só o nome (a quem não tem sessão iniciada) e o modo; a pista (ou a taça, no campeonato), a cor do carro e a dificuldade ficam no ecrã seguinte, já a saber o que se vai correr. As pistas são geradas por `buildTrack` a partir de uma superelipse com harmónicos, e o grau de perícia que o cartão mostra é medido no traçado (`corneringProfile`) em vez de escrito à mão: as três primeiras fazem-se sem levantar o pé, as três da taça Pro são mais compridas, mais estreitas e têm curvas que obrigam a travar ou a entrar a derrapar. A cor sai da paleta única de `CAR_COLORS` e os adversários ficam com três das restantes, por isso nunca há dois carros da mesma cor na pista.
 - `src/MarquitosArcade/wwwroot/lib/arcade/`: SDK partilhado pelos jogos (áudio, leaderboard, armazenamento, viewport do canvas, ciclo de jogo, barra de topo, ecrã de arranque). Módulos ES sem dependências externas. O `splash.css`/`splash.js`/`splash-boot.js` são a exceção que também serve o portal — ver [Ecrã de arranque](#ecrã-de-arranque).
 - `tools/games/smoke-test.mjs`: smoke-test dos jogos em Chromium headless, corrido em cada pull request por `.github/workflows/jogos-smoke-test.yml`. Ver [Testar os jogos](#testar-os-jogos).
@@ -354,6 +354,89 @@ Eliminar a conta apaga também o progresso, na mesma transação que remove o
 utilizador e as pontuações (ver `DeletePersonalData.razor`) — é o que a política
 de privacidade promete. Ao contrário da tabela `Scores`, esta nasceu já com essa
 limpeza feita, por isso não há órfãs antigas para varrer no arranque.
+
+## As peças do Maze Run
+
+Além dos cristais e dos guardas, um nível pode ter três coisas. Todas se ligam
+pela receita (`js/levels.js`) e nenhuma precisa de um mapa desenhado à mão:
+
+| peça                | o que faz                                                        | campo na receita |
+| ------------------- | ---------------------------------------------------------------- | ---------------- |
+| Cristal de gelo     | congela os guardas uns segundos; congelados não andam nem apanham | `freezers: 2`    |
+| Portal              | liga duas pontas do labirinto; o jogador **e os guardas** usam-no | `portals: 1`     |
+| Porta trancada      | corta o caminho até a sua chave aparecer; também trava os guardas  | `doors: 1`       |
+
+Três decisões que não são óbvias, e o porquê:
+
+- **O gelo repõe, não soma.** Apanhar dois cristais seguidos não dá doze
+  segundos, dá seis outra vez (`FREEZE_SECONDS`). Somar fazia com que guardar
+  cristais valesse mais do que jogar bem, e o nível passava a ganhar-se com o
+  inventário em vez de com o caminho. E não sobrevive a uma vida perdida — era
+  prémio a mais por um erro.
+- **Os guardas atravessam os portais.** É o que impede que um portal seja um
+  botão de fuga: o atalho é de toda a gente. Para isso o mapa de distâncias dos
+  guardas (`distanceField`) trata um portal como uma porta ao lado — sem isso,
+  um guarda passava ao lado do portal sem o ver e o jogador tinha um atalho que
+  a perseguição não conhecia.
+- **A chave abre a porta onde quer que ela esteja.** Obrigar a voltar lá com a
+  chave na mão era um segundo atravessamento do labirinto para uma decisão já
+  tomada.
+
+### O problema difícil: trancar um labirinto cheio de laços
+
+Uma porta só é uma porta se trancar mesmo alguma coisa. A forma ingénua de a
+colocar — escolher uma célula no caminho para a saída — **não funciona**: os
+labirintos são "entrançados" de propósito (o `braid` abre becos sem saída, para
+uma perseguição ter sempre uma volta a dar), e num labirinto com laços fechar
+uma célula ao calhar quase nunca corta o caminho. Dá-se a volta, e a porta passa
+a enfeite.
+
+O que `placeDoors` faz:
+
+1. **A saída vai para o fundo de um beco** quando o nível tem portas. A boca de
+   um beco corta-o do resto por construção — assim existe de certeza onde pôr a
+   porta.
+2. **Procura-se um corte a sério**: cada célula candidata é fechada à
+   experiência e faz-se uma travessia do labirinto; só serve a que deixa mesmo o
+   destino inalcançável. Primeiro no caminho mais curto (barato, quase sempre
+   chega), depois em todo o labirinto. Entre as que servem ganham os corredores
+   — uma porta num cruzamento não se lê.
+3. **A chave fica o mais longe possível da porta**, e não do início. Foi a
+   medida que parecia óbvia e estava errada: a porta está lá ao fundo, longe do
+   início, e a célula mais longe do início que ainda é alcançável é precisamente
+   a que está encostada a ela — a chave calhava colada ao cadeado.
+4. **Com mais do que uma porta, elas encadeiam-se**: a primeira tranca a saída,
+   a segunda tranca a chave da primeira. Quem joga percebe a ordem sem lhe
+   explicarem. Por isso a chave de uma porta que não é a última só pode ir para
+   um sítio onde ainda seja possível cortar o caminho até lá — senão o nível
+   ficava com menos uma porta do que a receita pede.
+
+Nem todos os labirintos dão para isto. **Num nível com portas, a semente
+escolhe-se pelo que sai**: monta-se, conta-se o que lá ficou e troca-se a
+semente até a receita ser cumprida. O cenário `maze-run-mecanicas` do
+smoke-test monta os níveis todos e falha se alguma receita der um nível com
+peças a menos, uma porta que não tranque a saída, uma chave que não se consiga
+alcançar ou uma peça fora do alcance — é a rede que deixa acrescentar níveis sem
+medo.
+
+### Portas e o labirinto que está pintado
+
+As paredes de um nível são pintadas uma vez para um canvas à parte e dali
+copiadas a cada frame (ver `paintMaze` em `js/render.js`). Uma porta que abre
+não pode obrigar a repintar tudo, por isso **uma porta fechada não é parede**:
+a grelha do labirinto (`maze.grid`) é a forma escavada e nunca muda, e as portas
+fechadas vivem num conjunto à parte (`maze.blocked`).
+
+Daí haver duas perguntas diferentes a fazer ao labirinto, e confundi-las dar
+bugs difíceis de ver:
+
+| pergunta               | quem responde       | quem usa                                    |
+| ---------------------- | ------------------- | ------------------------------------------- |
+| "isto é parede?"       | `isWallStatic`      | o desenho das paredes e os cartões do menu  |
+| "dá para passar aqui?" | `isFloor`/`isWall`  | o andar, as saídas de uma célula, os guardas |
+
+Como o mapa dos guardas se refaz a cada frame, uma porta que abre entra nele
+sozinha — não há nada em cache para invalidar.
 
 ## Cache do browser (e o site afixado ao ecrã principal)
 

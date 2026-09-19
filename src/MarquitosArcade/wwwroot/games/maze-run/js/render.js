@@ -13,7 +13,8 @@
 
 import { clamp } from '/lib/arcade/index.js';
 
-import { FONT_BODY, FONT_DISPLAY, MAX_STARS } from './config.js';
+import { FONT_BODY, FONT_DISPLAY, FREEZE_WARNING, MAX_STARS } from './config.js';
+import { guardColorOf } from './enemies.js';
 import { fmtClock } from './format.js';
 import { game } from './state.js';
 import { walkerPos } from './walker.js';
@@ -22,8 +23,12 @@ import { walkerPos } from './walker.js';
 const MIN_CELL = 17;
 const MAX_CELL = 44;
 
-/** Altura do painel de vidro do HUD. */
-const HUD_HEIGHT = 56;
+/**
+ * Altura do painel de vidro do HUD. Dá para três linhas: o número e o nome do
+ * nível em cima, o relógio e os cristais à direita, e em baixo o que só alguns
+ * níveis têm — as vidas, as chaves e o gelo a contar.
+ */
+const HUD_HEIGHT = 70;
 const HUD_MAX_WIDTH = 460;
 const EDGE_PAD = 12;
 
@@ -144,13 +149,15 @@ function paintFloor(mc, maze, cell) {
 function paintEdges(mc, maze, cell) {
     const path = new Path2D();
 
+    // `isWallStatic` e não `isWall`: uma porta fechada bloqueia o caminho mas não
+    // é parede, e o labirinto pintado não pode mudar quando ela abrir.
     for (const { x, y } of maze.floors) {
         const left = x * cell;
         const top = y * cell;
-        if (maze.isWall(x, y - 1)) { path.moveTo(left, top); path.lineTo(left + cell, top); }
-        if (maze.isWall(x, y + 1)) { path.moveTo(left, top + cell); path.lineTo(left + cell, top + cell); }
-        if (maze.isWall(x - 1, y)) { path.moveTo(left, top); path.lineTo(left, top + cell); }
-        if (maze.isWall(x + 1, y)) { path.moveTo(left + cell, top); path.lineTo(left + cell, top + cell); }
+        if (maze.isWallStatic(x, y - 1)) { path.moveTo(left, top); path.lineTo(left + cell, top); }
+        if (maze.isWallStatic(x, y + 1)) { path.moveTo(left, top + cell); path.lineTo(left + cell, top + cell); }
+        if (maze.isWallStatic(x - 1, y)) { path.moveTo(left, top); path.lineTo(left, top + cell); }
+        if (maze.isWallStatic(x + 1, y)) { path.moveTo(left + cell, top); path.lineTo(left + cell, top + cell); }
     }
 
     const color = accent();
@@ -188,8 +195,12 @@ export function render() {
         ctx.drawImage(mazeCanvas, 0, 0, layout.maze.cols * game.cell, layout.maze.rows * game.cell);
     }
 
+    drawPortals(layout, menuOnly);
+    drawDoors(layout, menuOnly);
     drawExit(layout);
     drawCrystals(layout, menuOnly);
+    drawFreezers(layout, menuOnly);
+    drawKeys(layout, menuOnly);
     drawGuards(menuOnly);
     if (!menuOnly && game.player) drawPlayer();
 
@@ -280,6 +291,162 @@ function drawCrystals(layout, menuOnly) {
     }
 }
 
+/**
+ * Um portal é um anel de arcos a rodar, os dois da mesma cor. A cor é o que diz
+ * onde se vai sair: com dois pares no mesmo labirinto, quem entra no amarelo
+ * tem de saber que sai no amarelo.
+ */
+function drawPortals(layout, menuOnly) {
+    const portals = menuOnly ? layout.portals : game.portals;
+    if (!portals?.length) return;
+
+    for (const portal of portals) {
+        for (const cell of [portal.a, portal.b]) {
+            const { px, py } = cellCenter(cell.x, cell.y);
+            const radius = game.cell * 0.33;
+
+            ctx.save();
+            ctx.translate(px, py);
+            ctx.rotate(game.globalClock * 1.6);
+            ctx.strokeStyle = portal.color;
+            ctx.shadowColor = hexToRgba(portal.color, 0.85);
+            ctx.shadowBlur = game.cell * 0.4;
+            ctx.lineCap = 'round';
+
+            // Dois arcos opostos por anel, e não um só: um arco sozinho lê-se
+            // como meia-lua, e um par lê-se como um anel a rodar.
+            for (let ring = 0; ring < 2; ring++) {
+                const ringRadius = radius * (1 - ring * 0.38);
+                ctx.lineWidth = Math.max(1.5, game.cell * 0.075);
+                ctx.globalAlpha = ring === 0 ? 0.95 : 0.55;
+                for (const half of [0, Math.PI]) {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, ringRadius, half + ring * 0.9, half + ring * 0.9 + Math.PI * 0.62);
+                    ctx.stroke();
+                }
+            }
+
+            ctx.restore();
+        }
+    }
+}
+
+/**
+ * Uma porta trancada é uma barreira de barras a atravessar a célula, com o
+ * buraco da fechadura ao meio. Aberta, não se desenha nada — o corredor passa a
+ * ser um corredor como os outros.
+ */
+function drawDoors(layout, menuOnly) {
+    const doors = menuOnly ? layout.doors : game.doors;
+    if (!doors?.length) return;
+
+    for (const door of doors) {
+        if (!menuOnly && door.open) continue;
+
+        const { px, py } = cellCenter(door.cell.x, door.cell.y);
+        const half = game.cell * 0.5;
+
+        ctx.save();
+        ctx.translate(px, py);
+        // As barras acompanham o corredor: numa passagem na vertical ficam
+        // deitadas, numa horizontal ficam de pé. O labirinto é o que está à
+        // vista — no menu não há nível montado, e `game.maze` está vazio.
+        if (layout.maze.isWallStatic(door.cell.x - 1, door.cell.y)) ctx.rotate(Math.PI / 2);
+
+        ctx.fillStyle = hexToRgba(door.color, 0.16);
+        ctx.fillRect(-half, -half, game.cell, game.cell);
+
+        ctx.strokeStyle = door.color;
+        ctx.shadowColor = hexToRgba(door.color, 0.7);
+        ctx.shadowBlur = game.cell * 0.3;
+        ctx.lineWidth = Math.max(2, game.cell * 0.1);
+        ctx.lineCap = 'round';
+        for (const offset of [-0.26, 0, 0.26]) {
+            ctx.beginPath();
+            ctx.moveTo(offset * game.cell, -half * 0.8);
+            ctx.lineTo(offset * game.cell, half * 0.8);
+            ctx.stroke();
+        }
+
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = door.color;
+        ctx.beginPath();
+        ctx.arc(0, 0, game.cell * 0.1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+/** A chave da porta, na cor dela — é assim que se sabe qual é que abre o quê. */
+function drawKeys(layout, menuOnly) {
+    const doors = menuOnly ? layout.doors : game.doors;
+    if (!doors?.length) return;
+
+    for (const door of doors) {
+        if (!menuOnly && door.open) continue;
+
+        const { px, py } = cellCenter(door.key.x, door.key.y);
+        const size = game.cell * 0.2;
+        const bob = Math.sin(game.globalClock * 2.6 + door.key.x) * game.cell * 0.05;
+
+        ctx.save();
+        ctx.translate(px, py + bob);
+        ctx.strokeStyle = door.color;
+        ctx.fillStyle = door.color;
+        ctx.shadowColor = hexToRgba(door.color, 0.85);
+        ctx.shadowBlur = game.cell * 0.35;
+        ctx.lineWidth = Math.max(1.5, size * 0.34);
+        ctx.lineCap = 'round';
+
+        // Argola, haste e dois dentes: uma chave lê-se mesmo a esta escala.
+        ctx.beginPath();
+        ctx.arc(0, -size * 0.55, size * 0.5, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, -size * 0.05);
+        ctx.lineTo(0, size);
+        ctx.moveTo(0, size * 0.45);
+        ctx.lineTo(size * 0.48, size * 0.45);
+        ctx.moveTo(0, size);
+        ctx.lineTo(size * 0.48, size);
+        ctx.stroke();
+        ctx.restore();
+    }
+}
+
+/** O cristal de gelo: um floco de seis pontas, a tremer devagar. */
+function drawFreezers(layout, menuOnly) {
+    const freezers = menuOnly
+        ? (layout.freezers || []).map((cell) => ({ ...cell, taken: false }))
+        : game.freezers;
+
+    for (const freezer of freezers) {
+        if (freezer.taken) continue;
+
+        const { px, py } = cellCenter(freezer.x, freezer.y);
+        const size = game.cell * 0.26;
+
+        ctx.save();
+        ctx.translate(px, py);
+        ctx.rotate(Math.sin(game.globalClock * 1.3 + freezer.x) * 0.35);
+        ctx.strokeStyle = '#bff0ff';
+        ctx.shadowColor = 'rgba(120, 220, 255, 0.95)';
+        ctx.shadowBlur = game.cell * 0.45;
+        ctx.lineWidth = Math.max(1.4, game.cell * 0.055);
+        ctx.lineCap = 'round';
+
+        for (let i = 0; i < 3; i++) {
+            const angle = (i * Math.PI) / 3;
+            ctx.beginPath();
+            ctx.moveTo(-Math.cos(angle) * size, -Math.sin(angle) * size);
+            ctx.lineTo(Math.cos(angle) * size, Math.sin(angle) * size);
+            ctx.stroke();
+        }
+
+        ctx.restore();
+    }
+}
+
 function drawPlayer() {
     const pos = walkerPos(game.player);
     const { px, py } = cellCenter(pos.x, pos.y);
@@ -321,18 +488,24 @@ function drawPlayer() {
 }
 
 function drawGuards(menuOnly) {
-    const scattering = !menuOnly && game.guardMode === 'scatter';
+    const frozen = !menuOnly && game.freezeTimer > 0;
+    const scattering = !menuOnly && !frozen && game.guardMode === 'scatter';
+    // No fim do gelo os guardas começam a tremer: é o aviso de que o tempo
+    // emprestado está a acabar, sem ser preciso olhar para o HUD.
+    const shiver = frozen && game.freezeTimer <= FREEZE_WARNING
+        ? Math.sin(game.globalClock * 34) * game.cell * 0.05
+        : 0;
 
     for (const guard of menuOnly ? menuGuards() : game.guards) {
         const pos = guard.walker ? walkerPos(guard.walker) : { x: guard.x, y: guard.y };
         const dir = guard.walker?.dir || { x: 0, y: 1 };
         const { px, py } = cellCenter(pos.x, pos.y);
         const radius = game.cell * 0.34;
-        const color = scattering ? '#5f7cff' : guard.color;
+        const color = frozen ? '#a9ecff' : scattering ? '#5f7cff' : guard.color;
 
         ctx.save();
-        ctx.translate(px, py);
-        ctx.globalAlpha = scattering ? 0.7 : 1;
+        ctx.translate(px + shiver, py);
+        ctx.globalAlpha = frozen ? 0.85 : scattering ? 0.7 : 1;
         ctx.fillStyle = color;
         ctx.shadowColor = hexToRgba(color, 0.7);
         ctx.shadowBlur = game.cell * 0.35;
@@ -359,12 +532,33 @@ function drawGuards(menuOnly) {
             ctx.fillStyle = '#f6f9ff';
             ctx.fill();
             ctx.beginPath();
-            ctx.arc(side * eye + dir.x * eye * 0.4, -radius * 0.2 + dir.y * eye * 0.4, eye * 0.42, 0, Math.PI * 2);
-            ctx.fillStyle = '#0a1020';
+            // Congelado, o olhar fica parado em frente: não está a seguir ninguém.
+            const look = frozen ? { x: 0, y: 0 } : dir;
+            ctx.arc(side * eye + look.x * eye * 0.4, -radius * 0.2 + look.y * eye * 0.4, eye * 0.42, 0, Math.PI * 2);
+            ctx.fillStyle = frozen ? '#2a5f7a' : '#0a1020';
             ctx.fill();
         }
 
+        if (frozen) drawFrost(radius);
+
         ctx.restore();
+    }
+}
+
+/** A crosta de gelo por cima do guarda: uns riscos claros e um brilho à volta. */
+function drawFrost(radius) {
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+    ctx.lineWidth = Math.max(1, radius * 0.1);
+    ctx.lineCap = 'round';
+    for (const [x0, y0, x1, y1] of [
+        [-0.7, -0.1, -0.2, 0.35],
+        [0.15, -0.5, 0.6, -0.05],
+        [-0.15, 0.1, 0.25, 0.5]
+    ]) {
+        ctx.beginPath();
+        ctx.moveTo(x0 * radius, y0 * radius);
+        ctx.lineTo(x1 * radius, y1 * radius);
+        ctx.stroke();
     }
 }
 
@@ -374,9 +568,6 @@ function menuGuards() {
     if (!layout) return [];
     return layout.guards.map((guard) => ({ ...guard, color: guardColorOf(guard.kind) }));
 }
-
-const GUARD_MENU_COLORS = { roam: '#ff5d9e', chase: '#ff8a3d', ambush: '#b78bff' };
-const guardColorOf = (kind) => GUARD_MENU_COLORS[kind] || '#ff5d9e';
 
 // ---------- HUD ----------
 
@@ -426,6 +617,7 @@ function drawHud() {
     glassPanel(x, y, width, HUD_HEIGHT, 16);
 
     const pad = 14;
+    const urgent = game.timeLeft <= 10;
     ctx.save();
     ctx.textBaseline = 'alphabetic';
 
@@ -439,8 +631,7 @@ function drawHud() {
     ctx.fillStyle = '#eef2ff';
     ctx.fillText(level.name, x + pad, y + 36);
 
-    // Relógio, à direita.
-    const urgent = game.timeLeft <= 10;
+    // Relógio e cristais, à direita.
     ctx.textAlign = 'right';
     ctx.font = `700 20px ${FONT_DISPLAY}`;
     ctx.fillStyle = urgent ? '#ff5d9e' : '#eef2ff';
@@ -448,10 +639,16 @@ function drawHud() {
 
     ctx.font = `500 11px ${FONT_BODY}`;
     ctx.fillStyle = 'rgba(238, 242, 255, 0.66)';
-    ctx.fillText(`${game.collected}/${game.crystals.length} cristais`, x + width - pad, y + 44);
+    ctx.fillText(`${game.collected}/${game.crystals.length} cristais`, x + width - pad, y + 46);
     ctx.textAlign = 'left';
 
-    drawLives(x + pad, y + 44);
+    // Linha de baixo: as vidas e, a seguir, só o que este nível tem. Uma linha
+    // só para isto, e não encostado ao nome, porque o que aqui aparece muda de
+    // nível para nível — e um nome comprido não pode empurrar as chaves para
+    // fora do painel.
+    let cursor = drawLives(x + pad, y + 54);
+    if (game.doors.length) cursor = drawKeyCount(cursor + 12, y + 54);
+    if (game.freezeTimer > 0) drawFreezeChip(cursor + 12, y + 54);
 
     // A barra do tempo, rente ao fundo do painel.
     const left = Math.max(0, game.timeLeft / level.seconds);
@@ -463,12 +660,15 @@ function drawHud() {
     ctx.restore();
 }
 
-/** As vidas, em pontos: cheios os que restam, vazios os que já se gastaram. */
+/**
+ * As vidas, em pontos: cheios os que restam, vazios os que já se gastaram.
+ * Devolve onde acabou, para o que vier a seguir saber onde começa.
+ */
 function drawLives(x, y) {
     const total = game.lives + game.livesLost;
     for (let i = 0; i < total; i++) {
         ctx.beginPath();
-        ctx.arc(x + 5 + i * 14, y - 4, 4.5, 0, Math.PI * 2);
+        ctx.arc(x + 5 + i * 13, y, 4.5, 0, Math.PI * 2);
         if (i < game.lives) {
             ctx.fillStyle = '#35e0ff';
             ctx.fill();
@@ -478,6 +678,60 @@ function drawLives(x, y) {
             ctx.stroke();
         }
     }
+    return x + total * 13;
+}
+
+/** Chaves apanhadas, na cor da porta que falta abrir. */
+function drawKeyCount(x, y) {
+    const missing = game.doors.find((door) => !door.open);
+    const color = missing ? missing.color : 'rgba(238, 242, 255, 0.45)';
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.6;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.arc(0, -3.5, 3.2, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, -0.5);
+    ctx.lineTo(0, 5.5);
+    ctx.moveTo(0, 3.5);
+    ctx.lineTo(3.4, 3.5);
+    ctx.stroke();
+    ctx.restore();
+
+    const label = `${game.keysTaken}/${game.doors.length}`;
+    ctx.font = `700 12px ${FONT_DISPLAY}`;
+    ctx.fillStyle = color;
+    ctx.fillText(label, x + 8, y + 4);
+    return x + 8 + ctx.measureText(label).width;
+}
+
+/** Quanto falta de guardas congelados — aparece só enquanto durar. */
+function drawFreezeChip(x, y) {
+    const seconds = Math.ceil(game.freezeTimer);
+    const urgent = game.freezeTimer <= FREEZE_WARNING;
+    const color = urgent && Math.floor(game.globalClock * 6) % 2 === 0 ? 'rgba(191, 240, 255, 0.45)' : '#bff0ff';
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.6;
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 3; i++) {
+        const angle = (i * Math.PI) / 3;
+        ctx.beginPath();
+        ctx.moveTo(-Math.cos(angle) * 4.5, -Math.sin(angle) * 4.5);
+        ctx.lineTo(Math.cos(angle) * 4.5, Math.sin(angle) * 4.5);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    ctx.font = `700 12px ${FONT_DISPLAY}`;
+    ctx.fillStyle = color;
+    ctx.fillText(`${seconds}s`, x + 8, y + 4);
 }
 
 // ---------- Avisos por cima do labirinto ----------

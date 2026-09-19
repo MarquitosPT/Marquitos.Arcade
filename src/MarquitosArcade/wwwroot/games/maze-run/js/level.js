@@ -7,11 +7,13 @@
 
 import {
     CATCH_RADIUS, CAUGHT_PAUSE, CLEAR_PAUSE, COUNTDOWN_FROM, CRYSTAL_POINTS,
-    LEVEL_POINTS, LIFE_POINTS, PICKUP_RADIUS, PLAYER_SPEED, RESPAWN_COUNTDOWN, TIME_POINTS
+    FREEZE_SECONDS, KEY_POINTS, LEVEL_POINTS, LIFE_POINTS, PICKUP_RADIUS,
+    PLAYER_SPEED, RESPAWN_COUNTDOWN, TIME_POINTS
 } from './config.js';
 import { sfx } from './audio.js';
 import { createGuards, resetGuardMode, resetGuards, updateGuardMode, updateGuards } from './enemies.js';
 import { buildLevelLayout, levelById, livesOf, starsFor } from './levels.js';
+import { cellKey } from './maze.js';
 import { recordClear, totalScore } from './progress.js';
 import { scores } from './scores.js';
 import { game, resetGame, session } from './state.js';
@@ -34,6 +36,12 @@ export function startLevel(levelId) {
     game.level = level;
     game.maze = game.layout.maze;
     game.crystals = game.layout.crystals.map((cell) => ({ x: cell.x, y: cell.y, taken: false }));
+    game.freezers = game.layout.freezers.map((cell) => ({ x: cell.x, y: cell.y, taken: false }));
+    game.portals = game.layout.portals;
+    // As portas são do nível, não do desenho do labirinto: a cópia é para uma
+    // tentativa abrir portas sem estragar o `layout`, que se volta a usar tal e
+    // qual ao repetir o nível.
+    game.doors = game.layout.doors.map((door) => ({ ...door, open: false }));
     game.guards = createGuards(game.layout);
     game.player = createWalker({ ...game.layout.spawn, speed: PLAYER_SPEED });
     game.lives = livesOf(level);
@@ -41,8 +49,15 @@ export function startLevel(levelId) {
     game.elapsed = 0;
     game.collected = 0;
     game.livesLost = 0;
+    game.keysTaken = 0;
+    game.freezeTimer = 0;
     game.exitOpen = false;
     game.result = null;
+
+    // Fechar tudo outra vez: repetir um nível não pode herdar as portas que se
+    // abriram na tentativa anterior (o labirinto é reconstruído, mas isto diz
+    // em voz alta de quem é a responsabilidade).
+    for (const door of game.doors) game.maze.blocked.add(cellKey(door.cell.x, door.cell.y));
 
     layoutMaze();
     beginCountdown(COUNTDOWN_FROM);
@@ -96,13 +111,28 @@ export function updateLevel(dt) {
     // verificar-se antes de se mexer mais alguém.
     if (game.phase !== 'playing') return;
 
-    updateGuardMode(dt);
+    tickFreeze(dt);
     stepWalker(game.player, game.maze, dt, playerDir);
-    updateGuards(dt);
 
-    collectCrystals();
+    // Congelados, os guardas não andam nem contam o seu próprio relógio: a
+    // janela de perseguição que estava a decorrer fica onde estava e retoma
+    // quando o gelo derreter.
+    if (!isFrozen()) {
+        updateGuardMode(dt);
+        updateGuards(dt);
+    }
+
+    collectPickups();
     checkExit();
-    checkCaught();
+    if (!isFrozen()) checkCaught();
+}
+
+export const isFrozen = () => game.freezeTimer > 0;
+
+function tickFreeze(dt) {
+    if (game.freezeTimer <= 0) return;
+    game.freezeTimer = Math.max(0, game.freezeTimer - dt);
+    if (game.freezeTimer === 0) sfx.thaw();
 }
 
 /**
@@ -136,14 +166,13 @@ function tickClock(dt) {
     }
 }
 
-function collectCrystals() {
+/** Tudo o que se apanha por passar por cima: cristais, gelo e chaves. */
+function collectPickups() {
     const pos = walkerPos(game.player);
+    const touches = (cell) => Math.hypot(pos.x - cell.x, pos.y - cell.y) <= PICKUP_RADIUS;
 
-    for (let i = 0; i < game.crystals.length; i++) {
-        const crystal = game.crystals[i];
-        if (crystal.taken) continue;
-        if (Math.hypot(pos.x - crystal.x, pos.y - crystal.y) > PICKUP_RADIUS) continue;
-
+    for (const crystal of game.crystals) {
+        if (crystal.taken || !touches(crystal)) continue;
         crystal.taken = true;
         game.collected++;
         sfx.crystal(game.collected, game.crystals.length);
@@ -152,6 +181,25 @@ function collectCrystals() {
             game.exitOpen = true;
             sfx.exitOpen();
         }
+    }
+
+    for (const freezer of game.freezers) {
+        if (freezer.taken || !touches(freezer)) continue;
+        freezer.taken = true;
+        // Repõe a conta em vez de somar — ver FREEZE_SECONDS no config.js.
+        game.freezeTimer = FREEZE_SECONDS;
+        sfx.freeze();
+    }
+
+    for (const door of game.doors) {
+        if (door.open || !touches(door.key)) continue;
+        door.open = true;
+        game.keysTaken++;
+        // A chave abre a porta onde quer que ela esteja: obrigar a voltar lá
+        // com a chave na mão era um segundo atravessamento do labirinto para
+        // uma decisão que já estava tomada.
+        game.maze.blocked.delete(cellKey(door.cell.x, door.cell.y));
+        sfx.unlock();
     }
 }
 
@@ -193,6 +241,9 @@ export function respawn() {
     game.player.queued = null;
     game.player.moving = false;
     resetGuards(game.guards);
+    // O gelo não sobrevive a uma vida perdida: era prémio a mais por um erro,
+    // e os guardas voltam ao sítio de qualquer maneira.
+    game.freezeTimer = 0;
     beginCountdown(RESPAWN_COUNTDOWN);
 }
 
@@ -214,6 +265,8 @@ function finishLevel(cleared, reason = null) {
         ms,
         collected: game.collected,
         crystals: game.crystals.length,
+        keys: game.keysTaken,
+        doors: game.doors.length,
         livesLeft: Math.max(0, game.lives),
         livesLost: game.livesLost,
         stars: 0,
@@ -242,12 +295,14 @@ function finishLevel(cleared, reason = null) {
 }
 
 /**
- * Os pontos de um nível concluído: os cristais, o que sobrou do relógio, as
- * vidas por gastar e um prémio que cresce com o número do nível — sem ele, os
- * níveis difíceis rendiam o mesmo que os fáceis e não valia a pena avançar.
+ * Os pontos de um nível concluído: os cristais, as chaves, o que sobrou do
+ * relógio, as vidas por gastar e um prémio que cresce com o número do nível —
+ * sem ele, os níveis difíceis rendiam o mesmo que os fáceis e não valia a pena
+ * avançar.
  */
 function scoreFor(level, result) {
     return result.collected * CRYSTAL_POINTS
+        + result.keys * KEY_POINTS
         + Math.max(0, Math.floor(game.timeLeft)) * TIME_POINTS
         + result.livesLeft * LIFE_POINTS
         + level.id * LEVEL_POINTS;

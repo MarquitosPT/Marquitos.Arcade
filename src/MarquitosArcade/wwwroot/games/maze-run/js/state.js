@@ -40,6 +40,18 @@ export const game = {
     collected: 0,
     exitOpen: false,
 
+    /** [{ x, y, taken }] — os cristais de gelo, que não contam para a saída. */
+    freezers: [],
+    /** Segundos que faltam de guardas congelados. Zero é o normal. */
+    freezeTimer: 0,
+
+    /** [{ a, b, color }] — os pares de portais deste nível. */
+    portals: [],
+
+    /** [{ cell, key, color, open }] — portas trancadas e a chave de cada uma. */
+    doors: [],
+    keysTaken: 0,
+
     lives: 0,
     livesLost: 0,
     timeLeft: 0,
@@ -88,6 +100,11 @@ export function resetGame() {
     game.crystals = [];
     game.collected = 0;
     game.exitOpen = false;
+    game.freezers = [];
+    game.freezeTimer = 0;
+    game.portals = [];
+    game.doors = [];
+    game.keysTaken = 0;
     game.lives = 0;
     game.livesLost = 0;
     game.timeLeft = 0;
