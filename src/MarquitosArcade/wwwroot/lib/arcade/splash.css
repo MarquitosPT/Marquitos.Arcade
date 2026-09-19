@@ -77,6 +77,17 @@
   /* O ecrã tapa tudo: nada por baixo deve receber toques nem fazer scroll. */
   touch-action: none;
   overscroll-behavior: contain;
+  /* Nada aqui é para selecionar: é um ecrã de espera, não texto para copiar.
+     Sem isto, um toque demorado no logótipo ou no "A carregar..." abre a lupa
+     de seleção do iOS mesmo antes de o jogo aparecer.
+
+     O prefixo `-webkit-` não é decorativo: o Safari só passou a aceitar a
+     propriedade sem prefixo há bem pouco tempo, e é justamente em iOS que a
+     lupa aparece. O `touch-callout` trata do menu que o iOS abre ao segurar
+     uma imagem — o logótipo é uma. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
   /* A poeira deriva devagar; o failsafe é a rede de segurança lá do fundo. */
   animation:
     arcade-splash-dust 60s linear infinite,

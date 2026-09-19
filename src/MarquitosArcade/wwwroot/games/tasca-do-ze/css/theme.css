@@ -45,7 +45,16 @@ body {
     background: var(--massa);
     color: var(--tinta);
     overflow-x: clip;
+    /* O `-webkit-` é o que conta em iOS: o Safari só há pouco aceita esta
+       propriedade sem prefixo, e é lá que o toque demorado abre a lupa. */
+    -webkit-user-select: none;
     user-select: none;
+}
+
+/* O texto do campo do nome tem de poder ser selecionado para se editar. */
+input {
+    -webkit-user-select: text;
+    user-select: text;
 }
 
 .azulejo-bg {
