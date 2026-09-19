@@ -1504,6 +1504,18 @@ tbody tr:last-child td {
   background: var(--glass-bg-soft);
 }
 
+/* Nota discreta ao lado do nome: marca quem jogou sem sessão iniciada.
+   Fica sempre esbatida, mesmo nas linhas do pódio (que puxam o texto a negrito). */
+.player-tag {
+  margin-left: 0.35rem;
+  font-size: 0.74em;
+  font-weight: 500;
+  font-style: italic;
+  color: var(--muted);
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
 .empty-state {
   color: var(--muted);
   text-align: center;

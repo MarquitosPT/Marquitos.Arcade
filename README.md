@@ -20,6 +20,7 @@ Blazor Web App (.NET 10, render mode Interactive Server) com ASP.NET Core Identi
 - `src/MarquitosArcade/wwwroot/lib/arcade/`: SDK partilhado pelos jogos (áudio, leaderboard, armazenamento, viewport do canvas, ciclo de jogo, barra de topo, ecrã de arranque). Módulos ES sem dependências externas. O `splash.css`/`splash.js`/`splash-boot.js` são a exceção que também serve o portal — ver [Ecrã de arranque](#ecrã-de-arranque).
 - `tools/games/smoke-test.mjs`: smoke-test dos jogos em Chromium headless, corrido em cada pull request por `.github/workflows/jogos-smoke-test.yml`. Ver [Testar os jogos](#testar-os-jogos).
 - `src/MarquitosArcade/Scores/ScoresEndpoints.cs`: endpoint genérico `GET/POST /api/scores/:gameId`, persistido na tabela `Scores` (EF Core + SQLite). Se o pedido vier de um utilizador autenticado, o nome do leaderboard vem da conta (evita spoofing de nomes); caso contrário aceita o nome livre submetido pelo jogo.
+- `src/MarquitosArcade/Scores/ScoreMaintenance.cs`: limpeza da tabela `Scores` no arranque — apaga as pontuações que ficaram a apontar para contas já eliminadas. Ver [Pontuações](#pontuações).
 - `src/MarquitosArcade/Web/CachePolicy.cs`: política de cache HTTP — `immutable` para os URLs com impressão digital (`?v=`), `no-cache` para todo o resto. Ver [Cache do browser](#cache-do-browser-e-o-site-afixado-ao-ecrã-principal).
 - `src/MarquitosArcade/Data/`: `ApplicationDbContext`, `ApplicationUser` e as migrations do EF Core.
 - `src/MarquitosArcade/Components/Account/`: páginas de login/registo/gestão de conta scaffolded pelo template Identity do ASP.NET Core (login em `/Account/Login`, registo em `/Account/Register`, gestão em `/Account/Manage`). Sem confirmação por email — não há servidor de email configurado, por isso ficaria a bloquear amigos convidados.
@@ -242,6 +243,24 @@ o endpoint, a partir do browser.
 
 O parâmetro `?jogo=<slug>` destaca o painel desse jogo — é o que o botão 🏆 da
 barra de topo dos jogos usa, junto com a âncora `#<slug>`.
+
+Cada linha diz também se a pontuação foi feita com sessão iniciada: as entradas
+sem conta (`UserId` a `null`, o campo `registered` do `ScoreDto`) levam um
+`(não registado)` em letra mais pequena a seguir ao nome (`.player-tag` no
+`styles.css`). Sem conta o nome não está reservado, por isso a marca evita que
+uma pontuação anónima passe por ser a de um jogador registado com o mesmo nome.
+
+Quando alguém elimina a conta em `/Account/Manage/DeletePersonalData`, as
+pontuações dessa conta saem da tabela `Scores` na mesma transação que remove o
+utilizador — é o que a política de privacidade promete, e é por isso que não
+ficam entradas órfãs com o nome de quem já saiu.
+
+Isso só passou a acontecer depois de o site estar no ar, por isso o arranque
+apaga também as órfãs antigas (`UserId` a apontar para uma conta que já não
+existe em `AspNetUsers`), a seguir ao `Database.Migrate()` — ver
+`Scores/ScoreMaintenance.cs`. Não há chave estrangeira com `ON DELETE CASCADE`
+entre as duas tabelas porque acrescentá-la obrigaria o SQLite a reconstruir a
+tabela `Scores` e a migration rebentaria logo nestas mesmas linhas órfãs.
 
 ## Cache do browser (e o site afixado ao ecrã principal)
 
