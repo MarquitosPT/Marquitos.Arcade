@@ -1249,11 +1249,11 @@ main {
   --cover-bg: #050308;
 }
 
-/* O rosa é o do Maze Run desde o primeiro cartão, ainda antes de o jogo
-   existir; o fundo é o do labirinto, para a capa não piscar antes de carregar. */
+/* O rosa e o azul são os do Maze Run desde o primeiro cartão, ainda antes de o
+   jogo existir. */
 .theme-maze {
   --game-accent: #e2699f;
-  --cover-bg: #0a0d1c;
+  --cover-bg: #123a5e;
 }
 
 /* ---------- Ficha do jogo ---------- */
