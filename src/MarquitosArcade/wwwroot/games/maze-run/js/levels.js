@@ -46,11 +46,22 @@ export const PORTAL_COLORS = ['#35e0ff', '#ffc14d', '#ff5d9e'];
 export const DOOR_COLORS = ['#ffc14d', '#5ef3a0', '#ff8a3d'];
 
 /**
- * Os níveis, por ordem.
+ * Os quarenta e oito níveis, por ordem.
  *
- * A progressão é aos pares: um nível apresenta uma peça nova, o seguinte
- * obriga a usá-la antes de aparecer a próxima. É por isso que o 1 não tem nada
- * além do básico e o 12 tem tudo — quem chega lá já sabe o que cada coisa faz.
+ * A curva sobe de quatro em quatro: cada degrau apresenta ou aperta uma coisa —
+ * o tamanho do labirinto, mais um guarda, uma peça nova — e os quatro níveis do
+ * degrau dão tempo para a aprender antes do seguinte. Do 1 ao 4 há só cristais
+ * e dois guardas; o gelo entra no 5, os portais no 9, a porta trancada no 17 e
+ * a segunda porta no 25.
+ *
+ * Quarenta e oito é também o número que enche as páginas do carrossel em todos
+ * os formatos: 12 páginas de 4 ao alto, 16 de 3 ao comprido, 8 de 6 no
+ * computador (ver css/carousel.css).
+ *
+ * As sementes não foram escolhidas à mão: nem todos os labirintos dão para
+ * trancar (ver `placeDoors`), por isso cada uma foi procurada até dar um nível
+ * que cumpre a receita toda. O cenário `maze-run-mecanicas` do smoke-test monta
+ * os quarenta e oito e falha se algum deixar de cumprir.
  *
  * Os nomes são de uma palavra de propósito: no cartão do menu não podem quebrar
  * em duas linhas, senão desalinham a fila toda (ver `.levelName` em
@@ -61,198 +72,845 @@ export const LEVELS = [
         id: 1,
         name: 'Cripta',
         hint: 'Apanha os cristais todos: é isso que abre a saída.',
-        cols: 13, rows: 11, seed: 19070, braid: 0.32,
+        cols: 13, rows: 11, seed: 104729, braid: 0.3,
         crystals: 6,
-        guards: [{ kind: GUARD_ROAM, speed: 0.66 }, { kind: GUARD_CHASE, speed: 0.7 }],
-        seconds: 95, par: 45,
-        accent: '#35e0ff'
+        guards: [{ kind: GUARD_CHASE, speed: 0.64 }, { kind: GUARD_ROAM, speed: 0.625 }],
+        seconds: 104, par: 54,
+        accent: '#5ad8f2'
     },
     {
         id: 2,
         name: 'Poço',
-        hint: 'Mais um guarda. Não fiques parado no meio de um corredor.',
-        cols: 13, rows: 11, seed: 26410, braid: 0.36,
-        crystals: 7,
-        guards: [
-            { kind: GUARD_ROAM, speed: 0.68 },
-            { kind: GUARD_CHASE, speed: 0.72 },
-            { kind: GUARD_ROAM, speed: 0.66 }
-        ],
-        seconds: 95, par: 48,
-        accent: '#4fd1ff'
+        hint: 'Um guarda que vem atrás não vira para trás. Usa isso.',
+        cols: 13, rows: 11, seed: 209458, braid: 0.304,
+        crystals: 6,
+        guards: [{ kind: GUARD_CHASE, speed: 0.646 }, { kind: GUARD_ROAM, speed: 0.631 }],
+        seconds: 104, par: 54,
+        accent: '#5ac7f2'
     },
     {
         id: 3,
-        name: 'Néon',
-        hint: 'O cristal de gelo congela os guardas. Guarda-o para quando precisares.',
-        cols: 15, rows: 13, seed: 42110, braid: 0.38,
-        crystals: 8,
-        freezers: 2,
-        guards: [
-            { kind: GUARD_ROAM, speed: 0.7 },
-            { kind: GUARD_CHASE, speed: 0.76 },
-            { kind: GUARD_AMBUSH, speed: 0.74 }
-        ],
-        seconds: 105, par: 55,
-        accent: '#8b7cff'
+        name: 'Cave',
+        hint: 'Inverter a marcha é imediato; virar numa esquina espera pela esquina.',
+        cols: 13, rows: 11, seed: 314187, braid: 0.308,
+        crystals: 7,
+        guards: [{ kind: GUARD_CHASE, speed: 0.653 }, { kind: GUARD_ROAM, speed: 0.638 }],
+        seconds: 107, par: 56,
+        accent: '#5ab5f2'
     },
     {
         id: 4,
-        name: 'Fundição',
-        hint: 'Um deles anda à tua frente, não atrás: é o que te corta o caminho.',
-        cols: 15, rows: 13, seed: 33870, braid: 0.42,
-        crystals: 9,
-        freezers: 2,
-        guards: [
-            { kind: GUARD_CHASE, speed: 0.78 },
-            { kind: GUARD_CHASE, speed: 0.74 },
-            { kind: GUARD_AMBUSH, speed: 0.76 },
-            { kind: GUARD_ROAM, speed: 0.7 }
-        ],
-        seconds: 110, par: 58,
-        accent: '#a78bff'
+        name: 'Túnel',
+        hint: 'Um beco sem saída com um guarda atrás não tem jogada nenhuma.',
+        cols: 13, rows: 11, seed: 418916, braid: 0.312,
+        crystals: 7,
+        guards: [{ kind: GUARD_CHASE, speed: 0.659 }, { kind: GUARD_ROAM, speed: 0.644 }],
+        seconds: 107, par: 56,
+        accent: '#5aa3f2'
     },
     {
         id: 5,
-        name: 'Ferro',
-        hint: 'Os portais levam-te ao outro lado num instante — mas os guardas também os usam.',
-        cols: 17, rows: 13, seed: 77660, braid: 0.46,
-        crystals: 10,
-        freezers: 2,
-        portals: 1,
+        name: 'Néon',
+        hint: 'O cristal de gelo congela os guardas. Guarda-o para quando precisares.',
+        cols: 13, rows: 11, seed: 523645, braid: 0.313,
+        crystals: 7,
+        freezers: 1,
         guards: [
-            { kind: GUARD_CHASE, speed: 0.8 },
-            { kind: GUARD_CHASE, speed: 0.78 },
-            { kind: GUARD_AMBUSH, speed: 0.78 },
-            { kind: GUARD_ROAM, speed: 0.74 }
+            { kind: GUARD_CHASE, speed: 0.666 },
+            { kind: GUARD_AMBUSH, speed: 0.651 },
+            { kind: GUARD_ROAM, speed: 0.636 }
         ],
-        seconds: 115, par: 62,
-        accent: '#5ef3a0'
+        seconds: 107, par: 56,
+        accent: '#5a91f2'
     },
     {
         id: 6,
-        name: 'Espiral',
-        hint: 'Dois pares de portais. A cor diz-te onde vais sair.',
-        cols: 17, rows: 13, seed: 51940, braid: 0.48,
-        crystals: 10,
-        freezers: 2,
-        portals: 2,
+        name: 'Geleira',
+        hint: 'A porta trancada também trava os guardas. Enquanto está fechada, é um abrigo.',
+        cols: 13, rows: 11, seed: 628374, braid: 0.317,
+        crystals: 7,
+        freezers: 1,
         guards: [
-            { kind: GUARD_CHASE, speed: 0.82 },
-            { kind: GUARD_AMBUSH, speed: 0.8 },
-            { kind: GUARD_AMBUSH, speed: 0.78 },
-            { kind: GUARD_ROAM, speed: 0.76 }
+            { kind: GUARD_CHASE, speed: 0.672 },
+            { kind: GUARD_AMBUSH, speed: 0.657 },
+            { kind: GUARD_ROAM, speed: 0.642 }
         ],
-        seconds: 118, par: 65,
-        accent: '#7cff8f'
+        seconds: 107, par: 56,
+        accent: '#5a80f2'
     },
     {
         id: 7,
-        name: 'Fornalha',
-        hint: 'A chave abre a porta trancada — e enquanto estiver fechada, nem os guardas passam.',
-        cols: 19, rows: 15, seed: 91430, braid: 0.52,
-        crystals: 12,
-        freezers: 2,
-        doors: 1,
+        name: 'Fundição',
+        hint: 'O emboscador não vem atrás de ti: vai para onde tu vais.',
+        cols: 13, rows: 11, seed: 733103, braid: 0.321,
+        crystals: 8,
+        freezers: 1,
         guards: [
-            { kind: GUARD_CHASE, speed: 0.86 },
-            { kind: GUARD_CHASE, speed: 0.84 },
-            { kind: GUARD_AMBUSH, speed: 0.84 },
-            { kind: GUARD_AMBUSH, speed: 0.82 }
+            { kind: GUARD_CHASE, speed: 0.678 },
+            { kind: GUARD_AMBUSH, speed: 0.663 },
+            { kind: GUARD_ROAM, speed: 0.648 }
         ],
-        seconds: 125, par: 70,
-        accent: '#ffc14d'
+        seconds: 111, par: 58,
+        accent: '#5a6ef2'
     },
     {
         id: 8,
-        name: 'Cofre',
-        hint: 'A chave está do outro lado do portal. Vai lá e volta antes que te encontrem.',
-        cols: 19, rows: 15, seed: 60007, braid: 0.48,
-        crystals: 12,
-        freezers: 2,
-        portals: 1,
-        doors: 1,
+        name: 'Névoa',
+        hint: 'Um portal é um atalho para os dois lados.',
+        cols: 13, rows: 11, seed: 837832, braid: 0.325,
+        crystals: 8,
+        freezers: 1,
         guards: [
-            { kind: GUARD_CHASE, speed: 0.86 },
-            { kind: GUARD_AMBUSH, speed: 0.84 },
-            { kind: GUARD_AMBUSH, speed: 0.84 },
-            { kind: GUARD_ROAM, speed: 0.8 }
+            { kind: GUARD_CHASE, speed: 0.685 },
+            { kind: GUARD_AMBUSH, speed: 0.67 },
+            { kind: GUARD_ROAM, speed: 0.655 }
         ],
-        seconds: 130, par: 74,
-        accent: '#ffb02e'
+        seconds: 111, par: 58,
+        accent: '#5a5cf2'
     },
     {
         id: 9,
-        name: 'Selado',
-        hint: 'Duas portas em cadeia: a primeira chave abre o caminho para a segunda.',
-        cols: 19, rows: 15, seed: 71234, braid: 0.46,
-        crystals: 12,
-        freezers: 3,
-        doors: 2,
+        name: 'Ferro',
+        hint: 'Os portais levam-te ao outro lado num instante — mas os guardas também os usam.',
+        cols: 15, rows: 13, seed: 942561, braid: 0.326,
+        crystals: 8,
+        freezers: 1,
+        portals: 1,
         guards: [
-            { kind: GUARD_CHASE, speed: 0.88 },
-            { kind: GUARD_AMBUSH, speed: 0.86 },
-            { kind: GUARD_AMBUSH, speed: 0.84 },
-            { kind: GUARD_ROAM, speed: 0.8 }
+            { kind: GUARD_CHASE, speed: 0.691 },
+            { kind: GUARD_AMBUSH, speed: 0.676 },
+            { kind: GUARD_ROAM, speed: 0.661 }
         ],
-        seconds: 140, par: 80,
-        accent: '#ff8a3d'
+        seconds: 115, par: 60,
+        accent: '#695af2'
     },
     {
         id: 10,
-        name: 'Oficina',
-        hint: 'Duas portas e um portal. Decide a ordem antes de entrares no corredor.',
-        cols: 21, rows: 15, seed: 31780, braid: 0.46,
-        crystals: 13,
-        freezers: 3,
+        name: 'Vórtice',
+        hint: 'Deixa o cristal que está no meio dos guardas para quando tiveres o gelo.',
+        cols: 15, rows: 13, seed: 47290, braid: 0.33,
+        crystals: 8,
+        freezers: 1,
         portals: 1,
-        doors: 2,
         guards: [
-            { kind: GUARD_CHASE, speed: 0.88 },
-            { kind: GUARD_CHASE, speed: 0.86 },
-            { kind: GUARD_AMBUSH, speed: 0.86 },
-            { kind: GUARD_AMBUSH, speed: 0.84 }
+            { kind: GUARD_CHASE, speed: 0.697 },
+            { kind: GUARD_AMBUSH, speed: 0.682 },
+            { kind: GUARD_ROAM, speed: 0.667 }
         ],
-        seconds: 145, par: 85,
-        accent: '#ff6f4d'
+        seconds: 115, par: 60,
+        accent: '#7b5af2'
     },
     {
         id: 11,
-        name: 'Espelhos',
-        hint: 'Portais, portas e gelo, tudo ao mesmo tempo.',
-        cols: 21, rows: 17, seed: 24680, braid: 0.4,
+        name: 'Espiral',
+        hint: 'Um guarda a tremer é gelo prestes a derreter.',
+        cols: 15, rows: 13, seed: 152019, braid: 0.334,
+        crystals: 9,
+        freezers: 1,
+        portals: 1,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.704 },
+            { kind: GUARD_AMBUSH, speed: 0.689 },
+            { kind: GUARD_ROAM, speed: 0.674 }
+        ],
+        seconds: 119, par: 62,
+        accent: '#8d5af2'
+    },
+    {
+        id: 12,
+        name: 'Trânsito',
+        hint: 'Vê onde está a saída antes de ires buscar o primeiro cristal.',
+        cols: 15, rows: 13, seed: 256748, braid: 0.338,
+        crystals: 9,
+        freezers: 1,
+        portals: 1,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.71 },
+            { kind: GUARD_AMBUSH, speed: 0.695 },
+            { kind: GUARD_ROAM, speed: 0.68 }
+        ],
+        seconds: 119, par: 62,
+        accent: '#9f5af2'
+    },
+    {
+        id: 13,
+        name: 'Bronze',
+        hint: 'Dois pares de portais. A cor diz-te onde vais sair.',
+        cols: 15, rows: 13, seed: 361477, braid: 0.339,
+        crystals: 9,
+        freezers: 1,
+        portals: 2,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.717 },
+            { kind: GUARD_CHASE, speed: 0.702 },
+            { kind: GUARD_AMBUSH, speed: 0.687 },
+            { kind: GUARD_ROAM, speed: 0.672 }
+        ],
+        seconds: 119, par: 62,
+        accent: '#b15af2'
+    },
+    {
+        id: 14,
+        name: 'Prisma',
+        hint: 'A cor da chave diz-te qual é a porta que ela abre.',
+        cols: 15, rows: 13, seed: 466206, braid: 0.343,
+        crystals: 9,
+        freezers: 1,
+        portals: 2,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.723 },
+            { kind: GUARD_CHASE, speed: 0.708 },
+            { kind: GUARD_AMBUSH, speed: 0.693 },
+            { kind: GUARD_ROAM, speed: 0.678 }
+        ],
+        seconds: 119, par: 62,
+        accent: '#c25af2'
+    },
+    {
+        id: 15,
+        name: 'Miragem',
+        hint: 'Perder uma vida repõe toda a gente no sítio — o relógio é que não volta atrás.',
+        cols: 15, rows: 13, seed: 570935, braid: 0.347,
+        crystals: 10,
+        freezers: 1,
+        portals: 2,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.729 },
+            { kind: GUARD_CHASE, speed: 0.714 },
+            { kind: GUARD_AMBUSH, speed: 0.699 },
+            { kind: GUARD_ROAM, speed: 0.684 }
+        ],
+        seconds: 122, par: 63,
+        accent: '#d45af2'
+    },
+    {
+        id: 16,
+        name: 'Dédalo',
+        hint: 'Ao passares por um cruzamento, repara por onde o guarda foi.',
+        cols: 15, rows: 13, seed: 675664, braid: 0.351,
+        crystals: 10,
+        freezers: 1,
+        portals: 2,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.736 },
+            { kind: GUARD_CHASE, speed: 0.721 },
+            { kind: GUARD_AMBUSH, speed: 0.706 },
+            { kind: GUARD_ROAM, speed: 0.691 }
+        ],
+        seconds: 122, par: 63,
+        accent: '#e65af2'
+    },
+    {
+        id: 17,
+        name: 'Fornalha',
+        hint: 'A chave abre a porta trancada — e enquanto estiver fechada, nem os guardas passam.',
+        cols: 17, rows: 13, seed: 780393, braid: 0.352,
+        crystals: 10,
+        freezers: 1,
+        portals: 2,
+        doors: 1,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.742 },
+            { kind: GUARD_CHASE, speed: 0.727 },
+            { kind: GUARD_AMBUSH, speed: 0.712 },
+            { kind: GUARD_ROAM, speed: 0.697 }
+        ],
+        seconds: 124, par: 64,
+        accent: '#f25aec'
+    },
+    {
+        id: 18,
+        name: 'Trinco',
+        hint: 'O número dentro do portal da saída diz quantos cristais faltam.',
+        cols: 17, rows: 13, seed: 885122, braid: 0.356,
+        crystals: 10,
+        freezers: 1,
+        portals: 2,
+        doors: 1,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.749 },
+            { kind: GUARD_CHASE, speed: 0.734 },
+            { kind: GUARD_AMBUSH, speed: 0.719 },
+            { kind: GUARD_ROAM, speed: 0.704 }
+        ],
+        seconds: 124, par: 64,
+        accent: '#f25ada'
+    },
+    {
+        id: 19,
+        name: 'Cofre',
+        hint: 'Inverter a marcha é imediato; virar numa esquina espera pela esquina.',
+        cols: 17, rows: 13, seed: 997770, braid: 0.36,
+        crystals: 11,
+        freezers: 2,
+        portals: 2,
+        doors: 1,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.755 },
+            { kind: GUARD_CHASE, speed: 0.74 },
+            { kind: GUARD_AMBUSH, speed: 0.725 },
+            { kind: GUARD_ROAM, speed: 0.71 }
+        ],
+        seconds: 128, par: 67,
+        accent: '#f25ac8'
+    },
+    {
+        id: 20,
+        name: 'Brasa',
+        hint: 'Um beco sem saída com um guarda atrás não tem jogada nenhuma.',
+        cols: 17, rows: 13, seed: 94580, braid: 0.364,
+        crystals: 11,
+        freezers: 2,
+        portals: 2,
+        doors: 1,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.761 },
+            { kind: GUARD_CHASE, speed: 0.746 },
+            { kind: GUARD_AMBUSH, speed: 0.731 },
+            { kind: GUARD_ROAM, speed: 0.716 }
+        ],
+        seconds: 128, par: 67,
+        accent: '#f25ab6'
+    },
+    {
+        id: 21,
+        name: 'Forja',
+        hint: 'A chave está do outro lado do portal. Vai lá e volta antes que te encontrem.',
+        cols: 17, rows: 13, seed: 199309, braid: 0.365,
+        crystals: 11,
+        freezers: 2,
+        portals: 2,
+        doors: 1,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.768 },
+            { kind: GUARD_CHASE, speed: 0.753 },
+            { kind: GUARD_AMBUSH, speed: 0.738 },
+            { kind: GUARD_ROAM, speed: 0.723 }
+        ],
+        seconds: 128, par: 67,
+        accent: '#f25aa5'
+    },
+    {
+        id: 22,
+        name: 'Roldana',
+        hint: 'A porta trancada também trava os guardas. Enquanto está fechada, é um abrigo.',
+        cols: 17, rows: 13, seed: 311957, braid: 0.369,
+        crystals: 11,
+        freezers: 2,
+        portals: 2,
+        doors: 1,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.774 },
+            { kind: GUARD_CHASE, speed: 0.759 },
+            { kind: GUARD_AMBUSH, speed: 0.744 },
+            { kind: GUARD_ROAM, speed: 0.729 }
+        ],
+        seconds: 128, par: 67,
+        accent: '#f25a93'
+    },
+    {
+        id: 23,
+        name: 'Relógio',
+        hint: 'O emboscador não vem atrás de ti: vai para onde tu vais.',
+        cols: 17, rows: 13, seed: 408767, braid: 0.373,
+        crystals: 12,
+        freezers: 2,
+        portals: 2,
+        doors: 1,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.78 },
+            { kind: GUARD_CHASE, speed: 0.765 },
+            { kind: GUARD_AMBUSH, speed: 0.75 },
+            { kind: GUARD_ROAM, speed: 0.735 }
+        ],
+        seconds: 132, par: 69,
+        accent: '#f25a81'
+    },
+    {
+        id: 24,
+        name: 'Oficina',
+        hint: 'Um portal é um atalho para os dois lados.',
+        cols: 17, rows: 13, seed: 513496, braid: 0.377,
+        crystals: 12,
+        freezers: 2,
+        portals: 2,
+        doors: 1,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.787 },
+            { kind: GUARD_CHASE, speed: 0.772 },
+            { kind: GUARD_AMBUSH, speed: 0.757 },
+            { kind: GUARD_ROAM, speed: 0.742 }
+        ],
+        seconds: 132, par: 69,
+        accent: '#f25a6f'
+    },
+    {
+        id: 25,
+        name: 'Selado',
+        hint: 'Duas portas em cadeia: a primeira chave abre o caminho para a segunda.',
+        cols: 19, rows: 15, seed: 618225, braid: 0.378,
+        crystals: 12,
+        freezers: 2,
+        portals: 2,
+        doors: 2,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.793 },
+            { kind: GUARD_CHASE, speed: 0.778 },
+            { kind: GUARD_AMBUSH, speed: 0.763 },
+            { kind: GUARD_AMBUSH, speed: 0.748 },
+            { kind: GUARD_ROAM, speed: 0.733 }
+        ],
+        seconds: 137, par: 71,
+        accent: '#f25a5e'
+    },
+    {
+        id: 26,
+        name: 'Cadeado',
+        hint: 'Deixa o cristal que está no meio dos guardas para quando tiveres o gelo.',
+        cols: 19, rows: 15, seed: 730873, braid: 0.382,
+        crystals: 12,
+        freezers: 2,
+        portals: 2,
+        doors: 2,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.8 },
+            { kind: GUARD_CHASE, speed: 0.785 },
+            { kind: GUARD_AMBUSH, speed: 0.77 },
+            { kind: GUARD_AMBUSH, speed: 0.755 },
+            { kind: GUARD_ROAM, speed: 0.74 }
+        ],
+        seconds: 137, par: 71,
+        accent: '#f2685a'
+    },
+    {
+        id: 27,
+        name: 'Masmorra',
+        hint: 'Um guarda a tremer é gelo prestes a derreter.',
+        cols: 19, rows: 15, seed: 843521, braid: 0.386,
+        crystals: 13,
+        freezers: 2,
+        portals: 2,
+        doors: 2,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.806 },
+            { kind: GUARD_CHASE, speed: 0.791 },
+            { kind: GUARD_AMBUSH, speed: 0.776 },
+            { kind: GUARD_AMBUSH, speed: 0.761 },
+            { kind: GUARD_ROAM, speed: 0.746 }
+        ],
+        seconds: 141, par: 73,
+        accent: '#f27a5a'
+    },
+    {
+        id: 28,
+        name: 'Calabouço',
+        hint: 'Vê onde está a saída antes de ires buscar o primeiro cristal.',
+        cols: 19, rows: 15, seed: 964088, braid: 0.39,
+        crystals: 13,
+        freezers: 2,
+        portals: 2,
+        doors: 2,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.812 },
+            { kind: GUARD_CHASE, speed: 0.797 },
+            { kind: GUARD_AMBUSH, speed: 0.782 },
+            { kind: GUARD_AMBUSH, speed: 0.767 },
+            { kind: GUARD_ROAM, speed: 0.752 }
+        ],
+        seconds: 141, par: 73,
+        accent: '#f28b5a'
+    },
+    {
+        id: 29,
+        name: 'Catacumba',
+        hint: 'Os guardas não atravessam uma porta trancada. Nem tu.',
+        cols: 19, rows: 15, seed: 52979, braid: 0.391,
+        crystals: 13,
+        freezers: 2,
+        portals: 2,
+        doors: 2,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.819 },
+            { kind: GUARD_CHASE, speed: 0.804 },
+            { kind: GUARD_AMBUSH, speed: 0.789 },
+            { kind: GUARD_AMBUSH, speed: 0.774 },
+            { kind: GUARD_ROAM, speed: 0.759 }
+        ],
+        seconds: 141, par: 73,
+        accent: '#f29d5a'
+    },
+    {
+        id: 30,
+        name: 'Ossário',
+        hint: 'A cor da chave diz-te qual é a porta que ela abre.',
+        cols: 19, rows: 15, seed: 141870, braid: 0.395,
+        crystals: 13,
+        freezers: 2,
+        portals: 2,
+        doors: 2,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.825 },
+            { kind: GUARD_CHASE, speed: 0.81 },
+            { kind: GUARD_AMBUSH, speed: 0.795 },
+            { kind: GUARD_AMBUSH, speed: 0.78 },
+            { kind: GUARD_ROAM, speed: 0.765 }
+        ],
+        seconds: 141, par: 73,
+        accent: '#f2af5a'
+    },
+    {
+        id: 31,
+        name: 'Sarcófago',
+        hint: 'Perder uma vida repõe toda a gente no sítio — o relógio é que não volta atrás.',
+        cols: 19, rows: 15, seed: 254518, braid: 0.399,
+        crystals: 14,
+        freezers: 2,
+        portals: 2,
+        doors: 2,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.831 },
+            { kind: GUARD_CHASE, speed: 0.816 },
+            { kind: GUARD_AMBUSH, speed: 0.801 },
+            { kind: GUARD_AMBUSH, speed: 0.786 },
+            { kind: GUARD_ROAM, speed: 0.771 }
+        ],
+        seconds: 144, par: 75,
+        accent: '#f2c15a'
+    },
+    {
+        id: 32,
+        name: 'Templo',
+        hint: 'Ao passares por um cruzamento, repara por onde o guarda foi.',
+        cols: 19, rows: 15, seed: 359247, braid: 0.403,
+        crystals: 14,
+        freezers: 2,
+        portals: 2,
+        doors: 2,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.838 },
+            { kind: GUARD_CHASE, speed: 0.823 },
+            { kind: GUARD_AMBUSH, speed: 0.808 },
+            { kind: GUARD_AMBUSH, speed: 0.793 },
+            { kind: GUARD_ROAM, speed: 0.778 }
+        ],
+        seconds: 144, par: 75,
+        accent: '#f2d25a'
+    },
+    {
+        id: 33,
+        name: 'Santuário',
+        hint: 'Os guardas dispersam de vez em quando — é aí que se vai buscar o que ficou para trás.',
+        cols: 19, rows: 15, seed: 456057, braid: 0.404,
         crystals: 14,
         freezers: 3,
         portals: 2,
         doors: 2,
         guards: [
-            { kind: GUARD_CHASE, speed: 0.9 },
-            { kind: GUARD_CHASE, speed: 0.88 },
-            { kind: GUARD_AMBUSH, speed: 0.88 },
-            { kind: GUARD_AMBUSH, speed: 0.86 },
-            { kind: GUARD_ROAM, speed: 0.82 }
+            { kind: GUARD_CHASE, speed: 0.844 },
+            { kind: GUARD_CHASE, speed: 0.829 },
+            { kind: GUARD_AMBUSH, speed: 0.814 },
+            { kind: GUARD_AMBUSH, speed: 0.799 },
+            { kind: GUARD_ROAM, speed: 0.784 }
         ],
-        seconds: 155, par: 95,
-        accent: '#ff5d9e'
+        seconds: 144, par: 75,
+        accent: '#f2e45a'
     },
     {
-        id: 12,
-        name: 'Abismo',
-        hint: 'O maior de todos, e o mais mal frequentado. Guarda o gelo para o fim.',
-        cols: 21, rows: 17, seed: 37121, braid: 0.44,
+        id: 34,
+        name: 'Obelisco',
+        hint: 'O número dentro do portal da saída diz quantos cristais faltam.',
+        cols: 19, rows: 15, seed: 560786, braid: 0.408,
+        crystals: 14,
+        freezers: 3,
+        portals: 2,
+        doors: 2,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.851 },
+            { kind: GUARD_CHASE, speed: 0.836 },
+            { kind: GUARD_AMBUSH, speed: 0.821 },
+            { kind: GUARD_AMBUSH, speed: 0.806 },
+            { kind: GUARD_ROAM, speed: 0.791 }
+        ],
+        seconds: 144, par: 75,
+        accent: '#edf25a'
+    },
+    {
+        id: 35,
+        name: 'Zigurate',
+        hint: 'Inverter a marcha é imediato; virar numa esquina espera pela esquina.',
+        cols: 19, rows: 15, seed: 689272, braid: 0.412,
         crystals: 15,
         freezers: 3,
         portals: 2,
         doors: 2,
         guards: [
-            { kind: GUARD_CHASE, speed: 0.92 },
-            { kind: GUARD_CHASE, speed: 0.9 },
-            { kind: GUARD_AMBUSH, speed: 0.9 },
-            { kind: GUARD_AMBUSH, speed: 0.88 },
-            { kind: GUARD_ROAM, speed: 0.84 }
+            { kind: GUARD_CHASE, speed: 0.857 },
+            { kind: GUARD_CHASE, speed: 0.842 },
+            { kind: GUARD_AMBUSH, speed: 0.827 },
+            { kind: GUARD_AMBUSH, speed: 0.812 },
+            { kind: GUARD_ROAM, speed: 0.797 }
         ],
-        seconds: 165, par: 100,
-        accent: '#e0457f'
+        seconds: 148, par: 77,
+        accent: '#dcf25a'
+    },
+    {
+        id: 36,
+        name: 'Ruína',
+        hint: 'Um beco sem saída com um guarda atrás não tem jogada nenhuma.',
+        cols: 19, rows: 15, seed: 786082, braid: 0.416,
+        crystals: 15,
+        freezers: 3,
+        portals: 2,
+        doors: 2,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.863 },
+            { kind: GUARD_CHASE, speed: 0.848 },
+            { kind: GUARD_AMBUSH, speed: 0.833 },
+            { kind: GUARD_AMBUSH, speed: 0.818 },
+            { kind: GUARD_ROAM, speed: 0.803 }
+        ],
+        seconds: 148, par: 77,
+        accent: '#caf25a'
+    },
+    {
+        id: 37,
+        name: 'Espelhos',
+        hint: 'Daqui para a frente é tudo ao mesmo tempo. Decide antes de entrares no corredor.',
+        cols: 21, rows: 15, seed: 890811, braid: 0.417,
+        crystals: 15,
+        freezers: 3,
+        portals: 2,
+        doors: 2,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.87 },
+            { kind: GUARD_CHASE, speed: 0.855 },
+            { kind: GUARD_CHASE, speed: 0.84 },
+            { kind: GUARD_AMBUSH, speed: 0.825 },
+            { kind: GUARD_AMBUSH, speed: 0.81 },
+            { kind: GUARD_ROAM, speed: 0.795 }
+        ],
+        seconds: 150, par: 78,
+        accent: '#b8f25a'
+    },
+    {
+        id: 38,
+        name: 'Mosaico',
+        hint: 'A porta trancada também trava os guardas. Enquanto está fechada, é um abrigo.',
+        cols: 21, rows: 15, seed: 11378, braid: 0.421,
+        crystals: 15,
+        freezers: 3,
+        portals: 2,
+        doors: 2,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.876 },
+            { kind: GUARD_CHASE, speed: 0.861 },
+            { kind: GUARD_CHASE, speed: 0.846 },
+            { kind: GUARD_AMBUSH, speed: 0.831 },
+            { kind: GUARD_AMBUSH, speed: 0.816 },
+            { kind: GUARD_ROAM, speed: 0.801 }
+        ],
+        seconds: 150, par: 78,
+        accent: '#a6f25a'
+    },
+    {
+        id: 39,
+        name: 'Colmeia',
+        hint: 'O emboscador não vem atrás de ti: vai para onde tu vais.',
+        cols: 21, rows: 15, seed: 84431, braid: 0.425,
+        crystals: 16,
+        freezers: 3,
+        portals: 2,
+        doors: 2,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.883 },
+            { kind: GUARD_CHASE, speed: 0.868 },
+            { kind: GUARD_CHASE, speed: 0.853 },
+            { kind: GUARD_AMBUSH, speed: 0.838 },
+            { kind: GUARD_AMBUSH, speed: 0.823 },
+            { kind: GUARD_ROAM, speed: 0.808 }
+        ],
+        seconds: 154, par: 80,
+        accent: '#95f25a'
+    },
+    {
+        id: 40,
+        name: 'Teia',
+        hint: 'Um portal é um atalho para os dois lados.',
+        cols: 21, rows: 15, seed: 236674, braid: 0.429,
+        crystals: 16,
+        freezers: 3,
+        portals: 2,
+        doors: 2,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.889 },
+            { kind: GUARD_CHASE, speed: 0.874 },
+            { kind: GUARD_CHASE, speed: 0.859 },
+            { kind: GUARD_AMBUSH, speed: 0.844 },
+            { kind: GUARD_AMBUSH, speed: 0.829 },
+            { kind: GUARD_ROAM, speed: 0.814 }
+        ],
+        seconds: 154, par: 80,
+        accent: '#83f25a'
+    },
+    {
+        id: 41,
+        name: 'Enredo',
+        hint: 'O relógio só anda enquanto se joga. Parar a pensar não custa nada.',
+        cols: 21, rows: 17, seed: 301808, braid: 0.43,
+        crystals: 16,
+        freezers: 3,
+        portals: 2,
+        doors: 2,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.895 },
+            { kind: GUARD_CHASE, speed: 0.88 },
+            { kind: GUARD_CHASE, speed: 0.865 },
+            { kind: GUARD_AMBUSH, speed: 0.85 },
+            { kind: GUARD_AMBUSH, speed: 0.835 },
+            { kind: GUARD_ROAM, speed: 0.82 }
+        ],
+        seconds: 157, par: 82,
+        accent: '#71f25a'
+    },
+    {
+        id: 42,
+        name: 'Meandro',
+        hint: 'Deixa o cristal que está no meio dos guardas para quando tiveres o gelo.',
+        cols: 21, rows: 17, seed: 398618, braid: 0.434,
+        crystals: 16,
+        freezers: 3,
+        portals: 2,
+        doors: 2,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.902 },
+            { kind: GUARD_CHASE, speed: 0.887 },
+            { kind: GUARD_CHASE, speed: 0.872 },
+            { kind: GUARD_AMBUSH, speed: 0.857 },
+            { kind: GUARD_AMBUSH, speed: 0.842 },
+            { kind: GUARD_ROAM, speed: 0.827 }
+        ],
+        seconds: 157, par: 82,
+        accent: '#5ff25a'
+    },
+    {
+        id: 43,
+        name: 'Fenda',
+        hint: 'Um guarda a tremer é gelo prestes a derreter.',
+        cols: 21, rows: 17, seed: 527104, braid: 0.438,
+        crystals: 17,
+        freezers: 3,
+        portals: 2,
+        doors: 2,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.908 },
+            { kind: GUARD_CHASE, speed: 0.893 },
+            { kind: GUARD_CHASE, speed: 0.878 },
+            { kind: GUARD_AMBUSH, speed: 0.863 },
+            { kind: GUARD_AMBUSH, speed: 0.848 },
+            { kind: GUARD_ROAM, speed: 0.833 }
+        ],
+        seconds: 161, par: 84,
+        accent: '#5af266'
+    },
+    {
+        id: 44,
+        name: 'Caverna',
+        hint: 'Vê onde está a saída antes de ires buscar o primeiro cristal.',
+        cols: 21, rows: 17, seed: 608076, braid: 0.442,
+        crystals: 17,
+        freezers: 3,
+        portals: 2,
+        doors: 2,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.914 },
+            { kind: GUARD_CHASE, speed: 0.899 },
+            { kind: GUARD_CHASE, speed: 0.884 },
+            { kind: GUARD_AMBUSH, speed: 0.869 },
+            { kind: GUARD_AMBUSH, speed: 0.854 },
+            { kind: GUARD_ROAM, speed: 0.839 }
+        ],
+        seconds: 161, par: 84,
+        accent: '#5af278'
+    },
+    {
+        id: 45,
+        name: 'Sombra',
+        hint: 'Os últimos quatro. A partir daqui não há corredor que não tenha companhia.',
+        cols: 23, rows: 17, seed: 712805, braid: 0.443,
+        crystals: 17,
+        freezers: 3,
+        portals: 2,
+        doors: 2,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.921 },
+            { kind: GUARD_CHASE, speed: 0.906 },
+            { kind: GUARD_CHASE, speed: 0.891 },
+            { kind: GUARD_AMBUSH, speed: 0.876 },
+            { kind: GUARD_AMBUSH, speed: 0.861 },
+            { kind: GUARD_ROAM, speed: 0.846 }
+        ],
+        seconds: 164, par: 85,
+        accent: '#5af28a'
+    },
+    {
+        id: 46,
+        name: 'Eclipse',
+        hint: 'Seis guardas, e três deles vêm atrás de ti a sério.',
+        cols: 23, rows: 17, seed: 833372, braid: 0.447,
+        crystals: 17,
+        freezers: 3,
+        portals: 2,
+        doors: 2,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.927 },
+            { kind: GUARD_CHASE, speed: 0.912 },
+            { kind: GUARD_CHASE, speed: 0.897 },
+            { kind: GUARD_AMBUSH, speed: 0.882 },
+            { kind: GUARD_AMBUSH, speed: 0.867 },
+            { kind: GUARD_ROAM, speed: 0.852 }
+        ],
+        seconds: 164, par: 85,
+        accent: '#5af29c'
+    },
+    {
+        id: 47,
+        name: 'Abismo',
+        hint: 'O segundo maior labirinto do jogo. Faz o caminho de volta antes de o teres de fazer.',
+        cols: 23, rows: 17, seed: 953939, braid: 0.451,
+        crystals: 18,
+        freezers: 4,
+        portals: 2,
+        doors: 2,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.934 },
+            { kind: GUARD_CHASE, speed: 0.919 },
+            { kind: GUARD_CHASE, speed: 0.904 },
+            { kind: GUARD_AMBUSH, speed: 0.889 },
+            { kind: GUARD_AMBUSH, speed: 0.874 },
+            { kind: GUARD_ROAM, speed: 0.859 }
+        ],
+        seconds: 167, par: 87,
+        accent: '#5af2ad'
+    },
+    {
+        id: 48,
+        name: 'Zénite',
+        hint: 'O último. Tudo o que aprendeste, ao mesmo tempo e à pressa.',
+        cols: 23, rows: 17, seed: 42830, braid: 0.455,
+        crystals: 18,
+        freezers: 4,
+        portals: 2,
+        doors: 2,
+        guards: [
+            { kind: GUARD_CHASE, speed: 0.94 },
+            { kind: GUARD_CHASE, speed: 0.925 },
+            { kind: GUARD_CHASE, speed: 0.91 },
+            { kind: GUARD_AMBUSH, speed: 0.895 },
+            { kind: GUARD_AMBUSH, speed: 0.88 },
+            { kind: GUARD_ROAM, speed: 0.865 }
+        ],
+        seconds: 167, par: 87,
+        accent: '#5af2bf'
     }
 ];
 

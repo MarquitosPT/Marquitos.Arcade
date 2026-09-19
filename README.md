@@ -456,10 +456,22 @@ igual. Quem o desliga é o `text-size-adjust: 100%` no `css/base.css`.
 
 ## As peças do Maze Run
 
-São doze níveis, e a progressão é aos pares: um nível apresenta uma peça nova,
-o seguinte obriga a usá-la antes de aparecer a próxima. Doze também é o número
-que enche as páginas do carrossel em todos os formatos — 3 páginas de 4 ao alto,
-4 de 3 ao comprido, 2 de 6 no computador.
+São quarenta e oito níveis, e a curva sobe de quatro em quatro: cada degrau
+apresenta ou aperta uma coisa — o tamanho do labirinto, mais um guarda, uma peça
+nova — e os quatro níveis do degrau dão tempo para a aprender antes do seguinte.
+Do 1 ao 4 há só cristais e dois guardas; o gelo entra no 5, os portais no 9, a
+porta trancada no 17 e a segunda porta no 25.
+
+Quarenta e oito é também o número que enche as páginas do carrossel em todos os
+formatos: 12 páginas de 4 ao alto, 16 de 3 ao comprido, 8 de 6 no computador.
+
+**As sementes dos níveis não foram escolhidas à mão.** Nem todos os labirintos
+dão para trancar (ver a secção a seguir), e uma receita pode sair com uma peça a
+menos sem ninguém dar por isso. Cada semente foi procurada — monta-se o nível,
+verifica-se que cumpre a receita toda, e tenta-se a seguinte até dar. O cenário
+`maze-run-mecanicas` do smoke-test faz a mesma verificação aos quarenta e oito a
+cada execução, por isso uma receita que deixe de cumprir falha o teste em vez de
+chegar a quem joga.
 
 Além dos cristais e dos guardas, um nível pode ter três coisas. Todas se ligam
 pela receita (`js/levels.js`) e nenhuma precisa de um mapa desenhado à mão:

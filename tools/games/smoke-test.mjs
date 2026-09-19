@@ -317,8 +317,10 @@ const GAMES = [
         canvas: true,
         menuSelector: '#startScreen',
         // Os níveis com portais, portas e gelo estão fechados de origem; o
-        // progresso guardado é a forma de lá chegar sem os jogar todos.
-        storage: { mazeRunProgress_v1: JSON.stringify({ v: 2, unlocked: 12, levels: {} }) },
+        // progresso guardado é a forma de lá chegar sem os jogar todos. Fica no
+        // 25 de propósito: é o nível que o guião joga, e é assim que o menu o
+        // aponta e o carrossel abre já na página dele.
+        storage: { mazeRunProgress_v1: JSON.stringify({ v: 2, unlocked: 25, levels: {} }) },
         async play(page) {
             // Primeiro a montagem: cada receita tem de dar um nível jogável.
             // É aqui que se apanha uma receita nova que gere uma porta que não
@@ -367,10 +369,10 @@ const GAMES = [
 
             // E agora as peças em jogo, no nível que tem tudo.
             await page.click('#chooseBtn');
-            await page.waitForSelector('.levelCard[data-value="11"]');
+            await page.waitForSelector('.levelCard[data-value="25"]');
             await sleep(500);
-            // O 11 é o primeiro que tem portais, portas e gelo ao mesmo tempo.
-            await page.click('.levelCard[data-value="11"]');
+            // O 25 é o primeiro que tem portais, duas portas e gelo ao mesmo tempo.
+            await page.click('.levelCard[data-value="25"]');
             await waitForMazePlaying(page);
 
             // Portal: entrar num leva ao outro.
@@ -396,9 +398,23 @@ const GAMES = [
             if (stepsFromTwin > 2) throw new Error(`o portal não saiu do outro lado: ficou em ${landed.x},${landed.y} e o par é ${hop.b.x},${hop.b.y}`);
 
             // Gelo: congela os guardas, e congelados não apanham ninguém.
+            //
+            // Nos níveis adiantados há guardas que chegam para apanhar o jogador
+            // a meio do guião — e aí o nível está em 'caught' e nada do que se
+            // segue acontece. Daí repor os guardas nos sítios deles e escolher o
+            // cristal mais longe de todos: o que se testa é o gelo, não a sorte.
+            await waitForMazePlaying(page);
             const frozen = await page.evaluate(async () => {
                 const { game } = await import('/games/maze-run/js/state.js');
-                const freezer = game.freezers[0];
+                const { resetGuards } = await import('/games/maze-run/js/enemies.js');
+                resetGuards(game.guards);
+
+                const longe = (cell) => Math.min(...game.guards
+                    .map((g) => Math.hypot(g.walker.cx - cell.x, g.walker.cy - cell.y)));
+                const freezer = game.freezers
+                    .filter((f) => !f.taken)
+                    .sort((a, b) => longe(b) - longe(a))[0];
+
                 game.player.cx = freezer.x;
                 game.player.cy = freezer.y;
                 game.player.t = 0;
@@ -412,19 +428,22 @@ const GAMES = [
                 guard.walker.t = 0;
                 guard.walker.moving = false;
                 const before = game.guards.map((g) => `${g.walker.cx},${g.walker.cy}`);
+                const livesBefore = game.lives;
                 await new Promise((resolve) => setTimeout(resolve, 700));
                 return {
                     timer: game.freezeTimer,
                     lives: game.lives,
+                    lost: livesBefore - game.lives,
                     phase: game.phase,
                     moved: game.guards.some((g, i) => `${g.walker.cx},${g.walker.cy}` !== before[i])
                 };
             });
             if (!(frozen.timer > 0)) throw new Error('o cristal de gelo não congelou nada');
             if (frozen.moved) throw new Error('um guarda congelado andou');
-            if (frozen.lives !== 3 || frozen.phase !== 'playing') throw new Error(`um guarda congelado apanhou o jogador (vidas ${frozen.lives}, fase ${frozen.phase})`);
+            if (frozen.lost !== 0 || frozen.phase !== 'playing') throw new Error(`um guarda congelado apanhou o jogador (perdeu ${frozen.lost} vida(s), fase ${frozen.phase})`);
 
             // Porta: fechada não deixa passar, e a chave abre-a.
+            await waitForMazePlaying(page);
             const door = await page.evaluate(async () => {
                 const { game } = await import('/games/maze-run/js/state.js');
                 const target = game.doors[0];
