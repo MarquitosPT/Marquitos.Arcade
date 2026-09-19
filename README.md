@@ -8,7 +8,7 @@ Blazor Web App (.NET 10, render mode Interactive Server) com ASP.NET Core Identi
 
 ## Estrutura
 
-- `src/MarquitosArcade/Components/Pages/Home.razor`, `wwwroot/styles.css`: portal principal com branding e catálogo de jogos. O catálogo é gerado a partir do array `Catalog` no `@code` da página — cada jogo é um cartão com a sua capa, o título em overlay e a cor/lettering próprios (classes `.theme-*`). `styles.css` é a folha de estilos global do site — cobre o portal, a página de pontuações e as páginas de conta (`/Account/...`); cada jogo tem as suas próprias folhas de estilo, em `games/<slug>/css/`. Ver [Tema](#tema-glass-claro-e-escuro).
+- `src/MarquitosArcade/Components/Pages/Home.razor`, `wwwroot/styles.css`: portal principal com branding e catálogo de jogos. O catálogo é gerado a partir do array `Catalog` no `@code` da página — cada jogo é um cartão com a sua capa, o título em overlay e a sua cor (classes `.theme-*`). `styles.css` é a folha de estilos global do site — cobre o portal, a página de pontuações e as páginas de conta (`/Account/...`); cada jogo tem as suas próprias folhas de estilo, em `games/<slug>/css/`. Ver [Tema](#tema-glass-claro-e-escuro).
 - `src/MarquitosArcade/wwwroot/theme.js`: escolha do tema claro/escuro (ver [Tema](#tema-glass-claro-e-escuro)).
 - `src/MarquitosArcade/wwwroot/covers/`: capas 16:9 dos jogos (WebP) usadas no catálogo — são screenshots reais de cada jogo, gerados por `tools/covers/` (ver [Capas dos jogos](#capas-dos-jogos)).
 - `src/MarquitosArcade/Components/Pages/Pontuacoes.razor`: página dedicada às pontuações em `/pontuacoes`, com um painel por jogo (array `Games` no `@code`). Lê os tops diretamente da base de dados no servidor, via `ScoresEndpoints.GetTopScoresAsync` — o mesmo método que serve o endpoint `GET /api/scores/:gameId`, mas sem passar por HTTP.
@@ -251,12 +251,34 @@ vezes.
    Se tiver níveis a desbloquear, usar também `createProgressClient('<slug>')`, que fala com `GET/PUT /api/progress/<slug>` — ver [Progresso e níveis](#progresso-e-níveis).
 3. Acrescentar o jogo ao array `GAMES` em `tools/games/smoke-test.mjs`, com um guião que o jogue durante alguns segundos.
 4. Gerar a capa do jogo: acrescentar uma receita ao array `GAMES` em `tools/covers/capture-covers.mjs` e correr o script (ver [Capas dos jogos](#capas-dos-jogos)).
-5. Adicionar uma entrada ao array `Catalog` em `Components/Pages/Home.razor` (slug, título, tagline, descrição, emoji, tema e capa) e, se o tema for novo, uma classe `.theme-<jogo>` em `styles.css` com a cor (`--game-accent`), o fundo da capa (`--cover-bg`) e o lettering do jogo.
+5. Adicionar uma entrada ao array `Catalog` em `Components/Pages/Home.razor` (slug, título, tagline, descrição, emoji, tema e capa) e, se o tema for novo, uma classe `.theme-<jogo>` em `styles.css` com a cor (`--game-accent`) e o fundo da capa (`--cover-bg`). Só isso: a tipografia dos cartões é do catálogo e é igual para todos (ver [Cartões do catálogo](#cartões-do-catálogo)).
 6. Adicionar o jogo ao array `Games` em `Components/Pages/Pontuacoes.razor` para aparecer na página de pontuações.
+
+## Cartões do catálogo
+
+Os cartões da home estão numa grelha, e numa grelha **o cartão mais alto de uma
+linha estica os outros**. Por isso duas coisas estão fixas:
+
+- **A tipografia é do catálogo, não de cada jogo.** Todos os títulos e
+  subtítulos usam a mesma letra. Cada jogo já teve o seu lettering próprio (a
+  serifa da Tasca do Zé, a monoespaçada do Pong e do Pixel Racing); lado a lado
+  na grelha a mistura lia-se mal. O que cada um tem de seu é a **cor**
+  (`--game-accent`): pinta o risco por cima do título, o subtítulo e o halo ao
+  passar o rato.
+- **A descrição ocupa sempre três linhas.** Com menos, sobra o espaço; com
+  mais, corta-se com reticências (`line-clamp: 3` em `.game-card-body p`, com um
+  `min-height` de três linhas). Assim os cartões têm todos a mesma altura em
+  qualquer largura, e quem escreve uma descrição nova não tem de contar
+  caracteres — só de saber que o que passar das três linhas não se lê. Na
+  prática, as que lá estão andam pelos 90 caracteres.
+
+O risco da cor tem de ficar **acima** do topo do título: o `bottom` do
+`.game-marquee::before` é menor do que o `padding-top` do `.game-marquee`. Com
+os dois iguais, o risco assenta em cima das letras.
 
 ## Capas dos jogos
 
-Cada cartão do catálogo mostra um screenshot real do jogo — capturado a jogar, não um mockup — com o título em overlay num banner, no lettering e na cor do próprio jogo. As imagens vivem em `wwwroot/covers/<slug>.webp` (16:9, 960x540).
+Cada cartão do catálogo mostra um screenshot real do jogo — capturado a jogar, não um mockup — com o título em overlay num banner, na cor do próprio jogo. As imagens vivem em `wwwroot/covers/<slug>.webp` (16:9, 960x540).
 
 Para as regerar (por exemplo, depois de mudar o aspeto de um jogo):
 

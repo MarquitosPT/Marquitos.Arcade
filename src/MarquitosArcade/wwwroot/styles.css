@@ -1,4 +1,7 @@
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,900&family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+/* A Fraunces saiu daqui com o lettering próprio dos cartões: no portal já não a
+   usa ninguém. O jogo Tasca do Zé continua a usá-la, mas pede-a na sua própria
+   página (games/tasca-do-ze/index.html). */
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
 
 /* =====================================================================
    Marquitos Arcade - tema "Glass Arcade"
@@ -1222,47 +1225,34 @@ main {
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7);
 }
 
-/* ---------- Lettering de cada jogo ---------- */
+/* ---------- Cor de cada jogo ---------- */
 
-/* Tasca do Zé: a serifa alta do ecrã inicial do jogo. */
+/* Os títulos e os subtítulos são iguais em todos os cartões — a tipografia é do
+   catálogo, não de cada jogo. Houve uma altura em que cada um trazia o seu
+   lettering (a serifa da Tasca, a monoespaçada do Pong); lado a lado na grelha
+   a mistura lia-se mal, e o que cada jogo tem de seu passou a ser só a cor.
+   Ela chega: pinta o risco por cima do título, o subtítulo e o halo do cartão
+   ao passar o rato. */
+
 .theme-tasca {
   --game-accent: #f0a54a;
   --cover-bg: #123a5e;
 }
 
-.theme-tasca .game-marquee h3 {
-  font-family: "Fraunces", Georgia, "Times New Roman", serif;
-  font-weight: 900;
-  letter-spacing: 0.005em;
-}
-
-/* Pong: monoespaçada com brilho de néon, como no menu do jogo. É o único —
-   nos outros cartões a monoespaçada não assenta. */
 .theme-pong {
   --game-accent: #eaf6ff;
   --cover-bg: #000;
 }
 
-.theme-pong .game-marquee h3 {
-  font-family: "Courier New", Courier, monospace;
-  font-weight: 700;
-  font-size: 1.05rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  text-shadow:
-    0 0 16px color-mix(in srgb, var(--game-accent) 75%, transparent),
-    0 2px 10px rgba(0, 0, 0, 0.75);
-}
-
-/* Pixel Racing e Maze Run: ficam com o lettering de base do catálogo, sem regra
-   própria. Deles é só o acento e o fundo da capa. */
 .theme-racing {
   --game-accent: #35e0ff;
   --cover-bg: #050308;
 }
 
+/* O rosa é o do Maze Run desde o primeiro cartão, ainda antes de o jogo
+   existir; o fundo é o do labirinto, para a capa não piscar antes de carregar. */
 .theme-maze {
-  --game-accent: #35e0ff;
+  --game-accent: #e2699f;
   --cover-bg: #0a0d1c;
 }
 
@@ -1275,11 +1265,23 @@ main {
   padding: 1.05rem 1.15rem 1.2rem;
 }
 
+/* A descrição ocupa sempre três linhas, nem mais nem menos: com menos, sobra o
+   espaço; com mais, corta-se com reticências. É isto que mantém todos os
+   cartões com a mesma altura em qualquer largura — sem ela, uma descrição que
+   parta para uma quarta linha estica a linha inteira da grelha. Quem escreve
+   uma descrição no `Catalog` não tem de contar caracteres; só de saber que o
+   que passar das três linhas não se lê. */
 .game-card-body p {
   color: var(--muted);
   flex-grow: 1;
   line-height: 1.55;
   font-size: 0.9rem;
+  min-height: calc(3 * 1.55em);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
 }
 
 .game-card-actions {
