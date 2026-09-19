@@ -28,7 +28,14 @@
  * Não pode haver `overflow: hidden` nem `overflow-x: hidden` aqui: o overflow da
  * raiz manda no viewport (e, se a raiz for `visible`, manda o do body), e um par
  * com `hidden` faz do viewport um contentor de scroll, que recorta no fim dele e
- * traz a faixa de volta. O `clip` abaixo corta na horizontal sem nada disso. */
+ * traz a faixa de volta. O `clip` abaixo corta na horizontal sem nada disso.
+ *
+ * Quem trava o arrasto é o `touch-action: none`, como nos outros jogos: sem ele
+ * o dedo arrastava a página inteira de lado — no menu, nas janelas e também em
+ * jogo — e a borracha do Safari deixava à vista a faixa lisa ao lado da tasca.
+ * O `overscroll-behavior: none` é a rede para o que o `touch-action` não apanha:
+ * não se herda, por isso as caixas de scroll cá dentro (a fila, a bancada, as
+ * grelhas das janelas) levam a sua própria contenção nas folhas respetivas. */
 html, body {
     position: absolute;
     top: 0;
@@ -38,6 +45,8 @@ html, body {
     height: calc(100dvh + var(--viewport-gap, 0px));
     margin: 0;
     padding: 0;
+    touch-action: none;
+    overscroll-behavior: none;
 }
 
 body {
