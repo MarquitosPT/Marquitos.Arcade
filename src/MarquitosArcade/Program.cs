@@ -52,6 +52,10 @@ using (var scope = app.Services.CreateScope())
     scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Database.Migrate();
 }
 
+// A seguir às migrations: varrer as pontuações de contas que já não existem.
+// Ver MarquitosArcade.Scores.ScoreMaintenance.
+await app.Services.RemoveOrphanScoresAsync();
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
