@@ -323,24 +323,27 @@ button { cursor: pointer; }
     align-items: center;
     flex-wrap: nowrap;
     overflow: hidden;
-    min-height: 17px;
-    gap: 5px;
+    min-height: 14px;
+    gap: 4px;
 }
 
+/* Pequenas de propósito: são uma nota de rodapé do cartão, não um botão. O que
+   se lê primeiro é o nome do nível e o estado dele. */
 .levelTag {
     display: inline-flex;
     align-items: center;
-    gap: 3px;
-    padding: 2px 7px;
-    font-size: 10.5px;
+    gap: 2px;
+    padding: 0 5px;
+    font-size: 9px;
     font-weight: 700;
+    line-height: 14px;
     color: var(--muted);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-pill);
     background: rgba(255, 255, 255, 0.04);
 }
 
-.levelTag i { font-style: normal; font-size: 10px; }
+.levelTag i { font-style: normal; font-size: 8.5px; }
 
 .levelCard.active .levelTag { border-color: var(--glass-border-strong); color: var(--text); }
 
@@ -368,8 +371,9 @@ button { cursor: pointer; }
     .levelName { font-size: 12.5px; }
     .levelState { font-size: 10px; }
     .levelStars { min-height: 12px; font-size: 10px; }
-    .levelTag { padding: 1px 5px; font-size: 9.5px; }
-    .levelTags { min-height: 15px; gap: 4px; }
+    .levelTag { padding: 0 4px; font-size: 8.5px; line-height: 13px; }
+    .levelTag i { font-size: 8px; }
+    .levelTags { min-height: 13px; gap: 3px; }
     .levelLock { font-size: 18px; }
 }
 
