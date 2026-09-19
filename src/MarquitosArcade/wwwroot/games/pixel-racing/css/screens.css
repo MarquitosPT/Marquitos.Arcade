@@ -16,7 +16,23 @@
     align-items: center;
     justify-content: center;
     padding: calc(env(safe-area-inset-top) + 58px) 16px calc(env(safe-area-inset-bottom) + 16px);
+    /*
+     * O ecrã rola na vertical quando o painel não cabe — e só na vertical.
+     *
+     * O `overflow-x` tinha de vir escrito: com um eixo em `auto` e o outro em
+     * `visible`, o `visible` passa também a `auto`, e a caixa ficava a aceitar
+     * arrasto na horizontal. Como o `touch-action` não se herda, o `none` do
+     * html/body não chega cá abaixo: o dedo arrastava o painel para o lado e,
+     * sem nada para rolar, a borracha do Safari levava o documento atrás dele,
+     * deixando à vista a faixa lisa do fundo. Daí o par: `pan-y` diz ao browser
+     * que aqui só há gesto vertical, e o `contain` impede que o fim da rolagem
+     * se propague ao documento (o mesmo que a `.page-scroll` da arcada faz).
+     */
     overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
     background: var(--scrim);
     -webkit-backdrop-filter: blur(var(--blur-soft));
     backdrop-filter: blur(var(--blur-soft));
