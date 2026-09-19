@@ -89,17 +89,37 @@ const SEED_RANDOM = `
 const GAMES = [
     {
         slug: 'pong',
+        // Contra o CPU ao alto: raquetes em cima e em baixo, arrasta-se de lado.
         name: 'pong-1jogador',
-        viewport: { width: 800, height: 450 },
+        viewport: { width: 450, height: 800 },
         canvas: true,
         async play(page) {
             await page.fill('#playerNameInput', 'MARQUITOS');
             await page.click('#startBtn');
             // Arrasta a raquete de baixo para devolver a bola à IA.
-            await page.mouse.move(400, 420);
+            await page.mouse.move(225, 760);
             await page.mouse.down();
             for (let i = 0; i < 40; i++) {
-                await page.mouse.move(400 + Math.sin(i / 4) * 250, 420);
+                await page.mouse.move(225 + Math.sin(i / 4) * 150, 760);
+                await sleep(40);
+            }
+            await page.mouse.up();
+        }
+    },
+    {
+        slug: 'pong',
+        // O mesmo modo ao comprido usa o outro campo — raquetes nos lados, a do
+        // CPU à direita —, por isso é código diferente e leva cenário próprio.
+        name: 'pong-1jogador-paisagem',
+        viewport: { width: 800, height: 450 },
+        canvas: true,
+        async play(page) {
+            await page.click('#startBtn');
+            // Ao comprido a raquete de quem joga é a da esquerda e sobe e desce.
+            await page.mouse.move(400, 225);
+            await page.mouse.down();
+            for (let i = 0; i < 40; i++) {
+                await page.mouse.move(400, 225 + Math.sin(i / 4) * 150);
                 await sleep(40);
             }
             await page.mouse.up();

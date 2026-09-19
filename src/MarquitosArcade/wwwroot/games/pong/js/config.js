@@ -22,18 +22,24 @@ export const TUNING = {
     /** A bola nunca fica mais lenta do que isto, mesmo num ecrã pequeno. */
     minBallSpeed: 3.2,
 
-    single: {
+    /*
+     * Há dois campos, e quem os escolhe é a orientação do ecrã, não o modo (ver
+     * field.js): ao alto joga-se de cima para baixo, ao comprido joga-se de um
+     * lado ao outro. A dois jogadores só se joga ao comprido — em retrato as duas
+     * raquetes ficariam em cima uma da outra —, mas contra o CPU servem os dois.
+     */
+
+    /** Ao alto: raquetes em cima e em baixo, a bola sobe e desce. */
+    endField: {
         paddleWidth: 0.22,      // x W
         paddleHeight: 0.012,    // x H (mínimo 10px)
         ballRadius: 0.018,      // x W (mínimo 6px)
         paddleMargin: 0.06,     // x H, distância da raquete ao bordo
-        ballSpeed: 0.006,       // x W
-        aiSpeed: 0.012,         // x W, antes do multiplicador de dificuldade
-        /** Zona morta da IA: abaixo disto não corrige, senão trema à volta da bola. */
-        aiDeadZone: 4
+        ballSpeed: 0.006        // x W
     },
 
-    two: {
+    /** Ao comprido: raquetes nos lados, a bola vai e vem. */
+    sideField: {
         paddleLength: 0.24,     // x H
         paddleThickness: 0.012, // x W (mínimo 10px)
         ballRadius: 0.025,      // x H (mínimo 6px)
@@ -41,6 +47,22 @@ export const TUNING = {
         ballSpeed: 0.009        // x H
     },
 
+    /** Adversário, em qualquer um dos campos. */
+    ai: {
+        /** x o lado por onde a raquete dele corre, antes do multiplicador de dificuldade. */
+        speed: 0.012,
+        /** Zona morta: abaixo disto não corrige, senão trema à volta da bola. */
+        deadZone: 4
+    },
+
     /** Margem de tolerância da colisão, em px, para a bola não atravessar a raquete. */
-    hitTolerance: 10
+    hitTolerance: 10,
+
+    /*
+     * Folga, em px, entre uma raquete e a área de sistema mais próxima (o notch
+     * ou a barra de gestos). Não chega a raquete não ficar por baixo delas: o
+     * dedo que a arrasta também não pode acabar em cima da barra, senão o gesto
+     * vai para o iOS em vez de ir para o jogo.
+     */
+    safeGap: 10
 };

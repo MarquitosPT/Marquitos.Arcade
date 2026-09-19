@@ -1,7 +1,7 @@
 // Desenho do campo. Tudo em coordenadas lógicas — o viewport do SDK já pôs a
 // transformação do devicePixelRatio no contexto.
 
-import { isSinglePlayer, state } from './state.js';
+import { isSideField, state } from './state.js';
 
 const BACKGROUND = '#000';
 const FOREGROUND = '#fff';
@@ -26,12 +26,12 @@ function drawCenterLine(ctx, W, H) {
     ctx.lineWidth = 2;
     ctx.setLineDash([H * 0.02, H * 0.02]);
     ctx.beginPath();
-    if (isSinglePlayer()) {
-        ctx.moveTo(0, H / 2);
-        ctx.lineTo(W, H / 2);
-    } else {
+    if (isSideField()) {
         ctx.moveTo(W / 2, 0);
         ctx.lineTo(W / 2, H);
+    } else {
+        ctx.moveTo(0, H / 2);
+        ctx.lineTo(W, H / 2);
     }
     ctx.stroke();
     ctx.setLineDash([]);
@@ -40,12 +40,12 @@ function drawCenterLine(ctx, W, H) {
 function drawPaddles(ctx) {
     const { player, ai, p1, p2, paddleW, paddleH, paddleLen, paddleThick } = state;
     ctx.fillStyle = FOREGROUND;
-    if (isSinglePlayer()) {
-        ctx.fillRect(player.x, player.y, paddleW, paddleH);
-        ctx.fillRect(ai.x, ai.y, paddleW, paddleH);
-    } else {
+    if (isSideField()) {
         ctx.fillRect(p1.x, p1.y, paddleThick, paddleLen);
         ctx.fillRect(p2.x, p2.y, paddleThick, paddleLen);
+    } else {
+        ctx.fillRect(player.x, player.y, paddleW, paddleH);
+        ctx.fillRect(ai.x, ai.y, paddleW, paddleH);
     }
 }
 
@@ -60,12 +60,12 @@ function drawScores(ctx, W, H) {
     ctx.font = `bold ${Math.floor(Math.min(H, W) * 0.08)}px 'Courier New', monospace`;
     ctx.textAlign = 'center';
     ctx.fillStyle = SCORE_COLOR;
-    if (isSinglePlayer()) {
-        // Cada pontuação do seu lado da linha, junto à raquete a que pertence.
-        ctx.fillText(state.scoreA, W / 2, H * 0.42);
-        ctx.fillText(state.scoreP, W / 2, H * 0.58);
-    } else {
+    // Cada pontuação do seu lado da linha, junto à raquete a que pertence.
+    if (isSideField()) {
         ctx.fillText(state.scoreP, W * 0.25, H * 0.14);
         ctx.fillText(state.scoreA, W * 0.75, H * 0.14);
+    } else {
+        ctx.fillText(state.scoreA, W / 2, H * 0.42);
+        ctx.fillText(state.scoreP, W / 2, H * 0.58);
     }
 }

@@ -1,4 +1,6 @@
-/* Botões, linhas de opções e campo do nome do jogador. */
+/* Botões, linhas de opções e campo do nome do jogador.
+ *
+ * Os tamanhos são em `vmin` — ver a nota em screens.css. */
 
 .btn {
     background: #fff;
@@ -6,7 +8,7 @@
     border: none;
     padding: 16px 46px;
     font-family: inherit;
-    font-size: 4.6vw;
+    font-size: 4.6vmin;
     letter-spacing: 0.2em;
     font-weight: bold;
     cursor: pointer;
@@ -19,7 +21,7 @@
     border: 2px solid #fff;
     padding: 14px 40px;
     font-family: inherit;
-    font-size: 4vw;
+    font-size: 4vmin;
     letter-spacing: 0.15em;
     margin-top: 14px;
 }
@@ -38,7 +40,7 @@
     border: 2px solid #fff;
     padding: 12px 20px;
     font-family: inherit;
-    font-size: 3.8vw;
+    font-size: 3.8vmin;
     letter-spacing: 0.1em;
 }
 
@@ -53,7 +55,7 @@
     border: 2px solid #888;
     padding: 9px 16px;
     font-family: inherit;
-    font-size: 3.2vw;
+    font-size: 3.2vmin;
     letter-spacing: 0.1em;
 }
 
@@ -77,7 +79,7 @@
     color: #fff;
     padding: 10px 16px;
     font-family: inherit;
-    font-size: 3.4vw;
+    font-size: 3.4vmin;
     text-align: center;
     letter-spacing: 0.05em;
     width: 100%;
@@ -87,3 +89,13 @@
     .nameInput::placeholder {
         color: rgba(255,255,255,0.5);
     }
+
+/* Ao comprido, o mesmo aperto das folgas verticais — ver a nota em screens.css. */
+@media (orientation: landscape) and (max-height: 520px) {
+    .row { margin-bottom: 10px; }
+    .btn { padding: 10px 40px; margin-top: 4px; }
+    .btnOutline { padding: 9px 34px; margin-top: 8px; }
+    .modeBtn { padding: 8px 18px; }
+    .diffBtn { padding: 6px 14px; }
+    .nameInput { padding: 7px 14px; }
+}

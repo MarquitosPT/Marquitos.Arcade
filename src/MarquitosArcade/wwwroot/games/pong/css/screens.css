@@ -14,27 +14,36 @@
     color: #fff;
     z-index: 10;
     text-align: center;
-    padding: 20px;
+    /* Ao comprido o notch fica num dos lados; a mesma folga nos dois mantém o
+       menu centrado em vez de o empurrar para o lado oposto. */
+    padding: 20px max(20px, env(safe-area-inset-left), env(safe-area-inset-right));
 }
 
 #pauseScreen {
     display: none;
 }
 
+/*
+ * As medidas do menu são em `vmin`, o lado mais curto do ecrã, e não em `vw`.
+ * Em retrato dá exatamente no mesmo — aí o lado curto é a largura —, mas ao
+ * comprido o `vw` passava a contar o lado comprido e o menu inteiro crescia
+ * tanto que o título e o botão de jogar saíam do ecrã.
+ */
+
 /* O ecrã de pausa é mais estreito do que o menu, por isso o título é menor. */
 #pauseScreen .title {
-    font-size: 9vw;
+    font-size: 9vmin;
 }
 
 .title {
-    font-size: 12vw;
+    font-size: 12vmin;
     letter-spacing: 0.3em;
     margin-bottom: 6px;
     text-shadow: 0 0 15px #fff;
 }
 
 .sub {
-    font-size: 3.6vw;
+    font-size: 3.6vmin;
     opacity: 0.7;
     margin-bottom: 30px;
     letter-spacing: 0.1em;
@@ -42,15 +51,28 @@
 
 #hint {
     margin-top: 22px;
-    font-size: 2.8vw;
+    font-size: 2.8vmin;
     opacity: 0.5;
 }
 
 #rotateWarning {
     display: none;
     color: #fff;
-    font-size: 4vw;
+    font-size: 4vmin;
     letter-spacing: 0.1em;
     margin: 20px 0;
     max-width: 80%;
+}
+
+/*
+ * Ao comprido sobra muito menos altura do que ao alto, e as folgas verticais
+ * são em px fixos: os tamanhos de letra encolhem com o `vmin`, mas as margens
+ * não, e num ecrã de 360pt de altura o menu ficava a um pixel de transbordar.
+ * Este bloco aperta só as folgas, e só onde a altura é mesmo curta — ao alto e
+ * num tablet ao comprido nada disto se aplica.
+ */
+@media (orientation: landscape) and (max-height: 520px) {
+    .sub { margin-bottom: 16px; }
+    #hint { margin-top: 12px; }
+    #rotateWarning { margin: 12px 0; }
 }
