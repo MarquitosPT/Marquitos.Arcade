@@ -4,9 +4,10 @@
 // Guarda sempre uma cópia local do quadro para o ecrã nunca ficar vazio quando o
 // servidor está a acordar ou o telemóvel está sem rede.
 //
-// Nota sobre nomes: se o pedido vier de um utilizador autenticado, o servidor
-// ignora o nome enviado e usa o da conta (evita spoofing). O nome que o jogo
-// envia só conta para visitantes anónimos.
+// Nota sobre nomes: o servidor guarda o nome que o jogo enviar, seja quem for o
+// jogador — só recorre ao nome da conta se vier vazio (ver ScoresEndpoints.cs).
+// Quem tem de garantir que um jogador com sessão iniciada aparece no quadro com
+// o nome da conta é este ficheiro, no `bindPlayerNameInput` aqui em baixo.
 
 import { readText, writeText, readJson, writeJson } from './storage.js';
 
@@ -26,12 +27,21 @@ export function fetchAccountDisplayName() {
 
 /**
  * Liga um <input> de nome ao armazenamento local e à conta do jogador.
- * Preenche primeiro com o nome guardado neste aparelho e, se estiver vazio,
- * com o nome da conta quando a resposta chegar (sem pisar o que o jogador
- * já tenha começado a escrever entretanto).
+ *
+ * Ordem de precedência do nome, da que manda para a que cede:
+ *
+ * 1. o que o jogador escrever agora no campo;
+ * 2. o nome da conta, para quem tem sessão iniciada;
+ * 3. o nome guardado neste aparelho de uma visita anterior;
+ * 4. o `fallback`, que é só o que se mostra quando não há nome nenhum.
+ *
+ * O nome da conta ganhar ao que está guardado é o que evita o caso em que o
+ * jogo diz "A correr como Fulano" e regista a pontuação com o nome antigo. Um
+ * jogo que esconda o campo a quem tem sessão (como o Pixel Racing) depende
+ * inteiramente disto.
  *
  * @returns {{ current(): string, remember(name?: string): string, account: Promise<string> }}
- *   `current()` devolve o nome escrito, cortado, ou 'Anónimo' se vazio.
+ *   `current()` devolve o nome a usar, cortado, ou o `fallback` se não houver.
  *   `remember()` grava-o para a próxima visita e devolve-o.
  *   `account` resolve com o nome da conta autenticada, ou '' se for visitante —
  *   é a mesma resposta que preenche o campo, partilhada para o jogo poder
@@ -41,9 +51,19 @@ export function bindPlayerNameInput(input, storageKey, { fallback = 'Anónimo' }
     const account = fetchAccountDisplayName();
 
     if (input) {
-        input.value = readText(storageKey) || '';
+        // O `fallback` não é um nome que alguém tenha escolhido. Versões
+        // anteriores chegaram a guardá-lo (ver `remember` mais abaixo), por isso
+        // aqui vale tanto como campo vazio — senão continuava a ganhar à conta.
+        const stored = readText(storageKey);
+        input.value = stored && stored !== fallback ? stored : '';
+
+        // Se o jogador começar a escrever antes de a conta responder, o que ele
+        // escreveu manda: a resposta chega depois e não lhe pisa as teclas.
+        let typed = false;
+        input.addEventListener('input', () => { typed = true; });
+
         account.then((displayName) => {
-            if (displayName && !input.value) input.value = displayName;
+            if (displayName && !typed) input.value = displayName;
         });
     }
 
@@ -56,7 +76,10 @@ export function bindPlayerNameInput(input, storageKey, { fallback = 'Anónimo' }
         account,
         remember(name) {
             const value = name === undefined ? current() : name;
-            writeText(storageKey, value);
+            // Guardar o `fallback` era o que estragava a visita seguinte: ficava
+            // no armazenamento como se fosse um nome escolhido e ganhava ao nome
+            // da conta. Quem joga sem escrever nada não deixa nome guardado.
+            if (value !== fallback) writeText(storageKey, value);
             return value;
         }
     };
