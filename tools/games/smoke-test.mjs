@@ -245,6 +245,86 @@ const GAMES = [
         }
     },
     {
+        slug: 'maze-run',
+        // Ao alto, que é como se joga um labirinto no telemóvel.
+        viewport: { width: 450, height: 800 },
+        canvas: true,
+        menuSelector: '#startScreen',
+        async play(page) {
+            await page.fill('#playerNameInput', 'MARQUITOS');
+            await page.click('#playBtn');
+            await waitForMazePlaying(page);
+            // Umas curvas: confirma que o jogador vira nos cruzamentos e que os
+            // guardas andam sem rebentar a IA.
+            for (const key of ['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp']) {
+                await page.keyboard.press(key);
+                await sleep(500);
+            }
+        }
+    },
+    {
+        slug: 'maze-run',
+        name: 'maze-run-niveis',
+        viewport: { width: 450, height: 800 },
+        canvas: true,
+        menuSelector: '#startScreen',
+        async play(page) {
+            // O ecrã dos níveis: o primeiro aberto, os outros por desbloquear.
+            await page.click('#chooseBtn');
+            await page.waitForSelector('.levelCard');
+            await sleep(500); // o painel entra com uma animação; clicar a meio dela é instável
+            const locked = await page.$$eval('.levelCard.is-locked', (cards) => cards.length);
+            const total = await page.$$eval('.levelCard', (cards) => cards.length);
+            if (total < 2) throw new Error(`só ${total} nível(eis) no ecrã de níveis`);
+            if (locked !== total - 1) throw new Error(`${locked} níveis fechados de ${total} — o primeiro devia ser o único aberto`);
+            // Um nível fechado não arranca nada.
+            await page.click('.levelCard.is-locked');
+            await sleep(400);
+            if (!(await page.isVisible('#levelsScreen'))) throw new Error('um nível fechado abriu');
+            await page.click('.levelCard:not(.is-locked)');
+            await waitForMazePlaying(page);
+            await sleep(600);
+        }
+    },
+    {
+        slug: 'maze-run',
+        name: 'maze-run-resultados',
+        viewport: { width: 450, height: 800 },
+        canvas: true,
+        menuSelector: '#startScreen',
+        async play(page) {
+            // Jogar o nível a sério levaria um minuto. Em vez disso arranca-se e
+            // força-se a chegada à saída pelos próprios módulos do jogo — o ecrã
+            // de resultados e o desbloqueio são montados pelo código real.
+            await page.click('#playBtn');
+            await waitForMazePlaying(page);
+
+            await page.evaluate(async () => {
+                const { game } = await import('/games/maze-run/js/state.js');
+                for (const crystal of game.crystals) crystal.taken = true;
+                game.collected = game.crystals.length;
+                game.exitOpen = true;
+                game.player.cx = game.layout.exit.x;
+                game.player.cy = game.layout.exit.y;
+                game.player.t = 0;
+                game.player.moving = false;
+            });
+
+            await page.waitForSelector('#nextLevelBtn');
+            await sleep(500);
+
+            const unlocked = await page.evaluate(() => {
+                const raw = localStorage.getItem('mazeRunProgress_v1');
+                return raw ? JSON.parse(raw).unlocked : 0;
+            });
+            if (unlocked < 2) throw new Error(`o nível 2 não ficou desbloqueado (unlocked=${unlocked})`);
+
+            await page.click('#nextLevelBtn');
+            await waitForMazePlaying(page);
+            await sleep(600);
+        }
+    },
+    {
         slug: 'pixel-racing',
         name: 'pixel-racing-resultados',
         viewport: { width: 800, height: 450 },
@@ -351,6 +431,23 @@ async function waitForRacing(page) {
     });
     await page.waitForFunction(
         () => window.__arcadeRace && window.__arcadeRace.phase === 'racing',
+        undefined,
+        { timeout: 30000 }
+    );
+}
+
+/**
+ * O mesmo para o Maze Run: espera que o nível esteja mesmo a correr, em vez de
+ * dormir o tempo nominal da contagem decrescente (ver a nota do `waitForRacing`
+ * sobre o predicado ter de ser síncrono).
+ */
+async function waitForMazePlaying(page) {
+    await page.evaluate(async () => {
+        const { game } = await import('/games/maze-run/js/state.js');
+        window.__arcadeMaze = game;
+    });
+    await page.waitForFunction(
+        () => window.__arcadeMaze && window.__arcadeMaze.phase === 'playing',
         undefined,
         { timeout: 30000 }
     );

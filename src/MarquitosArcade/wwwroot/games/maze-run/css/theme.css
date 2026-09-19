@@ -1,0 +1,56 @@
+/*
+ * Tokens do Maze Run — a mesma variante "glass" do tema da arcada que o Pixel
+ * Racing usa, com os mesmos nomes de token, para os dois jogos se manterem
+ * parecidos sem partilharem uma folha.
+ *
+ * Também aqui só existe a variante escura: os ecrãs estão sempre por cima do
+ * labirinto, que é escuro em todos os níveis, e vidro claro por cima dele não
+ * teria contraste. Por isso nada de media query de `prefers-color-scheme` — se
+ * um dia houver uma variante clara, entra aqui e nos mesmos tokens, não
+ * espalhada pelas outras folhas.
+ *
+ * A cor de cada nível (`--level-accent`) não vive aqui: vem do próprio nível
+ * (levels.js) e é escrita no elemento pelo JS. Os tokens são o tema; o acento
+ * do nível é conteúdo.
+ */
+
+:root {
+    /* acentos — o ciano é o do jogador (ver render.js) */
+    --accent: #35e0ff;
+    --accent-2: #8b7cff;
+    --accent-3: #ff5d9e;
+    --gold: #ffc14d;
+    --on-accent: #04131c;
+
+    /* texto */
+    --text: #eef2ff;
+    --muted: rgba(238, 242, 255, 0.66);
+    --faint: rgba(238, 242, 255, 0.42);
+
+    /* vidro */
+    --glass-bg: linear-gradient(155deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04) 60%);
+    --glass-bg-soft: rgba(255, 255, 255, 0.06);
+    --glass-bg-hover: rgba(255, 255, 255, 0.11);
+    --glass-border: rgba(255, 255, 255, 0.16);
+    --glass-border-strong: rgba(255, 255, 255, 0.28);
+    --glass-shadow: 0 34px 70px -30px rgba(0, 0, 0, 0.9);
+    --glass-shadow-sm: 0 14px 30px -18px rgba(0, 0, 0, 0.85);
+    --blur: 24px;
+    --blur-soft: 10px;
+
+    /* o véu que separa o vidro do labirinto que está a ser desenhado por trás */
+    --scrim: radial-gradient(ellipse at 50% 18%, rgba(52, 30, 96, 0.55), rgba(4, 6, 14, 0.84) 68%);
+
+    --ring: rgba(53, 224, 255, 0.45);
+    --glow: rgba(53, 224, 255, 0.35);
+
+    /* geometria */
+    --radius-sm: 12px;
+    --radius: 18px;
+    --radius-lg: 26px;
+    --radius-pill: 999px;
+
+    /* tipografia */
+    --font-display: "Outfit", "Segoe UI", system-ui, sans-serif;
+    --font-body: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+}

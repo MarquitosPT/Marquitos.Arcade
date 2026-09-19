@@ -1,0 +1,221 @@
+/*
+ * Ecrãs sobrepostos: menu, escolha de nível, pausa e resultados.
+ *
+ * Todos têm a mesma anatomia do Pixel Racing — um véu que cobre o ecrã
+ * (`.screen`) e um painel de vidro ao centro (`.panel`). O `backdrop-filter` do
+ * painel desfoca o que está por trás, que é o labirinto a ser desenhado em
+ * tempo real: o menu fica com o nível escolhido lá atrás, com os cristais e os
+ * guardas nos sítios onde vão estar.
+ */
+
+.screen {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: calc(env(safe-area-inset-top) + 58px) 16px calc(env(safe-area-inset-bottom) + 16px);
+    /*
+     * O ecrã rola na vertical quando o painel não cabe — e só na vertical.
+     *
+     * O `overflow-x` tem de vir escrito: com um eixo em `auto` e o outro em
+     * `visible`, o `visible` passa também a `auto`, e a caixa ficava a aceitar
+     * arrasto na horizontal. Como o `touch-action` não se herda, o `none` do
+     * html/body não chega cá abaixo: o dedo arrastava o painel para o lado e,
+     * sem nada para rolar, a borracha do Safari levava o documento atrás dele,
+     * deixando à vista a faixa lisa do fundo. Daí o par: `pan-y` diz ao browser
+     * que aqui só há gesto vertical, e o `contain` impede que o fim da rolagem
+     * se propague ao documento.
+     */
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    background: var(--scrim);
+    -webkit-backdrop-filter: blur(var(--blur-soft));
+    backdrop-filter: blur(var(--blur-soft));
+    text-align: center;
+}
+
+/* O JS mostra um ecrã de cada vez (createOverlays); o menu é o que arranca. */
+#startScreen { display: flex; }
+
+.panel {
+    position: relative;
+    width: min(100%, 420px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    margin: auto;
+    padding: clamp(20px, 4.5vw, 30px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: blur(var(--blur)) saturate(150%);
+    backdrop-filter: blur(var(--blur)) saturate(150%);
+    box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    animation: panelIn 0.35s cubic-bezier(0.2, 0.9, 0.25, 1) both;
+}
+
+.panel--wide { width: min(100%, 600px); }
+.panel--narrow { width: min(100%, 340px); }
+
+@keyframes panelIn {
+    from { opacity: 0; transform: translateY(14px) scale(0.98); }
+    to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .panel { animation: none; }
+}
+
+/* ---------- Marca, títulos ---------- */
+
+.brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.brandBadge {
+    display: grid;
+    place-items: center;
+    width: 54px;
+    height: 54px;
+    margin-bottom: 2px;
+    font-size: 26px;
+    border: 1px solid var(--glass-border-strong);
+    border-radius: 18px;
+    background: linear-gradient(150deg, rgba(53, 224, 255, 0.28), rgba(139, 124, 255, 0.22));
+    box-shadow: 0 12px 28px -14px var(--glow), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.title {
+    font-family: var(--font-display);
+    font-size: clamp(30px, 8vw, 44px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    background: linear-gradient(100deg, #ffffff 18%, var(--accent) 58%, var(--accent-2) 96%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.sub {
+    font-size: clamp(12px, 3.2vw, 14px);
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+}
+
+.panelHead {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    text-align: left;
+}
+
+.panelHeadText { flex: 1; }
+
+.panelTitle {
+    font-family: var(--font-display);
+    font-size: clamp(19px, 5vw, 24px);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+.panelSub {
+    margin-top: 2px;
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.sectionLabel {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--faint);
+}
+
+#hint {
+    max-width: 42ch;
+    font-size: clamp(11px, 2.8vw, 12.5px);
+    line-height: 1.5;
+    color: var(--faint);
+}
+
+/* ---------- Ponto da situação ---------- */
+
+/*
+ * A linha de progresso aparece nos dois ecrãs do menu. É pouca informação de
+ * propósito: níveis abertos, estrelas, e uma barra que cresce — quem quer os
+ * pormenores abre os níveis e vê-os cartão a cartão.
+ */
+.progress {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+
+.progressLine {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+}
+
+.progressBar {
+    position: relative;
+    width: 100%;
+    height: 6px;
+    border-radius: var(--radius-pill);
+    background: rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+}
+
+.progressBar::after {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: var(--fill, 0%);
+    border-radius: inherit;
+    background: linear-gradient(100deg, var(--accent), var(--accent-2));
+    transition: width 0.4s cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+
+/*
+ * Sem sessão iniciada o progresso só existe neste aparelho. Dizê-lo aqui, e não
+ * num aviso a meio do jogo, é o que dá a quem joga a hipótese de decidir antes
+ * de investir uma tarde nos níveis.
+ */
+.progressNote {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 9px 12px;
+    font-size: 11.5px;
+    line-height: 1.4;
+    text-align: left;
+    color: var(--muted);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    background: var(--glass-bg-soft);
+}
+
+.progressNote a {
+    color: var(--accent);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.progressNote a:hover { text-decoration: underline; }

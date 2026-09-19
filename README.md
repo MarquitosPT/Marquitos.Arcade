@@ -16,11 +16,13 @@ Blazor Web App (.NET 10, render mode Interactive Server) com ASP.NET Core Identi
 - `src/MarquitosArcade/wwwroot/games/<slug>/`: um jogo por pasta, cada um com o seu `index.html` (só markup), `css/`, `js/` (módulos ES) e `assets/`. Ver [Estrutura de um jogo](#estrutura-de-um-jogo) e, para o porquê desta organização em vez de um projeto .NET por jogo, [docs/estrutura-dos-jogos.md](docs/estrutura-dos-jogos.md).
   - `tasca-do-ze/`: mini-jogo "Tasca do Zé" (gestão de pedidos), com leaderboard persistido via `/api/scores/tasca-do-ze`.
   - `pong/`: Pong Retro, com modo 1 jogador (vs. CPU, pontuação submetida via `/api/scores/pong`) e 2 jogadores.
+  - `maze-run/`: Maze Run, labirintos por níveis — apanhar os cristais abre a saída, e há guardas a impedi-lo. Os níveis vão-se desbloqueando à medida que se concluem, e o progresso fica guardado na conta de quem tem sessão iniciada (ver [Progresso e níveis](#progresso-e-níveis)). Os labirintos não estão desenhados à mão: saem de uma semente por nível (`buildMaze` em `js/maze.js`), como as pistas do Pixel Racing saem do `buildTrack` — **acrescentar um nível é acrescentar uma entrada ao array `LEVELS` do `js/levels.js`**, e mais nada.
   - `pixel-racing/`: Pixel Racing, corrida simples em qualquer uma das seis pistas ou campeonato de três, com pontuação via `/api/scores/pixel-racing`. O menu tem dois passos: o primeiro ecrã pergunta só o nome (a quem não tem sessão iniciada) e o modo; a pista (ou a taça, no campeonato), a cor do carro e a dificuldade ficam no ecrã seguinte, já a saber o que se vai correr. As pistas são geradas por `buildTrack` a partir de uma superelipse com harmónicos, e o grau de perícia que o cartão mostra é medido no traçado (`corneringProfile`) em vez de escrito à mão: as três primeiras fazem-se sem levantar o pé, as três da taça Pro são mais compridas, mais estreitas e têm curvas que obrigam a travar ou a entrar a derrapar. A cor sai da paleta única de `CAR_COLORS` e os adversários ficam com três das restantes, por isso nunca há dois carros da mesma cor na pista.
 - `src/MarquitosArcade/wwwroot/lib/arcade/`: SDK partilhado pelos jogos (áudio, leaderboard, armazenamento, viewport do canvas, ciclo de jogo, barra de topo, ecrã de arranque). Módulos ES sem dependências externas. O `splash.css`/`splash.js`/`splash-boot.js` são a exceção que também serve o portal — ver [Ecrã de arranque](#ecrã-de-arranque).
 - `tools/games/smoke-test.mjs`: smoke-test dos jogos em Chromium headless, corrido em cada pull request por `.github/workflows/jogos-smoke-test.yml`. Ver [Testar os jogos](#testar-os-jogos).
 - `.github/workflows/build-dotnet.yml`: compila o site (`dotnet build`) em cada pull request — o smoke-test dos jogos não passa pelo compilador. Ver [Compilar o site num pull request](#compilar-o-site-num-pull-request).
 - `src/MarquitosArcade/Scores/ScoresEndpoints.cs`: endpoint genérico `GET/POST /api/scores/:gameId`, persistido na tabela `Scores` (EF Core + SQLite). Se o pedido vier de um utilizador autenticado, o nome do leaderboard vem da conta (evita spoofing de nomes); caso contrário aceita o nome livre submetido pelo jogo.
+- `src/MarquitosArcade/Progress/ProgressEndpoints.cs`: endpoint genérico `GET/PUT /api/progress/:gameId`, para os jogos com níveis. Guarda um JSON opaco por (conta, jogo) na tabela `GameProgress`. Ver [Progresso e níveis](#progresso-e-níveis).
 - `src/MarquitosArcade/Scores/ScoreMaintenance.cs`: limpeza da tabela `Scores` no arranque — apaga as pontuações que ficaram a apontar para contas já eliminadas. Ver [Pontuações](#pontuações).
 - `src/MarquitosArcade/Web/CachePolicy.cs`: política de cache HTTP — `immutable` para os URLs com impressão digital (`?v=`), `no-cache` para todo o resto. Ver [Cache do browser](#cache-do-browser-e-o-site-afixado-ao-ecrã-principal).
 - `src/MarquitosArcade/Data/`: `ApplicationDbContext`, `ApplicationUser` e as migrations do EF Core.
@@ -157,6 +159,7 @@ import { createScoreClient } from '/lib/arcade/scores.js';
 | ------------- | ---------------------------------------------------------------- |
 | `audio.js`    | Ciclo de vida do `AudioContext` e bips sintetizados              |
 | `scores.js`   | Cliente de `/api/scores/:gameId`, cache offline, nome do jogador e da conta |
+| `progress.js` | Cliente de `/api/progress/:gameId`: níveis desbloqueados e marcas, na conta e no aparelho |
 | `storage.js`  | `localStorage` que não rebenta em Safari privado                 |
 | `viewport.js` | Canvas em ecrã inteiro, nítido em Retina e por baixo do notch     |
 | `loop.js`     | Ciclo `requestAnimationFrame` com delta-time limitado            |
@@ -245,6 +248,7 @@ vezes.
 1. Criar `src/MarquitosArcade/wwwroot/games/<slug>/` com a estrutura acima. O `pong/` é o mais pequeno dos três e serve bem de modelo.
    Copiar de lá também o bloco `#arcadeSplash` do `index.html` (trocando o nome do jogo em `.arcade-splash-caption`), os dois `<link>` e o `<script>` do `splash-boot.js` no `<head>`, e o `window.__arcadeSplash?.ready()` no fim do `main.js` — ver [Ecrã de arranque](#ecrã-de-arranque).
 2. Se precisar de leaderboard persistente, usar `createScoreClient('<slug>')` do SDK, que fala com `GET/POST /api/scores/<slug>`.
+   Se tiver níveis a desbloquear, usar também `createProgressClient('<slug>')`, que fala com `GET/PUT /api/progress/<slug>` — ver [Progresso e níveis](#progresso-e-níveis).
 3. Acrescentar o jogo ao array `GAMES` em `tools/games/smoke-test.mjs`, com um guião que o jogue durante alguns segundos.
 4. Gerar a capa do jogo: acrescentar uma receita ao array `GAMES` em `tools/covers/capture-covers.mjs` e correr o script (ver [Capas dos jogos](#capas-dos-jogos)).
 5. Adicionar uma entrada ao array `Catalog` em `Components/Pages/Home.razor` (slug, título, tagline, descrição, emoji, tema e capa) e, se o tema for novo, uma classe `.theme-<jogo>` em `styles.css` com a cor (`--game-accent`), o fundo da capa (`--cover-bg`) e o lettering do jogo.
@@ -268,7 +272,10 @@ node capture-covers.mjs --base http://localhost:5000 --only pong   # só um jogo
 
 O script abre cada jogo num Chromium headless, joga-o com o guião definido no array `GAMES`, recorta a zona interessante em 16:9 e grava o WebP. Como os jogos têm elementos aleatórios (pedidos, ângulo da bola, posição dos carros), cada execução dá um fotograma diferente — vale a pena espreitar o resultado antes de fazer commit.
 
-Jogos que ainda não existem não têm screenshot: o `Maze Run` usa um labirinto gerado por `tools/covers/make-maze-placeholder.mjs` (`wwwroot/covers/maze-run.svg`).
+Jogos que ainda não existem não têm screenshot. Enquanto o Maze Run esteve por
+lançar, o cartão dele usou um labirinto desenhado à mão em SVG; agora que o jogo
+existe, a capa é um fotograma dele como a dos outros, e o placeholder (e o script
+que o gerava) saíram do repositório.
 
 ## Pontuações
 
@@ -301,6 +308,52 @@ existe em `AspNetUsers`), a seguir ao `Database.Migrate()` — ver
 `Scores/ScoreMaintenance.cs`. Não há chave estrangeira com `ON DELETE CASCADE`
 entre as duas tabelas porque acrescentá-la obrigaria o SQLite a reconstruir a
 tabela `Scores` e a migration rebentaria logo nestas mesmas linhas órfãs.
+
+## Progresso e níveis
+
+O Maze Run é o primeiro jogo da arcada com níveis que se vão desbloqueando, e
+isso obrigou a uma pergunta que as pontuações não fazem: **onde é que fica
+guardado o que já se abriu?** A resposta são dois sítios, e é de propósito.
+
+| onde                  | quem                            | o que resolve                                           |
+| --------------------- | ------------------------------- | ------------------------------------------------------- |
+| `localStorage`        | toda a gente                    | jogar sem conta, sem rede e sem esperar pelo servidor   |
+| tabela `GameProgress` | quem tem sessão iniciada        | recomeçar em qualquer nível já aberto, noutro aparelho  |
+
+O cliente é o `wwwroot/lib/arcade/progress.js`, partilhado — o Maze Run é o
+primeiro jogo a usá-lo, mas nada nele é do Maze Run. Ele grava sempre no
+aparelho primeiro e manda para o servidor a seguir, com um atraso curto para
+várias mudanças seguidas irem num só pedido (e uma última gravação quando a
+página se esconde, para fechar o separador a meio de um nível não custar o
+nível). Sem sessão iniciada, o servidor responde `stored: false` e o jogo
+continua a jogar-se na mesma — não é um erro, é um jogador sem conta.
+
+**O servidor não sabe o que lá está dentro.** O `GET/PUT /api/progress/:gameId`
+guarda um JSON opaco por (conta, jogo), com um teto de 8 kB, exatamente como o
+jogo o escreveu. É a mesma escolha do endpoint das pontuações: um jogo novo com
+níveis não obriga a mexer no servidor nem a criar uma migration. O que é do jogo
+— a forma do objeto e a regra de junção — vive no `games/maze-run/js/progress.js`.
+
+A regra de junção é a parte que não é óbvia. As duas cópias podem discordar (jogou-se
+sem conta e iniciou-se sessão depois; jogou-se no telemóvel e no computador), e
+quem ganha é **o melhor dos dois, campo a campo**: o nível mais alto aberto, mais
+pontos, melhor tempo, mais estrelas. Nunca a cópia "mais recente" — a mais
+recente pode ser a de um aparelho onde se jogou menos, e ninguém quer perder
+níveis por ter aberto o jogo no sítio errado.
+
+Duas notas que já custariam um bug:
+
+- **O total de pontos não se guarda, soma-se.** É a soma do melhor resultado de
+  cada nível (`totalScore`). Guardado, ficava a discordar de si próprio à
+  primeira junção de duas cópias.
+- **O progresso e a pontuação ficam registados quando o nível acaba**, em
+  `js/level.js`, e não no ecrã de resultados: um ecrã que não chegue a montar-se
+  nunca pode ser a razão de se perder o que se acabou de fazer.
+
+Eliminar a conta apaga também o progresso, na mesma transação que remove o
+utilizador e as pontuações (ver `DeletePersonalData.razor`) — é o que a política
+de privacidade promete. Ao contrário da tabela `Scores`, esta nasceu já com essa
+limpeza feita, por isso não há órfãs antigas para varrer no arranque.
 
 ## Cache do browser (e o site afixado ao ecrã principal)
 

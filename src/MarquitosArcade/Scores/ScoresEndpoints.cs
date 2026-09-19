@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using MarquitosArcade.Data;
+using MarquitosArcade.Web;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,7 +17,6 @@ public record ScoreDto(string Name, int Score, long Ts, bool Registered);
 public static class ScoresEndpoints
 {
     private const int TopCount = 10;
-    private static readonly Regex GameIdPattern = new("[^a-z0-9-]", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     public static void MapScoresEndpoints(this IEndpointRouteBuilder app)
     {
@@ -24,7 +24,7 @@ public static class ScoresEndpoints
 
         group.MapGet("/{gameId}", async (string gameId, ApplicationDbContext db) =>
         {
-            var cleanGameId = SanitizeGameId(gameId);
+            var cleanGameId = GameSlug.Sanitize(gameId);
             if (cleanGameId is null)
                 return Results.BadRequest(new { error = "Jogo inválido" });
 
@@ -34,7 +34,7 @@ public static class ScoresEndpoints
 
         group.MapPost("/{gameId}", async (string gameId, ScoreSubmission submission, ApplicationDbContext db, UserManager<ApplicationUser> userManager, HttpContext httpContext) =>
         {
-            var cleanGameId = SanitizeGameId(gameId);
+            var cleanGameId = GameSlug.Sanitize(gameId);
             if (cleanGameId is null)
                 return Results.BadRequest(new { error = "Jogo inválido" });
 
@@ -96,13 +96,6 @@ public static class ScoresEndpoints
         return topScores
             .Select(s => new ScoreDto(s.PlayerName, s.Score, ToUnixMillis(s.CreatedAtUtc), s.UserId is not null))
             .ToList();
-    }
-
-    private static string? SanitizeGameId(string gameId)
-    {
-        var cleaned = GameIdPattern.Replace(gameId, "");
-        cleaned = cleaned.Length > 40 ? cleaned[..40] : cleaned;
-        return cleaned.Length == 0 ? null : cleaned;
     }
 
     private static string SanitizeName(string? name)

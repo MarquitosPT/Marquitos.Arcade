@@ -110,6 +110,27 @@ const GAMES = [
         // Enquadramento completo: HUD em cima, pelotão ao centro. Os botões
         // táteis do fundo ficam escondidos pelo banner do título.
         clip: () => ({ x: 0, y: 0, width: 800, height: 450 })
+    },
+    {
+        slug: 'maze-run',
+        viewport: { width: 800, height: 450 },
+        scale: 2,
+        async play(page) {
+            await page.fill('#playerNameInput', 'MARQUITOS');
+            await page.click('#playBtn');
+            await page.addStyleTag({ content: HIDE_ARCADE_CHROME });
+            await sleep(5200); // contagem decrescente
+            // Umas curvas para os guardas saírem do sítio e a foto não sair
+            // com toda a gente parada no arranque.
+            for (const key of ['ArrowRight', 'ArrowRight', 'ArrowDown', 'ArrowRight']) {
+                await page.keyboard.press(key);
+                await sleep(900);
+            }
+        },
+        // O labirinto é quadrado e a capa é 16:9, por isso sobra fundo dos dois
+        // lados — é o mesmo fundo de auroras do jogo, e o banner do título
+        // assenta por cima dele.
+        clip: () => ({ x: 0, y: 0, width: 800, height: 450 })
     }
 ];
 
