@@ -7,7 +7,11 @@ namespace MarquitosArcade.Scores;
 
 public record ScoreSubmission(string? Name, int Score);
 
-public record ScoreDto(string Name, int Score, long Ts);
+/// <param name="Registered">
+/// <c>true</c> se a pontuação foi feita com sessão iniciada. As tabelas usam-no
+/// para marcar as entradas de visitantes como não registadas.
+/// </param>
+public record ScoreDto(string Name, int Score, long Ts, bool Registered);
 
 public static class ScoresEndpoints
 {
@@ -90,7 +94,7 @@ public static class ScoresEndpoints
         }
 
         return topScores
-            .Select(s => new ScoreDto(s.PlayerName, s.Score, ToUnixMillis(s.CreatedAtUtc)))
+            .Select(s => new ScoreDto(s.PlayerName, s.Score, ToUnixMillis(s.CreatedAtUtc), s.UserId is not null))
             .ToList();
     }
 

@@ -243,6 +243,17 @@ o endpoint, a partir do browser.
 O parâmetro `?jogo=<slug>` destaca o painel desse jogo — é o que o botão 🏆 da
 barra de topo dos jogos usa, junto com a âncora `#<slug>`.
 
+Cada linha diz também se a pontuação foi feita com sessão iniciada: as entradas
+sem conta (`UserId` a `null`, o campo `registered` do `ScoreDto`) levam um
+`(não registado)` em letra mais pequena a seguir ao nome (`.player-tag` no
+`styles.css`). Sem conta o nome não está reservado, por isso a marca evita que
+uma pontuação anónima passe por ser a de um jogador registado com o mesmo nome.
+
+Quando alguém elimina a conta em `/Account/Manage/DeletePersonalData`, as
+pontuações dessa conta saem da tabela `Scores` na mesma transação que remove o
+utilizador — é o que a política de privacidade promete, e é por isso que não
+ficam entradas órfãs com o nome de quem já saiu.
+
 ## Cache do browser (e o site afixado ao ecrã principal)
 
 Quem afixa a arcada ao ecrã principal do telemóvel nunca faz Ctrl+F5 — se o

@@ -2,10 +2,12 @@
 
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
 @using MarquitosArcade.Data
 
 @inject UserManager<ApplicationUser> UserManager
 @inject SignInManager<ApplicationUser> SignInManager
+@inject ApplicationDbContext Db
 @inject IdentityRedirectManager RedirectManager
 @inject ILogger<DeletePersonalData> Logger
 
@@ -18,6 +20,9 @@
 <div class="alert alert-warning" role="alert">
     <p>
         <strong>Ao eliminar estes dados, a tua conta será removida permanentemente e não poderá ser recuperada.</strong>
+    </p>
+    <p class="mb-0">
+        As pontuações que registaste com esta conta também são apagadas das tabelas de pontuações.
     </p>
 </div>
 
@@ -75,16 +80,29 @@
             return;
         }
 
+        var userId = await UserManager.GetUserIdAsync(user);
+
+        // A conta e as pontuações saem juntas: se a remoção da conta falhar, as
+        // pontuações continuam lá (e vice-versa), por isso vai tudo na mesma transação.
+        await using var transaction = await Db.Database.BeginTransactionAsync();
+
+        var removedScores = await Db.Scores
+            .Where(s => s.UserId == userId)
+            .ExecuteDeleteAsync();
+
         var result = await UserManager.DeleteAsync(user);
         if (!result.Succeeded)
         {
+            await transaction.RollbackAsync();
             throw new InvalidOperationException("Unexpected error occurred deleting user.");
         }
 
+        await transaction.CommitAsync();
+
         await SignInManager.SignOutAsync();
 
-        var userId = await UserManager.GetUserIdAsync(user);
-        Logger.LogInformation("User with ID '{UserId}' deleted themselves.", userId);
+        Logger.LogInformation(
+            "User with ID '{UserId}' deleted themselves ({ScoreCount} score(s) removed).", userId, removedScores);
 
         RedirectManager.RedirectToCurrentPage();
     }

@@ -46,7 +46,13 @@
                                 var medal = i switch { 0 => "🥇", 1 => "🥈", 2 => "🥉", _ => (i + 1).ToString() };
                                 <tr class="@(i < 3 ? $"rank-{i + 1}" : null)">
                                     <td class="rank-col">@medal</td>
-                                    <td>@entry.Name</td>
+                                    <td>
+                                        @entry.Name
+                                        @if (!entry.Registered)
+                                        {
+                                            <span class="player-tag" title="Pontuação feita sem sessão iniciada">(não registado)</span>
+                                        }
+                                    </td>
                                     <td class="score-col">@entry.Score</td>
                                 </tr>
                             }
