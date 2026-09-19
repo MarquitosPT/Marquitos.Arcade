@@ -1170,12 +1170,15 @@ main {
   );
 }
 
+/* O risco da cor do jogo, por cima do título. A distância ao topo tem de ser
+   menor do que o `padding-top` do `.game-marquee` — com os dois iguais o risco
+   assentava em cima das letras. */
 .game-marquee::before {
   content: "";
   position: absolute;
   left: 0.9rem;
   right: 0.9rem;
-  bottom: calc(100% - 2.2rem);
+  bottom: calc(100% - 1.5rem);
   height: 2px;
   border-radius: 2px;
   background: linear-gradient(to right, var(--game-accent), transparent 75%);
@@ -1233,19 +1236,14 @@ main {
   letter-spacing: 0.005em;
 }
 
-/* Pong e Pixel Racing: monoespaçada com brilho de néon, como nos seus menus. */
+/* Pong: monoespaçada com brilho de néon, como no menu do jogo. É o único —
+   nos outros cartões a monoespaçada não assenta. */
 .theme-pong {
   --game-accent: #eaf6ff;
   --cover-bg: #000;
 }
 
-.theme-racing {
-  --game-accent: #35e0ff;
-  --cover-bg: #050308;
-}
-
-.theme-pong .game-marquee h3,
-.theme-racing .game-marquee h3 {
+.theme-pong .game-marquee h3 {
   font-family: "Courier New", Courier, monospace;
   font-weight: 700;
   font-size: 1.05rem;
@@ -1256,9 +1254,13 @@ main {
     0 2px 10px rgba(0, 0, 0, 0.75);
 }
 
-/* Maze Run: fica com o lettering de base do catálogo, sem regra própria. A
-   monoespaçada do Pong e do Pixel Racing não lhe assenta — só o acento e o
-   fundo da capa é que são dele. */
+/* Pixel Racing e Maze Run: ficam com o lettering de base do catálogo, sem regra
+   própria. Deles é só o acento e o fundo da capa. */
+.theme-racing {
+  --game-accent: #35e0ff;
+  --cover-bg: #050308;
+}
+
 .theme-maze {
   --game-accent: #35e0ff;
   --cover-bg: #0a0d1c;
