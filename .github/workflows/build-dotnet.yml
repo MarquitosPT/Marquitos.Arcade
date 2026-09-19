@@ -1,0 +1,41 @@
+# Compilação do site em cada pull request.
+#
+# O smoke-test dos jogos serve o wwwroot com um servidor estático e nunca chama o
+# compilador, por isso — sem isto — um erro de C# ou de Razor só aparecia no
+# workflow de deploy, já depois do merge em main. Melhor rebentar no pull request
+# do que na única execução que também publica.
+#
+# É de propósito o mesmo comando do passo "Build with dotnet" de
+# main_marquitos-arcade.yml: se passa aqui, o deploy compila.
+#
+# Só corre em pull requests — em main, quem compila é o próprio workflow de deploy,
+# e não vale a pena pagar o build duas vezes.
+
+name: Build do .NET
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+# Um push novo no mesmo PR cancela a execução anterior, que já não interessa.
+concurrency:
+  group: build-dotnet-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read # necessário para o actions/checkout
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar o .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: Compilar
+        run: dotnet build --configuration Release

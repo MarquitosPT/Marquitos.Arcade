@@ -19,6 +19,7 @@ Blazor Web App (.NET 10, render mode Interactive Server) com ASP.NET Core Identi
   - `pixel-racing/`: Pixel Racing, corrida simples em qualquer uma das seis pistas ou campeonato de três, com pontuação via `/api/scores/pixel-racing`. O menu tem dois passos: o primeiro ecrã pergunta só o nome (a quem não tem sessão iniciada) e o modo; a pista (ou a taça, no campeonato), a cor do carro e a dificuldade ficam no ecrã seguinte, já a saber o que se vai correr. As pistas são geradas por `buildTrack` a partir de uma superelipse com harmónicos, e o grau de perícia que o cartão mostra é medido no traçado (`corneringProfile`) em vez de escrito à mão: as três primeiras fazem-se sem levantar o pé, as três da taça Pro são mais compridas, mais estreitas e têm curvas que obrigam a travar ou a entrar a derrapar. A cor sai da paleta única de `CAR_COLORS` e os adversários ficam com três das restantes, por isso nunca há dois carros da mesma cor na pista.
 - `src/MarquitosArcade/wwwroot/lib/arcade/`: SDK partilhado pelos jogos (áudio, leaderboard, armazenamento, viewport do canvas, ciclo de jogo, barra de topo, ecrã de arranque). Módulos ES sem dependências externas. O `splash.css`/`splash.js`/`splash-boot.js` são a exceção que também serve o portal — ver [Ecrã de arranque](#ecrã-de-arranque).
 - `tools/games/smoke-test.mjs`: smoke-test dos jogos em Chromium headless, corrido em cada pull request por `.github/workflows/jogos-smoke-test.yml`. Ver [Testar os jogos](#testar-os-jogos).
+- `.github/workflows/build-dotnet.yml`: compila o site (`dotnet build`) em cada pull request — o smoke-test dos jogos não passa pelo compilador. Ver [Compilar o site num pull request](#compilar-o-site-num-pull-request).
 - `src/MarquitosArcade/Scores/ScoresEndpoints.cs`: endpoint genérico `GET/POST /api/scores/:gameId`, persistido na tabela `Scores` (EF Core + SQLite). Se o pedido vier de um utilizador autenticado, o nome do leaderboard vem da conta (evita spoofing de nomes); caso contrário aceita o nome livre submetido pelo jogo.
 - `src/MarquitosArcade/Scores/ScoreMaintenance.cs`: limpeza da tabela `Scores` no arranque — apaga as pontuações que ficaram a apontar para contas já eliminadas. Ver [Pontuações](#pontuações).
 - `src/MarquitosArcade/Web/CachePolicy.cs`: política de cache HTTP — `immutable` para os URLs com impressão digital (`?v=`), `no-cache` para todo o resto. Ver [Cache do browser](#cache-do-browser-e-o-site-afixado-ao-ecrã-principal).
@@ -199,6 +200,19 @@ git worktree add /tmp/antes HEAD
 node smoke-test.mjs --root /tmp/antes/src/MarquitosArcade/wwwroot --out /tmp/ref
 node smoke-test.mjs --out /tmp/novo --compare /tmp/ref
 ```
+
+## Compilar o site num pull request
+
+O smoke-test acima não compila nada — serve o `wwwroot` estaticamente. Quem trata
+disso é o workflow `.github/workflows/build-dotnet.yml`, que corre
+`dotnet build --configuration Release` em cada pull request. É de propósito o
+mesmo comando do passo "Build with dotnet" do workflow de deploy: se passa no
+pull request, o deploy compila.
+
+Sem ele, um erro de C# ou de Razor só aparecia depois do merge em `main`, na
+única execução que também publica. Em `main` este workflow não corre — quem
+compila lá é o próprio workflow de deploy, e não vale a pena pagar o build duas
+vezes.
 
 ## Adicionar um jogo novo
 
