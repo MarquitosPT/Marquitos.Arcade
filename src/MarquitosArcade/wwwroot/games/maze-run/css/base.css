@@ -45,6 +45,16 @@ input {
  * quando chega ao fim. O `none` corta essa propagação e mais a borracha do
  * Safari, tal como no shell da arcada (wwwroot/styles.css). */
 html, body {
+    /*
+     * O browser aumenta sozinho o corpo de texto de um bloco comprido quando a
+     * página fica larga — é o "font boosting", pensado para páginas de artigo
+     * lidas ao telemóvel. Aqui virava-se contra nós: ao rodar o telemóvel para
+     * o lado, a nota do fim do ecrã dos níveis passava a letra graúda enquanto
+     * tudo à volta ficava igual. O texto deste jogo tem os tamanhos que o CSS
+     * lhe dá, em qualquer orientação.
+     */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
     width: 100%;
     height: calc(100dvh + var(--viewport-gap, 0px));
     background: #070912;

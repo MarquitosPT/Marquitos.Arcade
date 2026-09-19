@@ -377,6 +377,54 @@ utilizador e as pontuações (ver `DeletePersonalData.razor`) — é o que a pol
 de privacidade promete. Ao contrário da tabela `Scores`, esta nasceu já com essa
 limpeza feita, por isso não há órfãs antigas para varrer no arranque.
 
+## O carrossel dos níveis
+
+Os níveis do Maze Run não estão numa lista a rolar: estão em páginas, com setas,
+arrasto e as setas do teclado. Uma lista a rolar num telemóvel esconde o que vem
+a seguir atrás do próprio dedo, e num jogo de níveis o que interessa é ver de
+uma vez o que já se abriu e o que falta.
+
+**Quantos cabem numa página decide-o o CSS, não o JavaScript.** As variáveis
+`--page-cols` e `--page-rows` (em `css/carousel.css`) mudam com o media query, e
+o `js/carousel.js` lê-as para repartir os cartões:
+
+| onde                        | por página  |
+| --------------------------- | ----------- |
+| telemóvel ao alto           | 2 × 2 = 4   |
+| telemóvel ao comprido       | 3 × 1 = 3   |
+| tablet e computador         | 3 × 2 = 6   |
+
+Assim a regra de quantos cabem vive num sítio só — quem sabe o tamanho do ecrã é
+o CSS. Ao rodar o aparelho o número muda, e o carrossel refaz as páginas
+mantendo à vista o cartão que lá estava.
+
+**As setas mudam de sítio conforme o que falta no ecrã.** Ao alto, num ecrã
+estreito, descem para o fundo encostadas à direita, com os pontos das páginas à
+esquerda: nos lados, cada seta roubava uns 40px de largura, quase um terço de um
+cartão. Ao comprido é ao contrário — largura é o que sobra e altura o que falta
+—, por isso voltam aos lados e a linha dos pontos desaparece.
+
+Três armadilhas que este ecrã ensinou:
+
+- **O arrasto é feito à mão, com eventos de ponteiro, e não com o scroll
+  horizontal do browser.** O ecrã onde ele vive trava o gesto lateral
+  (`touch-action: pan-y`, ver `css/screens.css`) para o arrasto não levar o
+  documento atrás, e essa trava alcançaria também um scroll nativo lá dentro: o
+  `touch-action` efetivo é a interseção do elemento com o dos seus antepassados.
+- **Um arrasto acaba sempre com o dedo em cima de um cartão.** Sem o engolir, o
+  clique que se segue começava o nível que calhasse estar por baixo (o
+  `swallowClick` em `js/carousel.js`).
+- **Os media queries desta folha estão todos no fim**, depois das regras que
+  alteram. Com a mesma especificidade ganha a última: um bloco de media query
+  escrito antes da regra base não faz nada, e foi assim que os pontos das
+  páginas continuaram à vista ao comprido apesar do `display: none`.
+
+E uma que não é do carrossel mas apareceu com ele: o browser aumenta sozinho o
+corpo de texto de um bloco comprido quando a página fica larga (o *font
+boosting*, pensado para artigos lidos ao telemóvel). Ao rodar o telemóvel, a
+nota do fim deste ecrã passava a letra graúda enquanto tudo à volta ficava
+igual. Quem o desliga é o `text-size-adjust: 100%` no `css/base.css`.
+
 ## As peças do Maze Run
 
 Além dos cristais e dos guardas, um nível pode ter três coisas. Todas se ligam

@@ -5,7 +5,8 @@ import { byId, createOverlays, createTopBar } from '/lib/arcade/index.js';
 export const els = byId(
     'game', 'startScreen', 'levelsScreen', 'pauseScreen', 'resultScreen', 'resultBody',
     'playBtn', 'chooseBtn', 'backBtn', 'resumeBtn', 'quitBtn', 'pauseBtn', 'endBtn',
-    'levelGrid', 'levelsTitle', 'levelsSub', 'progressLine', 'progressBar', 'progressNote',
+    'levelsCarousel', 'levelViewport', 'levelGrid', 'levelDots', 'prevPageBtn', 'nextPageBtn',
+    'levelsTitle', 'levelsSub', 'progressLine', 'progressBar', 'progressNote',
     'nameSlot', 'nameRow', 'accountRow', 'accountName', 'accountInitial', 'playerNameInput',
     'arcadeLink', 'scoresLink'
 );

@@ -152,6 +152,35 @@
     color: var(--faint);
 }
 
+/*
+ * Telemóvel deitado: há metade da altura e o painel dos níveis tem de lá caber
+ * sem rolar. Encolhe tudo o que é folga — as margens do ecrã, o respiro entre
+ * as secções do painel e o cabeçalho —, e deixa o tamanho das letras em paz: o
+ * que se tem de ler continua a ler-se.
+ */
+@media (orientation: landscape) and (max-height: 600px) {
+    .screen {
+        padding: calc(env(safe-area-inset-top) + 40px) 14px calc(env(safe-area-inset-bottom) + 8px);
+    }
+
+    .panel {
+        gap: 8px;
+        padding: 12px;
+    }
+
+    /* Mais estreito do que em pé, e não mais largo: numa fila de três, quanto
+       mais largo for o painel mais altos ficam os cartões — e a altura é
+       exatamente o que aqui não há. */
+    .panel--wide { width: min(100%, 520px); }
+
+    .panelHead { gap: 10px; }
+    .panelTitle { font-size: 18px; }
+    .panelSub { font-size: 11.5px; }
+    .iconBtn { width: 34px; height: 34px; font-size: 16px; }
+
+    .progressNote { padding: 7px 10px; line-height: 1.35; }
+}
+
 /* ---------- Ponto da situação ---------- */
 
 /*

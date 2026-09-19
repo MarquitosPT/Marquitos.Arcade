@@ -36,6 +36,7 @@
     <link rel="stylesheet" href="css/hud.css" />
     <link rel="stylesheet" href="css/screens.css" />
     <link rel="stylesheet" href="css/controls.css" />
+    <link rel="stylesheet" href="css/carousel.css" />
     <link rel="stylesheet" href="css/results.css" />
 </head>
 
@@ -119,7 +120,18 @@
                     </div>
                 </div>
 
-                <div class="levelGrid" id="levelGrid"></div>
+                <!-- Os níveis vão em páginas: quantos cabem em cada uma é decidido
+                     no css/carousel.css e lido pelo js/carousel.js. -->
+                <div class="levelsCarousel" id="levelsCarousel">
+                    <button class="carouselArrow carouselArrow--prev" id="prevPageBtn" type="button"
+                            aria-label="Níveis anteriores" aria-controls="levelGrid">&lsaquo;</button>
+                    <div class="carouselViewport" id="levelViewport">
+                        <div class="carouselTrack" id="levelGrid"></div>
+                    </div>
+                    <button class="carouselArrow carouselArrow--next" id="nextPageBtn" type="button"
+                            aria-label="Níveis seguintes" aria-controls="levelGrid">&rsaquo;</button>
+                    <div class="carouselDots" id="levelDots" role="tablist" aria-label="Páginas de níveis"></div>
+                </div>
 
                 <p class="progressNote" id="progressNote" hidden>
                     <span aria-hidden="true">💾</span>

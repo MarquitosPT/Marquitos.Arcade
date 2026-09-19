@@ -10,6 +10,7 @@
 
 import { escapeHtml } from '/lib/arcade/index.js';
 
+import { createCarousel } from './carousel.js';
 import { MAX_STARS } from './config.js';
 import { fmtPoints, fmtTime } from './format.js';
 import { LEVELS, buildLevelLayout, levelById, levelCount } from './levels.js';
@@ -128,6 +129,15 @@ function previewLevel(levelId) {
 }
 
 export function createMenu({ playerName, onPlay }) {
+    const carousel = createCarousel({
+        root: els.levelsCarousel,
+        viewport: els.levelViewport,
+        track: els.levelGrid,
+        prev: els.prevPageBtn,
+        next: els.nextPageBtn,
+        dots: els.levelDots
+    });
+
     /**
      * Quem tem sessão iniciada joga com o nome da conta — é esse que vai ao
      * quadro, portanto pedir outro seria mentir ao jogador. A visitantes
@@ -174,7 +184,9 @@ export function createMenu({ playerName, onPlay }) {
     function showLevels() {
         refreshProgress();
         els.levelsSub.textContent = `Escolhe por onde recomeçar · ${fmtPoints(totalScore())} pontos até agora`;
-        els.levelGrid.innerHTML = LEVELS.map(levelCard).join('');
+        // Abre na página onde está o nível apontado — quem vem do menu com o
+        // nível 6 à frente não tem de o ir procurar.
+        carousel.setCards(LEVELS.map(levelCard), { show: LEVELS.findIndex((level) => level.id === game.menuLevelId) });
         markSelected();
         overlays.show('levels');
     }
@@ -184,6 +196,14 @@ export function createMenu({ playerName, onPlay }) {
             card.classList.toggle('active', Number(card.dataset.value) === game.menuLevelId);
         }
     }
+
+    // As setas do teclado mudam de página enquanto os níveis estiverem à vista.
+    // Não chocam com os controlos do jogo: fora da partida ninguém anda com
+    // elas (ver `steer` em level.js).
+    window.addEventListener('keydown', (event) => {
+        if (!overlays.isVisible('levels')) return;
+        if (carousel.handleKey(event.key)) event.preventDefault();
+    });
 
     els.levelGrid.addEventListener('click', (event) => {
         const card = event.target.closest('.levelCard');

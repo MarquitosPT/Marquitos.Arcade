@@ -277,6 +277,30 @@ const GAMES = [
             const total = await page.$$eval('.levelCard', (cards) => cards.length);
             if (total < 2) throw new Error(`só ${total} nível(eis) no ecrã de níveis`);
             if (locked !== total - 1) throw new Error(`${locked} níveis fechados de ${total} — o primeiro devia ser o único aberto`);
+
+            // O carrossel: os níveis vêm repartidos por páginas e as setas mudam
+            // de página. A que não tem para onde ir fica desativada.
+            const carousel = () => page.evaluate(() => ({
+                paginas: document.querySelectorAll('.levelPage').length,
+                porPagina: document.querySelector('.levelPage')?.childElementCount ?? 0,
+                ativa: [...document.querySelectorAll('.carouselDot')].findIndex((d) => d.classList.contains('active')),
+                prevOff: document.getElementById('prevPageBtn').disabled,
+                nextOff: document.getElementById('nextPageBtn').disabled
+            }));
+
+            const inicio = await carousel();
+            if (inicio.paginas < 2) throw new Error(`os níveis não ficaram em páginas (${inicio.paginas})`);
+            if (inicio.porPagina * inicio.paginas < total) throw new Error('há níveis que não ficaram em página nenhuma');
+            if (inicio.ativa !== 0 || !inicio.prevOff) throw new Error('o carrossel não abriu na primeira página');
+
+            await page.click('#nextPageBtn');
+            await sleep(500);
+            const depois = await carousel();
+            if (depois.ativa !== 1 || depois.prevOff) throw new Error('a seta seguinte não mudou de página');
+
+            await page.click('#prevPageBtn');
+            await sleep(500);
+            if ((await carousel()).ativa !== 0) throw new Error('a seta anterior não voltou atrás');
             // Um nível fechado não arranca nada.
             await page.click('.levelCard.is-locked');
             await sleep(400);

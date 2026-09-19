@@ -155,12 +155,7 @@ button { cursor: pointer; }
 
 /* ---------- Cartões dos níveis ---------- */
 
-.levelGrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 10px;
-    width: 100%;
-}
+/* A grelha dos níveis é agora uma página do carrossel (ver css/carousel.css). */
 
 .levelCard {
     display: flex;
@@ -205,9 +200,15 @@ button { cursor: pointer; }
     .levelCard.shake { animation: none; }
 }
 
+/*
+ * A caixa do labirinto tem proporção fixa, e não a do labirinto que lá está
+ * dentro: sem isto um nível quadrado e um nível largo davam cartões de alturas
+ * diferentes, e numa página do carrossel isso é uma fila torta.
+ */
 .levelShape {
     position: relative;
     display: block;
+    aspect-ratio: 4 / 3;
     border-radius: var(--radius-sm);
     background: rgba(6, 9, 20, 0.45);
     overflow: hidden;
@@ -221,7 +222,7 @@ button { cursor: pointer; }
 .mazeShape {
     display: block;
     width: 100%;
-    height: auto;
+    height: 100%;
 }
 
 .mazeShape .mazeWalls {
@@ -310,6 +311,35 @@ button { cursor: pointer; }
 .levelTag i { font-style: normal; font-size: 10px; }
 
 .levelCard.active .levelTag { border-color: var(--glass-border-strong); color: var(--text); }
+
+/*
+ * Telemóvel: os cartões encolhem para caberem quatro por página ao alto (ou uma
+ * fila de três ao comprido) sem o painel ter de rolar. É o texto que encolhe, e
+ * não o labirinto — é ele que se reconhece de relance.
+ */
+/*
+ * Deitado, a caixa do labirinto passa a ser mais larga do que alta: é a altura
+ * que falta, e um labirinto achatado continua a reconhecer-se (o desenho dele
+ * cabe dentro da caixa, ver o `preserveAspectRatio` em js/menu.js).
+ */
+@media (orientation: landscape) and (max-height: 600px) {
+    .levelShape { aspect-ratio: 16 / 9; }
+}
+
+@media (max-width: 560px), (orientation: landscape) and (max-height: 600px) {
+    .levelCard {
+        gap: 6px;
+        padding: 9px;
+    }
+
+    .levelNumber { font-size: 9px; letter-spacing: 0.1em; }
+    .levelName { font-size: 12.5px; }
+    .levelMeta { font-size: 10px; }
+    .levelStars { font-size: 10px; }
+    .levelTag { padding: 1px 6px; font-size: 9.5px; }
+    .levelTags { gap: 4px; }
+    .levelLock { font-size: 18px; }
+}
 
 /* Para leitores de ecrã: a etiqueta diz "2" com um ícone, e isso sozinho não diz nada. */
 .visuallyHidden {
