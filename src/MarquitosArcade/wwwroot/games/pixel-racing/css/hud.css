@@ -48,6 +48,9 @@
 .topIcon { font-size: 13px; }
 .topIcon + .topLabel { margin-left: 7px; }
 
+/* O botão de Pontuações fica só com o ícone em qualquer orientação. */
+.topBtn--iconOnly { padding: 8px 12px; }
+
 /* Só há dois botões visíveis de cada vez (fora do jogo ou dentro dele), por
    isso a etiqueta cabe mesmo em ecrãs estreitos — fica sempre à vista. */
 @media (max-width: 520px) {
