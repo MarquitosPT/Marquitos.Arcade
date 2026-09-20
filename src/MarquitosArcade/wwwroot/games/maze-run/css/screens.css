@@ -92,7 +92,6 @@
     border: 1px solid var(--glass-border-strong);
     border-radius: 18px;
     background: linear-gradient(150deg, rgba(53, 224, 255, 0.28), rgba(139, 124, 255, 0.22));
-    box-shadow: 0 12px 28px -14px var(--glow), inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
 .title {
