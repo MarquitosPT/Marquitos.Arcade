@@ -176,11 +176,10 @@ button { cursor: pointer; }
 
 .levelCard:hover { background: var(--glass-bg-hover); transform: translateY(-2px); }
 
-.levelCard.active {
-    border-color: var(--accent);
-    background: linear-gradient(150deg, rgba(53, 224, 255, 0.18), rgba(139, 124, 255, 0.1));
-    box-shadow: 0 0 0 1px var(--accent), 0 18px 36px -22px var(--glow);
-}
+    .levelCard.active {
+        border-color: var(--accent);
+        background: linear-gradient(150deg, rgba(53, 224, 255, 0.18), rgba(139, 124, 255, 0.1));
+    }
 
 /*
  * Um nível fechado continua a ser um botão — e não um bloco morto — porque

@@ -60,16 +60,35 @@
     <div id="wrap">
         <div class="topBar">
             <a class="topBtn" id="arcadeLink" href="/">
-                <span class="topIcon">←</span><span class="topLabel">Arcade</span>
+                <div style="display:flex">
+                    <svg class="topIcon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
+                        <path d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z"></path>
+                    </svg>
+                    <span class="topLabel">Arcade</span>
+                </div>
             </a>
-            <a class="topBtn topBtn--iconOnly" id="scoresLink" href="/pontuacoes?jogo=maze-run#maze-run" aria-label="Pontuações">
-                <span class="topIcon">🏆</span>
+            <a class="topBtn" id="scoresLink" href="/pontuacoes?jogo=maze-run#maze-run" aria-label="Pontuações">
+                <div style="display:flex">
+                    <svg class="topIcon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
+                        <path d="M3.217 6.962A3.75 3.75 0 0 1 0 3.25v-.5C0 1.784.784 1 1.75 1h1.356c.228-.585.796-1 1.462-1h6.864c.647 0 1.227.397 1.462 1h1.356c.966 0 1.75.784 1.75 1.75v.5a3.75 3.75 0 0 1-3.217 3.712 5.014 5.014 0 0 1-2.771 3.117l.144 1.446c.005.05.03.12.114.204.086.087.217.17.373.227.283.103.618.274.89.568.285.31.467.723.467 1.226v.75h1.25a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1 0-1.5H4v-.75c0-.503.182-.916.468-1.226.27-.294.606-.465.889-.568.139-.048.266-.126.373-.227.084-.085.109-.153.114-.204l.144-1.446a5.015 5.015 0 0 1-2.77-3.117ZM4.5 1.568V5.5a3.5 3.5 0 1 0 7 0V1.568a.068.068 0 0 0-.068-.068H4.568a.068.068 0 0 0-.068.068Zm2.957 8.902-.12 1.204c-.093.925-.858 1.47-1.467 1.691a.766.766 0 0 0-.3.176c-.037.04-.07.093-.07.21v.75h5v-.75c0-.117-.033-.17-.07-.21a.766.766 0 0 0-.3-.176c-.609-.221-1.374-.766-1.466-1.69l-.12-1.204a5.064 5.064 0 0 1-1.087 0ZM13 2.5v2.872a2.25 2.25 0 0 0 1.5-2.122v-.5a.25.25 0 0 0-.25-.25H13Zm-10 0H1.75a.25.25 0 0 0-.25.25v.5c0 .98.626 1.813 1.5 2.122Z"></path>
+                    </svg>
+                </div>
             </a>
             <button class="topBtn" id="pauseBtn">
-                <span class="topIcon">❚❚</span><span class="topLabel">Pausa</span>
+                <div style="display:flex">
+                    <svg class="topIcon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
+                        <path d="M5 2h1a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Zm5 0h1a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Z"></path>
+                    </svg>
+                    <span class="topLabel">Pausa</span>
+                </div>
             </button>
             <button class="topBtn topBtn--quit" id="endBtn">
-                <span class="topIcon">✕</span><span class="topLabel">Sair</span>
+                <div style="display:flex">
+                    <svg class="topIcon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
+                        <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path>
+                    </svg>
+                    <span class="topLabel">Sair</span>
+                </div>
             </button>
         </div>
         <canvas id="game"></canvas>
@@ -113,7 +132,11 @@
         <div id="levelsScreen" class="screen">
             <div class="panel panel--wide">
                 <div class="panelHead">
-                    <button class="iconBtn" id="backBtn" aria-label="Voltar ao menu">←</button>
+                    <button class="iconBtn" id="backBtn" aria-label="Voltar ao menu">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
+                            <path d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z"></path>
+                        </svg>
+                    </button>
                     <div class="panelHeadText">
                         <h2 class="panelTitle" id="levelsTitle">Níveis</h2>
                         <p class="panelSub" id="levelsSub"></p>
@@ -124,12 +147,20 @@
                      no css/carousel.css e lido pelo js/carousel.js. -->
                 <div class="levelsCarousel" id="levelsCarousel">
                     <button class="carouselArrow carouselArrow--prev" id="prevPageBtn" type="button"
-                            aria-label="Níveis anteriores" aria-controls="levelGrid">&lsaquo;</button>
+                            aria-label="Níveis anteriores" aria-controls="levelGrid">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
+                            <path d="M9.78 12.78a.75.75 0 0 1-1.06 0L4.47 8.53a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L6.06 8l3.72 3.72a.75.75 0 0 1 0 1.06Z"></path>
+                        </svg>
+                    </button>
                     <div class="carouselViewport" id="levelViewport">
                         <div class="carouselTrack" id="levelGrid"></div>
                     </div>
                     <button class="carouselArrow carouselArrow--next" id="nextPageBtn" type="button"
-                            aria-label="Níveis seguintes" aria-controls="levelGrid">&rsaquo;</button>
+                            aria-label="Níveis seguintes" aria-controls="levelGrid">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
+                            <path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"></path>
+                        </svg>
+                    </button>
                     <div class="carouselDots" id="levelDots" role="tablist" aria-label="Páginas de níveis"></div>
                 </div>
 

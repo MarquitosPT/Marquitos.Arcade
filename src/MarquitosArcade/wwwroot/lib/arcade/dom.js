@@ -24,7 +24,7 @@ export function escapeHtml(value) {
  * @param {Record<string, HTMLElement>} overlays
  * @param {string} [display='flex'] O `display` a usar ao mostrar.
  */
-export function createOverlays(overlays, display = 'flex') {
+export function createOverlays(overlays, display = 'grid') {
     const entries = Object.entries(overlays).filter(([, el]) => el);
 
     function hideAll() {
