@@ -138,8 +138,17 @@ function paintMaze() {
     mazeKey = key;
 }
 
+/**
+ * O chão fica quase opaco de propósito. Fora do labirinto o canvas é
+ * transparente (ver `canvas` em css/base.css) e mostra as auroras do fundo da
+ * página, e dentro dele as paredes não se pintam — só o rasto de néon nas
+ * arestas (ver `paintEdges`). A 0.82 as auroras passavam quase inteiras pelo
+ * chão e confundiam-se com esse vazio; mais opaco, o chão fica um tom escuro e
+ * sólido, com só uma réstia de aurora por baixo — e distingue-se do resto à
+ * primeira vista.
+ */
 function paintFloor(mc, maze, cell) {
-    mc.fillStyle = 'rgba(12, 18, 38, 0.82)';
+    mc.fillStyle = 'rgba(12, 18, 38, 0.94)';
     for (const { x, y } of maze.floors) {
         mc.fillRect(x * cell, y * cell, cell, cell);
     }
