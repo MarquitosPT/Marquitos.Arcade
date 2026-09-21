@@ -494,6 +494,16 @@ Três decisões que não são óbvias, e o porquê:
   guardas (`distanceField`) trata um portal como uma porta ao lado — sem isso,
   um guarda passava ao lado do portal sem o ver e o jogador tinha um atalho que
   a perseguição não conhecia.
+- **Um portal nunca é a única passagem para lado nenhum.** Uma célula com portal
+  não se atravessa: quem lhe chega ao centro é levado para a outra ponta
+  (`enterPortal` em `js/walker.js`). Se essa célula for a única ligação ao que
+  está do outro lado dela, fecha ali o labirinto — só lá se entra caindo do
+  outro portal, e um cristal ou a saída lá dentro fazem um nível que parece
+  impossível. Por isso `placePortals` só põe uma ponta onde, com **todas** as
+  pontas fechadas ao mesmo tempo, se continua a chegar a pé do início a todo o
+  labirinto. Pelo mesmo motivo duas pontas nunca ficam encostadas uma à outra —
+  quem saísse de uma caía logo na outra e era atirado outra vez. O smoke-test
+  verifica as duas coisas nos quarenta e oito níveis.
 - **A chave abre a porta onde quer que ela esteja.** Obrigar a voltar lá com a
   chave na mão era um segundo atravessamento do labirinto para uma decisão já
   tomada.
