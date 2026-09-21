@@ -26,6 +26,25 @@ builder.Services.AddAuthentication(options =>
     })
     .AddIdentityCookies();
 
+// Isto é uma arcada de amigos instalada como PWA no telemóvel, não um banco: uma
+// sessão que expira ao fechar a app é só uma armadilha - o jogador não repara,
+// o jogo mostra o nome que ficou no localStorage de uma visita anterior (ver
+// wwwroot/lib/arcade/scores.js) e a pontuação acaba publicada como "Anónimo"
+// porque a conta, essa, já não tem sessão. Por isso o login fica sempre
+// persistente, seja qual for o caminho (password, passkey, 2FA, registo) -
+// seria fácil um deles ficar esquecido a chamar isPersistent: false, e o
+// PasskeySignInAsync nem sequer deixa escolher.
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.ExpireTimeSpan = TimeSpan.FromDays(365);
+    options.SlidingExpiration = true;
+    options.Events.OnSigningIn = context =>
+    {
+        context.Properties!.IsPersistent = true;
+        return Task.CompletedTask;
+    };
+});
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(connectionString));

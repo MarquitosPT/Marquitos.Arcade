@@ -19,7 +19,6 @@
     <div class="col-md-4">
         <EditForm Model="Input" FormName="login-with-2fa" OnValidSubmit="OnValidSubmitAsync" method="post">
             <input type="hidden" name="ReturnUrl" value="@ReturnUrl" />
-            <input type="hidden" name="RememberMe" value="@RememberMe" />
             <DataAnnotationsValidator />
             <ValidationSummary class="text-danger" role="alert" />
             <div class="form-floating mb-3">
@@ -54,9 +53,6 @@
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
 
-    [SupplyParameterFromQuery]
-    private bool RememberMe { get; set; }
-
     protected override async Task OnInitializedAsync()
     {
         Input ??= new();
@@ -69,7 +65,8 @@
     private async Task OnValidSubmitAsync()
     {
         var authenticatorCode = Input.TwoFactorCode!.Replace(" ", string.Empty).Replace("-", string.Empty);
-        var result = await SignInManager.TwoFactorAuthenticatorSignInAsync(authenticatorCode, RememberMe, Input.RememberMachine);
+        // isPersistent: true - a arcada mantém sempre a sessão (ver Program.cs).
+        var result = await SignInManager.TwoFactorAuthenticatorSignInAsync(authenticatorCode, isPersistent: true, Input.RememberMachine);
         var userId = await UserManager.GetUserIdAsync(user);
 
         if (result.Succeeded)

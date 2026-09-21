@@ -33,12 +33,6 @@
                     <label for="Input.Password" class="form-label">Palavra-passe</label>
                     <ValidationMessage For="() => Input.Password" class="text-danger" />
                 </div>
-                <div class="checkbox mb-3">
-                    <label class="form-label">
-                        <InputCheckbox @bind-Value="Input.RememberMe" class="darker-border-checkbox form-check-input" />
-                        Lembrar-me
-                    </label>
-                </div>
                 <div>
                     <button type="submit" class="w-100 btn btn-lg btn-primary">Entrar</button>
                 </div>
@@ -114,7 +108,8 @@
 
             // This doesn't count login failures towards account lockout
             // To enable password failures to trigger account lockout, set lockoutOnFailure: true
-            result = await SignInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+            // isPersistent: true - a arcada mantém sempre a sessão (ver Program.cs).
+            result = await SignInManager.PasswordSignInAsync(Input.Email, Input.Password, isPersistent: true, lockoutOnFailure: false);
         }
 
         if (result.Succeeded)
@@ -126,7 +121,7 @@
         {
             RedirectManager.RedirectTo(
                 "Account/LoginWith2fa",
-                new() { ["returnUrl"] = ReturnUrl, ["rememberMe"] = Input.RememberMe });
+                new() { ["returnUrl"] = ReturnUrl });
         }
         else if (result.IsLockedOut)
         {
@@ -149,9 +144,6 @@
         [DataType(DataType.Password)]
         [Display(Name = "Palavra-passe")]
         public string Password { get; set; } = "";
-
-        [Display(Name = "Lembrar-me?")]
-        public bool RememberMe { get; set; }
 
         public PasskeyInputModel? Passkey { get; set; }
     }

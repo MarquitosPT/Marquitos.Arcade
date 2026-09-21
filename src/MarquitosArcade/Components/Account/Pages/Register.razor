@@ -108,7 +108,7 @@
         }
         else
         {
-            await SignInManager.SignInAsync(user, isPersistent: false);
+            await SignInManager.SignInAsync(user, isPersistent: true);
             RedirectManager.RedirectTo(ReturnUrl);
         }
     }
