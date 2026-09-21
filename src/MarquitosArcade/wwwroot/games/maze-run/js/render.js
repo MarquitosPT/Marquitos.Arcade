@@ -754,13 +754,22 @@ function drawPhaseOverlay() {
 function drawBanner(text, color, sub = null) {
     const cx = view.width / 2;
     const cy = mazeTop() + (view.height - mazeTop()) / 2;
+    // Em ecrãs estreitos "NÍVEL CONCLUÍDO" a 14% da largura passa das
+    // bordas do canvas (o fillText não quebra linha nem encolhe sozinho).
+    // Encolhe a fonte até caber, com um mínimo legível.
+    const maxWidth = view.width * 0.92;
+    let fontSize = Math.min(58, view.width * 0.14);
+    ctx.font = `800 ${fontSize}px ${FONT_DISPLAY}`;
+    while (fontSize > 22 && ctx.measureText(text).width > maxWidth) {
+        fontSize -= 2;
+        ctx.font = `800 ${fontSize}px ${FONT_DISPLAY}`;
+    }
 
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.shadowColor = 'rgba(0, 0, 0, 0.75)';
     ctx.shadowBlur = 24;
-    ctx.font = `800 ${Math.min(58, view.width * 0.14)}px ${FONT_DISPLAY}`;
     ctx.fillStyle = color;
     ctx.fillText(text, cx, cy);
 
