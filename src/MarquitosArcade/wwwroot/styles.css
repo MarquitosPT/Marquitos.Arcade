@@ -421,6 +421,11 @@ body::before {
   /* Sem isto, chegar ao fim desta caixa propaga o scroll ao
      documento — e é aí que o Safari volta a mexer na viewport. */
   overscroll-behavior: contain;
+  /* Só deixa o dedo arrastar na vertical: sem isto, um arrasto horizontal
+     que comece perto da margem é interpretado pelo Safari (mesmo na app
+     afixada) como o gesto de recuar/avançar no histórico. O .table-wrap
+     abaixo reabre as duas direções, porque precisa de arrasto horizontal. */
+  touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
 }
@@ -1450,6 +1455,9 @@ main {
 
 .table-wrap {
   overflow-x: auto;
+  /* Exceção ao touch-action: pan-y do .page-scroll (ver ali): aqui o
+     arrasto horizontal é preciso para ver as colunas que não cabem. */
+  touch-action: pan-x pan-y;
 }
 
 table {
