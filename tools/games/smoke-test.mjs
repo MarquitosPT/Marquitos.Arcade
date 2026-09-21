@@ -327,7 +327,7 @@ const GAMES = [
             // tranca nada, uma chave inalcançável ou um cristal fora do mundo.
             const broken = await page.evaluate(async () => {
                 const { LEVELS, buildLevelLayout } = await import('/games/maze-run/js/levels.js');
-                const { canReach, cellKey, distanceField, exitsFrom } = await import('/games/maze-run/js/maze.js');
+                const { canReach, cellKey, distanceField, exitsFrom, STEPS } = await import('/games/maze-run/js/maze.js');
                 const problems = [];
 
                 for (const level of LEVELS) {
@@ -376,6 +376,44 @@ const GAMES = [
                     const unreachable = [exit, ...layout.crystals, ...layout.freezers, ...layout.guards]
                         .filter((cell) => open[cell.y * maze.cols + cell.x] < 0);
                     if (unreachable.length) say(`${unreachable.length} peça(s) fora do alcance`);
+
+                    // E há sempre volta a dar a um portal. Quem chega ao centro de
+                    // um portal é levado para a outra ponta (ver `enterPortal` em
+                    // walker.js), por isso uma célula com portal nunca se atravessa
+                    // a pé: com todas elas fechadas, o labirinto tem de continuar
+                    // todo alcançável. Sem isto há zonas onde só se entra caindo do
+                    // outro portal — e uma saída ou um cristal lá dentro faziam um
+                    // nível que parece impossível (era o caso do 11).
+                    const shut = new Set(layout.portals.flatMap((portal) => [
+                        cellKey(portal.a.x, portal.a.y),
+                        cellKey(portal.b.x, portal.b.y)
+                    ]));
+                    if (shut.size) {
+                        const seen = new Set([cellKey(spawn.x, spawn.y)]);
+                        const stack = [spawn];
+                        while (stack.length) {
+                            const cell = stack.pop();
+                            for (const step of STEPS) {
+                                const next = { x: cell.x + step.x, y: cell.y + step.y };
+                                const key = cellKey(next.x, next.y);
+                                if (seen.has(key) || shut.has(key) || !maze.isFloor(next.x, next.y)) continue;
+                                seen.add(key);
+                                stack.push(next);
+                            }
+                        }
+
+                        const onlyByPortal = maze.floors
+                            .filter((cell) => maze.isFloor(cell.x, cell.y))
+                            .filter((cell) => !shut.has(cellKey(cell.x, cell.y)) && !seen.has(cellKey(cell.x, cell.y)));
+                        if (onlyByPortal.length) say(`${onlyByPortal.length} célula(s) só se alcançam por portal — não há volta a dar`);
+
+                        // Nem duas pontas encostadas uma à outra: quem sai de uma
+                        // segue em frente, cai na outra e é atirado outra vez.
+                        const ends = layout.portals.flatMap((portal) => [portal.a, portal.b]);
+                        const touching = ends.some((end, i) => ends.slice(i + 1)
+                            .some((other) => Math.abs(end.x - other.x) + Math.abs(end.y - other.y) <= 1));
+                        if (touching) say('duas pontas de portal encostadas uma à outra');
+                    }
                 }
 
                 return problems;

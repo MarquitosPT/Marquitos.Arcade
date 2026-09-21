@@ -270,7 +270,7 @@ export const LEVELS = [
         id: 15,
         name: 'Miragem',
         hint: 'Perder uma vida repõe toda a gente no sítio — o relógio é que não volta atrás.',
-        cols: 15, rows: 13, seed: 570935, braid: 0.347,
+        cols: 15, rows: 13, seed: 570936, braid: 0.347,
         crystals: 10,
         freezers: 1,
         portals: 2,
@@ -430,7 +430,7 @@ export const LEVELS = [
         id: 24,
         name: 'Oficina',
         hint: 'Um portal é um atalho para os dois lados.',
-        cols: 17, rows: 13, seed: 513496, braid: 0.377,
+        cols: 17, rows: 13, seed: 513497, braid: 0.377,
         crystals: 12,
         freezers: 2,
         portals: 2,
@@ -486,7 +486,7 @@ export const LEVELS = [
         id: 27,
         name: 'Masmorra',
         hint: 'Um guarda a tremer é gelo prestes a derreter.',
-        cols: 19, rows: 15, seed: 843521, braid: 0.386,
+        cols: 19, rows: 15, seed: 843523, braid: 0.386,
         crystals: 13,
         freezers: 2,
         portals: 2,
@@ -581,7 +581,7 @@ export const LEVELS = [
         id: 32,
         name: 'Templo',
         hint: 'Ao passares por um cruzamento, repara por onde o guarda foi.',
-        cols: 19, rows: 15, seed: 359247, braid: 0.403,
+        cols: 19, rows: 15, seed: 359248, braid: 0.403,
         crystals: 14,
         freezers: 2,
         portals: 2,
@@ -619,7 +619,7 @@ export const LEVELS = [
         id: 34,
         name: 'Obelisco',
         hint: 'O número dentro do portal da saída diz quantos cristais faltam.',
-        cols: 19, rows: 15, seed: 560786, braid: 0.408,
+        cols: 19, rows: 15, seed: 560787, braid: 0.408,
         crystals: 14,
         freezers: 3,
         portals: 2,
@@ -696,7 +696,7 @@ export const LEVELS = [
         id: 38,
         name: 'Mosaico',
         hint: 'A porta trancada também trava os guardas. Enquanto está fechada, é um abrigo.',
-        cols: 21, rows: 15, seed: 11378, braid: 0.421,
+        cols: 21, rows: 15, seed: 11379, braid: 0.421,
         crystals: 15,
         freezers: 3,
         portals: 2,
@@ -736,7 +736,7 @@ export const LEVELS = [
         id: 40,
         name: 'Teia',
         hint: 'Um portal é um atalho para os dois lados.',
-        cols: 21, rows: 15, seed: 236674, braid: 0.429,
+        cols: 21, rows: 15, seed: 236677, braid: 0.429,
         crystals: 16,
         freezers: 3,
         portals: 2,
@@ -876,7 +876,7 @@ export const LEVELS = [
         id: 47,
         name: 'Abismo',
         hint: 'O segundo maior labirinto do jogo. Faz o caminho de volta antes de o teres de fazer.',
-        cols: 23, rows: 17, seed: 953939, braid: 0.451,
+        cols: 23, rows: 17, seed: 953940, braid: 0.451,
         crystals: 18,
         freezers: 4,
         portals: 2,
@@ -1041,23 +1041,126 @@ function reachableDistance(maze, field) {
  * Cada par liga duas pontas afastadas do labirinto. Afastadas é o ponto: um
  * portal entre duas células vizinhas não é um atalho, é um enfeite. Por isso
  * uma ponta fica na metade de cá e a outra na metade de lá.
+ *
+ * E nenhuma das pontas pode ser a única passagem para o que está do outro lado
+ * dela. Uma célula com portal não se atravessa: quem chega ao centro é levado
+ * para a outra ponta (ver `enterPortal` em walker.js), por isso um portal num
+ * corredor que não tenha volta a dar fecha ali o labirinto — só lá se entra
+ * caindo do outro portal, e o que estiver lá (um cristal, a saída) deixa de se
+ * poder ir buscar a pé. Era o que acontecia no nível 11, com a saída encostada
+ * a um portal: quem subia o corredor era atirado para o outro lado do labirinto
+ * sempre que tentava lá chegar.
+ *
+ * Por isso cada ponta é escolhida entre as células que, fechadas — todas as
+ * pontas ao mesmo tempo, que é como quem anda a pé as encontra —, deixam o
+ * labirinto inteiro alcançável a partir do início. O portal passa a ser sempre
+ * um atalho, e nunca a única porta de uma zona.
  */
 function placePortals(maze, fromSpawn, maxDistance, count, taken) {
     const placed = [];
 
-    for (let i = 0; i < count; i++) {
-        const near = pickInBand(maze, fromSpawn, 2, Math.floor(maxDistance * 0.4), taken, { deadEnds: false });
-        const far = pickInBand(maze, fromSpawn, Math.ceil(maxDistance * 0.6), maxDistance, taken, { deadEnds: false });
-        if (!near || !far) break;
+    // As pontas já postas, que para quem anda a pé são parede.
+    const closed = new Set();
 
+    // Duas pontas encostadas uma à outra encadeiam-se: quem sai de uma segue em
+    // frente, cai na outra e é atirado outra vez, sem ter percebido porquê. Uma
+    // ponta nova nunca fica ao lado de uma que já lá esteja.
+    const clearOfPortals = (cell) => !STEPS.some((step) => closed.has(cellKey(cell.x + step.x, cell.y + step.y)));
+    const hasWayAround = (cell) => clearOfPortals(cell) && walkableWithout(maze, closed, cell);
+
+    // O que faz de um par um atalho: a pé, uma ponta tem de ficar mesmo longe da
+    // outra. É a mesma medida que as faixas já davam de graça (a de cá acaba aos
+    // 40% da travessia e a de lá começa aos 60%), agora medida a direito — assim
+    // a procura pode sair da faixa sem o par deixar de valer a pena.
+    const minGap = Math.max(4, Math.floor(maxDistance * 0.2));
+
+    const pickEnd = (low, high, accept) =>
+        pickInBand(maze, fromSpawn, low, high, taken, { deadEnds: false, accept })
+        // Faixa sem célula que sirva: procura-se no labirinto todo. A faixa é uma
+        // preferência, as condições do `accept` é que não se dispensam.
+        || pickInBand(maze, fromSpawn, 2, maxDistance, taken, { deadEnds: false, accept });
+
+    for (let i = 0; i < count; i++) {
+        const near = pickEnd(2, Math.floor(maxDistance * 0.4), hasWayAround);
+        if (!near) break;
+
+        // A ponta de cá entra já no `taken` e no `closed`: a de lá tem de ser
+        // outra célula, e tem de continuar a haver volta a dar com as duas
+        // fechadas — não uma de cada vez.
         taken.add(cellKey(near.x, near.y));
+        closed.add(cellKey(near.x, near.y));
+
+        const fromNear = walkField(maze, near, closed);
+        const isFar = (cell) => {
+            const distance = fromNear[cell.y * maze.cols + cell.x];
+            if (distance < minGap) return false;
+            // E longe também no ecrã: um salto que acaba ao lado de onde começou
+            // lê-se como um portal avariado, por muitas voltas que poupe.
+            if (Math.hypot(cell.x - near.x, cell.y - near.y) < MIN_PORTAL_LEAP) return false;
+            return hasWayAround(cell);
+        };
+        const far = pickEnd(Math.ceil(maxDistance * 0.6), maxDistance, isFar);
+
+        if (!far) {
+            taken.delete(cellKey(near.x, near.y));
+            closed.delete(cellKey(near.x, near.y));
+            break;
+        }
+
         taken.add(cellKey(far.x, far.y));
+        closed.add(cellKey(far.x, far.y));
         maze.portals.set(cellKey(near.x, near.y), far);
         maze.portals.set(cellKey(far.x, far.y), near);
         placed.push({ a: near, b: far, color: PORTAL_COLORS[i % PORTAL_COLORS.length] });
     }
 
     return placed;
+}
+
+/** A que distância, em células a direito, uma ponta de portal tem de ficar da outra. */
+const MIN_PORTAL_LEAP = 4;
+
+/**
+ * Distâncias a pé a partir de uma célula, com `closed` por parede. É a onda do
+ * `distanceField` sem os saltos de portal: aqui pergunta-se precisamente o que
+ * se consegue fazer *sem* eles. A célula de partida conta mesmo que esteja
+ * fechada — é de lá que se sai.
+ */
+function walkField(maze, from, closed = new Set()) {
+    const field = new Int16Array(maze.cols * maze.rows).fill(-1);
+    if (!maze.isFloor(from.x, from.y)) return field;
+
+    field[from.y * maze.cols + from.x] = 0;
+    const queue = [from];
+
+    while (queue.length) {
+        const current = queue.shift();
+        const next = field[current.y * maze.cols + current.x] + 1;
+        for (const step of STEPS) {
+            const cell = { x: current.x + step.x, y: current.y + step.y };
+            const index = cell.y * maze.cols + cell.x;
+            if (!maze.isFloor(cell.x, cell.y) || closed.has(cellKey(cell.x, cell.y))) continue;
+            if (field[index] !== -1) continue;
+            field[index] = next;
+            queue.push(cell);
+        }
+    }
+
+    return field;
+}
+
+/**
+ * True se, com estas células fechadas e mais esta, ainda se chega a pé do início
+ * a todo o resto do labirinto.
+ */
+function walkableWithout(maze, closed, cell) {
+    const shut = new Set(closed);
+    shut.add(cellKey(cell.x, cell.y));
+
+    const field = walkField(maze, START, shut);
+    return maze.floors.every((floor) => shut.has(cellKey(floor.x, floor.y))
+        || !maze.isFloor(floor.x, floor.y)
+        || field[floor.y * maze.cols + floor.x] >= 0);
 }
 
 // ---------- Portas e chaves ----------
@@ -1247,8 +1350,14 @@ function placeSpread(maze, field, maxDistance, count, taken) {
     return placed;
 }
 
-/** Uma célula livre dentro da faixa, preferindo becos sem saída. */
-function pickInBand(maze, field, low, high, taken, { deadEnds = true } = {}) {
+/**
+ * Uma célula livre dentro da faixa, preferindo becos sem saída. Com `accept`,
+ * só entram as células que a condição aceitar — é assim que os portais se
+ * limitam às que têm volta a dar (ver `placePortals`). A condição fica para o
+ * fim porque custa mais do que as outras: só a testam as células que já
+ * passaram pela faixa.
+ */
+function pickInBand(maze, field, low, high, taken, { deadEnds = true, accept = null } = {}) {
     const options = [];
     const preferred = [];
 
@@ -1257,6 +1366,7 @@ function pickInBand(maze, field, low, high, taken, { deadEnds = true } = {}) {
         if (taken.has(key) || maze.portals.has(key) || maze.blocked.has(key)) continue;
         const distance = field[cell.y * maze.cols + cell.x];
         if (distance < low || distance > high) continue;
+        if (accept && !accept(cell)) continue;
         options.push(cell);
         if (deadEnds && exitsFrom(maze, cell.x, cell.y).length === 1) preferred.push(cell);
     }
