@@ -23,7 +23,7 @@
 //   lives        vidas da tentativa (por omissão, DEFAULT_LIVES)
 //   accent       a cor do nível — paredes, HUD e cartão do menu
 
-import { DEFAULT_LIVES, MAX_STARS } from './config.js';
+import { DEFAULT_LIVES, ENEMY_BASE_SPEED, GUARD_START_SECONDS, MAX_STARS } from './config.js';
 import { buildMaze, canReach, cellKey, distanceField, exitsFrom, shortestPath, START, STEPS } from './maze.js';
 
 /**
@@ -1381,22 +1381,35 @@ function pickInBand(maze, field, low, high, taken, { deadEnds = true, accept = n
  * Os guardas começam na metade mais afastada do início, e nunca em cima de
  * outra peça: a primeira coisa que se vê ao arrancar não pode ser um guarda em
  * cima do jogador.
+ *
+ * "Afastado" mede-se em tempo, e não só em casas: cada guarda tem de precisar
+ * de pelo menos GUARD_START_SECONDS, à sua própria velocidade, para chegar ao
+ * início. Medir só em casas deixava um guarda rápido a meia dúzia de segundos
+ * do jogador, no corredor por onde ele tinha de sair — era o que acontecia no
+ * nível 17, com um perseguidor a 13 casas, que chegava lá em quatro segundos e
+ * fechava a fuga antes de se perceber para onde ir.
+ *
+ * Nos labirintos pequenos não há sempre casas que cheguem tão longe. Aí a
+ * distância pedida vai baixando até haver onde pôr o guarda — fica o mais longe
+ * que o labirinto deixa, em vez de voltar a qualquer sítio da metade de lá.
  */
 function placeGuards(maze, field, maxDistance, guards, taken) {
     const minDistance = Math.max(4, Math.floor(maxDistance * 0.45));
     const placed = [];
 
     for (const guard of guards) {
-        const cell = pickInBand(maze, field, minDistance, maxDistance, taken, { deadEnds: false })
-            || pickInBand(maze, field, 2, maxDistance, taken, { deadEnds: false })
-            // Região inicial pequena de mais para tantos guardas (acontece quando
-            // uma porta tranca logo metade do labirinto): antes um guarda do
-            // outro lado da porta do que um nível com menos guardas do que a
-            // receita pede.
-            || withDoorsOpen(maze, () => {
-                const open = distanceField(maze, START.x, START.y);
-                return pickInBand(maze, open, 4, reachableDistance(maze, open), taken, { deadEnds: false });
-            });
+        const safeDistance = Math.ceil(GUARD_START_SECONDS * ENEMY_BASE_SPEED * guard.speed);
+        let cell = null;
+        for (let low = Math.max(minDistance, safeDistance); !cell && low >= 2; low--) {
+            cell = pickInBand(maze, field, Math.min(low, maxDistance), maxDistance, taken, { deadEnds: false });
+        }
+        // Região inicial pequena de mais para tantos guardas (acontece quando
+        // uma porta tranca logo metade do labirinto): antes um guarda do outro
+        // lado da porta do que um nível com menos guardas do que a receita pede.
+        cell ||= withDoorsOpen(maze, () => {
+            const open = distanceField(maze, START.x, START.y);
+            return pickInBand(maze, open, 4, reachableDistance(maze, open), taken, { deadEnds: false });
+        });
         if (!cell) break;
         taken.add(cellKey(cell.x, cell.y));
         placed.push({ ...guard, x: cell.x, y: cell.y });
