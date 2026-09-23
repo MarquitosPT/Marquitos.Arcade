@@ -51,6 +51,17 @@ export const PICKUP_RADIUS = 0.5;
 export const CHASE_SECONDS = 12;
 export const SCATTER_SECONDS = 5;
 
+/**
+ * Tempo mínimo que cada guarda, à sua velocidade, tem de levar desde o sítio
+ * onde começa até ao início do nível (ver `placeGuards` em levels.js).
+ *
+ * Seis segundos chegam para o jogador perceber o labirinto e sair do canto
+ * antes de alguém lá chegar: como ele é mais rápido do que os guardas, dá-lhe
+ * uma dúzia de casas à volta do início onde nenhum guarda o apanha primeiro.
+ * Também vale depois de uma vida perdida, porque os guardas voltam ao mesmo sítio.
+ */
+export const GUARD_START_SECONDS = 6;
+
 /** Células à frente do jogador que o guarda "emboscador" toma por alvo. */
 export const AMBUSH_LOOKAHEAD = 4;
 

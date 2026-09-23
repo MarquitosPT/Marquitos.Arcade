@@ -442,13 +442,22 @@ const GAMES = [
                 game.player.queued = { x: -dir.x, y: -dir.y };
                 return { b: portal.b };
             });
-            await sleep(900);
-            const landed = await page.evaluate(async () => {
+            // Vê-se por onde o jogador passa, e não onde está no fim: depois do
+            // salto ele continua a andar, e ao fim de quase um segundo já pode
+            // ir umas casas à frente do par. Antes, só passava porque um guarda
+            // o apanhava logo à saída e o deixava parado ali.
+            const landed = await page.evaluate(async (b) => {
                 const { game } = await import('/games/maze-run/js/state.js');
-                return { x: game.player.cx, y: game.player.cy };
-            });
-            const stepsFromTwin = Math.abs(landed.x - hop.b.x) + Math.abs(landed.y - hop.b.y);
-            if (stepsFromTwin > 2) throw new Error(`o portal não saiu do outro lado: ficou em ${landed.x},${landed.y} e o par é ${hop.b.x},${hop.b.y}`);
+                const until = performance.now() + 900;
+                let last = null;
+                while (performance.now() < until) {
+                    last = { x: game.player.cx, y: game.player.cy };
+                    if (Math.abs(last.x - b.x) + Math.abs(last.y - b.y) <= 2) return { ...last, near: true };
+                    await new Promise((resolve) => setTimeout(resolve, 30));
+                }
+                return { ...last, near: false };
+            }, hop.b);
+            if (!landed.near) throw new Error(`o portal não saiu do outro lado: ficou em ${landed.x},${landed.y} e o par é ${hop.b.x},${hop.b.y}`);
 
             // Gelo: congela os guardas, e congelados não apanham ninguém.
             //
