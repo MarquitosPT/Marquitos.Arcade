@@ -507,6 +507,65 @@ function drawFeature(feature, x, y, wx, wy, t) {
     }
 }
 
+// ---------- Peças ocultas (modo de construção) ----------
+//
+// Com "ocultar" ligado, cada edifício fica só com a base no chão e cada
+// árvore, pedra ou veio com uma marca rasa: vê-se o que ocupa cada casa sem
+// tapar as casas livres que estão atrás.
+
+function drawBuildingBase(b) {
+    const z = Math.max(0, tileElev(b.x, b.y)) * ELEV_PX;
+    const mine = b.owner === 'player';
+    ctx.save();
+    blockPath(b.x, b.y, b.size, z, 0.06);
+    ctx.fillStyle = b.kind === 'field' ? 'rgba(150, 110, 60, 0.55)' : 'rgba(168, 150, 120, 0.8)';
+    ctx.fill();
+    ctx.strokeStyle = mine ? 'rgba(90, 60, 30, 0.85)' : 'rgba(70, 60, 50, 0.6)';
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+    // Um losango mais pequeno por dentro: as fundações, a dizer "aqui há paredes".
+    if (b.kind !== 'field') {
+        blockPath(b.x, b.y, b.size, z, 0.22);
+        ctx.strokeStyle = 'rgba(90, 70, 45, 0.5)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+function drawFeatureBase(feature, x, y, wx, wy) {
+    ctx.save();
+    if (feature === 'tree') {
+        const jx = (hash2(x, y, 13) - 0.5) * 6;
+        const jy = (hash2(x, y, 14) - 0.5) * 3;
+        // A sombra da copa e o tronco cortado.
+        ctx.fillStyle = 'rgba(30, 70, 25, 0.45)';
+        ctx.beginPath();
+        ctx.ellipse(wx + jx, wy + jy, 11, 5.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#7a5230';
+        ctx.beginPath();
+        ctx.ellipse(wx + jx, wy + jy, 3.2, 1.8, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#c79a62';
+        ctx.beginPath();
+        ctx.ellipse(wx + jx, wy + jy - 0.4, 2.2, 1.1, 0, 0, Math.PI * 2);
+        ctx.fill();
+    } else {
+        ctx.fillStyle = 'rgba(110, 110, 105, 0.75)';
+        ctx.beginPath();
+        ctx.ellipse(wx, wy, 8, 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+        if (feature === 'ore') {
+            ctx.fillStyle = '#f2c14e';
+            ctx.beginPath();
+            ctx.ellipse(wx, wy, 2.4, 1.3, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+    ctx.restore();
+}
+
 /** O edifício a construir, por cima do bloco onde ficaria (canto de cima em x, y). */
 function drawGhost(x, y, ok) {
     const kind = ui.placing;
@@ -630,7 +689,7 @@ function drawBubble(sx, sy, icon, t, ripe) {
 function drawScreenOverlays(dt, t) {
     ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
 
-    if (game.phase === 'playing' && camera.zoom > 0.6) {
+    if (game.phase === 'playing' && camera.zoom > 0.6 && !(ui.placing && ui.hideProps)) {
         for (const b of game.buildings) {
             const icon = statusIcon(b);
             if (!icon) continue;
@@ -841,6 +900,7 @@ export function render(dt) {
 
     const detail = camera.zoom > 0.7;
     const okMap = ui.placing ? placementMap() : null;
+    const hideProps = !!ui.placing && ui.hideProps;
 
     // Limites de desenho em mundo: o ecrã mais uma folga (as peças sobem acima da casa).
     const halfW = view.width / 2 / camera.zoom + TILE_W;
@@ -893,11 +953,16 @@ export function render(dt) {
                 // Um edifício desenha-se na casa da frente do seu bloco, a última a ser pintada.
                 const front = blockFront(b.x, b.y, b.size);
                 if (vx === front.x && vy === front.y) {
-                    const cw = gridToWorld(b.x + b.size / 2, b.y + b.size / 2, e);
-                    drawBuilding(b, cw.x, cw.y, t);
+                    if (hideProps) {
+                        drawBuildingBase(b);
+                    } else {
+                        const cw = gridToWorld(b.x + b.size / 2, b.y + b.size / 2, e);
+                        drawBuilding(b, cw.x, cw.y, t);
+                    }
                 }
             } else if (game.world.feature[i]) {
-                drawFeature(game.world.feature[i], x, y, wx, gy, t);
+                if (hideProps) drawFeatureBase(game.world.feature[i], x, y, wx, gy);
+                else drawFeature(game.world.feature[i], x, y, wx, gy, t);
             }
             const people = walkersAt.get(i);
             if (people) for (const w of people) drawWalker(w, t);

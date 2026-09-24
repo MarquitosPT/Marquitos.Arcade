@@ -71,6 +71,11 @@ export const ui = {
      * edifício, ou a casa onde acaba o troço de estrada.
      */
     pending: null,
+    /**
+     * Em modo de construção: esconder edifícios e árvores (e as pedras), para
+     * se verem as casas livres por trás deles. Fica só a marca de cada um no chão.
+     */
+    hideProps: false,
     selected: null
 };
 

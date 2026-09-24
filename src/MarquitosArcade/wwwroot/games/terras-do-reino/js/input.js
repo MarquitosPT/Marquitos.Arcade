@@ -1,5 +1,6 @@
 // Controlos do tabuleiro: arrastar para andar, beliscar ou rodar a roda para
-// aproximar, Q e E para rodar a vista, tocar para escolher uma casa. O botão direito do rato abre sempre
+// aproximar, Q e E para rodar a vista, H para ocultar
+// edifícios e árvores ao construir, tocar para escolher uma casa. O botão direito do rato abre sempre
 // as opções da casa, mesmo a meio de uma construção.
 //
 // Um toque só conta como toque se o dedo quase não se mexeu — senão é um
@@ -15,7 +16,7 @@ import { idx } from './world.js';
 const TAP_SLOP = 8;
 const KEY_PAN = 14;
 
-let handlers = { tap() {}, inspect() {}, hover() {}, cancel() {}, confirm() {} };
+let handlers = { tap() {}, inspect() {}, hover() {}, cancel() {}, confirm() {}, toggleHide() {} };
 
 export function setInputHandlers(next) {
     handlers = { ...handlers, ...next };
@@ -115,6 +116,7 @@ export function attachControls(canvas) {
             case '-': case '_': zoomAt(camera.width / 2, camera.height / 2, 1 / 1.15); break;
             case 'q': case 'Q': rotateView(-1); break;
             case 'e': case 'E': rotateView(1); break;
+            case 'h': case 'H': handlers.toggleHide(); break;
             case 'Escape': handlers.cancel(); break;
             case 'Enter':
                 // Num botão focado, o Enter é do botão.

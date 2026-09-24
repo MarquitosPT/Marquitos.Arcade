@@ -257,8 +257,8 @@ body.in-game .toolbar { display: flex; }
     gap: 8px;
 }
 
-/* Rodar a vista enquanto se constrói: a barra de baixo, que tem o Rodar, está escondida. */
-.placeRotate {
+/* Ocultar edifícios e árvores enquanto se constrói, para ver as casas livres. */
+.placeHide {
     display: grid;
     place-items: center;
     width: 34px;
@@ -271,8 +271,17 @@ body.in-game .toolbar { display: flex; }
     transition: background 0.2s ease, transform 0.15s ease;
 }
 
-.placeRotate:hover { background: var(--glass-bg-hover); }
-.placeRotate:active { transform: scale(0.94); }
+.placeHide:hover { background: var(--glass-bg-hover); }
+.placeHide:active { transform: scale(0.94); }
+
+/* Carregado, fica dourado como a moldura do painel. */
+.placeHide[aria-pressed="true"] {
+    border-color: rgba(242, 193, 78, 0.9);
+    background: rgba(242, 193, 78, 0.35);
+    box-shadow: inset 0 0 0 1px rgba(242, 193, 78, 0.5);
+}
+
+.placeHide[aria-pressed="true"]:hover { background: rgba(242, 193, 78, 0.45); }
 
 /* Sair do modo tem de se ler como sair: um botão com nome, não só uma cruz. */
 .placeExit {

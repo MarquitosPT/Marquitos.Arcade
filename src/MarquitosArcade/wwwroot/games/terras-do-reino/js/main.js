@@ -618,7 +618,8 @@ setInputHandlers({
         else if (ui.placing) stopPlacing();
         else if (sheetOpen()) closeSheet();
     },
-    confirm: confirmPending
+    confirm: confirmPending,
+    toggleHide: toggleHideProps
 });
 attachControls(els.game);
 
@@ -649,9 +650,25 @@ els.speedBtn.addEventListener('click', () => {
     updateHud();
 });
 
-// Roda-se tanto da barra de baixo como do painel do modo de construção, que toma o lugar dela.
-els.rotateBtn.addEventListener('click', () => rotateView(1));
-els.placeRotateBtn.addEventListener('click', () => rotateView(1));
+// No sentido das setas do ícone 🔄: o cenário roda ao contrário dos ponteiros do relógio.
+els.rotateBtn.addEventListener('click', () => rotateView(-1));
+
+/** Esconde ou volta a mostrar os edifícios e as árvores enquanto se constrói. */
+function toggleHideProps() {
+    if (!ui.placing) return;
+    ui.hideProps = !ui.hideProps;
+    refreshHideBtn();
+}
+
+function refreshHideBtn() {
+    const on = ui.hideProps;
+    els.placeHideBtn.setAttribute('aria-pressed', String(on));
+    const label = on ? 'Mostrar edifícios e árvores' : 'Ocultar edifícios e árvores';
+    els.placeHideBtn.title = `${label} (H)`;
+    els.placeHideBtn.setAttribute('aria-label', label);
+}
+
+els.placeHideBtn.addEventListener('click', toggleHideProps);
 
 els.questCard.addEventListener('click', () => {
     if (sheetOpen() === 'quest') closeSheet();
