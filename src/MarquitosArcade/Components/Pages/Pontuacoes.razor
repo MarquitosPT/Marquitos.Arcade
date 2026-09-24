@@ -21,7 +21,7 @@
                 <div class="gamePage">
                     @foreach (var game in Games)
                     {
-                        <article class="scoreCard" id="@game.Id" data-value="@game.Id">
+                        <div class="scoreCard" id="@game.Id" data-value="@game.Id">
                             <div class="game-panel-head">
                                 <h2><span class="panel-emoji" aria-hidden="true">@game.Emoji</span> @game.Name</h2>
                                 <a class="refresh-btn" href="/pontuacoes?jogo=@game.Id">↻ Atualizar</a>
@@ -67,7 +67,7 @@
                                     </table>
                                 </div>
                             </div>
-                        </article>
+                        </div>
                     }
                 </div>
             </div>
