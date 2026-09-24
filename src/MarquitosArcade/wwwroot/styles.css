@@ -1261,6 +1261,13 @@ main {
   --cover-bg: #123a5e;
 }
 
+/* O verde dos prados do reino; o fundo é o da relva, para a capa não piscar
+   a preto antes de a imagem chegar. */
+.theme-reino {
+  --game-accent: #8fd16a;
+  --cover-bg: #3f7a2e;
+}
+
 /* ---------- Ficha do jogo ---------- */
 
 .game-card-body {

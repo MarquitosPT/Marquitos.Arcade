@@ -1,0 +1,55 @@
+/*
+ * Tokens do Terras do Reino — a variante "glass" da arcada (os mesmos nomes de
+ * token do Maze Run e do Pixel Racing), aquecida para um reino de campos e
+ * pedra: dourado em vez de ciano, verde de prado em vez de violeta.
+ *
+ * O vidro aqui é escuro por cima de um mundo claro — o contrário dos outros
+ * jogos, que são noite. É por isso que é mais opaco: por cima de relva ao sol,
+ * um vidro tão transparente como o do Maze Run deixava o texto por ler. Só há
+ * esta variante; se um dia houver outra, entra aqui e nos mesmos tokens.
+ */
+
+:root {
+    /* acentos — o dourado é o do castelo e das moedas */
+    --accent: #f2c14e;
+    --accent-2: #7ed957;
+    --accent-3: #e8715a;
+    --gold: #f2c14e;
+    --on-accent: #2b1d05;
+
+    /* texto */
+    --text: #fffaf0;
+    --muted: rgba(255, 250, 240, 0.72);
+    --faint: rgba(255, 250, 240, 0.5);
+
+    /* vidro */
+    --glass-bg: linear-gradient(155deg, rgba(58, 48, 34, 0.78), rgba(30, 26, 20, 0.84) 60%);
+    --glass-bg-solid: rgba(32, 28, 22, 0.8);
+    --glass-bg-soft: rgba(255, 255, 255, 0.08);
+    --glass-bg-hover: rgba(255, 255, 255, 0.14);
+    --glass-border: rgba(255, 240, 210, 0.2);
+    --glass-border-strong: rgba(255, 240, 210, 0.34);
+    --glass-shadow: 0 30px 60px -28px rgba(20, 14, 4, 0.8);
+    --glass-shadow-sm: 0 12px 26px -16px rgba(20, 14, 4, 0.8);
+    --blur: 18px;
+    --blur-soft: 6px;
+
+    /* o véu dos ecrãs, por cima do reino que se vê por trás */
+    --scrim: radial-gradient(ellipse at 50% 18%, rgba(40, 60, 90, 0.25), rgba(20, 18, 12, 0.55) 70%);
+
+    --ring: rgba(242, 193, 78, 0.5);
+    --glow: rgba(242, 193, 78, 0.4);
+    --ok: #7ed957;
+    --bad: #ff8a78;
+
+    /* geometria */
+    --radius-sm: 10px;
+    --radius: 16px;
+    --radius-lg: 24px;
+    --radius-pill: 999px;
+
+    /* tipografia */
+    --font-title: "Cinzel", Georgia, serif;
+    --font-display: "Outfit", "Segoe UI", system-ui, sans-serif;
+    --font-body: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+}

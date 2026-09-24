@@ -131,6 +131,51 @@ const GAMES = [
         // lados — é o mesmo fundo de auroras do jogo, e o banner do título
         // assenta por cima dele.
         clip: () => ({ x: 0, y: 0, width: 800, height: 450 })
+    },
+    {
+        slug: 'terras-do-reino',
+        viewport: { width: 800, height: 450 },
+        scale: 2,
+        async play(page) {
+            await page.waitForSelector('#playBtn:not([disabled])');
+            await page.click('#playBtn');
+            await page.addStyleTag({ content: `${HIDE_ARCADE_CHROME} .hud, .toolbar, .toasts { display: none !important; }` });
+            // Um reino a meio do caminho: o castelo no nível 3 e os edifícios à
+            // volta dele, construídos pelas regras do próprio jogo (cada um no
+            // sítio válido mais perto do castelo) e com uns segundos em cima,
+            // para os campos estarem em fases diferentes.
+            await page.evaluate(async () => {
+                const G = '/games/terras-do-reino/js/';
+                const { game } = await import(G + 'state.js');
+                const { checkPlacement, place, upgradeCastle } = await import(G + 'buildings.js');
+                const { plantField, stepEconomy } = await import(G + 'economy.js');
+                const { castleDistance } = await import(G + 'world.js');
+                const { camera, lookAt } = await import(G + 'iso.js');
+                Object.assign(game.res, { coins: 9000, wood: 900, stone: 900, planks: 300 });
+                upgradeCastle();
+                upgradeCastle();
+                const plan = ['market', 'mill', 'bakery', 'house', 'field', 'field', 'house', 'pasture', 'field',
+                    'woodcutter', 'quarry', 'field', 'house', 'carpentry', 'field', 'barn', 'field', 'house', 'dairy', 'field'];
+                for (const [n, kind] of plan.entries()) {
+                    let best = null;
+                    for (let y = 0; y < 44; y++) for (let x = 0; x < 44; x++) {
+                        if (!checkPlacement(kind, x, y).ok) continue;
+                        const d = castleDistance(x, y);
+                        if (!best || d < best.d) best = { x, y, d };
+                    }
+                    const b = best && place(kind, best.x, best.y);
+                    if (b?.kind === 'field') {
+                        plantField(b);
+                        b.growth = (n % 4) / 4;
+                    }
+                }
+                for (let i = 0; i < 12; i++) stepEconomy(1);
+                camera.zoom = 1.15;
+                lookAt(22.6, 22.6);
+            });
+            await sleep(2500);
+        },
+        clip: () => ({ x: 0, y: 0, width: 800, height: 450 })
     }
 ];
 

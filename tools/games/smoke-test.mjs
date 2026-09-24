@@ -563,6 +563,169 @@ const GAMES = [
         }
     },
     {
+        slug: 'terras-do-reino',
+        // Ao comprido, como se joga num computador: construir, semear, colher e
+        // vender, tudo pelos botões e toques a sério.
+        viewport: { width: 900, height: 560 },
+        canvas: true,
+        menuSelector: '#startScreen',
+        async play(page) {
+            await page.fill('#playerNameInput', 'MARQUITOS');
+            await enterKingdom(page);
+
+            // Primeiro o mapa: cada semente tem de dar um começo jogável.
+            const broken = await page.evaluate(async () => {
+                const G = '/games/terras-do-reino/js/';
+                const { generateWorld, idx, castleDistance, countFeatureNear, isFreeLand, CASTLE_TILE, T_WATER } = await import(G + 'world.js');
+                const { CASTLE_LEVELS, MAP_SIZE } = await import(G + 'config.js');
+                const problems = [];
+                for (let seed = 1; seed <= 200; seed++) {
+                    const w = generateWorld(seed * 7919);
+                    const count = (radius, test) => {
+                        let n = 0;
+                        for (let y = 0; y < MAP_SIZE; y++) for (let x = 0; x < MAP_SIZE; x++) {
+                            if (castleDistance(x, y) <= radius && test(idx(x, y))) n++;
+                        }
+                        return n;
+                    };
+                    const say = (what) => problems.push(`semente ${seed * 7919}: ${what}`);
+                    // O lenhador e a pedreira têm de caber no território inicial,
+                    // e a mina no do nível 3 — senão o castelo encrava.
+                    const spot = (radius, feature, min) => {
+                        for (let y = 0; y < MAP_SIZE; y++) for (let x = 0; x < MAP_SIZE; x++) {
+                            if (castleDistance(x, y) <= radius && isFreeLand(w, x, y) && countFeatureNear(w, x, y, feature, 2) >= min) return true;
+                        }
+                        return false;
+                    };
+                    if (!spot(CASTLE_LEVELS[1].radius, 'tree', 1)) say('não há onde pôr um lenhador no começo');
+                    if (!spot(CASTLE_LEVELS[1].radius, 'rock', 1)) say('não há onde pôr uma pedreira no começo');
+                    if (count(CASTLE_LEVELS[3].radius, (i) => w.feature[i] === 'ore') < 1) say('sem ouro ao alcance do castelo no nível 3');
+                    for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) {
+                        const i = idx(CASTLE_TILE.x + dx, CASTLE_TILE.y + dy);
+                        if (w.terrain[i] === T_WATER || w.feature[i]) say('o castelo não está em terra limpa');
+                    }
+                    if (w.towns.length !== 3) say(`${w.towns.length} vilas em vez de 3`);
+                    for (const t of w.towns) {
+                        let land = 0;
+                        for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
+                            const x = t.x + dx; const y = t.y + dy;
+                            if (x >= 0 && y >= 0 && x < MAP_SIZE && y < MAP_SIZE && w.terrain[idx(x, y)] !== T_WATER) land++;
+                        }
+                        if (land < 25) say(`${t.name} sem terra para crescer (${land} casas)`);
+                        if (castleDistance(t.x, t.y) <= CASTLE_LEVELS[CASTLE_LEVELS.length - 1].radius + 1) say(`${t.name} dentro do território máximo do castelo`);
+                    }
+                }
+                return problems;
+            });
+            if (broken.length) throw new Error(`mapas com problemas:\n  ${broken.join('\n  ')}`);
+
+            // Constrói uma casa pelo painel e pelo toque no mapa.
+            await page.click('.toolBtn[data-sheet="build"]');
+            await page.click('.buildCard[data-arg="house"]');
+            const before = await kingdomCount(page);
+            await tapPlaceable(page, 'house');
+            await sleep(300);
+            if (await kingdomCount(page) !== before + 1) throw new Error('a casa não foi construída');
+
+            // Um campo: nasce semeado; dá-se-lhe tempo, colhe-se com um toque.
+            await page.click('.toolBtn[data-sheet="build"]');
+            await page.click('.buildCard[data-arg="field"]');
+            await tapPlaceable(page, 'field');
+            await page.click('#placeCancelBtn');
+            const ripe = await page.evaluate(async () => {
+                const G = '/games/terras-do-reino/js/';
+                const { game } = await import(G + 'state.js');
+                const { stepEconomy } = await import(G + 'economy.js');
+                const { gridToWorld, worldToScreen } = await import(G + 'iso.js');
+                const field = game.buildings.find((b) => b.kind === 'field');
+                if (!field || field.stage !== 'growing') return { error: `campo em ${field?.stage}` };
+                for (let i = 0; i < 45; i++) stepEconomy(1);
+                const w = gridToWorld(field.x + 0.5, field.y + 0.5);
+                const s = worldToScreen(w.x, w.y);
+                return { stage: field.stage, x: s.x, y: s.y, wheat: game.res.wheat };
+            });
+            if (ripe.error) throw new Error(ripe.error);
+            if (ripe.stage !== 'ripe') throw new Error(`o campo não amadureceu (${ripe.stage})`);
+            await page.mouse.click(ripe.x, ripe.y);
+            await sleep(200);
+            const wheat = await page.evaluate(async () => (await import('/games/terras-do-reino/js/state.js')).game.res.wheat);
+            if (!(wheat > ripe.wheat)) throw new Error('tocar no campo maduro não colheu nada');
+
+            // Mercado: construir, vender o trigo e ver as moedas entrar.
+            await page.click('.toolBtn[data-sheet="market"]');
+            await page.click('#sheetBody [data-action="place"][data-arg="market"]');
+            await tapPlaceable(page, 'market');
+            await sleep(200);
+            await page.click('.toolBtn[data-sheet="market"]');
+            const coins = await page.evaluate(async () => (await import('/games/terras-do-reino/js/state.js')).game.res.coins);
+            await page.click('.tradeBtn[data-action="sell"][data-arg="wheat"][data-n="all"]');
+            await sleep(200);
+            const sold = await page.evaluate(async () => (await import('/games/terras-do-reino/js/state.js')).game.res);
+            if (sold.wheat !== 0 || !(sold.coins > coins)) throw new Error(`a venda não correu (trigo ${sold.wheat}, moedas ${coins} -> ${sold.coins})`);
+
+            await page.click('.toolBtn[data-sheet="castle"]');
+            await sleep(200);
+            await page.click('.toolBtn[data-sheet="kingdoms"]');
+            await sleep(200);
+            if ((await page.$$('.rankRow')).length !== 4) throw new Error('a tabela dos reinos não tem o jogador e as três vilas');
+            await page.click('#sheetCloseBtn');
+            await sleep(400);
+        }
+    },
+    {
+        slug: 'terras-do-reino',
+        name: 'terras-do-reino-gravacao',
+        // Ao alto, como num telemóvel.
+        viewport: { width: 400, height: 820 },
+        canvas: true,
+        menuSelector: '#startScreen',
+        async play(page) {
+            await enterKingdom(page);
+            const built = await page.evaluate(async () => {
+                const G = '/games/terras-do-reino/js/';
+                const { game } = await import(G + 'state.js');
+                const { checkPlacement, place, upgradeCastle } = await import(G + 'buildings.js');
+                Object.assign(game.res, { coins: 3000, wood: 400, stone: 400 });
+                if (!upgradeCastle()) return -1;
+                let n = 0;
+                for (let y = 0; y < 44 && n < 20; y++) for (let x = 0; x < 44 && n < 20; x++) {
+                    const kind = n % 2 ? 'field' : 'house';
+                    if (checkPlacement(kind, x, y).ok && place(kind, x, y)) n++;
+                }
+                return game.buildings.length;
+            });
+            if (built < 20) throw new Error(`só se construíram ${built} edifícios`);
+
+            // Sair grava o reino no aparelho — e cabe no teto do servidor.
+            await page.click('#endBtn');
+            await page.waitForSelector('#startScreen', { state: 'visible' });
+            const save = await page.evaluate(() => localStorage.getItem('terrasDoReinoSave_v1'));
+            if (!save) throw new Error('sair não gravou o reino');
+            if (save.length > 8 * 1024) throw new Error(`a gravação tem ${save.length} bytes, acima dos 8 kB do servidor`);
+            const data = JSON.parse(save);
+            if (data.b.length !== built || data.cl !== 2) throw new Error('a gravação não tem o que se construiu');
+
+            // Uma hora fora: ao voltar, o reino recupera esse tempo e diz o que se fez.
+            await page.evaluate(() => {
+                const d = JSON.parse(localStorage.getItem('terrasDoReinoSave_v1'));
+                d.saved -= 3600 * 1000;
+                localStorage.setItem('terrasDoReinoSave_v1', JSON.stringify(d));
+            });
+            await page.reload({ waitUntil: 'networkidle' });
+            await waitForSplash(page);
+            await enterKingdom(page);
+            await page.waitForSelector('#welcomeScreen', { state: 'visible' });
+            const back = await page.evaluate(async () => {
+                const { game } = await import('/games/terras-do-reino/js/state.js');
+                return { n: game.buildings.length, level: game.castleLevel, day: game.day };
+            });
+            if (back.n !== built || back.level !== 2) throw new Error(`o reino voltou diferente (${back.n} edifícios, castelo ${back.level})`);
+            if (back.day < 60) throw new Error(`a hora fora não foi recuperada (dia ${back.day})`);
+            await page.click('#welcomeBtn');
+            await sleep(600);
+        }
+    },
+    {
         slug: 'pixel-racing',
         name: 'pixel-racing-resultados',
         viewport: { width: 800, height: 450 },
@@ -689,6 +852,48 @@ async function waitForMazePlaying(page) {
         undefined,
         { timeout: 30000 }
     );
+}
+
+/**
+ * Terras do Reino: carrega em "Fundar/Continuar" assim que o botão fica ativo
+ * (espera pela resposta da conta, que aqui é um 503) e espera pelo jogo.
+ */
+async function enterKingdom(page) {
+    await page.waitForSelector('#playBtn:not([disabled])');
+    await page.click('#playBtn');
+    await page.evaluate(async () => {
+        const { game } = await import('/games/terras-do-reino/js/state.js');
+        window.__arcadeKingdom = game;
+    });
+    await page.waitForFunction(() => window.__arcadeKingdom && window.__arcadeKingdom.phase === 'playing');
+}
+
+async function kingdomCount(page) {
+    return page.evaluate(() => window.__arcadeKingdom.buildings.length);
+}
+
+/** Toca, no canvas, na casa válida mais perto do castelo para construir `kind`. */
+async function tapPlaceable(page, kind) {
+    const spot = await page.evaluate(async (kind) => {
+        const G = '/games/terras-do-reino/js/';
+        const { checkPlacement } = await import(G + 'buildings.js');
+        const { gridToWorld, worldToScreen, camera } = await import(G + 'iso.js');
+        const { castleDistance } = await import(G + 'world.js');
+        let best = null;
+        for (let y = 0; y < 44; y++) for (let x = 0; x < 44; x++) {
+            if (!checkPlacement(kind, x, y).ok) continue;
+            const w = gridToWorld(x + 0.5, y + 0.5);
+            const s = worldToScreen(w.x, w.y);
+            // Longe das bordas, da barra de ferramentas e do painel.
+            if (s.x < 480 && camera.width > 700) continue;
+            if (s.x < 30 || s.y < 150 || s.x > camera.width - 30 || s.y > camera.height - 110) continue;
+            const d = castleDistance(x, y);
+            if (!best || d < best.d) best = { x: s.x, y: s.y, d };
+        }
+        return best;
+    }, kind);
+    if (!spot) throw new Error(`não há onde construir ${kind} à vista`);
+    await page.mouse.click(spot.x, spot.y);
 }
 
 /**

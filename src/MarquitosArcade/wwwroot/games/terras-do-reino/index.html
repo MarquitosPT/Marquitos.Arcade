@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Terras do Reino | Marquitos Arcade</title>
+    <link rel="icon" type="image/png" sizes="64x64" href="/favicon3_64x64.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon3_32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon3_16x16.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon3.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#5aa6e6" />
+    <meta name="msapplication-TileColor" content="#123a5e" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Marquitos Arcade" />
+
+    <!-- Ecrã de arranque partilhado pela arcada (lib/arcade/splash.*). Vem antes
+         das folhas do jogo porque é o primeiro que se vê, e o logótipo é
+         pré-carregado para não aparecer a meio da animação. -->
+    <link rel="preload" as="image" href="/logo3.png" />
+    <link rel="stylesheet" href="/lib/arcade/splash.css" />
+    <!-- Mede o viewport curto das apps afixadas em iOS (ver o ficheiro). -->
+    <script src="/lib/arcade/standalone-fit.js"></script>
+    <script type="module" src="/lib/arcade/splash-boot.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" />
+
+    <link rel="stylesheet" href="css/theme.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/hud.css" />
+    <link rel="stylesheet" href="css/screens.css" />
+    <link rel="stylesheet" href="css/controls.css" />
+    <link rel="stylesheet" href="css/sheets.css" />
+</head>
+
+<body>
+    <!-- Ecrã de arranque: fica no ar pelo menos 2s (ver lib/arcade/splash.js). -->
+    <div id="arcadeSplash" class="arcade-splash">
+        <div class="arcade-splash-rays" aria-hidden="true"></div>
+        <div class="arcade-splash-pixels" aria-hidden="true"></div>
+        <div class="arcade-splash-stage">
+            <img class="arcade-splash-logo" src="/logo3.png" width="512" height="366"
+                 alt="MarquitosPT Game Arcade" fetchpriority="high" decoding="async" />
+            <p class="arcade-splash-caption">Terras do Reino</p>
+            <p class="arcade-splash-status" role="status">A carregar&hellip;</p>
+            <div class="arcade-splash-track" role="progressbar" aria-label="Progresso do carregamento"
+                 aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <div class="arcade-splash-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="wrap">
+        <div class="topBar">
+            <a class="topBtn" id="arcadeLink" href="/">
+                <div style="display:flex">
+                    <svg class="topIcon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
+                        <path d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z"></path>
+                    </svg>
+                    <span class="topLabel">Arcade</span>
+                </div>
+            </a>
+            <!-- Escondido enquanto o jogo está em testes: a página de pontuações ainda
+                 não tem o painel dele (ver Pontuacoes.razor). O `[hidden]` do
+                 base.css ganha ao `display` que o topbar.js escreve. -->
+            <a class="topBtn" id="scoresLink" href="/pontuacoes?jogo=terras-do-reino#terras-do-reino" aria-label="Pontuações" hidden>
+                <div style="display:flex">
+                    <svg class="topIcon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
+                        <path d="M3.217 6.962A3.75 3.75 0 0 1 0 3.25v-.5C0 1.784.784 1 1.75 1h1.356c.228-.585.796-1 1.462-1h6.864c.647 0 1.227.397 1.462 1h1.356c.966 0 1.75.784 1.75 1.75v.5a3.75 3.75 0 0 1-3.217 3.712 5.014 5.014 0 0 1-2.771 3.117l.144 1.446c.005.05.03.12.114.204.086.087.217.17.373.227.283.103.618.274.89.568.285.31.467.723.467 1.226v.75h1.25a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1 0-1.5H4v-.75c0-.503.182-.916.468-1.226.27-.294.606-.465.889-.568.139-.048.266-.126.373-.227.084-.085.109-.153.114-.204l.144-1.446a5.015 5.015 0 0 1-2.77-3.117ZM4.5 1.568V5.5a3.5 3.5 0 1 0 7 0V1.568a.068.068 0 0 0-.068-.068H4.568a.068.068 0 0 0-.068.068Zm2.957 8.902-.12 1.204c-.093.925-.858 1.47-1.467 1.691a.766.766 0 0 0-.3.176c-.037.04-.07.093-.07.21v.75h5v-.75c0-.117-.033-.17-.07-.21a.766.766 0 0 0-.3-.176c-.609-.221-1.374-.766-1.466-1.69l-.12-1.204a5.064 5.064 0 0 1-1.087 0ZM13 2.5v2.872a2.25 2.25 0 0 0 1.5-2.122v-.5a.25.25 0 0 0-.25-.25H13Zm-10 0H1.75a.25.25 0 0 0-.25.25v.5c0 .98.626 1.813 1.5 2.122Z"></path>
+                    </svg>
+                </div>
+            </a>
+            <button class="topBtn" id="pauseBtn">
+                <div style="display:flex">
+                    <svg class="topIcon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
+                        <path d="M5 2h1a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Zm5 0h1a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Z"></path>
+                    </svg>
+                    <span class="topLabel">Pausa</span>
+                </div>
+            </button>
+            <button class="topBtn topBtn--quit" id="endBtn">
+                <div style="display:flex">
+                    <svg class="topIcon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
+                        <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path>
+                    </svg>
+                    <span class="topLabel">Sair</span>
+                </div>
+            </button>
+        </div>
+        <canvas id="game"></canvas>
+
+        <!-- HUD do reino: só se vê em jogo (a classe `in-game` do body). -->
+        <div id="hud" class="hud">
+            <div class="statusRow">
+                <span class="pill" id="dayPill" title="Dia do reino"></span>
+                <span class="pill" id="popPill" title="Moradores a trabalhar / moradores"></span>
+                <span class="pill" id="happyPill" title="Contentamento do povo"></span>
+                <button class="pill pillBtn" id="speedBtn" type="button" title="Velocidade do tempo">⏩ 1x</button>
+            </div>
+            <div class="resRow" id="resRow" aria-label="Bens do reino"></div>
+            <button class="questCard" id="questCard" type="button">
+                <span class="questLabel">📜 Objetivo</span>
+                <span class="questText" id="questText"></span>
+            </button>
+        </div>
+
+        <div id="placeBanner" class="placeBanner" hidden>
+            <span id="placeText"></span>
+            <button class="iconBtn iconBtn--small" id="placeCancelBtn" type="button" aria-label="Cancelar construção">✕</button>
+        </div>
+
+        <nav id="toolbar" class="toolbar" aria-label="Ações do reino">
+            <button class="toolBtn" data-sheet="build" type="button"><span class="toolIcon">🔨</span><span class="toolLabel">Construir</span></button>
+            <button class="toolBtn" data-sheet="market" type="button"><span class="toolIcon">⚖️</span><span class="toolLabel">Mercado</span></button>
+            <button class="toolBtn" data-sheet="castle" type="button"><span class="toolIcon">🏰</span><span class="toolLabel">Castelo</span></button>
+            <button class="toolBtn" data-sheet="kingdoms" type="button"><span class="toolIcon">👑</span><span class="toolLabel">Reinos</span></button>
+        </nav>
+
+        <!-- Painel de baixo: construir, mercado, castelo, reinos e o que está numa casa. -->
+        <section id="sheet" class="sheet" hidden aria-labelledby="sheetTitle">
+            <header class="sheetHead">
+                <span class="sheetIcon" id="sheetIcon" aria-hidden="true"></span>
+                <div class="sheetHeadText">
+                    <h2 class="sheetTitle" id="sheetTitle"></h2>
+                    <p class="sheetSub" id="sheetSub"></p>
+                </div>
+                <button class="iconBtn" id="sheetCloseBtn" type="button" aria-label="Fechar">✕</button>
+            </header>
+            <div class="sheetBody" id="sheetBody"></div>
+        </section>
+
+        <div id="toasts" class="toasts" aria-live="polite"></div>
+
+        <!-- Ecrã 1: quem és e o teu reino. -->
+        <div id="startScreen" class="screen">
+            <div class="panel">
+                <div class="brand">
+                    <span class="brandBadge">🏰</span>
+                    <h1 class="title">Terras do Reino</h1>
+                    <p class="sub">Campos · Minas · Mercados</p>
+                </div>
+
+                <!-- O nome só se pede a visitantes: com sessão iniciada vem da conta. -->
+                <div class="nameSlot is-pending" id="nameSlot">
+                    <label class="field" id="nameRow" for="playerNameInput">
+                        <span class="fieldLabel">O teu nome</span>
+                        <input type="text" id="playerNameInput" class="nameInput" placeholder="Como queres aparecer no quadro"
+                               maxlength="20" autocomplete="nickname" spellcheck="false">
+                    </label>
+                    <div class="playerChip" id="accountRow" hidden>
+                        <span class="chipAvatar" id="accountInitial"></span>
+                        <span class="chipText">A governar como <b id="accountName"></b></span>
+                    </div>
+                </div>
+
+                <div class="saveCard" id="saveCard" hidden>
+                    <span class="saveLine" id="saveLine"></span>
+                    <span class="saveSub" id="saveSub"></span>
+                </div>
+
+                <button class="btn" id="playBtn">Fundar o reino</button>
+                <button class="btnOutline" id="newBtn" hidden>Começar um reino novo</button>
+
+                <p class="progressNote" id="progressNote" hidden>
+                    <span aria-hidden="true">💾</span>
+                    <span>O teu reino fica só neste aparelho.
+                        <a href="/Account/Login">Inicia sessão</a> para o levares contigo.</span>
+                </p>
+
+                <p id="hint">Semeia e colhe, abre minas e oficinas, vende nas feiras das vilas vizinhas
+                    e faz do teu o reino mais próspero. Arrasta para andar pelo mapa, belisca ou usa a roda para aproximar.</p>
+            </div>
+        </div>
+
+        <div id="confirmScreen" class="screen">
+            <div class="panel panel--narrow">
+                <h2 class="title title--small">Um reino novo?</h2>
+                <p class="sub sub--wrap">O reino que tens agora perde-se: o mapa, os edifícios e tudo o que está no armazém.</p>
+                <button class="btn btn--danger" id="confirmNewBtn">Sim, começar de novo</button>
+                <button class="btnOutline" id="cancelNewBtn">Não, voltar</button>
+            </div>
+        </div>
+
+        <div id="welcomeScreen" class="screen">
+            <div class="panel panel--narrow">
+                <h2 class="title title--small">Bem-vindo de volta!</h2>
+                <p class="sub sub--wrap" id="welcomeSub"></p>
+                <div class="deltaList" id="welcomeList"></div>
+                <button class="btn" id="welcomeBtn">Ao trabalho</button>
+            </div>
+        </div>
+
+        <div id="pauseScreen" class="screen">
+            <div class="panel panel--narrow">
+                <h2 class="title title--small">Pausa</h2>
+                <p class="sub">O reino espera por ti</p>
+                <button class="btn" id="resumeBtn">Continuar</button>
+                <button class="btnOutline" id="quitBtn">Guardar e sair para o menu</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+
+</html>
