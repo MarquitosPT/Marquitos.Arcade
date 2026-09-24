@@ -1624,7 +1624,7 @@ main {
 .rank-col {
   width: 3rem;
   white-space: nowrap;
-  text-align: right;
+  text-align: center;
   font-size: 1rem;
 }
 
