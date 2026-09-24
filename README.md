@@ -567,6 +567,12 @@ sozinha — não há nada em cache para invalidar.
 
 ## Terras do Reino
 
+> **Em testes.** No catálogo aparece como "Em breve" (`IsPlayable: false` em
+> `Home.razor`), mas joga-se indo direto a `/games/terras-do-reino/`. O painel
+> das pontuações está escondido (comentado em `Pontuacoes.razor`, e o botão 🏆
+> do jogo com `hidden`); as pontuações continuam a ser guardadas. Para lançar,
+> desfazem-se estes três pontos.
+
 O primeiro jogo da arcada sem partidas: um reino que cresce enquanto se joga e
 continua de onde ficou. Inspirado no tabuleiro de peças do Carcassonne — o mapa
 é um tabuleiro de casas em perspetiva isométrica, com colinas que sobem, lagos
