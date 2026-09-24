@@ -1626,6 +1626,11 @@ main {
      devia fazer falta, mas antes um scroll aqui dentro do que uma tabela a
      transbordar do cartão. */
   overflow-y: auto;
+  /* ...mas só ao rato ou à barra de scroll: ao dedo, um arrasto vertical
+     aqui dentro é sempre para rolar a página (ver .page-scroll), nunca a
+     rede de segurança — só a horizontal do .table-wrap base continua
+     aberta, para as colunas que não coubessem. */
+  touch-action: pan-x;
 }
 
 /* Largura fixa (com folga: cabe sempre uma medalha ou dois dígitos) — é a
