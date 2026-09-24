@@ -1548,9 +1548,18 @@ main {
 
 /* ---------- Cartão de pontuações ---------- */
 
+/* Altura fixa, para o cartão não saltar de tamanho consoante o jogo tem uma
+   pontuação ou dez: cabeçalho + 10 linhas de tabela, com uma folga pequena
+   (ver .table-wrap, com overflow-y para essa folga nunca ser um problema se
+   as contas abaixo alguma vez desafinarem de um browser para o outro). Como
+   é o jogo com mais pontuações que decide, o número não pode vir de medir o
+   cartão mais alto que calhar estar no carrossel agora — muda com o tempo, à
+   medida que se joga; só o limite de 10 do servidor (TopCount, em
+   ScoresEndpoints.cs) não muda. */
 .scoreCard {
   position: relative;
-  flex: 1 1 auto;
+  flex: none;
+  height: 35rem;
   display: flex;
   flex-direction: column;
   border-radius: var(--radius-lg);
@@ -1598,6 +1607,10 @@ main {
 
 .score-card-body .table-wrap {
   flex: 1 1 auto;
+  /* Rede de segurança da altura fixa do cartão (ver .scoreCard): nunca
+     devia fazer falta, mas antes um scroll aqui dentro do que uma tabela a
+     transbordar do cartão. */
+  overflow-y: auto;
 }
 
 .rank-col {
@@ -1634,9 +1647,14 @@ main {
   touch-action: pan-x pan-y;
 }
 
+/* `table-layout: fixed` (com as três colunas medidas abaixo) é o que torna
+   a altura de uma linha previsível: sem ele, a coluna do nome podia crescer
+   à custa das outras para caber um nome comprido, e a altura do cartão
+   (fixa, ver .scoreCard) deixava de bater certo com o número de linhas. */
 table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 th,
@@ -1662,7 +1680,17 @@ tbody tr:last-child td {
   border-bottom: 0;
 }
 
+/* Nunca quebra: um nome comprido (ou a etiqueta de "não registado" a seguir)
+   corta-se com reticências, em vez de espremer a linha para uma segunda —
+   é isso que mantém as dez linhas todas com a mesma altura. */
+.player-col {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .score-col {
+  width: 6.5rem;
   text-align: right;
   font-variant-numeric: tabular-nums;
   font-weight: 700;

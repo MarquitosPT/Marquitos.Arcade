@@ -52,7 +52,7 @@
                                                     var medal = i switch { 0 => "🥇", 1 => "🥈", 2 => "🥉", _ => (i + 1).ToString() };
                                                     <tr class="@(i < 3 ? $"rank-{i + 1}" : null)">
                                                         <td class="rank-col">@medal</td>
-                                                        <td>
+                                                        <td class="player-col">
                                                             @entry.Name
                                                             @if (!entry.Registered)
                                                             {
