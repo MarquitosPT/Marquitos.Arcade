@@ -5,8 +5,18 @@
 // abrem as opções da casa) tratam-no nos seus próprios eventos de ponteiro.
 //
 // Os campos de texto ficam de fora: é lá que o menu serve para colar, corrigir
-// a ortografia ou escolher uma palavra-passe guardada.
-document.addEventListener('contextmenu', (event) => {
-  if (event.target.closest?.('input, textarea, select, [contenteditable]:not([contenteditable="false"])')) return;
-  event.preventDefault();
-});
+// a ortografia ou escolher uma palavra-passe guardada. Os <input> que não
+// recebem texto (caixas, botões, sliders...) não contam como tal.
+(() => {
+  const TEXT_FIELD = [
+    'input:not([type="button"], [type="submit"], [type="reset"], [type="image"], '
+      + '[type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"])',
+    'textarea',
+    '[contenteditable]:not([contenteditable="false"])'
+  ].join(', ');
+
+  document.addEventListener('contextmenu', (event) => {
+    if (event.target.closest?.(TEXT_FIELD)) return;
+    event.preventDefault();
+  });
+})();
