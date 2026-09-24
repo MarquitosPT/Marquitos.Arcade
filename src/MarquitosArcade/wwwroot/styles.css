@@ -1407,7 +1407,9 @@ main {
     "prev pages next"
     "dots dots dots";
   align-items: center;
-  gap: 10px 8px;
+  /* A distância das setas à tabela devia bater certo com a do resto do
+     cartão às suas bordas (o padding, ali em baixo) — daí o mesmo valor. */
+  gap: 10px 1.35rem;
   width: 100%;
   border-radius: var(--radius-lg);
   padding: 1.35rem;
@@ -1528,6 +1530,9 @@ main {
     grid-template-areas:
       "pages pages pages"
       "dots prev next";
+    /* Aqui as setas já não estão ao lado da tabela — voltam ao gap
+       pequeno, entre elas e os pontos. */
+    gap: 10px 8px;
   }
 
   .carouselDots {
