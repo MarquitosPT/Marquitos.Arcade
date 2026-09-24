@@ -656,7 +656,7 @@ els.questCard.addEventListener('click', () => {
     else openSheet('quest');
 });
 
-for (const btn of els.toolbar.querySelectorAll('.toolBtn')) {
+for (const btn of els.toolbar.querySelectorAll('.toolBtn[data-sheet]')) {
     btn.addEventListener('click', () => {
         resumeAudio();
         stopPlacing();

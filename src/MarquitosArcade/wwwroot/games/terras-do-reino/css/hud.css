@@ -380,10 +380,18 @@ body.in-game.is-placing #wrap::after {
 @media (max-width: 480px) {
     .statusRow { max-width: calc(100% - 120px); }
     .pill, .resChip { padding: 5px 8px; font-size: 12px; }
-    .toolBtn { min-width: 60px; padding: 6px 6px 5px; }
+    /* Cinco botões têm de caber num ecrã de 320px. */
+    .toolbar { gap: 2px; padding: 5px; }
+    .toolBtn { min-width: 56px; padding: 6px 4px 5px; }
+    .toolLabel { font-size: 11px; letter-spacing: 0; }
     .toolIcon { font-size: 20px; }
     body.in-game .topLabel { display: none; }
     body.in-game .topIcon + .topLabel { margin-left: 0; }
+}
+
+@media (max-width: 340px) {
+    .toolBtn { min-width: 0; padding: 6px 3px 5px; }
+    .toolLabel { font-size: 10px; }
 }
 
 /* Telemóvel deitado: a altura é o que falta, por isso o objetivo encolhe. */
