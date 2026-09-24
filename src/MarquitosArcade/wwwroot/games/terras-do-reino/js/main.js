@@ -649,7 +649,9 @@ els.speedBtn.addEventListener('click', () => {
     updateHud();
 });
 
+// Roda-se tanto da barra de baixo como do painel do modo de construção, que toma o lugar dela.
 els.rotateBtn.addEventListener('click', () => rotateView(1));
+els.placeRotateBtn.addEventListener('click', () => rotateView(1));
 
 els.questCard.addEventListener('click', () => {
     if (sheetOpen() === 'quest') closeSheet();

@@ -658,8 +658,8 @@ dois dias.
   estradas) é a exceção: são milhares de casas, por isso pinta-se por blocos
   de 11x11 numa imagem à parte, à escala do ecrã, e só se repinta quando muda o
   que o bloco tem ou o zoom; os blocos compõem-se por baixo das peças.
-- **A vista roda** de 90 em 90 graus (🔄 Rodar, na barra de baixo, ou as
-  teclas Q e E). A rotação vive só entre a grelha e o ecrã (`camera.rot` em `js/iso.js`): cada casa do mapa
+- **A vista roda** de 90 em 90 graus (🔄 Rodar, na barra de baixo, o 🔄 do
+  painel do modo de construção, que toma o lugar dela, ou as teclas Q e E). A rotação vive só entre a grelha e o ecrã (`camera.rot` em `js/iso.js`): cada casa do mapa
   passa para uma "grelha da vista", rodada à volta do centro do mapa, e só essa
   é projetada; o resto do jogo continua a falar em casas do mapa. A ordem do
   pintor, os lados das colinas, os blocos do chão e o toque (`pickTile`) são

@@ -251,6 +251,29 @@ body.in-game .toolbar { display: flex; }
     color: var(--gold);
 }
 
+.placeActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Rodar a vista enquanto se constrói: a barra de baixo, que tem o Rodar, está escondida. */
+.placeRotate {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    font-size: 17px;
+    border: 1px solid var(--glass-border);
+    border-radius: 50%;
+    background: var(--glass-bg-soft);
+    transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.placeRotate:hover { background: var(--glass-bg-hover); }
+.placeRotate:active { transform: scale(0.94); }
+
 /* Sair do modo tem de se ler como sair: um botão com nome, não só uma cruz. */
 .placeExit {
     padding: 7px 14px;
