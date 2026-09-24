@@ -4,7 +4,10 @@
 // O resto do código só sabe ler estas tabelas — acrescentar um edifício novo é
 // acrescentar uma entrada a `BUILDINGS` (e o desenho dele em sprites.js).
 //
-// Tempos em segundos de jogo. O relógio do jogo anda à velocidade escolhida
+// Tempos em segundos de jogo. Crescer e produzir leva o seu tempo de
+// propósito: um campo de trigo leva mais de dois dias a amadurecer, e cada
+// oficina faz uma peça a cada quarto de minuto, mais ou menos — um reino
+// constrói-se devagar. O relógio do jogo anda à velocidade escolhida
 // (1x, 2x, 3x) e só anda com o jogo aberto — o que se passa fora dele é
 // recuperado ao voltar, com o teto de `OFFLINE_MAX_SECONDS`.
 
@@ -148,7 +151,7 @@ export const BUILDINGS = [
     {
         id: 'field', name: 'Campo de trigo', emoji: '🌾', tier: 1,
         cost: { coins: 12 },
-        grow: 40, yield: 5,
+        grow: 100, yield: 5,
         desc: 'Toca para semear e, quando estiver dourado, toca outra vez para colher.'
     },
     {
@@ -160,63 +163,63 @@ export const BUILDINGS = [
         id: 'woodcutter', name: 'Lenhador', emoji: '🪓', tier: 1,
         cost: { coins: 35 }, workers: 2,
         near: { feature: 'tree', radius: 4.5, min: 2, full: 8 },
-        recipe: { out: { wood: 1 }, time: 5 },
+        recipe: { out: { wood: 1 }, time: 12 },
         desc: 'Corta madeira nas árvores à volta. Quantas mais árvores perto, mais depressa.'
     },
     {
         id: 'quarry', name: 'Pedreira', emoji: '⛏️', tier: 1,
         cost: { coins: 25, wood: 15 }, workers: 2,
         near: { feature: 'rock', radius: 4.5, min: 2, full: 6 },
-        recipe: { out: { stone: 1 }, time: 7 },
+        recipe: { out: { stone: 1 }, time: 18 },
         desc: 'Tira pedra das rochas à volta. Tem de ficar perto de rochedos.'
     },
     {
         id: 'forester', name: 'Guarda-florestal', emoji: '🌲', tier: 1,
         cost: { coins: 30, wood: 5 }, workers: 1,
-        plants: { radius: 4.5, time: 12 },
+        plants: { radius: 4.5, time: 30 },
         desc: 'Planta árvores nas casas livres à volta, para os lenhadores nunca ficarem sem nada.'
     },
     {
         id: 'mill', name: 'Moinho', emoji: '🌬️', tier: 2,
         cost: { coins: 60, wood: 20, stone: 10 }, workers: 1,
-        recipe: { in: { wheat: 2 }, out: { flour: 1 }, time: 6 },
+        recipe: { in: { wheat: 2 }, out: { flour: 1 }, time: 15 },
         desc: 'Mói o trigo em farinha.'
     },
     {
         id: 'bakery', name: 'Padaria', emoji: '🍞', tier: 2,
         cost: { coins: 70, wood: 15, stone: 15 }, workers: 2,
-        recipe: { in: { flour: 1 }, out: { bread: 2 }, time: 8 },
+        recipe: { in: { flour: 1 }, out: { bread: 2 }, time: 20 },
         desc: 'Coze pão com a farinha do moinho. Pão na mesa é povo contente.'
     },
     {
         id: 'pasture', name: 'Vacaria', emoji: '🐄', tier: 2,
         cost: { coins: 80, wood: 20 }, workers: 1,
-        recipe: { in: { wheat: 1 }, out: { milk: 2 }, time: 10 },
+        recipe: { in: { wheat: 1 }, out: { milk: 2 }, time: 25 },
         desc: 'Vacas alimentadas a trigo dão leite todos os dias.'
     },
     {
         id: 'carpentry', name: 'Carpintaria', emoji: '🪚', tier: 2,
         cost: { coins: 90, wood: 25, stone: 10 }, workers: 2,
-        recipe: { in: { wood: 2 }, out: { planks: 1 }, time: 7 },
+        recipe: { in: { wood: 2 }, out: { planks: 1 }, time: 18 },
         desc: 'A primeira fábrica do reino: transforma madeira em tábuas.'
     },
     {
         id: 'barn', name: 'Celeiro', emoji: '🛖', tier: 2,
         cost: { coins: 60, wood: 30, stone: 10 }, workers: 1,
-        farms: { radius: 5, time: 1.5 },
+        farms: { radius: 5, time: 4 },
         desc: 'Os trabalhadores do celeiro semeiam e colhem sozinhos os campos à volta.'
     },
     {
         id: 'dairy', name: 'Leitaria', emoji: '🧀', tier: 3,
         cost: { coins: 150, planks: 15, stone: 20 }, workers: 2,
-        recipe: { in: { milk: 2 }, out: { cheese: 1 }, time: 10 },
+        recipe: { in: { milk: 2 }, out: { cheese: 1 }, time: 25 },
         desc: 'Faz queijo com o leite da vacaria. Vale ouro nas feiras.'
     },
     {
         id: 'goldmine', name: 'Mina de ouro', emoji: '⛰️', tier: 3,
         cost: { coins: 200, planks: 20, stone: 30 }, workers: 3,
         site: 'ore',
-        recipe: { out: { gold: 1 }, time: 14 },
+        recipe: { out: { gold: 1 }, time: 35 },
         desc: 'Escava a veia de ouro de uma colina. Só se constrói numa colina com uma veia.'
     }
 ];
