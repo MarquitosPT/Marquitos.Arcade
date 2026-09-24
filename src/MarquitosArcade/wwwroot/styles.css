@@ -377,6 +377,15 @@ body::before {
    inteiro deslizar por baixo da barra de sistema (ver a nota no
    html/body acima). Fixo, fica ancorado à viewport aconteça o que
    acontecer. */
+/* Esquerda/direita ficam a 0, não a env(safe-area-inset-*): em paisagem
+   num iPhone com notch/Dynamic Island, essas margens de segurança caem
+   de lado, e um #app encolhido para dentro delas deixava as barras de
+   topo/rodapé a parar antes da borda real do ecrã - uma faixa do fundo da
+   página a interromper o vidro da barra. Em vez disso o #app ocupa o
+   ecrã todo e são a .topnav/.site-footer (com padding extra, ver abaixo)
+   e a .page-scroll (com padding-inline, ver abaixo) que recuam o
+   *conteúdo* da área de segurança, mantendo a mesma margem visual de
+   sempre enquanto o fundo das barras continua até à borda. */
 #app {
   /* `absolute` e não `fixed`: um elemento fixo é recortado no fim do
      viewport de layout, e é justamente para lá dele que isto tem de
@@ -386,8 +395,8 @@ body::before {
   display: flex;
   flex-direction: column;
   top: env(safe-area-inset-top, 0px);
-  left: env(safe-area-inset-left, 0px);
-  right: env(safe-area-inset-right, 0px);
+  left: 0;
+  right: 0;
   height: calc(100dvh - env(safe-area-inset-top, 0px) + var(--viewport-gap, 0px));
 }
 
@@ -417,6 +426,11 @@ body::before {
   flex: 1 1 auto;
   overflow-y: auto;
   overflow-x: hidden;
+  /* Repõe, no conteúdo, o recuo horizontal que o #app deixou de aplicar
+     (ver a nota ali em cima) - a mesma margem de sempre, só que agora
+     como padding em vez de deslocar a caixa toda. */
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
   scrollbar-width: thin;
   /* Sem isto, chegar ao fim desta caixa propaga o scroll ao
      documento — e é aí que o Safari volta a mexer na viewport. */
@@ -481,7 +495,10 @@ body::before {
   justify-content: space-between;
   gap: 1rem;
   min-height: 3.6rem;
-  padding: 0 1.1rem;
+  /* A mesma margem de sempre (1.1rem) somada ao recuo de segurança de
+     cada lado, para o vidro da barra continuar até à borda do ecrã em
+     paisagem sem mexer na posição do conteúdo. */
+  padding: 0 calc(1.1rem + env(safe-area-inset-right, 0px)) 0 calc(1.1rem + env(safe-area-inset-left, 0px));
   border-width: 0 0 1px;
   border-color: var(--bar-border);
   background: var(--bar-bg);
@@ -1779,7 +1796,8 @@ tbody tr:last-child td {
 .site-footer {
   flex-shrink: 0;
   z-index: 20;
-  padding: 0.6rem 1.25rem;
+  /* Mesma lógica da .topnav: margem habitual + recuo de segurança. */
+  padding: 0.6rem calc(1.25rem + env(safe-area-inset-right, 0px)) 0.6rem calc(1.25rem + env(safe-area-inset-left, 0px));
   border-width: 1px 0 0;
   border-color: var(--bar-border);
   background: var(--bar-bg);
@@ -2476,8 +2494,8 @@ tbody tr:last-child td {
 
 @media (max-width: 480px) {
   .topnav {
-    padding-left: 0.7rem;
-    padding-right: 0.7rem;
+    padding-left: calc(0.7rem + env(safe-area-inset-left, 0px));
+    padding-right: calc(0.7rem + env(safe-area-inset-right, 0px));
     gap: 0.35rem;
   }
 
