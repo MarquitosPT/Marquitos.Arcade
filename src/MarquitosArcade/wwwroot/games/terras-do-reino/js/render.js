@@ -236,6 +236,15 @@ function drawTile(x, y, t, detail) {
 
 const SLOPE_MIN = 0.16;
 const SLOPE_MAX = 0.44;
+/**
+ * As encostas viradas para trás (as que descem para longe de quem olha) quase
+ * não se veem ao natural: ficam mais curtas, senão faziam um halo à volta de
+ * cada colina.
+ */
+const BACK_REACH = 0.5;
+
+/** Quanto chega uma encosta que entra na casa pela direção `v`. */
+const reach = (v) => (v[0] < 0 || v[1] < 0 ? BACK_REACH : 1);
 
 /**
  * Os quatro lados de uma casa (x, y): onde está o vizinho, o ponto da grelha
@@ -244,18 +253,18 @@ const SLOPE_MAX = 0.44;
  * (a luz vem de cima, à esquerda).
  */
 const SIDES = [
-    { dx: 0, dy: -1, ex: 0, ey: 0, u: [1, 0], n: [0, 1], light: -4 },
-    { dx: -1, dy: 0, ex: 0, ey: 0, u: [0, 1], n: [1, 0], light: -9 },
-    { dx: 0, dy: 1, ex: 0, ey: 1, u: [1, 0], n: [0, -1], light: -6, back: true },
-    { dx: 1, dy: 0, ex: 1, ey: 0, u: [0, 1], n: [-1, 0], light: -2, back: true }
+    { dx: 0, dy: -1, ex: 0, ey: 0, u: [1, 0], n: [0, 1], light: -2 },
+    { dx: -1, dy: 0, ex: 0, ey: 0, u: [0, 1], n: [1, 0], light: -5 },
+    { dx: 0, dy: 1, ex: 0, ey: 1, u: [1, 0], n: [0, -1], light: -2, back: true },
+    { dx: 1, dy: 0, ex: 1, ey: 0, u: [0, 1], n: [-1, 0], light: -1, back: true }
 ];
 
 /** Os quatro cantos: o vizinho em diagonal e as duas arestas da casa que saem do canto. */
 const CORNERS = [
-    { dx: -1, dy: -1, vx: 0, vy: 0, a: [0, 1], b: [1, 0], light: -7 },
-    { dx: 1, dy: -1, vx: 1, vy: 0, a: [-1, 0], b: [0, 1], light: -3 },
-    { dx: -1, dy: 1, vx: 0, vy: 1, a: [1, 0], b: [0, -1], light: -8, back: true },
-    { dx: 1, dy: 1, vx: 1, vy: 1, a: [-1, 0], b: [0, -1], light: -4, back: true }
+    { dx: -1, dy: -1, vx: 0, vy: 0, a: [0, 1], b: [1, 0], light: -4 },
+    { dx: 1, dy: -1, vx: 1, vy: 0, a: [-1, 0], b: [0, 1], light: -2 },
+    { dx: -1, dy: 1, vx: 0, vy: 1, a: [1, 0], b: [0, -1], light: -3, back: true },
+    { dx: 1, dy: 1, vx: 1, vy: 1, a: [-1, 0], b: [0, -1], light: -1, back: true }
 ];
 
 /** A casa (hx, hy) desce em encosta para a casa (lx, ly)? */
@@ -334,6 +343,8 @@ function drawSideSlope(x, y, side, zTop, zLow, low, top, detail) {
         depths.push(Math.max(0.08, d0 + (d1 - d0) * (k / 4) + 0.04 + wobble));
     }
     depths.push(d1);
+    const far = reach(n);
+    for (let k = 0; k < depths.length; k++) depths[k] *= far;
 
     const top0 = at(ex, ey, zTop);
     const top1 = at(ex + u[0], ey + u[1], zTop);
@@ -354,13 +365,15 @@ function drawSideSlope(x, y, side, zTop, zLow, low, top, detail) {
     ctx.fillStyle = slopeFill(midTop, foot[2], side.light, low, top);
     ctx.fill(path);
 
-    // Uma sombra leve onde a encosta assenta na relva.
-    const edge = new Path2D();
-    edge.moveTo(foot[0][0], foot[0][1]);
-    footCurve(edge, foot, false);
-    ctx.strokeStyle = 'rgba(28, 52, 14, 0.16)';
-    ctx.lineWidth = 1.1;
-    ctx.stroke(edge);
+    // Uma sombra leve onde a encosta assenta na relva (atrás não se vê).
+    if (!side.back) {
+        const edge = new Path2D();
+        edge.moveTo(foot[0][0], foot[0][1]);
+        footCurve(edge, foot, false);
+        ctx.strokeStyle = 'rgba(28, 52, 14, 0.12)';
+        ctx.lineWidth = 1.1;
+        ctx.stroke(edge);
+    }
 
     if (detail && !side.back) {
         // Uma ou outra pedra solta e terra à mostra, a meio da encosta.
@@ -395,10 +408,13 @@ function drawCornerSlope(x, y, corner, zTop, zLow, low, top) {
     const vy = y + corner.vy;
     const d = cornerDepth(vx, vy);
     const { a, b } = corner;
+    // Cada ponta do leque chega onde chega a encosta do lado com que se junta.
+    const da = d * reach(a);
+    const db = d * reach(b);
     const apex = at(vx, vy, zTop);
-    const pa = at(vx + a[0] * d, vy + a[1] * d, zLow);
-    const pm = at(vx + (a[0] + b[0]) * d * 0.8, vy + (a[1] + b[1]) * d * 0.8, zLow);
-    const pb = at(vx + b[0] * d, vy + b[1] * d, zLow);
+    const pa = at(vx + a[0] * da, vy + a[1] * da, zLow);
+    const pm = at(vx + (a[0] * da + b[0] * db) * 0.8, vy + (a[1] * da + b[1] * db) * 0.8, zLow);
+    const pb = at(vx + b[0] * db, vy + b[1] * db, zLow);
 
     ctx.save();
     if (corner.back) clipToTile(x, y, zLow);
@@ -409,12 +425,14 @@ function drawCornerSlope(x, y, corner, zTop, zLow, low, top) {
     ctx.quadraticCurveTo(pm[0], pm[1], pb[0], pb[1]);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = 'rgba(28, 52, 14, 0.16)';
-    ctx.lineWidth = 1.1;
-    ctx.beginPath();
-    ctx.moveTo(pa[0], pa[1]);
-    ctx.quadraticCurveTo(pm[0], pm[1], pb[0], pb[1]);
-    ctx.stroke();
+    if (!corner.back) {
+        ctx.strokeStyle = 'rgba(28, 52, 14, 0.12)';
+        ctx.lineWidth = 1.1;
+        ctx.beginPath();
+        ctx.moveTo(pa[0], pa[1]);
+        ctx.quadraticCurveTo(pm[0], pm[1], pb[0], pb[1]);
+        ctx.stroke();
+    }
     ctx.restore();
 }
 

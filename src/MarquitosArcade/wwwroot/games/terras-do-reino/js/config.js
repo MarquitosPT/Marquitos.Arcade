@@ -33,7 +33,7 @@ export const MAP_SIZE = 44;
 export const TILE_W = 64;
 export const TILE_H = 32;
 /** Quanto sobe uma casa por cada nível de relevo (colinas) ou desce (lagos). */
-export const ELEV_PX = 12;
+export const ELEV_PX = 7;
 /** Espessura da "placa" de terra que se vê nas bordas do mapa. */
 export const SLAB_PX = 26;
 
