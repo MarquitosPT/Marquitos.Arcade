@@ -1412,7 +1412,10 @@ main {
   gap: 10px 1.35rem;
   width: 100%;
   border-radius: var(--radius-lg);
-  padding: 1.35rem;
+  /* Mais folga em cima do que dos outros lados: o cabeçalho do jogo (ícone,
+     título, botão) pesa mais à vista do que os pontinhos cá em baixo, e a
+     mesma distância nos dois lados lia-se desequilibrada. */
+  padding: 2rem 1.35rem 1.35rem;
   box-shadow:
     var(--glass-shadow),
     0 0 0 1px var(--ring),
@@ -1531,8 +1534,11 @@ main {
       "pages pages pages"
       "dots prev next";
     /* Aqui as setas já não estão ao lado da tabela — voltam ao gap
-       pequeno, entre elas e os pontos. */
+       pequeno, entre elas e os pontos, e o padding volta a ser igual dos
+       quatro lados (o desequilíbrio que o padding extra em cima corrige é
+       só de quando as setas estão ao lado da tabela). */
     gap: 10px 8px;
+    padding: 1.35rem;
   }
 
   .carouselDots {
