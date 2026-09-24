@@ -1412,15 +1412,25 @@ main {
   gap: 10px 1.35rem;
   width: 100%;
   border-radius: var(--radius-lg);
-  /* Mais folga em cima do que dos outros lados: o cabeçalho do jogo (ícone,
-     título, botão) pesa mais à vista do que os pontinhos cá em baixo, e a
-     mesma distância nos dois lados lia-se desequilibrada. */
-  padding: 2rem 1.35rem 1.35rem;
+  padding: 1.35rem;
   box-shadow:
     var(--glass-shadow),
     0 0 0 1px var(--ring),
     0 0 40px -12px var(--accent-glow);
   border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+/* Preso ao canto do cartão (não é mais um filho de cada página do
+   carrossel — ver Pontuacoes.razor), para não se mexer com o resto do
+   conteúdo a deslizar, e ficar sempre no mesmo sítio em qualquer layout: o
+   `position: relative` que o segura é o do próprio .gamesCarousel, ali em
+   cima, não muda com o breakpoint. O JS (ver wwwroot/pontuacoes.js) só lhe
+   troca o href, para "Atualizar" ir sempre buscar o jogo que está à vista. */
+#gamesRefreshBtn {
+  position: absolute;
+  top: 1.35rem;
+  right: 1.35rem;
+  z-index: 1;
 }
 
 .carouselViewport {
@@ -1534,11 +1544,8 @@ main {
       "pages pages pages"
       "dots prev next";
     /* Aqui as setas já não estão ao lado da tabela — voltam ao gap
-       pequeno, entre elas e os pontos, e o padding volta a ser igual dos
-       quatro lados (o desequilíbrio que o padding extra em cima corrige é
-       só de quando as setas estão ao lado da tabela). */
+       pequeno, entre elas e os pontos. */
     gap: 10px 8px;
-    padding: 1.35rem;
   }
 
   .carouselDots {
@@ -1587,10 +1594,6 @@ main {
 }
 
 .game-panel-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
   margin-bottom: 1rem;
 }
 

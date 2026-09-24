@@ -15,6 +15,7 @@
 
 <main class="scores-main">
     <div class="gamesCarousel" id="gamesCarousel" data-selected="@SelectedId">
+        <a class="refresh-btn" id="gamesRefreshBtn" href="/pontuacoes?jogo=@SelectedId">↻ Atualizar</a>
         <button type="button" class="carouselArrow carouselArrow--prev" id="gamesPrevBtn" aria-label="Jogo anterior">‹</button>
         <div class="carouselViewport" id="gamesViewport">
             <div class="carouselTrack" id="gamesTrack">
@@ -24,7 +25,6 @@
                         <div class="scoreCard" id="@game.Id" data-value="@game.Id">
                             <div class="game-panel-head">
                                 <h2><span class="panel-emoji" aria-hidden="true">@game.Emoji</span> @game.Name</h2>
-                                <a class="refresh-btn" href="/pontuacoes?jogo=@game.Id">↻ Atualizar</a>
                             </div>
                             <div class="score-card-body">
                                 <div class="table-wrap">
