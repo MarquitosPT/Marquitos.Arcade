@@ -7,6 +7,7 @@
 //     import { createAudio } from '/lib/arcade/audio.js';
 
 export { createAudio } from './audio.js';
+export { createCarousel } from './carousel.js';
 export { $, $$, byId, escapeHtml, createOverlays, createButtonGroup } from './dom.js';
 export { createLoop } from './loop.js';
 export { clamp, lerp, lerpAngle, normAngle, pick, rand, shuffle } from './math.js';
