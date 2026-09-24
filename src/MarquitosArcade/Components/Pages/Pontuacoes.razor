@@ -16,7 +16,11 @@
 <main class="scores-main">
     <div class="gamesCarousel" id="gamesCarousel" data-selected="@SelectedId">
         <a class="refresh-btn" id="gamesRefreshBtn" href="/pontuacoes?jogo=@SelectedId">↻ Atualizar</a>
-        <button type="button" class="carouselArrow carouselArrow--prev" id="gamesPrevBtn" aria-label="Jogo anterior">‹</button>
+        <button type="button" class="carouselArrow carouselArrow--prev" id="gamesPrevBtn" aria-label="Jogo anterior">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
+                <path d="M9.78 12.78a.75.75 0 0 1-1.06 0L4.47 8.53a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L6.06 8l3.72 3.72a.75.75 0 0 1 0 1.06Z"></path>
+            </svg>
+        </button>
         <div class="carouselViewport" id="gamesViewport">
             <div class="carouselTrack" id="gamesTrack">
                 <div class="gamePage">
@@ -72,7 +76,11 @@
                 </div>
             </div>
         </div>
-        <button type="button" class="carouselArrow carouselArrow--next" id="gamesNextBtn" aria-label="Jogo seguinte">›</button>
+        <button type="button" class="carouselArrow carouselArrow--next" id="gamesNextBtn" aria-label="Jogo seguinte">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
+                <path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"></path>
+            </svg>
+        </button>
         <div class="carouselDots" id="gamesDots" role="tablist" aria-label="Jogos"></div>
     </div>
 </main>
