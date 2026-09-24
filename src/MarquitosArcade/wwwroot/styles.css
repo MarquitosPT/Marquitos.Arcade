@@ -1616,8 +1616,15 @@ main {
   overflow-y: auto;
 }
 
+/* Largura fixa (com folga: cabe sempre uma medalha ou dois dígitos) — é a
+   coluna do jogador, sem nenhuma largura própria, que absorve o espaço que
+   sobra. Tem de estar também no <th> desta coluna, não só no <td>: numa
+   tabela `table-layout: fixed` é a primeira linha (o cabeçalho) que decide
+   a largura de cada coluna. */
 .rank-col {
   width: 3rem;
+  white-space: nowrap;
+  text-align: right;
   font-size: 1rem;
 }
 
@@ -1650,10 +1657,13 @@ main {
   touch-action: pan-x pan-y;
 }
 
-/* `table-layout: fixed` (com as três colunas medidas abaixo) é o que torna
-   a altura de uma linha previsível: sem ele, a coluna do nome podia crescer
-   à custa das outras para caber um nome comprido, e a altura do cartão
-   (fixa, ver .scoreCard) deixava de bater certo com o número de linhas. */
+/* `table-layout: fixed`, com uma largura em rem posta nas duas colunas
+   pequenas (ver .rank-col e .score-col — no cabeçalho *e* no corpo, os dois
+   têm de concordar) é o que deixa a coluna do jogador, a única sem largura
+   própria, esticar para o espaço que sobra. É também o que torna a altura
+   de uma linha previsível: sem ele, um nome comprido podia espremer as
+   outras colunas e a altura fixa do cartão (ver .scoreCard) deixava de
+   bater certo com as dez linhas. */
 table {
   width: 100%;
   border-collapse: collapse;
@@ -1692,8 +1702,12 @@ tbody tr:last-child td {
   text-overflow: ellipsis;
 }
 
+/* Largura fixa (com folga até ao limite de pontuação do servidor, 999999 —
+   ver ScoresEndpoints.cs); a mesma razão do .rank-col para estar também
+   no <th>. */
 .score-col {
   width: 6.5rem;
+  white-space: nowrap;
   text-align: right;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
