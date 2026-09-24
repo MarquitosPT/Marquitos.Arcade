@@ -1620,17 +1620,18 @@ main {
   flex-direction: column;
 }
 
+/* Rede de segurança da altura fixa do cartão (ver .scoreCard): nunca devia
+   fazer falta, mas antes cortar uma tabela a transbordar do cartão do que
+   deixá-la rebentar a caixa. É `hidden`, não `auto` — um scroll aqui
+   dentro, por pouco que fosse, competia com o da página: um dedo a
+   arrastar para cima da tabela só rolava a página se `.table-wrap` não
+   tivesse nada seu para rolar primeiro (o touch-action, sozinho, não
+   chega — só decide QUE gesto é permitido, não PARA QUEM, e o
+   `.page-scroll` só recebe o arrasto vertical se nada mais o disputar
+   pelo caminho). */
 .scoreCard .table-wrap {
   flex: 1 1 auto;
-  /* Rede de segurança da altura fixa do cartão (ver .scoreCard): nunca
-     devia fazer falta, mas antes um scroll aqui dentro do que uma tabela a
-     transbordar do cartão. */
-  overflow-y: auto;
-  /* ...mas só ao rato ou à barra de scroll: ao dedo, um arrasto vertical
-     aqui dentro é sempre para rolar a página (ver .page-scroll), nunca a
-     rede de segurança — só a horizontal do .table-wrap base continua
-     aberta, para as colunas que não coubessem. */
-  touch-action: pan-x;
+  overflow-y: hidden;
 }
 
 /* Largura fixa (com folga: cabe sempre uma medalha ou dois dígitos) — é a
