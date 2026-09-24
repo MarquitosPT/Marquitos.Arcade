@@ -383,7 +383,21 @@ function tapTile(tile, pointerType) {
         return;
     }
 
-    if (b?.kind === 'castle') {
+    showTileOptions(tile);
+}
+
+/**
+ * Botão direito: as opções da casa, sem atalhos. Não semeia nem colhe e, se
+ * estava a construir, larga a construção em vez de pôr alguma coisa ali.
+ */
+function inspectTile(tile) {
+    resumeAudio();
+    if (ui.placing) stopPlacing();
+    showTileOptions(tile);
+}
+
+function showTileOptions({ x, y }) {
+    if (game.world.building[idx(x, y)]?.kind === 'castle') {
         ui.selected = null;
         openSheet('castle');
         return;
@@ -597,6 +611,7 @@ function togglePause() {
 
 setInputHandlers({
     tap: tapTile,
+    inspect: inspectTile,
     hover: hoverTile,
     cancel: () => {
         if (ui.pending) dropPending();

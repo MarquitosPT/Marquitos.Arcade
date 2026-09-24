@@ -1,5 +1,6 @@
 // Controlos do tabuleiro: arrastar para andar, beliscar ou rodar a roda para
-// aproximar, tocar para escolher uma casa.
+// aproximar, tocar para escolher uma casa. O botão direito do rato abre sempre
+// as opções da casa, mesmo a meio de uma construção.
 //
 // Um toque só conta como toque se o dedo quase não se mexeu — senão é um
 // arrasto, e largar o dedo no fim de um arrasto não pode construir nada por
@@ -14,7 +15,7 @@ import { idx } from './world.js';
 const TAP_SLOP = 8;
 const KEY_PAN = 14;
 
-let handlers = { tap() {}, hover() {}, cancel() {}, confirm() {} };
+let handlers = { tap() {}, inspect() {}, hover() {}, cancel() {}, confirm() {} };
 
 export function setInputHandlers(next) {
     handlers = { ...handlers, ...next };
@@ -27,6 +28,7 @@ export function attachControls(canvas) {
     let dragged = false;
     let startX = 0;
     let startY = 0;
+    let startButton = 0;
     let pinchDistance = 0;
 
     const pos = (event) => {
@@ -41,6 +43,7 @@ export function attachControls(canvas) {
         pointers.set(event.pointerId, p);
         if (pointers.size === 1) {
             dragged = false;
+            startButton = event.button;
             startX = p.x;
             startY = p.y;
         } else if (pointers.size === 2) {
@@ -84,7 +87,8 @@ export function attachControls(canvas) {
         pointers.delete(event.pointerId);
         if (pointers.size === 0 && !dragged && event.type === 'pointerup') {
             const tile = pickTile(p.x, p.y, elevAt);
-            if (tile) handlers.tap(tile, event.pointerType);
+            if (tile && startButton === 2) handlers.inspect(tile);
+            else if (tile) handlers.tap(tile, event.pointerType);
         }
         if (pointers.size < 2) pinchDistance = 0;
     };
