@@ -85,6 +85,8 @@ const loop = createLoop(
             timers.hud = 0;
             refreshDerived();
             updateHud();
+            // Os recursos mudam: o ✓ pode passar a dar (ou deixar de dar).
+            if (ui.pending) refreshPlaceBanner();
         }
         timers.sheet += dt;
         if (timers.sheet >= 1) {
@@ -130,7 +132,56 @@ function floatAtCastle(text) {
 
 // ---------- Construção ----------
 
-const ROAD_PRICE = Object.entries(ROAD_COST).map(([r, n]) => `${n} ${RESOURCE[r].emoji}`).join(' + ');
+const priceOf = (cost, n = 1) => Object.entries(cost).map(([r, c]) => `${c * n} ${RESOURCE[r].emoji}`).join(' + ');
+const ROAD_PRICE = priceOf(ROAD_COST);
+
+/*
+ * Com rato, o fantasma segue o ponteiro e um clique constrói. Ao toque não há
+ * ponteiro a pairar: o primeiro toque só escolhe o sítio (`ui.pending`), que se
+ * vê no mapa e se pode trocar com outro toque, e só o ✓ constrói.
+ */
+
+/** O texto e os botões do modo de construção, conforme o que está escolhido. */
+function refreshPlaceBanner() {
+    const kind = ui.placing;
+    els.placeBanner.hidden = !kind;
+    document.body.classList.toggle('is-placing', !!kind);
+    if (!kind) return;
+
+    const pending = ui.pending;
+    els.placeConfirm.hidden = !pending;
+    let text;
+    let ok = false;
+    if (kind === 'road') {
+        const head = `🛣️ <b>Estrada</b> · ${ROAD_PRICE} por casa`;
+        if (!pending) {
+            text = ui.roadFrom
+                ? `${head}<br>Toca onde o troço acaba.`
+                : `${head}<br>Toca onde começa: numa estrada ou em chão livre.`;
+        } else {
+            const path = ui.roadPreview;
+            const cells = path ? newRoadCells(path) : 0;
+            ok = !!path && canAfford(ROAD_COST, cells);
+            if (!path) text = `${head}<br>⛔ ${ui.roadFrom ? 'Não há caminho livre até aí.' : 'Aqui não se abre estrada.'} Toca noutra casa.`;
+            else if (!ok) text = `${head}<br>⛔ Faltam recursos: ${cells} casas custam ${priceOf(ROAD_COST, cells)}.`;
+            else text = `${head}<br>Abrir ${cells} casa${cells === 1 ? '' : 's'} (${priceOf(ROAD_COST, cells)})? Ou toca noutra casa.`;
+        }
+    } else {
+        const def = BUILDING[kind];
+        const head = `${def.emoji} <b>${def.name}</b> · ${priceOf(def.cost)}`;
+        if (!pending) {
+            text = `${head}<br>Toca numa casa verde para escolher o sítio.`;
+        } else {
+            const check = checkPlacement(kind, pending.x, pending.y);
+            ok = check.ok;
+            text = ok
+                ? `${head}<br>Construir aqui? Ou toca noutra casa para mudar.`
+                : `${head}<br>⛔ ${check.reason}. Toca noutra casa.`;
+        }
+    }
+    els.placeText.innerHTML = text;
+    els.placeYesBtn.disabled = !ok;
+}
 
 /** Modo de estrada: toca-se onde começa e depois onde acaba cada troço. */
 function startRoad(from = null) {
@@ -138,58 +189,66 @@ function startRoad(from = null) {
     ui.placing = 'road';
     ui.roadFrom = from;
     ui.roadPreview = null;
+    ui.roadPreviewKey = '';
+    ui.pending = null;
     ui.hover = null;
     ui.selected = null;
-    els.placeText.innerHTML = from
-        ? `🛣️ <b>Estrada</b> · toca onde o troço acaba (${ROAD_PRICE} por casa)`
-        : `🛣️ <b>Estrada</b> · toca onde começa e depois onde acaba (${ROAD_PRICE} por casa)`;
-    els.placeBanner.hidden = false;
+    refreshPlaceBanner();
 }
 
-function roadTap({ x, y }) {
+/** O troço até `tile`: desde o fim do anterior, ou só essa casa para começar. */
+function roadPathTo(tile) {
     const from = ui.roadFrom;
-    ui.roadPreview = null;
-    const onRoad = game.world.road[idx(x, y)] === ROAD_PLAYER;
-    if (!from) {
-        if (onRoad) {
-            startRoad({ x, y });
-            sfx.click();
-            return;
-        }
-        if (!canRoad(x, y)) {
-            sfx.nope();
-            toast('Aqui não se abre estrada: só em chão plano e livre, dentro do território.', 'bad');
-            return;
-        }
-        const built = buildRoad([{ x, y }]);
-        if (built < 0) {
-            sfx.nope();
-            toast(`Faltam recursos: cada casa de estrada custa ${ROAD_PRICE}.`, 'bad');
-            return;
-        }
-        sfx.build();
-        startRoad({ x, y });
-        return;
-    }
-    const path = roadPath(from.x, from.y, x, y);
+    if (from) return roadPath(from.x, from.y, tile.x, tile.y);
+    return canRoad(tile.x, tile.y) ? [tile] : null;
+}
+
+/** Abre o troço `path` e continua a estrada a partir de `end`. */
+function buildRoadPath(path, end) {
     if (!path) {
         sfx.nope();
-        toast('Não há caminho livre até aí: a estrada contorna edifícios, árvores, água e colinas.', 'bad');
-        return;
+        toast(ui.roadFrom
+            ? 'Não há caminho livre até aí: a estrada contorna edifícios, árvores, água e colinas.'
+            : 'Aqui não se abre estrada: só em chão plano e livre, dentro do território.', 'bad');
+        return false;
     }
     const built = buildRoad(path);
     if (built < 0) {
         sfx.nope();
-        toast(`Faltam recursos: este troço tem ${newRoadCells(path)} casas novas, a ${ROAD_PRICE} cada.`, 'bad');
-        return;
+        toast(path.length > 1
+            ? `Faltam recursos: este troço tem ${newRoadCells(path)} casas novas, a ${ROAD_PRICE} cada.`
+            : `Faltam recursos: cada casa de estrada custa ${ROAD_PRICE}.`, 'bad');
+        return false;
     }
     if (built > 0) sfx.build();
     else sfx.click();
-    startRoad({ x, y });
+    startRoad(end);
+    return true;
+}
+
+function roadTap(tile, touch) {
+    const { x, y } = tile;
+    // Tocar numa estrada, sem troço a meio, só diz onde o próximo começa.
+    if (!ui.roadFrom && game.world.road[idx(x, y)] === ROAD_PLAYER) {
+        startRoad({ x, y });
+        sfx.click();
+        return;
+    }
+    if (!touch) {
+        buildRoadPath(roadPathTo(tile), { x, y });
+        return;
+    }
+    ui.pending = { x, y };
+    ui.roadPreview = roadPathTo(tile);
+    ui.roadPreviewOk = !!ui.roadPreview && canAfford(ROAD_COST, newRoadCells(ui.roadPreview));
+    sfx.click();
+    refreshPlaceBanner();
 }
 
 /** O que o rato mostra por cima do tabuleiro em modo de construção. */
 function hoverTile(tile) {
+    // Um sítio escolhido ao toque fica à vista até ser confirmado ou largado.
+    if (ui.pending) return;
     if (!ui.placing || !tile) {
         ui.hover = null;
         ui.roadPreview = null;
@@ -202,7 +261,7 @@ function hoverTile(tile) {
     const key = `${tile.x},${tile.y}|${ui.roadFrom?.x},${ui.roadFrom?.y}|${game.roadsVersion}`;
     if (ui.roadPreviewKey === key) return;
     ui.roadPreviewKey = key;
-    const path = ui.roadFrom ? roadPath(ui.roadFrom.x, ui.roadFrom.y, tile.x, tile.y) : (canRoad(tile.x, tile.y) ? [tile] : null);
+    const path = roadPathTo(tile);
     ui.roadPreview = path;
     ui.roadPreviewOk = !!path && canAfford(ROAD_COST, newRoadCells(path));
 }
@@ -229,18 +288,28 @@ function startPlacing(kind) {
     closeSheet();
     ui.placing = kind;
     ui.hover = null;
+    ui.pending = null;
     ui.selected = null;
-    const def = BUILDING[kind];
-    els.placeText.innerHTML = `${def.emoji} <b>${def.name}</b> · toca numa casa verde`;
-    els.placeBanner.hidden = false;
+    refreshPlaceBanner();
 }
 
 function stopPlacing() {
     ui.placing = null;
     ui.hover = null;
+    ui.pending = null;
     ui.roadFrom = null;
     ui.roadPreview = null;
-    els.placeBanner.hidden = true;
+    refreshPlaceBanner();
+}
+
+/** ✕: larga o sítio escolhido, mas continua em modo de construção. */
+function dropPending() {
+    if (!ui.pending) return;
+    ui.pending = null;
+    ui.roadPreview = null;
+    ui.roadPreviewKey = '';
+    sfx.click();
+    refreshPlaceBanner();
 }
 
 /** Edifícios que se costumam pôr vários seguidos: o modo de construção fica ligado. */
@@ -261,19 +330,42 @@ function tryPlace(kind, x, y) {
     return true;
 }
 
+/** Constrói `kind` no bloco (x, y); depois disso, ou se continua a pôr mais, ou o modo acaba. */
+function placeAt(kind, x, y) {
+    if (!tryPlace(kind, x, y)) return;
+    ui.pending = null;
+    if (!REPEATABLE.has(kind) || !checkPlacement(kind).ok) stopPlacing();
+    else refreshPlaceBanner();
+}
+
+/** ✓: constrói no sítio escolhido ao toque. */
+function confirmPending() {
+    const at = ui.pending;
+    if (!ui.placing || !at) return;
+    resumeAudio();
+    if (ui.placing === 'road') buildRoadPath(ui.roadPreview, at);
+    else placeAt(ui.placing, at.x, at.y);
+}
+
 // ---------- Toques no mapa ----------
 
-function tapTile(tile) {
+function tapTile(tile, pointerType) {
     const { x, y } = tile;
     resumeAudio();
+    const touch = pointerType !== 'mouse';
     if (ui.placing === 'road') {
-        roadTap(tile);
+        roadTap(tile, touch);
         return;
     }
     if (ui.placing) {
-        const kind = ui.placing;
         const at = anchorFor(tile, 2);
-        if (tryPlace(kind, at.x, at.y) && (!REPEATABLE.has(kind) || !checkPlacement(kind).ok)) stopPlacing();
+        if (!touch) {
+            placeAt(ui.placing, at.x, at.y);
+            return;
+        }
+        ui.pending = at;
+        sfx.click();
+        refreshPlaceBanner();
         return;
     }
 
@@ -507,9 +599,11 @@ setInputHandlers({
     tap: tapTile,
     hover: hoverTile,
     cancel: () => {
-        if (ui.placing) stopPlacing();
+        if (ui.pending) dropPending();
+        else if (ui.placing) stopPlacing();
         else if (sheetOpen()) closeSheet();
-    }
+    },
+    confirm: confirmPending
 });
 attachControls(els.game);
 
@@ -555,6 +649,8 @@ for (const btn of els.toolbar.querySelectorAll('.toolBtn')) {
 }
 
 els.placeCancelBtn.addEventListener('click', stopPlacing);
+els.placeNoBtn.addEventListener('click', dropPending);
+els.placeYesBtn.addEventListener('click', confirmPending);
 
 // Fechar ou esconder a página a meio do jogo não pode custar o que se fez.
 document.addEventListener('visibilitychange', () => {

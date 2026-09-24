@@ -617,15 +617,26 @@ const GAMES = [
             });
             if (broken.length) throw new Error(`mapas com problemas:\n  ${broken.join('\n  ')}`);
 
-            // Constrói uma casa pelo painel e pelo toque no mapa.
+            // Constrói uma casa pelo painel e pelo toque no mapa. Ao dedo, o
+            // primeiro toque só escolhe o sítio: o ✕ larga-o, o ✓ constrói.
             await page.click('.toolBtn[data-sheet="build"]');
             await page.click('.buildCard[data-arg="house"]');
             const before = await kingdomCount(page);
-            await tapPlaceable(page, 'house');
+            await tapPlaceable(page, 'house', { touch: true });
+            await sleep(200);
+            if (await kingdomCount(page) !== before) throw new Error('o toque construiu sem confirmar');
+            if (await page.isHidden('#placeConfirm')) throw new Error('o toque não mostrou o ✓ / ✕');
+            await page.click('#placeNoBtn');
+            if (await page.isVisible('#placeConfirm')) throw new Error('o ✕ não largou o sítio escolhido');
+            await tapPlaceable(page, 'house', { touch: true });
+            await page.click('#placeYesBtn');
             await sleep(300);
             if (await kingdomCount(page) !== before + 1) throw new Error('a casa não foi construída');
+            // A casa repete-se: o modo fica ligado até se tocar em Terminar.
+            await page.click('#placeCancelBtn');
 
-            // Um campo: nasce semeado; dá-se-lhe tempo, colhe-se com um toque.
+            // Um campo, com rato (há pré-visualização, um clique constrói logo):
+            // nasce semeado; dá-se-lhe tempo, colhe-se com um toque.
             await page.click('.toolBtn[data-sheet="build"]');
             await page.click('.buildCard[data-arg="field"]');
             await tapPlaceable(page, 'field');
@@ -967,8 +978,11 @@ async function kingdomCount(page) {
     return page.evaluate(() => window.__arcadeKingdom.buildings.length);
 }
 
-/** Toca, no canvas, na casa válida mais perto do castelo para construir `kind`. */
-async function tapPlaceable(page, kind) {
+/**
+ * Toca, no canvas, na casa válida mais perto do castelo para construir `kind`.
+ * Com `touch`, o toque chega como de um dedo (pointerType 'touch').
+ */
+async function tapPlaceable(page, kind, { touch = false } = {}) {
     const spot = await page.evaluate(async (kind) => {
         const G = '/games/terras-do-reino/js/';
         const { checkPlacement } = await import(G + 'buildings.js');
@@ -990,7 +1004,20 @@ async function tapPlaceable(page, kind) {
         return best;
     }, kind);
     if (!spot) throw new Error(`não há onde construir ${kind} à vista`);
-    await page.mouse.click(spot.x, spot.y);
+    if (!touch) {
+        await page.mouse.click(spot.x, spot.y);
+        return;
+    }
+    // Um toque a sério, pelo protocolo do Chromium: os PointerEvent sintéticos
+    // não têm ponteiro ativo e o setPointerCapture do jogo recusava-os.
+    const box = await page.locator('#game').boundingBox();
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
+    const point = { x: box.x + spot.x, y: box.y + spot.y };
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point] });
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+    await cdp.detach();
 }
 
 /**

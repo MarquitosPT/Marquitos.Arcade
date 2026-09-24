@@ -817,7 +817,8 @@ export function render(dt) {
     const rightX = camera.x + halfW;
 
     // O fantasma do edifício a construir desenha-se na casa da frente do bloco.
-    const hover = ui.placing && ui.placing !== 'road' ? ui.hover : null;
+    // Ao toque é o sítio à espera de confirmação; com rato, o que está por baixo dele.
+    const hover = ui.placing && ui.placing !== 'road' ? (ui.pending ?? ui.hover) : null;
     const hoverOk = hover ? checkPlacement(ui.placing, hover.x, hover.y, { ignoreCost: true }).ok : false;
 
     // A gente na rua, arrumada pela casa onde se desenha.

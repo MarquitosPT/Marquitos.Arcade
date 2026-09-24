@@ -145,6 +145,7 @@ function resetState(seed) {
     ui.roadFrom = null;
     ui.selected = null;
     ui.hover = null;
+    ui.pending = null;
     placeCastle();
 }
 

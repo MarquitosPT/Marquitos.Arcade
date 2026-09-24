@@ -110,9 +110,18 @@
             </button>
         </div>
 
+        <!-- Modo de construção: toma o lugar da barra de ferramentas. Ao toque,
+             escolhe-se o sítio primeiro e confirma-se depois (✓ / ✕). -->
         <div id="placeBanner" class="placeBanner" hidden>
-            <span id="placeText"></span>
-            <button class="iconBtn iconBtn--small" id="placeCancelBtn" type="button" aria-label="Cancelar construção">✕</button>
+            <div class="placeHead">
+                <span class="placeMode">🔨 Modo de construção</span>
+                <button class="placeExit" id="placeCancelBtn" type="button">Terminar</button>
+            </div>
+            <p class="placeText" id="placeText" aria-live="polite"></p>
+            <div class="placeConfirm" id="placeConfirm" hidden>
+                <button class="placeBtn placeBtn--no" id="placeNoBtn" type="button" aria-label="Não construir aqui">✕</button>
+                <button class="placeBtn placeBtn--yes" id="placeYesBtn" type="button" aria-label="Construir aqui">✓</button>
+            </div>
         </div>
 
         <nav id="toolbar" class="toolbar" aria-label="Ações do reino">
