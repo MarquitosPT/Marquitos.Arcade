@@ -92,8 +92,11 @@ export function panBy(dxScreen, dyScreen) {
  * frente tapa o que está atrás dela, por isso testam-se primeiro as casas mais
  * próximas de quem olha.
  *
+ * Devolve também onde, dentro da casa, caiu o ponto (`u`, `v`, de 0 a 1): é
+ * o que diz a que canto se encosta um edifício de 2x2 (ver `anchorFor`).
+ *
  * @param {(x: number, y: number) => number} elevAt Relevo da casa.
- * @returns {{x: number, y: number} | null}
+ * @returns {{x: number, y: number, u: number, v: number} | null}
  */
 export function pickTile(sx, sy, elevAt) {
     const w = screenToWorld(sx, sy);
@@ -120,10 +123,22 @@ export function pickTile(sx, sy, elevAt) {
         if (g.x >= c.x && g.x < c.x + 1 && g.y >= c.y && g.y < c.y + 1) {
             const depth = c.x + c.y;
             if (depth > bestDepth) {
-                best = c;
+                best = { x: c.x, y: c.y, u: g.x - c.x, v: g.y - c.y };
                 bestDepth = depth;
             }
         }
     }
     return best;
+}
+
+/**
+ * O canto de cima do bloco de `size` casas que fica centrado no canto de casa
+ * mais perto do ponto escolhido — o edifício aparece debaixo do dedo.
+ */
+export function anchorFor(tile, size) {
+    const half = Math.floor(size / 2);
+    return {
+        x: tile.x - half + (tile.u >= 0.5 ? 1 : 0),
+        y: tile.y - half + (tile.v >= 0.5 ? 1 : 0)
+    };
 }

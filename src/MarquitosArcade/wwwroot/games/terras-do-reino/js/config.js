@@ -4,7 +4,10 @@
 // O resto do código só sabe ler estas tabelas — acrescentar um edifício novo é
 // acrescentar uma entrada a `BUILDINGS` (e o desenho dele em sprites.js).
 //
-// Tempos em segundos de jogo. O relógio do jogo anda à velocidade escolhida
+// Tempos em segundos de jogo. Crescer e produzir leva o seu tempo de
+// propósito: um campo de trigo leva mais de dois dias a amadurecer, e cada
+// oficina faz uma peça a cada quarto de minuto, mais ou menos — um reino
+// constrói-se devagar. O relógio do jogo anda à velocidade escolhida
 // (1x, 2x, 3x) e só anda com o jogo aberto — o que se passa fora dele é
 // recuperado ao voltar, com o teto de `OFFLINE_MAX_SECONDS`.
 
@@ -23,17 +26,24 @@ export const FONT_BODY = "'Plus Jakarta Sans', system-ui, sans-serif";
 
 // ---------- Mapa ----------
 
-/** Lado do mapa, em casas. */
-export const MAP_SIZE = 44;
+/**
+ * Lado do mapa, em casas. Uma casa é a peça mais pequena do tabuleiro: é o
+ * que ocupa uma árvore, um rochedo ou um troço de estrada. Os edifícios
+ * ocupam 2x2 casas (o castelo 4x4) — assim cabem estradas entre eles.
+ */
+export const MAP_SIZE = 88;
 
 /**
  * Tamanho de uma casa em píxeis de mundo, com zoom 1. A proporção 2:1 é a da
- * perspetiva isométrica clássica — a do tabuleiro visto de cima e de lado.
+ * perspetiva isométrica clássica — a do tabuleiro visto de cima e de lado. Um
+ * edifício (2x2 casas) ocupa 64x32, a medida para que os desenhos foram feitos.
  */
-export const TILE_W = 64;
-export const TILE_H = 32;
+export const TILE_W = 32;
+export const TILE_H = 16;
+/** Lado, em casas, de um edifício normal. */
+export const BUILDING_SIZE = 2;
 /** Quanto sobe uma casa por cada nível de relevo (colinas) ou desce (lagos). */
-export const ELEV_PX = 12;
+export const ELEV_PX = 7;
 /** Espessura da "placa" de terra que se vê nas bordas do mapa. */
 export const SLAB_PX = 26;
 
@@ -111,10 +121,10 @@ export const HAPPY_VARIETY = 0.1;
  */
 export const CASTLE_LEVELS = [
     null,
-    { level: 1, radius: 6.5, storage: 150, tier: 1, residents: 4 },
-    { level: 2, radius: 9, storage: 400, tier: 2, residents: 8, cost: { coins: 250, wood: 60, stone: 40 } },
-    { level: 3, radius: 11.5, storage: 1000, tier: 3, residents: 12, cost: { coins: 700, planks: 40, stone: 80 } },
-    { level: 4, radius: 14, storage: 2500, tier: 3, residents: 20, cost: { coins: 2000, planks: 80, stone: 150, gold: 25 } }
+    { level: 1, radius: 13, storage: 150, tier: 1, residents: 4 },
+    { level: 2, radius: 18, storage: 400, tier: 2, residents: 8, cost: { coins: 250, wood: 60, stone: 40 } },
+    { level: 3, radius: 23, storage: 1000, tier: 3, residents: 12, cost: { coins: 700, planks: 40, stone: 80 } },
+    { level: 4, radius: 28, storage: 2500, tier: 3, residents: 20, cost: { coins: 2000, planks: 80, stone: 150, gold: 25 } }
 ];
 
 export const CASTLE_MAX_LEVEL = CASTLE_LEVELS.length - 1;
@@ -123,8 +133,9 @@ export const CASTLE_MAX_LEVEL = CASTLE_LEVELS.length - 1;
 
 /**
  * `site` diz onde se pode pôr: 'land' é terra livre (relva ou prado), 'ore' é
- * uma veia de ouro numa colina. `near` exige vizinhos: um lenhador sem árvores
- * perto não corta nada.
+ * uma colina com uma veia de ouro debaixo. `near` exige vizinhos: um lenhador
+ * sem árvores perto não corta nada. Os raios contam-se em casas, a partir do
+ * centro do edifício.
  *
  * `recipe` é o que o edifício faz a cada ciclo de `time` segundos, com todos
  * os trabalhadores (`workers`). Sem trabalhadores fica parado; sem o que
@@ -140,7 +151,7 @@ export const BUILDINGS = [
     {
         id: 'field', name: 'Campo de trigo', emoji: '🌾', tier: 1,
         cost: { coins: 12 },
-        grow: 40, yield: 5,
+        grow: 100, yield: 5,
         desc: 'Toca para semear e, quando estiver dourado, toca outra vez para colher.'
     },
     {
@@ -151,69 +162,89 @@ export const BUILDINGS = [
     {
         id: 'woodcutter', name: 'Lenhador', emoji: '🪓', tier: 1,
         cost: { coins: 35 }, workers: 2,
-        near: { feature: 'tree', radius: 2, min: 1, full: 4 },
-        recipe: { out: { wood: 1 }, time: 5 },
+        near: { feature: 'tree', radius: 4.5, min: 2, full: 8 },
+        recipe: { out: { wood: 1 }, time: 12 },
         desc: 'Corta madeira nas árvores à volta. Quantas mais árvores perto, mais depressa.'
     },
     {
         id: 'quarry', name: 'Pedreira', emoji: '⛏️', tier: 1,
         cost: { coins: 25, wood: 15 }, workers: 2,
-        near: { feature: 'rock', radius: 2, min: 1, full: 3 },
-        recipe: { out: { stone: 1 }, time: 7 },
+        near: { feature: 'rock', radius: 4.5, min: 2, full: 6 },
+        recipe: { out: { stone: 1 }, time: 18 },
         desc: 'Tira pedra das rochas à volta. Tem de ficar perto de rochedos.'
     },
     {
         id: 'forester', name: 'Guarda-florestal', emoji: '🌲', tier: 1,
         cost: { coins: 30, wood: 5 }, workers: 1,
-        plants: { radius: 2, time: 20 },
+        plants: { radius: 4.5, time: 30 },
         desc: 'Planta árvores nas casas livres à volta, para os lenhadores nunca ficarem sem nada.'
     },
     {
         id: 'mill', name: 'Moinho', emoji: '🌬️', tier: 2,
         cost: { coins: 60, wood: 20, stone: 10 }, workers: 1,
-        recipe: { in: { wheat: 2 }, out: { flour: 1 }, time: 6 },
+        recipe: { in: { wheat: 2 }, out: { flour: 1 }, time: 15 },
         desc: 'Mói o trigo em farinha.'
     },
     {
         id: 'bakery', name: 'Padaria', emoji: '🍞', tier: 2,
         cost: { coins: 70, wood: 15, stone: 15 }, workers: 2,
-        recipe: { in: { flour: 1 }, out: { bread: 2 }, time: 8 },
+        recipe: { in: { flour: 1 }, out: { bread: 2 }, time: 20 },
         desc: 'Coze pão com a farinha do moinho. Pão na mesa é povo contente.'
     },
     {
         id: 'pasture', name: 'Vacaria', emoji: '🐄', tier: 2,
         cost: { coins: 80, wood: 20 }, workers: 1,
-        recipe: { in: { wheat: 1 }, out: { milk: 2 }, time: 10 },
+        recipe: { in: { wheat: 1 }, out: { milk: 2 }, time: 25 },
         desc: 'Vacas alimentadas a trigo dão leite todos os dias.'
     },
     {
         id: 'carpentry', name: 'Carpintaria', emoji: '🪚', tier: 2,
         cost: { coins: 90, wood: 25, stone: 10 }, workers: 2,
-        recipe: { in: { wood: 2 }, out: { planks: 1 }, time: 7 },
+        recipe: { in: { wood: 2 }, out: { planks: 1 }, time: 18 },
         desc: 'A primeira fábrica do reino: transforma madeira em tábuas.'
     },
     {
         id: 'barn', name: 'Celeiro', emoji: '🛖', tier: 2,
         cost: { coins: 60, wood: 30, stone: 10 }, workers: 1,
-        farms: { radius: 2, time: 1.5 },
+        farms: { radius: 5, time: 4 },
         desc: 'Os trabalhadores do celeiro semeiam e colhem sozinhos os campos à volta.'
     },
     {
         id: 'dairy', name: 'Leitaria', emoji: '🧀', tier: 3,
         cost: { coins: 150, planks: 15, stone: 20 }, workers: 2,
-        recipe: { in: { milk: 2 }, out: { cheese: 1 }, time: 10 },
+        recipe: { in: { milk: 2 }, out: { cheese: 1 }, time: 25 },
         desc: 'Faz queijo com o leite da vacaria. Vale ouro nas feiras.'
     },
     {
         id: 'goldmine', name: 'Mina de ouro', emoji: '⛰️', tier: 3,
         cost: { coins: 200, planks: 20, stone: 30 }, workers: 3,
         site: 'ore',
-        recipe: { out: { gold: 1 }, time: 14 },
-        desc: 'Escava a veia de ouro de uma colina. Só se constrói em cima de uma veia.'
+        recipe: { out: { gold: 1 }, time: 35 },
+        desc: 'Escava a veia de ouro de uma colina. Só se constrói numa colina com uma veia.'
     }
 ];
 
 export const BUILDING = Object.fromEntries(BUILDINGS.map((b) => [b.id, b]));
+
+/**
+ * Aplanar uma colina: os trabalhadores cavam um bocado de 2x2 casas até ao
+ * nível do chão e fica terra livre. Das pedras que saem da terra aproveitam-se
+ * `FLATTEN_STONE`. As veias de ouro não se aplanam — são o que as colinas têm
+ * de melhor.
+ */
+export const FLATTEN_COST = { coins: 45, wood: 10 };
+export const FLATTEN_STONE = 4;
+
+/**
+ * Estradas de pedra: um troço por casa. Ligam os edifícios e é por elas que o
+ * povo anda de um lado para o outro. Levantar um troço devolve a pedra.
+ */
+export const ROAD_COST = { coins: 2, stone: 1 };
+/** Quantos moradores por cada pessoa que se vê a andar nas estradas. */
+export const RESIDENTS_PER_WALKER = 3;
+export const MAX_WALKERS = 28;
+/** Casas por segundo, a pé. */
+export const WALK_SPEED = 1.3;
 
 /** Parte do custo devolvida ao demolir. */
 export const DEMOLISH_REFUND = 0.5;

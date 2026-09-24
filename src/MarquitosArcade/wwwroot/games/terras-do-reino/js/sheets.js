@@ -10,10 +10,10 @@
 import { escapeHtml } from '/lib/arcade/index.js';
 
 import {
-    BUILDING, BUILDINGS, DEMOLISH_REFUND, RESOURCE, TOWNS
+    BUILDING, BUILDINGS, DEMOLISH_REFUND, FLATTEN_COST, FLATTEN_STONE, RESOURCE, ROAD_COST, TOWNS
 } from './config.js';
 import {
-    canAfford, checkPlacement, countOf, inTerritory, missingFor, nextCastleLevel
+    canAfford, checkFlatten, checkPlacement, countOf, inTerritory, missingFor, nextCastleLevel
 } from './buildings.js';
 import { fmt, fmtPrice, pct } from './format.js';
 import { TRADABLE, buyPrice, priceTrend, sellPrice } from './market.js';
@@ -21,7 +21,7 @@ import { currentQuest } from './quests.js';
 import { castleInfo, game } from './state.js';
 import { townProsperity } from './towns.js';
 import { els } from './ui.js';
-import { T_HILL, T_WATER, countFeatureNear, idx } from './world.js';
+import { ROAD_PLAYER, T_HILL, T_WATER, countFeatureNear, idx } from './world.js';
 
 let actions = {};
 /** { name, arg } do painel aberto, ou null. */
@@ -129,11 +129,17 @@ function buildView() {
             ${note ? `<span class="cardNote">${note}</span>` : ''}
         </button>`;
     }).join('');
+    const road = `<button class="buildCard" type="button" data-action="place" data-arg="road"${canAfford(ROAD_COST) ? '' : ' aria-disabled="true"'}>
+            <span class="cardIcon" aria-hidden="true">🛣️</span>
+            <span class="cardName">Estrada de pedra</span>
+            ${costHtml(ROAD_COST)}
+            <span class="cardDesc">Por casa. Liga os edifícios: é por elas que o povo anda.</span>
+        </button>`;
     return {
         icon: '🔨',
         title: 'Construir',
         sub: 'Escolhe um edifício e toca no mapa, dentro do território.',
-        html: `<div class="buildGrid">${cards}</div>`
+        html: `<div class="buildGrid">${road}${cards}</div>`
     };
 }
 
@@ -303,7 +309,7 @@ function tileView(arg) {
             const [tone, text] = STATUS_TEXT[b.status] || STATUS_TEXT.ok;
             let extra = '';
             if (def.near) {
-                const found = countFeatureNear(world, x, y, def.near.feature, def.near.radius);
+                const found = countFeatureNear(world, b.x, b.y, b.size, def.near.feature, def.near.radius);
                 extra = ` · ${found} ${def.near.feature === 'tree' ? 'árvore(s)' : 'rocha(s)'} perto (${pct(Math.min(1, found / def.near.full))})`;
             }
             body += `<div class="sheetSection"><div class="statusLine ${tone}">${text}${extra}</div>
@@ -315,7 +321,7 @@ function tileView(arg) {
             : '';
         const refund = Object.entries(def.cost).map(([r, n]) => `${Math.floor(n * DEMOLISH_REFUND)} ${RESOURCE[r].emoji}`).join(' + ');
         body += `<div class="sheetActions">${toggle}<button class="btnOutline" type="button" data-action="demolish" data-arg="${x},${y}">🧱 Demolir (devolve ${refund})</button></div>`;
-        return { icon: def.emoji, title: def.name, sub: `No mapa em ${x}, ${y}`, html: body };
+        return { icon: def.emoji, title: def.name, sub: `No mapa em ${b.x}, ${b.y}`, html: body };
     }
 
     // Natureza.
@@ -323,26 +329,66 @@ function tileView(arg) {
     const terrain = world.terrain[i];
     const inside = inTerritory(x, y);
     const where = inside ? 'Dentro do teu território.' : 'Fora do território — sobe o castelo para chegar cá.';
-    if (feature === 'tree') return { icon: '🌳', title: 'Árvore', sub: where, html: '<p class="sheetText">Um <b>🪓 Lenhador</b> até duas casas daqui corta madeira nesta árvore — e as árvores não acabam. Um <b>🌲 Guarda-florestal</b> planta mais.</p>' };
-    if (feature === 'rock') return { icon: '🪨', title: 'Rochedo', sub: where, html: '<p class="sheetText">Uma <b>⛏️ Pedreira</b> até duas casas daqui tira pedra destas rochas.</p>' };
+    const road = world.road[i];
+    if (road) {
+        if (road !== ROAD_PLAYER) {
+            return { icon: '🛣️', title: 'Rua', sub: 'De uma vila vizinha.', html: '<p class="sheetText">As vilas calcetam as ruas à volta de cada edifício que fazem — e a gente delas anda por aí.</p>' };
+        }
+        return {
+            icon: '🛣️',
+            title: 'Estrada de pedra',
+            sub: where,
+            html: `<p class="sheetText">O povo anda pelas estradas entre os edifícios que elas ligam: uma estrada tem de encostar a um edifício para lhe servir de porta.</p>
+                <div class="sheetActions">
+                    <button class="btn" type="button" data-action="roadFrom" data-arg="${x},${y}">🛣️ Continuar a estrada daqui</button>
+                    <button class="btnOutline" type="button" data-action="unroad" data-arg="${x},${y}">🧱 Levantar este troço (devolve ${ROAD_COST.stone} ${RESOURCE.stone.emoji})</button>
+                </div>`
+        };
+    }
+    if (feature === 'tree') return { icon: '🌳', title: 'Árvore', sub: where, html: '<p class="sheetText">Um <b>🪓 Lenhador</b> aqui perto corta madeira nesta árvore — e as árvores não acabam. Um <b>🌲 Guarda-florestal</b> planta mais.</p>' };
+    if (feature === 'rock') return { icon: '🪨', title: 'Rochedo', sub: where, html: '<p class="sheetText">Uma <b>⛏️ Pedreira</b> aqui perto tira pedra destas rochas.</p>' };
     if (feature === 'ore') {
-        const ok = checkPlacement('goldmine', x, y);
+        const ok = [[0, 0], [-1, 0], [0, -1], [-1, -1]].some(([dx, dy]) => checkPlacement('goldmine', x + dx, y + dy).ok);
         return {
             icon: '✨',
             title: 'Veia de ouro',
             sub: where,
-            html: `<p class="sheetText">Ouro à vista! Uma <b>⛰️ Mina de ouro</b> constrói-se mesmo aqui, em cima da veia (precisa do castelo no nível 3).</p>
-                <div class="sheetActions"><button class="btn" type="button" data-action="buildAt" data-arg="goldmine" data-n="${x},${y}"${ok.ok ? '' : ' disabled'}>⛰️ Construir a mina</button></div>`
+            html: `<p class="sheetText">Ouro à vista! Uma <b>⛰️ Mina de ouro</b> constrói-se mesmo aqui, em cima da veia, se as casas de colina à volta estiverem limpas (precisa do castelo no nível 3).</p>
+                <div class="sheetActions"><button class="btn" type="button" data-action="buildAt" data-arg="goldmine" data-n="${x},${y}"${ok ? '' : ' disabled'}>⛰️ Construir a mina</button></div>`
         };
     }
     if (terrain === T_WATER) return { icon: '💧', title: 'Lago', sub: where, html: '<p class="sheetText">Água limpa. Não se constrói em cima dela, mas enfeita o reino.</p>' };
-    if (terrain === T_HILL) return { icon: '⛰️', title: 'Colina', sub: where, html: '<p class="sheetText">Terreno alto e pedregoso. Só as minas se fazem nas colinas — procura as veias douradas.</p>' };
+    if (terrain === T_HILL) return hillView(x, y, feature, where);
     return {
         icon: '🟩',
         title: 'Terreno livre',
         sub: where,
         html: `<p class="sheetText">${inside ? 'Aqui cabe um edifício.' : 'Ainda fora do alcance do castelo.'}</p>
-            ${inside ? '<div class="sheetActions"><button class="btn" type="button" data-action="sheet" data-arg="build">🔨 Construir aqui perto</button></div>' : ''}`
+            ${inside ? `<div class="sheetActions"><button class="btn" type="button" data-action="sheet" data-arg="build">🔨 Construir aqui perto</button>
+                <button class="btnOutline" type="button" data-action="roadFrom" data-arg="${x},${y}">🛣️ Estrada a partir daqui</button></div>` : ''}`
+    };
+}
+
+function hillView(x, y, feature, where) {
+    const text = '<p class="sheetText">Terreno alto e pedregoso. Só as minas se fazem nas colinas — procura as veias douradas.</p>';
+    const site = checkFlatten(x, y, { ignoreCost: true });
+    if (!site.ok) {
+        const why = site.reason === 'Fora do território' ? '' : `<p class="sheetText" style="margin-top:6px">⛏️ ${escapeHtml(site.reason)}.</p>`;
+        return { icon: '⛰️', title: 'Colina', sub: where, html: text + why };
+    }
+    const ok = canAfford(FLATTEN_COST);
+    const lost = ' Árvores e rochedos no bloco vão-se com a terra; as veias de ouro ficam.';
+    return {
+        icon: '⛰️',
+        title: 'Colina',
+        sub: where,
+        html: `${text}
+            <div class="sheetSection">
+                <p class="sheetText">⛏️ <b>Aplanar</b>: os trabalhadores cavam o bloco de 2x2 casas marcado até ao nível do chão e fica terra livre para construir.
+                Das pedras que saem aproveitam-se ${FLATTEN_STONE} ${RESOURCE.stone.emoji}.${lost}</p>
+                <p class="sheetText" style="margin-top:6px">${costHtml(FLATTEN_COST)}</p>
+            </div>
+            <div class="sheetActions"><button class="btn" type="button" data-action="flatten" data-arg="${x},${y}"${ok ? '' : ' disabled'}>⛏️ Aplanar a colina</button></div>`
     };
 }
 

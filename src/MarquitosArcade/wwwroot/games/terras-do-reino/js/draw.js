@@ -1,17 +1,18 @@
 // Primitivas de desenho isométrico: caixas, telhados, torres, cones.
 //
-// Tudo é desenhado à volta de um ponto de chão (o centro de uma casa), em
-// unidades de mundo com zoom 1: a casa tem `TILE_W` x `TILE_H` píxeis. As
-// medidas das peças vêm em fração de casa no chão (a, b) e em píxeis na altura.
+// Tudo é desenhado à volta de um ponto de chão (o centro de um edifício), em
+// unidades de mundo com zoom 1. A unidade no chão é o bloco de um edifício
+// (`BUILDING_SIZE` casas de lado, 64 x 32 píxeis): as medidas das peças vêm em
+// fração desse bloco no chão (a, b) e em píxeis na altura.
 //
 // A luz vem da esquerda e de cima: os tampos são os mais claros, as faces
 // viradas para a esquerda (+y) ficam a meia-luz, as viradas para a direita
 // (+x) ficam na sombra. É isto que dá volume a um desenho que é só polígonos.
 
-import { TILE_H, TILE_W } from './config.js';
+import { BUILDING_SIZE, TILE_H, TILE_W } from './config.js';
 
-const HW = TILE_W / 2;
-const HH = TILE_H / 2;
+const HW = (TILE_W * BUILDING_SIZE) / 2;
+const HH = (TILE_H * BUILDING_SIZE) / 2;
 
 /** Ponto de grelha relativo (gx, gy) a uma altura z -> ponto de ecrã relativo. */
 export const P = (gx, gy, z = 0) => [(gx - gy) * HW, (gx + gy) * HH - z];

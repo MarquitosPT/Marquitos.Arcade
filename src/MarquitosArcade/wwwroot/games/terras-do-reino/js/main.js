@@ -12,16 +12,19 @@ import { createLoop, createViewport } from '/lib/arcade/index.js';
 import { bindPlayerNameInput, createScoreClient } from '/lib/arcade/scores.js';
 
 import {
-    AUTOSAVE_SECONDS, BUILDING, GAME_ID, MAX_BOARD_SCORE, NAME_STORAGE_KEY, PLAYER_FALLBACK, RESOURCE, SPEEDS,
+    AUTOSAVE_SECONDS, BUILDING, GAME_ID, MAX_BOARD_SCORE, NAME_STORAGE_KEY, PLAYER_FALLBACK, RESOURCE, ROAD_COST, SPEEDS,
     TOWNS, ZOOM_START
 } from './config.js';
 import { resumeAudio, sfx } from './audio.js';
-import { checkPlacement, demolish, place, upgradeCastle } from './buildings.js';
+import {
+    buildRoad, canAfford, canRoad, checkPlacement, demolish, flatten, flattenBlock, newRoadCells, place, removeRoad,
+    roadPath, upgradeCastle
+} from './buildings.js';
 import { addResource, harvestField, plantField, refreshDerived, stepEconomy, togglePaused } from './economy.js';
 import { fmt, fmtDuration } from './format.js';
 import { flashQuest, resetHud, updateHud } from './hud.js';
 import { attachControls, setInputHandlers } from './input.js';
-import { camera, gridToWorld, lookAt, panBy, worldToScreen } from './iso.js';
+import { anchorFor, camera, gridToWorld, lookAt, panBy, worldToScreen } from './iso.js';
 import { buy, sell, townFor } from './market.js';
 import { createMenu } from './menu.js';
 import { checkQuest } from './quests.js';
@@ -31,7 +34,8 @@ import { closeSheet, initSheets, openSheet, refreshSheet, sheetOpen } from './sh
 import { fx, game, ui } from './state.js';
 import { sendPlayerCaravan } from './towns.js';
 import { els, overlays, toast, topBar, topBarEl } from './ui.js';
-import { CASTLE_CENTER, idx } from './world.js';
+import { stepWalkers } from './walkers.js';
+import { CASTLE_CENTER, ROAD_PLAYER, idx } from './world.js';
 
 const playerName = bindPlayerNameInput(els.playerNameInput, NAME_STORAGE_KEY, { fallback: PLAYER_FALLBACK });
 const scores = createScoreClient(GAME_ID);
@@ -70,8 +74,11 @@ const loop = createLoop(
         } else if (game.phase === 'menu') {
             // A câmara passeia devagar à volta do castelo.
             const a = fx.time * 0.04;
-            lookAt(CASTLE_CENTER.x + Math.cos(a) * 5, CASTLE_CENTER.y + Math.sin(a) * 5);
+            lookAt(CASTLE_CENTER.x + Math.cos(a) * 10, CASTLE_CENTER.y + Math.sin(a) * 10);
         }
+
+        // A gente anda ao ritmo do relógio do jogo; no menu, devagar, ao natural.
+        stepWalkers(game.phase === 'playing' ? (game.paused ? 0 : dt * game.speed) : dt);
 
         timers.hud += dt;
         if (timers.hud >= 0.25 && game.phase === 'playing') {
@@ -123,7 +130,96 @@ function floatAtCastle(text) {
 
 // ---------- Construção ----------
 
+const ROAD_PRICE = Object.entries(ROAD_COST).map(([r, n]) => `${n} ${RESOURCE[r].emoji}`).join(' + ');
+
+/** Modo de estrada: toca-se onde começa e depois onde acaba cada troço. */
+function startRoad(from = null) {
+    closeSheet();
+    ui.placing = 'road';
+    ui.roadFrom = from;
+    ui.roadPreview = null;
+    ui.hover = null;
+    ui.selected = null;
+    els.placeText.innerHTML = from
+        ? `🛣️ <b>Estrada</b> · toca onde o troço acaba (${ROAD_PRICE} por casa)`
+        : `🛣️ <b>Estrada</b> · toca onde começa e depois onde acaba (${ROAD_PRICE} por casa)`;
+    els.placeBanner.hidden = false;
+}
+
+function roadTap({ x, y }) {
+    const from = ui.roadFrom;
+    ui.roadPreview = null;
+    const onRoad = game.world.road[idx(x, y)] === ROAD_PLAYER;
+    if (!from) {
+        if (onRoad) {
+            startRoad({ x, y });
+            sfx.click();
+            return;
+        }
+        if (!canRoad(x, y)) {
+            sfx.nope();
+            toast('Aqui não se abre estrada: só em chão plano e livre, dentro do território.', 'bad');
+            return;
+        }
+        const built = buildRoad([{ x, y }]);
+        if (built < 0) {
+            sfx.nope();
+            toast(`Faltam recursos: cada casa de estrada custa ${ROAD_PRICE}.`, 'bad');
+            return;
+        }
+        sfx.build();
+        startRoad({ x, y });
+        return;
+    }
+    const path = roadPath(from.x, from.y, x, y);
+    if (!path) {
+        sfx.nope();
+        toast('Não há caminho livre até aí: a estrada contorna edifícios, árvores, água e colinas.', 'bad');
+        return;
+    }
+    const built = buildRoad(path);
+    if (built < 0) {
+        sfx.nope();
+        toast(`Faltam recursos: este troço tem ${newRoadCells(path)} casas novas, a ${ROAD_PRICE} cada.`, 'bad');
+        return;
+    }
+    if (built > 0) sfx.build();
+    else sfx.click();
+    startRoad({ x, y });
+}
+
+/** O que o rato mostra por cima do tabuleiro em modo de construção. */
+function hoverTile(tile) {
+    if (!ui.placing || !tile) {
+        ui.hover = null;
+        ui.roadPreview = null;
+        return;
+    }
+    if (ui.placing !== 'road') {
+        ui.hover = anchorFor(tile, 2);
+        return;
+    }
+    const key = `${tile.x},${tile.y}|${ui.roadFrom?.x},${ui.roadFrom?.y}|${game.roadsVersion}`;
+    if (ui.roadPreviewKey === key) return;
+    ui.roadPreviewKey = key;
+    const path = ui.roadFrom ? roadPath(ui.roadFrom.x, ui.roadFrom.y, tile.x, tile.y) : (canRoad(tile.x, tile.y) ? [tile] : null);
+    ui.roadPreview = path;
+    ui.roadPreviewOk = !!path && canAfford(ROAD_COST, newRoadCells(path));
+}
+
+/** Entre os quatro blocos que cobrem a casa (x, y), o primeiro onde `kind` cabe. */
+function anchorCovering(kind, x, y) {
+    for (const [dx, dy] of [[0, 0], [-1, 0], [0, -1], [-1, -1]]) {
+        if (checkPlacement(kind, x + dx, y + dy, { ignoreCost: true }).ok) return { x: x + dx, y: y + dy };
+    }
+    return { x, y };
+}
+
 function startPlacing(kind) {
+    if (kind === 'road') {
+        startRoad();
+        return;
+    }
     const check = checkPlacement(kind);
     if (!check.ok) {
         sfx.nope();
@@ -142,6 +238,8 @@ function startPlacing(kind) {
 function stopPlacing() {
     ui.placing = null;
     ui.hover = null;
+    ui.roadFrom = null;
+    ui.roadPreview = null;
     els.placeBanner.hidden = true;
 }
 
@@ -165,11 +263,17 @@ function tryPlace(kind, x, y) {
 
 // ---------- Toques no mapa ----------
 
-function tapTile({ x, y }) {
+function tapTile(tile) {
+    const { x, y } = tile;
     resumeAudio();
+    if (ui.placing === 'road') {
+        roadTap(tile);
+        return;
+    }
     if (ui.placing) {
         const kind = ui.placing;
-        if (tryPlace(kind, x, y) && (!REPEATABLE.has(kind) || !checkPlacement(kind).ok)) stopPlacing();
+        const at = anchorFor(tile, 2);
+        if (tryPlace(kind, at.x, at.y) && (!REPEATABLE.has(kind) || !checkPlacement(kind).ok)) stopPlacing();
         return;
     }
 
@@ -228,7 +332,21 @@ const actions = {
     place: (kind) => startPlacing(kind),
     buildAt: (kind, at) => {
         const [x, y] = at.split(',').map(Number);
-        if (tryPlace(kind, x, y)) openSheet('tile', `${x},${y}`);
+        const anchor = anchorCovering(kind, x, y);
+        if (tryPlace(kind, anchor.x, anchor.y)) openSheet('tile', `${x},${y}`);
+    },
+    roadFrom: (at) => {
+        const [x, y] = at.split(',').map(Number);
+        startRoad({ x, y });
+    },
+    unroad: (at) => {
+        const [x, y] = at.split(',').map(Number);
+        if (removeRoad(x, y)) {
+            sfx.build();
+            closeSheet();
+        } else {
+            sfx.nope();
+        }
     },
     plant: (at) => {
         const [x, y] = at.split(',').map(Number);
@@ -257,6 +375,19 @@ const actions = {
             refreshDerived();
             closeSheet();
         }
+    },
+    flatten: (at) => {
+        const [x, y] = at.split(',').map(Number);
+        const stone = flatten(x, y);
+        if (stone < 0) {
+            sfx.nope();
+            return;
+        }
+        sfx.build();
+        const block = flattenBlock(x, y);
+        if (stone > 0) fx.floats.push({ gx: block.x + 1, gy: block.y + 1, text: `+${stone} ${RESOURCE.stone.emoji}`, t: 0 });
+        refreshDerived();
+        saveNow();
     },
     sell: (good, n) => {
         const amount = n === 'all' ? Math.floor(game.res[good]) : Number(n);
@@ -302,7 +433,7 @@ function enterKingdom() {
     topBar.setInGame(true);
     document.body.classList.add('in-game');
     camera.zoom = ZOOM_START;
-    lookAt(CASTLE_CENTER.x, CASTLE_CENTER.y + 1);
+    lookAt(CASTLE_CENTER.x, CASTLE_CENTER.y + 2);
     resetHud();
     refreshDerived();
     updateHud();
@@ -374,6 +505,7 @@ function togglePause() {
 
 setInputHandlers({
     tap: tapTile,
+    hover: hoverTile,
     cancel: () => {
         if (ui.placing) stopPlacing();
         else if (sheetOpen()) closeSheet();

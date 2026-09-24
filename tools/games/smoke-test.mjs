@@ -576,43 +576,41 @@ const GAMES = [
             // Primeiro o mapa: cada semente tem de dar um começo jogável.
             const broken = await page.evaluate(async () => {
                 const G = '/games/terras-do-reino/js/';
-                const { generateWorld, idx, castleDistance, countFeatureNear, isFreeLand, CASTLE_TILE, T_WATER } = await import(G + 'world.js');
-                const { CASTLE_LEVELS, MAP_SIZE } = await import(G + 'config.js');
+                const { generateWorld, idx, castleDistance, blockDistance, countFeatureNear, isFreeBlock, isMineBlock, CASTLE_TILE, CASTLE_SIZE, T_WATER } = await import(G + 'world.js');
+                const { BUILDING, CASTLE_LEVELS, MAP_SIZE } = await import(G + 'config.js');
                 const problems = [];
                 for (let seed = 1; seed <= 200; seed++) {
                     const w = generateWorld(seed * 7919);
-                    const count = (radius, test) => {
-                        let n = 0;
-                        for (let y = 0; y < MAP_SIZE; y++) for (let x = 0; x < MAP_SIZE; x++) {
-                            if (castleDistance(x, y) <= radius && test(idx(x, y))) n++;
-                        }
-                        return n;
-                    };
                     const say = (what) => problems.push(`semente ${seed * 7919}: ${what}`);
                     // O lenhador e a pedreira têm de caber no território inicial,
-                    // e a mina no do nível 3 — senão o castelo encrava.
-                    const spot = (radius, feature, min) => {
-                        for (let y = 0; y < MAP_SIZE; y++) for (let x = 0; x < MAP_SIZE; x++) {
-                            if (castleDistance(x, y) <= radius && isFreeLand(w, x, y) && countFeatureNear(w, x, y, feature, 2) >= min) return true;
+                    // e a mina no do nível 3 — senão o castelo encrava. Os
+                    // edifícios são blocos de 2x2 e não encostam à praça do castelo.
+                    const square = (x, y) => x < CASTLE_TILE.x + CASTLE_SIZE + 1 && x + 2 > CASTLE_TILE.x - 1
+                        && y < CASTLE_TILE.y + CASTLE_SIZE + 1 && y + 2 > CASTLE_TILE.y - 1;
+                    const spot = (radius, test) => {
+                        for (let y = 0; y < MAP_SIZE - 1; y++) for (let x = 0; x < MAP_SIZE - 1; x++) {
+                            if (blockDistance(x, y, 2) <= radius && !square(x, y) && test(x, y)) return true;
                         }
                         return false;
                     };
-                    if (!spot(CASTLE_LEVELS[1].radius, 'tree', 1)) say('não há onde pôr um lenhador no começo');
-                    if (!spot(CASTLE_LEVELS[1].radius, 'rock', 1)) say('não há onde pôr uma pedreira no começo');
-                    if (count(CASTLE_LEVELS[3].radius, (i) => w.feature[i] === 'ore') < 1) say('sem ouro ao alcance do castelo no nível 3');
-                    for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) {
+                    const near = (kind) => (x, y) => isFreeBlock(w, x, y, 2)
+                        && countFeatureNear(w, x, y, 2, BUILDING[kind].near.feature, BUILDING[kind].near.radius) >= BUILDING[kind].near.min;
+                    if (!spot(CASTLE_LEVELS[1].radius, near('woodcutter'))) say('não há onde pôr um lenhador no começo');
+                    if (!spot(CASTLE_LEVELS[1].radius, near('quarry'))) say('não há onde pôr uma pedreira no começo');
+                    if (!spot(CASTLE_LEVELS[3].radius, (x, y) => isMineBlock(w, x, y, 2))) say('sem sítio para uma mina ao alcance do castelo no nível 3');
+                    for (let dy = 0; dy < CASTLE_SIZE; dy++) for (let dx = 0; dx < CASTLE_SIZE; dx++) {
                         const i = idx(CASTLE_TILE.x + dx, CASTLE_TILE.y + dy);
                         if (w.terrain[i] === T_WATER || w.feature[i]) say('o castelo não está em terra limpa');
                     }
                     if (w.towns.length !== 3) say(`${w.towns.length} vilas em vez de 3`);
                     for (const t of w.towns) {
                         let land = 0;
-                        for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
+                        for (let dy = -6; dy <= 7; dy++) for (let dx = -6; dx <= 7; dx++) {
                             const x = t.x + dx; const y = t.y + dy;
                             if (x >= 0 && y >= 0 && x < MAP_SIZE && y < MAP_SIZE && w.terrain[idx(x, y)] !== T_WATER) land++;
                         }
-                        if (land < 25) say(`${t.name} sem terra para crescer (${land} casas)`);
-                        if (castleDistance(t.x, t.y) <= CASTLE_LEVELS[CASTLE_LEVELS.length - 1].radius + 1) say(`${t.name} dentro do território máximo do castelo`);
+                        if (land < 100) say(`${t.name} sem terra para crescer (${land} casas)`);
+                        if (castleDistance(t.x + 1, t.y + 1) <= CASTLE_LEVELS[CASTLE_LEVELS.length - 1].radius + 2) say(`${t.name} dentro do território máximo do castelo`);
                     }
                 }
                 return problems;
@@ -639,8 +637,9 @@ const GAMES = [
                 const { gridToWorld, worldToScreen } = await import(G + 'iso.js');
                 const field = game.buildings.find((b) => b.kind === 'field');
                 if (!field || field.stage !== 'growing') return { error: `campo em ${field?.stage}` };
-                for (let i = 0; i < 45; i++) stepEconomy(1);
-                const w = gridToWorld(field.x + 0.5, field.y + 0.5);
+                const { BUILDING } = await import(G + 'config.js');
+                for (let i = 0; i <= BUILDING.field.grow; i++) stepEconomy(1);
+                const w = gridToWorld(field.x + 1, field.y + 1);
                 const s = worldToScreen(w.x, w.y);
                 return { stage: field.stage, x: s.x, y: s.y, wheat: game.res.wheat };
             });
@@ -662,6 +661,70 @@ const GAMES = [
             await sleep(200);
             const sold = await page.evaluate(async () => (await import('/games/terras-do-reino/js/state.js')).game.res);
             if (sold.wheat !== 0 || !(sold.coins > coins)) throw new Error(`a venda não correu (trigo ${sold.wheat}, moedas ${coins} -> ${sold.coins})`);
+
+            // Estradas: pelo modo de estrada, um toque onde começa e outro onde acaba.
+            await page.click('.toolBtn[data-sheet="build"]');
+            await page.click('.buildCard[data-arg="road"]');
+            const ends = await page.evaluate(async () => {
+                const G = '/games/terras-do-reino/js/';
+                const { canRoad, roadPath } = await import(G + 'buildings.js');
+                const { gridToWorld, worldToScreen, camera } = await import(G + 'iso.js');
+                const onScreen = (x, y) => {
+                    const s = worldToScreen(gridToWorld(x + 0.5, y + 0.5).x, gridToWorld(x + 0.5, y + 0.5).y);
+                    return s.x > 480 && s.y > 150 && s.x < camera.width - 30 && s.y < camera.height - 110 ? s : null;
+                };
+                for (let y = 30; y < 58; y++) for (let x = 30; x < 58; x++) {
+                    const a = onScreen(x, y);
+                    if (!a || !canRoad(x, y) || !canRoad(x + 3, y)) continue;
+                    const b = onScreen(x + 3, y);
+                    const path = b && roadPath(x, y, x + 3, y);
+                    if (path && path.length <= 6) return [a, b];
+                }
+                return null;
+            });
+            if (!ends) throw new Error('não há onde abrir uma estrada à vista');
+            for (const end of ends) {
+                await page.mouse.click(end.x, end.y);
+                await sleep(100);
+            }
+            await page.click('#placeCancelBtn');
+            const roads = await page.evaluate(async () => {
+                const { game } = await import('/games/terras-do-reino/js/state.js');
+                return game.world.road.reduce((n, r) => n + (r === 1 ? 1 : 0), 0);
+            });
+            if (roads < 4) throw new Error(`a estrada não abriu (${roads} casas)`);
+
+            // Uma estrada entre dois edifícios põe gente a andar nela.
+            const walkers = await page.evaluate(async () => {
+                const G = '/games/terras-do-reino/js/';
+                const { game, fx } = await import(G + 'state.js');
+                const { buildRoad, roadPath, canRoad } = await import(G + 'buildings.js');
+                const { stepWalkers } = await import(G + 'walkers.js');
+                // As portas: casas à volta do bloco onde há ou pode haver estrada.
+                const doors = (b) => {
+                    const list = [];
+                    for (let y = b.y - 1; y <= b.y + b.size; y++) for (let x = b.x - 1; x <= b.x + b.size; x++) {
+                        if (canRoad(x, y) || game.world.road[y * 88 + x] === 1) list.push({ x, y });
+                    }
+                    return list;
+                };
+                const [a, b] = game.buildings;
+                // Um par de portas afastadas: dois edifícios encostados davam um
+                // caminho de uma casa, curto de mais para alguém andar nele.
+                let path = null;
+                for (const da of doors(a)) {
+                    for (const db of doors(b)) {
+                        const p = roadPath(da.x, da.y, db.x, db.y);
+                        if (p && p.length >= 4 && (!path || p.length < path.length)) path = p;
+                    }
+                }
+                if (!path) return -1;
+                buildRoad(path);
+                for (let i = 0; i < 40; i++) stepWalkers(0.25);
+                return fx.walkers.filter((w) => w.group === 'player').length;
+            });
+            if (walkers < 0) throw new Error('não deu para ligar dois edifícios por estrada');
+            if (walkers < 1) throw new Error('ninguém anda na estrada entre dois edifícios');
 
             await page.click('.toolBtn[data-sheet="castle"]');
             await sleep(200);
@@ -685,16 +748,42 @@ const GAMES = [
                 const G = '/games/terras-do-reino/js/';
                 const { game } = await import(G + 'state.js');
                 const { checkPlacement, place, upgradeCastle } = await import(G + 'buildings.js');
+                // Uma semente conhecida, com colinas para aplanar dentro do território.
+                (await import(G + 'save.js')).newGame(2107662309);
                 Object.assign(game.res, { coins: 3000, wood: 400, stone: 400 });
                 if (!upgradeCastle()) return -1;
                 let n = 0;
-                for (let y = 0; y < 44 && n < 20; y++) for (let x = 0; x < 44 && n < 20; x++) {
+                for (let y = 0; y < 88 && n < 20; y++) for (let x = 0; x < 88 && n < 20; x++) {
                     const kind = n % 2 ? 'field' : 'house';
                     if (checkPlacement(kind, x, y).ok && place(kind, x, y)) n++;
                 }
                 return game.buildings.length;
             });
             if (built < 20) throw new Error(`só se construíram ${built} edifícios`);
+
+            // Aplanar uma colina pelo botão da ficha dela: fica terra livre e a gravação lembra-se.
+            const hill = await page.evaluate(async () => {
+                const G = '/games/terras-do-reino/js/';
+                const { checkFlatten } = await import(G + 'buildings.js');
+                const { openSheet } = await import(G + 'sheets.js');
+                for (let y = 0; y < 88; y++) for (let x = 0; x < 88; x++) {
+                    if (checkFlatten(x, y).ok) {
+                        openSheet('tile', `${x},${y}`);
+                        return { x, y };
+                    }
+                }
+                return null;
+            });
+            if (!hill) throw new Error('não há nenhuma colina para aplanar no território');
+            await page.click('#sheetBody [data-action="flatten"]');
+            const flat = await page.evaluate(async ({ x, y }) => {
+                const G = '/games/terras-do-reino/js/';
+                const { game } = await import(G + 'state.js');
+                const { isFreeLand } = await import(G + 'world.js');
+                return isFreeLand(game.world, x, y);
+            }, hill);
+            if (!flat) throw new Error(`a colina em ${hill.x},${hill.y} não ficou aplanada`);
+            await page.click('#sheetCloseBtn');
 
             // Sair grava o reino no aparelho — e cabe no teto do servidor.
             await page.click('#endBtn');
@@ -704,6 +793,7 @@ const GAMES = [
             if (save.length > 8 * 1024) throw new Error(`a gravação tem ${save.length} bytes, acima dos 8 kB do servidor`);
             const data = JSON.parse(save);
             if (data.b.length !== built || data.cl !== 2) throw new Error('a gravação não tem o que se construiu');
+            if (!(data.fl || []).includes(hill.y * 88 + hill.x)) throw new Error('a gravação não tem a colina aplanada');
 
             // Uma hora fora: ao voltar, o reino recupera esse tempo e diz o que se fez.
             await page.evaluate(() => {
@@ -715,11 +805,16 @@ const GAMES = [
             await waitForSplash(page);
             await enterKingdom(page);
             await page.waitForSelector('#welcomeScreen', { state: 'visible' });
-            const back = await page.evaluate(async () => {
+            const back = await page.evaluate(async (h) => {
                 const { game } = await import('/games/terras-do-reino/js/state.js');
-                return { n: game.buildings.length, level: game.castleLevel, day: game.day };
-            });
+                const { T_HILL, idx } = await import('/games/terras-do-reino/js/world.js');
+                return {
+                    n: game.buildings.length, level: game.castleLevel, day: game.day,
+                    flat: game.world.terrain[idx(h.x, h.y)] !== T_HILL
+                };
+            }, hill);
             if (back.n !== built || back.level !== 2) throw new Error(`o reino voltou diferente (${back.n} edifícios, castelo ${back.level})`);
+            if (!back.flat) throw new Error('a colina aplanada voltou a ser colina');
             if (back.day < 60) throw new Error(`a hora fora não foi recuperada (dia ${back.day})`);
             await page.click('#welcomeBtn');
             await sleep(600);
@@ -880,9 +975,11 @@ async function tapPlaceable(page, kind) {
         const { gridToWorld, worldToScreen, camera } = await import(G + 'iso.js');
         const { castleDistance } = await import(G + 'world.js');
         let best = null;
-        for (let y = 0; y < 44; y++) for (let x = 0; x < 44; x++) {
+        // Os edifícios são blocos de 2x2 e ficam centrados no canto de casa
+        // mais perto do toque: tocar a 3/4 da casa de cima põe-nos lá.
+        for (let y = 0; y < 88; y++) for (let x = 0; x < 88; x++) {
             if (!checkPlacement(kind, x, y).ok) continue;
-            const w = gridToWorld(x + 0.5, y + 0.5);
+            const w = gridToWorld(x + 0.75, y + 0.75);
             const s = worldToScreen(w.x, w.y);
             // Longe das bordas, da barra de ferramentas e do painel.
             if (s.x < 480 && camera.width > 700) continue;
