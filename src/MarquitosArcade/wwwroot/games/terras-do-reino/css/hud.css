@@ -274,6 +274,15 @@ body.in-game .toolbar { display: flex; }
 .placeRotate:hover { background: var(--glass-bg-hover); }
 .placeRotate:active { transform: scale(0.94); }
 
+/* Ocultar edifícios e árvores: carregado, fica dourado como a moldura do painel. */
+.placeHide[aria-pressed="true"] {
+    border-color: rgba(242, 193, 78, 0.9);
+    background: rgba(242, 193, 78, 0.35);
+    box-shadow: inset 0 0 0 1px rgba(242, 193, 78, 0.5);
+}
+
+.placeHide[aria-pressed="true"]:hover { background: rgba(242, 193, 78, 0.45); }
+
 /* Sair do modo tem de se ler como sair: um botão com nome, não só uma cruz. */
 .placeExit {
     padding: 7px 14px;
