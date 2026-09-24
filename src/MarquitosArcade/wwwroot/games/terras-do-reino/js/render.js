@@ -168,6 +168,11 @@ function drawTile(x, y, t, detail) {
     ctx.closePath();
     ctx.fillStyle = groundColor(terrain, game.world.tint[i]);
     ctx.fill();
+    // Sem juntas entre as peças: um traço da própria cor tapa a frincha que o
+    // antialiasing deixa entre dois losangos vizinhos.
+    ctx.strokeStyle = ctx.fillStyle;
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
 
     if (!detail) return;
 
@@ -186,11 +191,6 @@ function drawTile(x, y, t, detail) {
         }
         return;
     }
-
-    // As juntas das peças do tabuleiro.
-    ctx.strokeStyle = 'rgba(30, 60, 20, 0.07)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
 
     if (terrain === T_MEADOW) {
         const colors = ['#fff6c8', '#f7a9c4', '#fde68a'];
@@ -278,16 +278,18 @@ function at(gx, gy, z) {
 }
 
 /**
- * O degradê de uma encosta: a cor da colina, mais escura conforme a luz, no
- * cimo; a cor da casa de baixo, só um pouco mais escura, no pé — para se ver
- * onde a encosta assenta sem parecer uma mancha.
+ * O degradê de uma encosta: no cimo, exatamente a cor do tampo da colina, para
+ * não se ver aresta entre os dois; logo abaixo escurece conforme a luz; no pé,
+ * a cor da casa de baixo, só um pouco mais escura — para se ver onde a encosta
+ * assenta sem parecer uma mancha.
  */
-function slopeFill(from, to, light, low) {
+function slopeFill(from, to, light, low, top) {
     const [hh, hs, hl] = GROUND[T_HILL];
     const [lh, ls, ll] = GROUND[low];
     const grad = ctx.createLinearGradient(from[0], from[1], to[0], to[1]);
-    grad.addColorStop(0, `hsl(${hh - 4}, ${hs - 2}%, ${hl + light}%)`);
-    grad.addColorStop(0.6, `hsl(${(hh + lh) / 2}, ${(hs + ls) / 2}%, ${(hl + ll) / 2 + light * 0.6}%)`);
+    grad.addColorStop(0, top);
+    grad.addColorStop(0.3, `hsl(${hh - 4}, ${hs - 2}%, ${hl + light}%)`);
+    grad.addColorStop(0.7, `hsl(${(hh + lh) / 2}, ${(hs + ls) / 2}%, ${(hl + ll) / 2 + light * 0.6}%)`);
     grad.addColorStop(1, `hsl(${lh}, ${ls}%, ${ll - 4}%)`);
     return grad;
 }
@@ -317,7 +319,7 @@ function clipToTile(x, y, z) {
 }
 
 /** Uma encosta ao longo de um lado da casa (x, y), vinda da colina vizinha. */
-function drawSideSlope(x, y, side, zTop, zLow, low, detail) {
+function drawSideSlope(x, y, side, zTop, zLow, low, top, detail) {
     const ex = x + side.ex;
     const ey = y + side.ey;
     const { u, n } = side;
@@ -349,7 +351,7 @@ function drawSideSlope(x, y, side, zTop, zLow, low, detail) {
     ctx.save();
     if (side.back) clipToTile(x, y, zLow);
     const midTop = [(top0[0] + top1[0]) / 2, (top0[1] + top1[1]) / 2];
-    ctx.fillStyle = slopeFill(midTop, foot[2], side.light, low);
+    ctx.fillStyle = slopeFill(midTop, foot[2], side.light, low, top);
     ctx.fill(path);
 
     // Uma sombra leve onde a encosta assenta na relva.
@@ -388,7 +390,7 @@ function drawSideSlope(x, y, side, zTop, zLow, low, detail) {
 }
 
 /** O leque num canto da casa (x, y), onde cai a ponta de uma colina em diagonal. */
-function drawCornerSlope(x, y, corner, zTop, zLow, low) {
+function drawCornerSlope(x, y, corner, zTop, zLow, low, top) {
     const vx = x + corner.vx;
     const vy = y + corner.vy;
     const d = cornerDepth(vx, vy);
@@ -400,7 +402,7 @@ function drawCornerSlope(x, y, corner, zTop, zLow, low) {
 
     ctx.save();
     if (corner.back) clipToTile(x, y, zLow);
-    ctx.fillStyle = slopeFill(apex, pm, corner.light, low);
+    ctx.fillStyle = slopeFill(apex, pm, corner.light, low, top);
     ctx.beginPath();
     ctx.moveTo(apex[0], apex[1]);
     ctx.lineTo(pa[0], pa[1]);
@@ -424,16 +426,20 @@ function drawSlopes(x, y, detail) {
     if (low === T_WATER) return;
     const zLow = w.elev[i] * ELEV_PX;
     const zOf = (dx, dy) => w.elev[idx(x + dx, y + dy)] * ELEV_PX;
+    const topOf = (dx, dy) => {
+        const h = idx(x + dx, y + dy);
+        return groundColor(w.terrain[h], w.tint[h]);
+    };
 
     // Primeiro os cantos: onde há encosta num lado, ela cobre o canto.
     for (const c of CORNERS) {
         if (!slopesInto(x + c.dx, y + c.dy, x, y)) continue;
         if (slopesInto(x + c.dx, y, x, y) || slopesInto(x, y + c.dy, x, y)) continue;
-        drawCornerSlope(x, y, c, zOf(c.dx, c.dy), zLow, low);
+        drawCornerSlope(x, y, c, zOf(c.dx, c.dy), zLow, low, topOf(c.dx, c.dy));
     }
     for (const side of SIDES) {
         if (slopesInto(x + side.dx, y + side.dy, x, y)) {
-            drawSideSlope(x, y, side, zOf(side.dx, side.dy), zLow, low, detail);
+            drawSideSlope(x, y, side, zOf(side.dx, side.dy), zLow, low, topOf(side.dx, side.dy), detail);
         }
     }
 }
