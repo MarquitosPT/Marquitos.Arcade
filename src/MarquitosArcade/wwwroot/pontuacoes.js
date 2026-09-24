@@ -1,14 +1,18 @@
 // Carrossel de jogos da página de pontuações (ver wwwroot/lib/arcade/carousel.js,
 // a mesma receita do menu de níveis do Maze Run).
 //
-// Trocar de jogo é só isso — um cartão é um link normal para
-// /pontuacoes?jogo=<id>, e é a navegação melhorada do Blazor que já trata de
-// ir buscar o HTML novo ao servidor e trocar o conteúdo sem recarregar a
-// página. Sem isto, os cartões continuam a funcionar como uma grelha simples
-// (ver o CSS): o que falta ao carregar só JS é repô-los em páginas do
-// carrossel e voltar a fazê-lo a seguir a cada uma dessas navegações — o
-// carrossel guarda os cartões numa cópia sua (ver `setCards` mais abaixo) que
-// fica desatualizada quando o servidor manda outro jogo selecionado.
+// Ao contrário do menu do Maze Run, aqui não há nada para "escolher": cada
+// página do carrossel já é um cartão com o quadro de pontuações desse jogo
+// completo lá dentro (ver Components/Pages/Pontuacoes.razor), por isso
+// deslizar entre jogos é só um efeito visual, sem pedir nada ao servidor. O
+// único link de cada cartão ("↻ Atualizar") é que navega a sério, para
+// /pontuacoes?jogo=<id> — e é a navegação melhorada do Blazor que troca o
+// conteúdo sem recarregar a página.
+//
+// Essa troca de conteúdo é também a razão de isto se repetir a cada
+// navegação: o carrossel guarda os cartões numa cópia sua (ver `setCards`
+// mais abaixo), e essa cópia fica desatualizada quando o servidor manda
+// outro jogo para abrir.
 
 import { createCarousel } from './lib/arcade/index.js';
 
@@ -18,13 +22,13 @@ function syncCarousel() {
 
     const viewport = document.getElementById('gamesViewport');
     const track = document.getElementById('gamesTrack');
-    const cards = Array.from(track.querySelectorAll('.gameCard'));
-    const activeIndex = Math.max(0, cards.findIndex((card) => card.classList.contains('active')));
+    const cards = Array.from(track.querySelectorAll('.game-card'));
+    const showIndex = Math.max(0, cards.findIndex((card) => card.dataset.value === root.dataset.selected));
 
     // O carrossel em si só se cria uma vez: o `viewport` sobrevive a uma
     // navegação melhorada para esta mesma página (ex.: o botão Recuar do
-    // browser), e recriá-lo duplicava os ouvintes do arrasto e das setas em
-    // cima do mesmo elemento.
+    // browser, ou o link "Atualizar" de um cartão), e recriá-lo duplicava
+    // os ouvintes do arrasto e das setas em cima do mesmo elemento.
     let carousel = viewport.__arcadeCarousel;
     if (!carousel) {
         carousel = createCarousel({
@@ -37,7 +41,7 @@ function syncCarousel() {
         }, { pageClass: 'gamePage' });
         viewport.__arcadeCarousel = carousel;
     }
-    carousel.setCards(cards.map((card) => card.outerHTML), { show: activeIndex });
+    carousel.setCards(cards.map((card) => card.outerHTML), { show: showIndex });
 }
 
 syncCarousel();

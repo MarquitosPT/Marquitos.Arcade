@@ -8,112 +8,106 @@
 <header class="page-header">
     <h1>🏆 Pontuações da Arcade</h1>
     <p>
-        Escolhe o jogo no carrossel para veres o quadro de pontuações dele,
-        atualizado em tempo real a partir do servidor.
+        Desliza ou usa as setas para veres o quadro de pontuações de cada
+        jogo, atualizado em tempo real a partir do servidor.
     </p>
 </header>
 
 <main class="scores-main">
-    <div class="gamesCarousel" id="gamesCarousel">
-        <button type="button" class="carouselArrow carouselArrow--prev" id="gamesPrevBtn" aria-label="Jogos anteriores">‹</button>
+    <div class="gamesCarousel" id="gamesCarousel" data-selected="@SelectedId">
+        <button type="button" class="carouselArrow carouselArrow--prev" id="gamesPrevBtn" aria-label="Jogo anterior">‹</button>
         <div class="carouselViewport" id="gamesViewport">
             <div class="carouselTrack" id="gamesTrack">
                 <div class="gamePage">
                     @foreach (var game in Games)
                     {
-                        <a class="gameCard@(game.Id == SelectedId ? " active" : "")" id="@game.Id"
-                           href="/pontuacoes?jogo=@game.Id"
-                           aria-current="@(game.Id == SelectedId ? "true" : null)">
-                            <span class="gameCardCover">
+                        <article class="game-card scoreCard @game.Theme" id="@game.Id" data-value="@game.Id">
+                            <div class="game-cover">
                                 <img src="@game.Cover" alt="" width="960" height="540" loading="lazy" decoding="async" />
-                            </span>
-                            <span class="gameCardName"><span aria-hidden="true">@game.Emoji</span> @game.Name</span>
-                        </a>
+                                <span class="cover-crt" aria-hidden="true"></span>
+                                <div class="game-marquee">
+                                    <span class="marquee-emoji" aria-hidden="true">@game.Emoji</span>
+                                    <div class="marquee-text"><h2>@game.Name</h2></div>
+                                </div>
+                            </div>
+                            <div class="game-card-body score-card-body">
+                                <div class="table-wrap">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Jogador</th>
+                                                <th class="score-col">Pontuação</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @{
+                                                var scores = Scores[game.Id];
+                                            }
+                                            @if (scores.Count == 0)
+                                            {
+                                                <tr><td colspan="3" class="empty-state">Ainda não há pontuações registadas. Sê o primeiro! 🎮</td></tr>
+                                            }
+                                            else
+                                            {
+                                                @for (var i = 0; i < scores.Count; i++)
+                                                {
+                                                    var entry = scores[i];
+                                                    var medal = i switch { 0 => "🥇", 1 => "🥈", 2 => "🥉", _ => (i + 1).ToString() };
+                                                    <tr class="@(i < 3 ? $"rank-{i + 1}" : null)">
+                                                        <td class="rank-col">@medal</td>
+                                                        <td>
+                                                            @entry.Name
+                                                            @if (!entry.Registered)
+                                                            {
+                                                                <span class="player-tag" title="Pontuação feita sem sessão iniciada">(não registado)</span>
+                                                            }
+                                                        </td>
+                                                        <td class="score-col">@entry.Score</td>
+                                                    </tr>
+                                                }
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <a class="refresh-btn" href="/pontuacoes?jogo=@game.Id">↻ Atualizar</a>
+                            </div>
+                        </article>
                     }
                 </div>
             </div>
         </div>
-        <button type="button" class="carouselArrow carouselArrow--next" id="gamesNextBtn" aria-label="Jogos seguintes">›</button>
-        <div class="carouselDots" id="gamesDots" role="tablist" aria-label="Página de jogos"></div>
+        <button type="button" class="carouselArrow carouselArrow--next" id="gamesNextBtn" aria-label="Jogo seguinte">›</button>
+        <div class="carouselDots" id="gamesDots" role="tablist" aria-label="Jogos"></div>
     </div>
-
-    <section class="game-panel">
-        <div class="game-panel-head">
-            <h2>
-                <span class="panel-emoji" aria-hidden="true">@SelectedGame.Emoji</span>
-                @SelectedGame.Name
-            </h2>
-            <a class="refresh-btn" href="/pontuacoes?jogo=@SelectedId">↻ Atualizar</a>
-        </div>
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Jogador</th>
-                        <th class="score-col">Pontuação</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Scores.Count == 0)
-                    {
-                        <tr><td colspan="3" class="empty-state">Ainda não há pontuações registadas. Sê o primeiro! 🎮</td></tr>
-                    }
-                    else
-                    {
-                        @for (var i = 0; i < Scores.Count; i++)
-                        {
-                            var entry = Scores[i];
-                            var medal = i switch { 0 => "🥇", 1 => "🥈", 2 => "🥉", _ => (i + 1).ToString() };
-                            <tr class="@(i < 3 ? $"rank-{i + 1}" : null)">
-                                <td class="rank-col">@medal</td>
-                                <td>
-                                    @entry.Name
-                                    @if (!entry.Registered)
-                                    {
-                                        <span class="player-tag" title="Pontuação feita sem sessão iniciada">(não registado)</span>
-                                    }
-                                </td>
-                                <td class="score-col">@entry.Score</td>
-                            </tr>
-                        }
-                    }
-                </tbody>
-            </table>
-        </div>
-    </section>
 </main>
 
 @code {
-    private static readonly (string Id, string Name, string Emoji, string Cover)[] Games =
+    private static readonly (string Id, string Name, string Emoji, string Cover, string Theme)[] Games =
     [
-        ("tasca-do-ze", "Tasca do Zé", "🍽️", "/covers/tasca-do-ze.webp"),
-        ("pong", "Pong Retro", "🏓", "/covers/pong.webp"),
-        ("pixel-racing", "Pixel Racing", "🏎️", "/covers/pixel-racing.webp"),
-        ("maze-run", "Maze Run", "🧩", "/covers/maze-run.webp"),
+        ("tasca-do-ze", "Tasca do Zé", "🍽️", "/covers/tasca-do-ze.webp", "theme-tasca"),
+        ("pong", "Pong Retro", "🏓", "/covers/pong.webp", "theme-pong"),
+        ("pixel-racing", "Pixel Racing", "🏎️", "/covers/pixel-racing.webp", "theme-racing"),
+        ("maze-run", "Maze Run", "🧩", "/covers/maze-run.webp", "theme-maze"),
         // O Terras do Reino ainda está em testes: as pontuações vão sendo
         // guardadas, mas o cartão só aparece quando o jogo for lançado.
-        // ("terras-do-reino", "Terras do Reino", "🏰", "/covers/terras-do-reino.webp"),
+        // ("terras-do-reino", "Terras do Reino", "🏰", "/covers/terras-do-reino.webp", "theme-reino"),
     ];
 
     [SupplyParameterFromQuery(Name = "jogo")]
     private string? RequestedId { get; set; }
 
     // Um jogo desconhecido no URL (ou nenhum) cai sempre no primeiro da lista
-    // — nunca um carrossel sem cartão nenhum selecionado.
+    // — nunca um carrossel sem cartão nenhum para abrir.
     private string SelectedId => Games.Any(g => g.Id == RequestedId) ? RequestedId! : Games[0].Id;
 
-    private (string Id, string Name, string Emoji, string Cover) SelectedGame => Games.First(g => g.Id == SelectedId);
-
-    // Só se vai buscar o quadro do jogo escolhido — trocar de cartão no
-    // carrossel é uma navegação normal para /pontuacoes?jogo=<id>, que volta
-    // a passar por aqui com outro SelectedId. É o que evita que a página (e
-    // as suas três dúzias de "top 10") cresça a cada jogo novo que se
-    // acrescenta à arcada.
-    private List<ScoreDto> Scores { get; set; } = [];
+    private Dictionary<string, List<ScoreDto>> Scores { get; set; } = [];
 
     protected override async Task OnInitializedAsync()
     {
-        Scores = await ScoresEndpoints.GetTopScoresAsync(Db, SelectedId);
+        foreach (var game in Games)
+        {
+            Scores[game.Id] = await ScoresEndpoints.GetTopScoresAsync(Db, game.Id);
+        }
     }
 }
