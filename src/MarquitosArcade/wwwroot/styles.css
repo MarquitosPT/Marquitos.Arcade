@@ -442,7 +442,7 @@ body::before {
 .site-footer,
 .hero-inner,
 .game-card,
-.game-panel,
+.gamesCarousel,
 .account-shell,
 .page-shell,
 .topnav-dropdown-menu,
@@ -461,7 +461,7 @@ body::before {
   .site-footer,
   .hero-inner,
   .game-card,
-  .game-panel,
+  .gamesCarousel,
   .account-shell,
   .page-shell,
   .topnav-dropdown-menu,
@@ -1389,29 +1389,196 @@ main {
   gap: 1.25rem;
 }
 
-.game-panel {
+/* ---------- Carrossel de jogos ---------- */
+
+/* Mesma receita do carrossel de níveis do Maze Run (ver
+   wwwroot/lib/arcade/carousel.js), mas com uma só coluna e uma só fila, e o
+   carrossel inteiro — setas, páginas e pontos — dentro de um só cartão (o
+   mesmo estilo e sombra do painel original). Cada página é só o quadro de
+   pontuações de um jogo, sem cartão próprio (ver .scoreCard mais abaixo). */
+.gamesCarousel {
+  --page-cols: 1;
+  --page-rows: 1;
+
   position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "head head head"
+    "prev pages next"
+    "dots dots dots";
+  align-items: center;
+  /* A distância das setas à tabela devia bater certo com a do resto do
+     cartão às suas bordas (o padding, ali em baixo) — daí o mesmo valor. */
+  gap: 10px 1.35rem;
+  width: 100%;
   border-radius: var(--radius-lg);
   padding: 1.35rem;
-  box-shadow: var(--glass-shadow);
-  scroll-margin-top: 1rem;
-  overflow: hidden;
-}
-
-.game-panel.highlight {
-  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
   box-shadow:
     var(--glass-shadow),
     0 0 0 1px var(--ring),
     0 0 40px -12px var(--accent-glow);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
 }
 
-.game-panel-head {
+.carouselViewport {
+  grid-area: pages;
+  overflow: hidden;
+  width: 100%;
+}
+
+.carouselTrack {
+  display: flex;
+  align-items: stretch;
+  /* A transição é desligada pelo JS enquanto o dedo está a arrastar. */
+  transition: transform 0.32s cubic-bezier(0.2, 0.9, 0.25, 1);
+  will-change: transform;
+}
+
+.gamePage {
+  flex: 0 0 100%;
+  display: flex;
+  flex-direction: column;
+  /* Só se vê sem JavaScript: nessa altura esta página única leva todos os
+     cartões, um por baixo do outro (ver Pontuacoes.razor) — é o carrossel,
+     já montado, que reparte um cartão por página. */
+  gap: 1.25rem;
+}
+
+.carouselArrow {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  font-family: var(--font-display);
+  font-size: 20px;
+  line-height: 1;
+  color: var(--text);
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
+  background: var(--glass-bg-soft);
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease, opacity 0.2s ease;
+}
+
+.carouselArrow:hover:not(:disabled) {
+  background: var(--glass-bg-hover, var(--glass-bg));
+  border-color: var(--accent);
+}
+
+.carouselArrow:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+/* Numa ponta, a seta fica à vista mas apagada: diz que não há mais jogos
+   daquele lado sem a lista de páginas saltar de sítio ao desaparecer um botão. */
+.carouselArrow:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.carouselArrow--prev {
+  grid-area: prev;
+}
+
+.carouselArrow--next {
+  grid-area: next;
+}
+
+.carouselDots {
+  grid-area: dots;
   display: flex;
   align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 16px;
+}
+
+.carouselDot {
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--text) 22%, transparent);
+  transition: background 0.2s ease, transform 0.2s ease, width 0.2s ease;
+}
+
+.carouselDot:hover {
+  background: color-mix(in srgb, var(--text) 40%, transparent);
+}
+
+.carouselDot.active {
+  width: 20px;
+  border-radius: var(--radius-pill, 999px);
+  background: linear-gradient(100deg, var(--accent), var(--accent-2));
+}
+
+/* Só um ponto significa uma página só: não há nada para navegar. */
+.gamesCarousel.is-single .carouselDots,
+.gamesCarousel.is-single .carouselArrow {
+  display: none;
+}
+
+/* Num telemóvel ao alto as setas descem para o fundo, encostadas à direita, e
+   os pontos ficam à esquerda na mesma linha — a mesma troca do carrossel de
+   níveis do Maze Run, e pela mesma razão: nos lados, cada seta rouba largura
+   ao cartão, e num ecrã de telemóvel isso pesa mais. */
+@media (max-width: 560px) and (orientation: portrait) {
+  .gamesCarousel {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "head head head"
+      "pages pages pages"
+      "dots prev next";
+    /* Aqui as setas já não estão ao lado da tabela — voltam ao gap
+       pequeno, entre elas e os pontos. */
+    gap: 10px 8px;
+  }
+
+  .carouselDots {
+    justify-content: flex-start;
+  }
+}
+
+/* Telemóvel deitado: largura sobra, altura é que falta — as setas voltam aos
+   lados (mais pequenas) e os pontos desaparecem, tal como no Maze Run. */
+@media (orientation: landscape) and (max-height: 600px) {
+  .gamesCarousel {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "head head head"
+      "prev pages next";
+    gap: 6px;
+  }
+
+  .carouselArrow {
+    width: 32px;
+    height: 32px;
+    font-size: 17px;
+  }
+
+  .carouselDots {
+    display: none;
+  }
+}
+
+/* ---------- Conteúdo de um jogo, dentro do carrossel ---------- */
+
+/* O ícone e o título já não vivem dentro de cada página do carrossel — são
+   um cabeçalho só, preso ao cartão (grid-area: head, definida no
+   .gamesCarousel ali em cima), com o "Atualizar" alinhado à direita. O JS
+   (ver wwwroot/pontuacoes.js) troca-lhe o texto e o href do link sempre que
+   se muda de página, para corresponder ao jogo que está à vista. */
+.game-panel-head {
+  grid-area: head;
+  display: flex;
+  /* O "Atualizar" é mais baixo do que o ícone — alinhados ao centro ficava
+     com um ar torto. Ao topo, os dois começam no mesmo sítio. */
+  align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1rem;
 }
 
 .game-panel-head h2 {
@@ -1425,16 +1592,51 @@ main {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.1rem;
-  height: 2.1rem;
+  /* Do mesmo tamanho das setas do carrossel (.carouselArrow). */
+  width: 38px;
+  height: 38px;
+  flex: none;
   border-radius: 12px;
   font-size: 1.05rem;
   background: var(--glass-bg-soft);
   border: 1px solid var(--glass-border);
 }
 
+/* Só o carrossel (.gamesCarousel) é um cartão — isto é uma div lisa lá
+   dentro, sem relevo nem borda próprios, só com o quadro de pontuações de
+   um jogo (o cabeçalho, ali em cima, já saiu daqui).
+   Altura fixa, para o cartão do carrossel não saltar de tamanho consoante o
+   jogo tem uma pontuação ou dez: dez linhas de tabela, com uma folga pequena
+   (ver .table-wrap, com overflow-y para essa folga nunca ser um problema se
+   as contas abaixo alguma vez desafinarem de um browser para o outro). Como
+   é o jogo com mais pontuações que decide, o número não pode vir de medir o
+   jogo mais alto que calhar estar no carrossel agora — muda com o tempo, à
+   medida que se joga; só o limite de 10 do servidor (TopCount, em
+   ScoresEndpoints.cs) não muda. */
+.scoreCard {
+  flex: none;
+  height: 30rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.scoreCard .table-wrap {
+  flex: 1 1 auto;
+  /* Rede de segurança da altura fixa do cartão (ver .scoreCard): nunca
+     devia fazer falta, mas antes um scroll aqui dentro do que uma tabela a
+     transbordar do cartão. */
+  overflow-y: auto;
+}
+
+/* Largura fixa (com folga: cabe sempre uma medalha ou dois dígitos) — é a
+   coluna do jogador, sem nenhuma largura própria, que absorve o espaço que
+   sobra. Tem de estar também no <th> desta coluna, não só no <td>: numa
+   tabela `table-layout: fixed` é a primeira linha (o cabeçalho) que decide
+   a largura de cada coluna. */
 .rank-col {
   width: 3rem;
+  white-space: nowrap;
+  text-align: center;
   font-size: 1rem;
 }
 
@@ -1467,9 +1669,17 @@ main {
   touch-action: pan-x pan-y;
 }
 
+/* `table-layout: fixed`, com uma largura em rem posta nas duas colunas
+   pequenas (ver .rank-col e .score-col — no cabeçalho *e* no corpo, os dois
+   têm de concordar) é o que deixa a coluna do jogador, a única sem largura
+   própria, esticar para o espaço que sobra. É também o que torna a altura
+   de uma linha previsível: sem ele, um nome comprido podia espremer as
+   outras colunas e a altura fixa do cartão (ver .scoreCard) deixava de
+   bater certo com as dez linhas. */
 table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 th,
@@ -1495,7 +1705,21 @@ tbody tr:last-child td {
   border-bottom: 0;
 }
 
+/* Nunca quebra: um nome comprido (ou a etiqueta de "não registado" a seguir)
+   corta-se com reticências, em vez de espremer a linha para uma segunda —
+   é isso que mantém as dez linhas todas com a mesma altura. */
+.player-col {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Largura fixa (com folga até ao limite de pontuação do servidor, 999999 —
+   ver ScoresEndpoints.cs); a mesma razão do .rank-col para estar também
+   no <th>. */
 .score-col {
+  width: 6.5rem;
+  white-space: nowrap;
   text-align: right;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
@@ -2262,9 +2486,6 @@ tbody tr:last-child td {
     padding-right: 0.65rem;
   }
 
-  .game-panel {
-    padding: 1rem;
-  }
 }
 
 /* ---------- Movimento reduzido ---------- */
@@ -2292,7 +2513,8 @@ tbody tr:last-child td {
   .hero-cta,
   .tile-action,
   .theme-toggle,
-  .account-shell .btn {
+  .account-shell .btn,
+  .carouselTrack {
     transition: none;
   }
 

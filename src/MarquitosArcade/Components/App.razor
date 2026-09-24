@@ -72,11 +72,16 @@
             // E o alvo de um fragmento no URL (ex.: /pontuacoes?jogo=pong#pong)
             // só existe no DOM depois desta sincronização.
             window.__arcadeHashScroll?.reapply();
+            // O carrossel de jogos da página de pontuações guarda os cartões
+            // numa cópia sua (ver wwwroot/pontuacoes.js); se esta navegação
+            // trouxe outro jogo selecionado, essa cópia fica desatualizada.
+            window.__arcadePontuacoes?.reapply();
         });
     </script>
     <script src="@Assets["Components/Account/Shared/PasskeySubmit.razor.js"]" type="module"></script>
     <script src="@Assets["topnav-dropdown.js"]"></script>
     <script src="@Assets["hash-scroll.js"]"></script>
+    <script type="module" src="@Assets["pontuacoes.js"]"></script>
 </body>
 
 </html>
