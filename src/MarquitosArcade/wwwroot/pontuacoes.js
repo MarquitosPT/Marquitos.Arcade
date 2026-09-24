@@ -2,13 +2,15 @@
 // a mesma receita do menu de níveis do Maze Run).
 //
 // Ao contrário do menu do Maze Run, aqui não há nada para "escolher": cada
-// página do carrossel já é um cartão com o quadro de pontuações desse jogo
-// completo lá dentro (ver Components/Pages/Pontuacoes.razor), por isso
-// deslizar entre jogos é só um efeito visual, sem pedir nada ao servidor. O
-// único link que navega a sério é o "↻ Atualizar" — preso ao canto do
-// cartão, não a cada página, para ficar sempre no mesmo sítio enquanto se
-// desliza — e é a navegação melhorada do Blazor que troca o conteúdo sem
-// recarregar a página.
+// página do carrossel já é só o quadro de pontuações desse jogo (ver
+// Components/Pages/Pontuacoes.razor), por isso deslizar entre jogos é só um
+// efeito visual, sem pedir nada ao servidor. O ícone, o título e o
+// "↻ Atualizar" vivem fora do que desliza — um cabeçalho só, preso ao topo
+// do cartão — e é este ficheiro que os mantém a corresponder ao jogo que
+// está à vista, lendo os `data-*` do cartão da página atual. Só o
+// "Atualizar" é que navega a sério, para /pontuacoes?jogo=<id> — e é a
+// navegação melhorada do Blazor que troca o conteúdo sem recarregar a
+// página.
 //
 // Essa troca de conteúdo é também a razão de isto se repetir a cada
 // navegação: o carrossel guarda os cartões numa cópia sua (ver `setCards`
@@ -17,10 +19,19 @@
 
 import { createCarousel } from './lib/arcade/index.js';
 
-/** O "Atualizar" tem sempre de apontar para o jogo que está à vista. */
-function updateRefreshLink(id) {
-    const btn = document.getElementById('gamesRefreshBtn');
-    if (btn && id) btn.href = `/pontuacoes?jogo=${encodeURIComponent(id)}`;
+/** O cabeçalho (ícone, título, "Atualizar") tem sempre de refletir o jogo à vista. */
+function updateHeader(card) {
+    if (!card) return;
+    const { value: id, emoji, name } = card.dataset;
+
+    const refreshBtn = document.getElementById('gamesRefreshBtn');
+    if (refreshBtn && id) refreshBtn.href = `/pontuacoes?jogo=${encodeURIComponent(id)}`;
+
+    const emojiEl = document.getElementById('gamesEmoji');
+    if (emojiEl && emoji) emojiEl.textContent = emoji;
+
+    const nameEl = document.getElementById('gamesName');
+    if (nameEl && name) nameEl.textContent = name;
 }
 
 function syncCarousel() {
@@ -51,14 +62,13 @@ function syncCarousel() {
             // cima): isto só se define uma vez, mas continua a ser chamado
             // depois de a página ter sido reconstruída por `syncCarousel`.
             onPageChange(page) {
-                const current = document.querySelectorAll('#gamesTrack .scoreCard')[page];
-                updateRefreshLink(current?.dataset.value);
+                updateHeader(document.querySelectorAll('#gamesTrack .scoreCard')[page]);
             }
         });
         viewport.__arcadeCarousel = carousel;
     }
     carousel.setCards(cards.map((card) => card.outerHTML), { show: showIndex });
-    updateRefreshLink(cards[showIndex]?.dataset.value);
+    updateHeader(cards[showIndex]);
 }
 
 syncCarousel();

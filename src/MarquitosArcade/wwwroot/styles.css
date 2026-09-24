@@ -1404,6 +1404,7 @@ main {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   grid-template-areas:
+    "head head head"
     "prev pages next"
     "dots dots dots";
   align-items: center;
@@ -1418,19 +1419,6 @@ main {
     0 0 0 1px var(--ring),
     0 0 40px -12px var(--accent-glow);
   border-color: color-mix(in srgb, var(--accent) 55%, transparent);
-}
-
-/* Preso ao canto do cartão (não é mais um filho de cada página do
-   carrossel — ver Pontuacoes.razor), para não se mexer com o resto do
-   conteúdo a deslizar, e ficar sempre no mesmo sítio em qualquer layout: o
-   `position: relative` que o segura é o do próprio .gamesCarousel, ali em
-   cima, não muda com o breakpoint. O JS (ver wwwroot/pontuacoes.js) só lhe
-   troca o href, para "Atualizar" ir sempre buscar o jogo que está à vista. */
-#gamesRefreshBtn {
-  position: absolute;
-  top: 1.35rem;
-  right: 1.35rem;
-  z-index: 1;
 }
 
 .carouselViewport {
@@ -1541,6 +1529,7 @@ main {
   .gamesCarousel {
     grid-template-columns: minmax(0, 1fr) auto auto;
     grid-template-areas:
+      "head head head"
       "pages pages pages"
       "dots prev next";
     /* Aqui as setas já não estão ao lado da tabela — voltam ao gap
@@ -1558,7 +1547,9 @@ main {
 @media (orientation: landscape) and (max-height: 600px) {
   .gamesCarousel {
     grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas: "prev pages next";
+    grid-template-areas:
+      "head head head"
+      "prev pages next";
     gap: 6px;
   }
 
@@ -1575,26 +1566,17 @@ main {
 
 /* ---------- Conteúdo de um jogo, dentro do carrossel ---------- */
 
-/* Só o carrossel (.gamesCarousel) é um cartão — isto é uma div lisa lá
-   dentro, sem relevo nem borda próprios, com o quadro de pontuações de um
-   jogo.
-   Altura fixa, para o cartão do carrossel não saltar de tamanho consoante o
-   jogo tem uma pontuação ou dez: cabeçalho + 10 linhas de tabela, com uma
-   folga pequena (ver .table-wrap, com overflow-y para essa folga nunca ser
-   um problema se as contas abaixo alguma vez desafinarem de um browser para
-   o outro). Como é o jogo com mais pontuações que decide, o número não pode
-   vir de medir o jogo mais alto que calhar estar no carrossel agora — muda
-   com o tempo, à medida que se joga; só o limite de 10 do servidor
-   (TopCount, em ScoresEndpoints.cs) não muda. */
-.scoreCard {
-  flex: none;
-  height: 35rem;
-  display: flex;
-  flex-direction: column;
-}
-
+/* O ícone e o título já não vivem dentro de cada página do carrossel — são
+   um cabeçalho só, preso ao cartão (grid-area: head, definida no
+   .gamesCarousel ali em cima), com o "Atualizar" alinhado à direita. O JS
+   (ver wwwroot/pontuacoes.js) troca-lhe o texto e o href do link sempre que
+   se muda de página, para corresponder ao jogo que está à vista. */
 .game-panel-head {
-  margin-bottom: 1rem;
+  grid-area: head;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
 .game-panel-head h2 {
@@ -1616,13 +1598,25 @@ main {
   border: 1px solid var(--glass-border);
 }
 
-.score-card-body {
+/* Só o carrossel (.gamesCarousel) é um cartão — isto é uma div lisa lá
+   dentro, sem relevo nem borda próprios, só com o quadro de pontuações de
+   um jogo (o cabeçalho, ali em cima, já saiu daqui).
+   Altura fixa, para o cartão do carrossel não saltar de tamanho consoante o
+   jogo tem uma pontuação ou dez: dez linhas de tabela, com uma folga pequena
+   (ver .table-wrap, com overflow-y para essa folga nunca ser um problema se
+   as contas abaixo alguma vez desafinarem de um browser para o outro). Como
+   é o jogo com mais pontuações que decide, o número não pode vir de medir o
+   jogo mais alto que calhar estar no carrossel agora — muda com o tempo, à
+   medida que se joga; só o limite de 10 do servidor (TopCount, em
+   ScoresEndpoints.cs) não muda. */
+.scoreCard {
+  flex: none;
+  height: 30rem;
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto;
 }
 
-.score-card-body .table-wrap {
+.scoreCard .table-wrap {
   flex: 1 1 auto;
   /* Rede de segurança da altura fixa do cartão (ver .scoreCard): nunca
      devia fazer falta, mas antes um scroll aqui dentro do que uma tabela a

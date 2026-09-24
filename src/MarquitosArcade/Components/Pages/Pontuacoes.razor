@@ -15,7 +15,13 @@
 
 <main class="scores-main">
     <div class="gamesCarousel" id="gamesCarousel" data-selected="@SelectedId">
-        <a class="refresh-btn" id="gamesRefreshBtn" href="/pontuacoes?jogo=@SelectedId">↻ Atualizar</a>
+        <div class="game-panel-head">
+            <h2 id="gamesTitle">
+                <span class="panel-emoji" id="gamesEmoji" aria-hidden="true">@SelectedGame.Emoji</span>
+                <span id="gamesName">@SelectedGame.Name</span>
+            </h2>
+            <a class="refresh-btn" id="gamesRefreshBtn" href="/pontuacoes?jogo=@SelectedId">↻ Atualizar</a>
+        </div>
         <button type="button" class="carouselArrow carouselArrow--prev" id="gamesPrevBtn" aria-label="Jogo anterior">
             <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
                 <path d="M9.78 12.78a.75.75 0 0 1-1.06 0L4.47 8.53a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L6.06 8l3.72 3.72a.75.75 0 0 1 0 1.06Z"></path>
@@ -26,50 +32,45 @@
                 <div class="gamePage">
                     @foreach (var game in Games)
                     {
-                        <div class="scoreCard" id="@game.Id" data-value="@game.Id">
-                            <div class="game-panel-head">
-                                <h2><span class="panel-emoji" aria-hidden="true">@game.Emoji</span> @game.Name</h2>
-                            </div>
-                            <div class="score-card-body">
-                                <div class="table-wrap">
-                                    <table>
-                                        <thead>
-                                            <tr>
-                                                <th class="rank-col">#</th>
-                                                <th class="player-col">Jogador</th>
-                                                <th class="score-col">Pontuação</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @{
-                                                var scores = Scores[game.Id];
-                                            }
-                                            @if (scores.Count == 0)
+                        <div class="scoreCard" id="@game.Id" data-value="@game.Id" data-emoji="@game.Emoji" data-name="@game.Name">
+                            <div class="table-wrap">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th class="rank-col">#</th>
+                                            <th class="player-col">Jogador</th>
+                                            <th class="score-col">Pontuação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @{
+                                            var scores = Scores[game.Id];
+                                        }
+                                        @if (scores.Count == 0)
+                                        {
+                                            <tr><td colspan="3" class="empty-state">Ainda não há pontuações registadas. Sê o primeiro! 🎮</td></tr>
+                                        }
+                                        else
+                                        {
+                                            @for (var i = 0; i < scores.Count; i++)
                                             {
-                                                <tr><td colspan="3" class="empty-state">Ainda não há pontuações registadas. Sê o primeiro! 🎮</td></tr>
+                                                var entry = scores[i];
+                                                var medal = i switch { 0 => "🥇", 1 => "🥈", 2 => "🥉", _ => (i + 1).ToString() };
+                                                <tr class="@(i < 3 ? $"rank-{i + 1}" : null)">
+                                                    <td class="rank-col">@medal</td>
+                                                    <td class="player-col">
+                                                        @entry.Name
+                                                        @if (!entry.Registered)
+                                                        {
+                                                            <span class="player-tag" title="Pontuação feita sem sessão iniciada">(não registado)</span>
+                                                        }
+                                                    </td>
+                                                    <td class="score-col">@entry.Score</td>
+                                                </tr>
                                             }
-                                            else
-                                            {
-                                                @for (var i = 0; i < scores.Count; i++)
-                                                {
-                                                    var entry = scores[i];
-                                                    var medal = i switch { 0 => "🥇", 1 => "🥈", 2 => "🥉", _ => (i + 1).ToString() };
-                                                    <tr class="@(i < 3 ? $"rank-{i + 1}" : null)">
-                                                        <td class="rank-col">@medal</td>
-                                                        <td class="player-col">
-                                                            @entry.Name
-                                                            @if (!entry.Registered)
-                                                            {
-                                                                <span class="player-tag" title="Pontuação feita sem sessão iniciada">(não registado)</span>
-                                                            }
-                                                        </td>
-                                                        <td class="score-col">@entry.Score</td>
-                                                    </tr>
-                                                }
-                                            }
-                                        </tbody>
-                                    </table>
-                                </div>
+                                        }
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     }
@@ -103,6 +104,11 @@
     // Um jogo desconhecido no URL (ou nenhum) cai sempre no primeiro da lista
     // — nunca um carrossel sem cartão nenhum para abrir.
     private string SelectedId => Games.Any(g => g.Id == RequestedId) ? RequestedId! : Games[0].Id;
+
+    // O cabeçalho (ícone + título) só existe uma vez, fora do carrossel (ver
+    // wwwroot/pontuacoes.js); esta é só a versão inicial, para a primeira
+    // carga e para quem não tem JavaScript.
+    private (string Id, string Name, string Emoji) SelectedGame => Games.First(g => g.Id == SelectedId);
 
     private Dictionary<string, List<ScoreDto>> Scores { get; set; } = [];
 
