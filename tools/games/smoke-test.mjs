@@ -699,16 +699,24 @@ const GAMES = [
                 const { game, fx } = await import(G + 'state.js');
                 const { buildRoad, roadPath, canRoad } = await import(G + 'buildings.js');
                 const { stepWalkers } = await import(G + 'walkers.js');
-                const door = (b) => {
+                // As portas: casas à volta do bloco onde há ou pode haver estrada.
+                const doors = (b) => {
+                    const list = [];
                     for (let y = b.y - 1; y <= b.y + b.size; y++) for (let x = b.x - 1; x <= b.x + b.size; x++) {
-                        if (canRoad(x, y) || game.world.road[y * 88 + x] === 1) return { x, y };
+                        if (canRoad(x, y) || game.world.road[y * 88 + x] === 1) list.push({ x, y });
                     }
-                    return null;
+                    return list;
                 };
                 const [a, b] = game.buildings;
-                const da = door(a);
-                const db = door(b);
-                const path = da && db && roadPath(da.x, da.y, db.x, db.y);
+                // Um par de portas afastadas: dois edifícios encostados davam um
+                // caminho de uma casa, curto de mais para alguém andar nele.
+                let path = null;
+                for (const da of doors(a)) {
+                    for (const db of doors(b)) {
+                        const p = roadPath(da.x, da.y, db.x, db.y);
+                        if (p && p.length >= 4 && (!path || p.length < path.length)) path = p;
+                    }
+                }
                 if (!path) return -1;
                 buildRoad(path);
                 for (let i = 0; i < 40; i++) stepWalkers(0.25);
