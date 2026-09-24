@@ -442,6 +442,7 @@ body::before {
 .site-footer,
 .hero-inner,
 .game-card,
+.scoreCard,
 .account-shell,
 .page-shell,
 .topnav-dropdown-menu,
@@ -460,6 +461,7 @@ body::before {
   .site-footer,
   .hero-inner,
   .game-card,
+  .scoreCard,
   .account-shell,
   .page-shell,
   .topnav-dropdown-menu,
@@ -1210,7 +1212,6 @@ main {
   min-width: 0;
 }
 
-.game-marquee h2,
 .game-marquee h3 {
   font-size: 1.18rem;
   line-height: 1.15;
@@ -1392,9 +1393,8 @@ main {
 
 /* Mesma receita do carrossel de níveis do Maze Run (ver
    wwwroot/lib/arcade/carousel.js), mas com uma só coluna e uma só fila: cada
-   página do carrossel é um cartão inteiro — a capa do jogo com o título em
-   overlay e o quadro de pontuações por baixo, tudo junto (ver .scoreCard
-   mais abaixo). */
+   página do carrossel é o próprio quadro de pontuações de um jogo (ver
+   .scoreCard mais abaixo), tão largo como o resto da página. */
 .gamesCarousel {
   --page-cols: 1;
   --page-rows: 1;
@@ -1407,8 +1407,6 @@ main {
   align-items: center;
   gap: 10px 8px;
   width: 100%;
-  max-width: 460px;
-  margin: 0 auto;
 }
 
 .carouselViewport {
@@ -1550,32 +1548,56 @@ main {
 
 /* ---------- Cartão de pontuações ---------- */
 
-/* A capa e o título em overlay são os do cartão de jogo da home (.game-card,
-   .game-cover, .game-marquee, .theme-* — ver ali as regras e as cores);
-   aqui só muda o que vai na ficha de baixo: em vez de descrição e botões,
-   o quadro de pontuações do jogo. */
 .scoreCard {
+  position: relative;
   flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-lg);
+  padding: 1.35rem;
+  box-shadow:
+    var(--glass-shadow),
+    0 0 0 1px var(--ring),
+    0 0 40px -12px var(--accent-glow);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  overflow: hidden;
 }
 
-/* O cartão de jogo da home convida a um clique (é um link); este só mostra
-   um quadro, por isso não levanta nem brilha ao passar o rato. */
-.scoreCard:hover {
-  transform: none;
-  box-shadow: var(--glass-shadow);
-  border-color: var(--glass-border);
+.game-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.game-panel-head h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 1.15rem;
+}
+
+.panel-emoji {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 12px;
+  font-size: 1.05rem;
+  background: var(--glass-bg-soft);
+  border: 1px solid var(--glass-border);
 }
 
 .score-card-body {
-  gap: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
 }
 
 .score-card-body .table-wrap {
   flex: 1 1 auto;
-}
-
-.score-card-body .refresh-btn {
-  align-self: flex-end;
 }
 
 .rank-col {

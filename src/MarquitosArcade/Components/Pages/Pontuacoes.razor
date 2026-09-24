@@ -21,16 +21,12 @@
                 <div class="gamePage">
                     @foreach (var game in Games)
                     {
-                        <article class="game-card scoreCard @game.Theme" id="@game.Id" data-value="@game.Id">
-                            <div class="game-cover">
-                                <img src="@game.Cover" alt="" width="960" height="540" loading="lazy" decoding="async" />
-                                <span class="cover-crt" aria-hidden="true"></span>
-                                <div class="game-marquee">
-                                    <span class="marquee-emoji" aria-hidden="true">@game.Emoji</span>
-                                    <div class="marquee-text"><h2>@game.Name</h2></div>
-                                </div>
+                        <article class="scoreCard" id="@game.Id" data-value="@game.Id">
+                            <div class="game-panel-head">
+                                <h2><span class="panel-emoji" aria-hidden="true">@game.Emoji</span> @game.Name</h2>
+                                <a class="refresh-btn" href="/pontuacoes?jogo=@game.Id">↻ Atualizar</a>
                             </div>
-                            <div class="game-card-body score-card-body">
+                            <div class="score-card-body">
                                 <div class="table-wrap">
                                     <table>
                                         <thead>
@@ -70,7 +66,6 @@
                                         </tbody>
                                     </table>
                                 </div>
-                                <a class="refresh-btn" href="/pontuacoes?jogo=@game.Id">↻ Atualizar</a>
                             </div>
                         </article>
                     }
@@ -83,15 +78,15 @@
 </main>
 
 @code {
-    private static readonly (string Id, string Name, string Emoji, string Cover, string Theme)[] Games =
+    private static readonly (string Id, string Name, string Emoji)[] Games =
     [
-        ("tasca-do-ze", "Tasca do Zé", "🍽️", "/covers/tasca-do-ze.webp", "theme-tasca"),
-        ("pong", "Pong Retro", "🏓", "/covers/pong.webp", "theme-pong"),
-        ("pixel-racing", "Pixel Racing", "🏎️", "/covers/pixel-racing.webp", "theme-racing"),
-        ("maze-run", "Maze Run", "🧩", "/covers/maze-run.webp", "theme-maze"),
+        ("tasca-do-ze", "Tasca do Zé", "🍽️"),
+        ("pong", "Pong Retro", "🏓"),
+        ("pixel-racing", "Pixel Racing", "🏎️"),
+        ("maze-run", "Maze Run", "🧩"),
         // O Terras do Reino ainda está em testes: as pontuações vão sendo
         // guardadas, mas o cartão só aparece quando o jogo for lançado.
-        // ("terras-do-reino", "Terras do Reino", "🏰", "/covers/terras-do-reino.webp", "theme-reino"),
+        // ("terras-do-reino", "Terras do Reino", "🏰"),
     ];
 
     [SupplyParameterFromQuery(Name = "jogo")]

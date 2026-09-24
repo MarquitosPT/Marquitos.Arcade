@@ -22,7 +22,7 @@ function syncCarousel() {
 
     const viewport = document.getElementById('gamesViewport');
     const track = document.getElementById('gamesTrack');
-    const cards = Array.from(track.querySelectorAll('.game-card'));
+    const cards = Array.from(track.querySelectorAll('.scoreCard'));
     const showIndex = Math.max(0, cards.findIndex((card) => card.dataset.value === root.dataset.selected));
 
     // O carrossel em si só se cria uma vez: o `viewport` sobrevive a uma
