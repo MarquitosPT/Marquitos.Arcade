@@ -251,6 +251,29 @@ body.in-game .toolbar { display: flex; }
     color: var(--gold);
 }
 
+.placeActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Rodar a vista enquanto se constrói: a barra de baixo, que tem o Rodar, está escondida. */
+.placeRotate {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    font-size: 17px;
+    border: 1px solid var(--glass-border);
+    border-radius: 50%;
+    background: var(--glass-bg-soft);
+    transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.placeRotate:hover { background: var(--glass-bg-hover); }
+.placeRotate:active { transform: scale(0.94); }
+
 /* Sair do modo tem de se ler como sair: um botão com nome, não só uma cruz. */
 .placeExit {
     padding: 7px 14px;
@@ -380,10 +403,18 @@ body.in-game.is-placing #wrap::after {
 @media (max-width: 480px) {
     .statusRow { max-width: calc(100% - 120px); }
     .pill, .resChip { padding: 5px 8px; font-size: 12px; }
-    .toolBtn { min-width: 60px; padding: 6px 6px 5px; }
+    /* Cinco botões têm de caber num ecrã de 320px. */
+    .toolbar { gap: 2px; padding: 5px; }
+    .toolBtn { min-width: 56px; padding: 6px 4px 5px; }
+    .toolLabel { font-size: 11px; letter-spacing: 0; }
     .toolIcon { font-size: 20px; }
     body.in-game .topLabel { display: none; }
     body.in-game .topIcon + .topLabel { margin-left: 0; }
+}
+
+@media (max-width: 340px) {
+    .toolBtn { min-width: 0; padding: 6px 3px 5px; }
+    .toolLabel { font-size: 10px; }
 }
 
 /* Telemóvel deitado: a altura é o que falta, por isso o objetivo encolhe. */

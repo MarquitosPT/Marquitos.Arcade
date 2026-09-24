@@ -1,11 +1,13 @@
 // O desenho de cada frame: céu, tabuleiro, peças, efeitos e balões.
 //
 // O tabuleiro é desenhado de trás para a frente, diagonal a diagonal (x + y
-// crescente) — o "algoritmo do pintor" da perspetiva isométrica. Em cada casa
-// pinta-se primeiro o chão (com os lados, se estiver mais alta do que a casa
-// da frente) e logo a seguir o que está em cima dela. Assim uma colina à
-// frente tapa o que está atrás dela, e uma árvore nunca fica por baixo da relva
-// da casa seguinte. Um edifício ocupa um bloco de casas e desenha-se na casa
+// crescente) — o "algoritmo do pintor" da perspetiva isométrica. A frente e o
+// trás são os da vista, que pode estar rodada (ver iso.js): as diagonais
+// percorrem-se na grelha da vista e cada casa dela diz a casa do mapa que lá
+// está. Em cada casa pinta-se primeiro o chão (com os lados, se estiver mais
+// alta do que a casa da frente) e logo a seguir o que está em cima dela. Assim
+// uma colina à frente tapa o que está atrás dela, e uma árvore nunca fica por
+// baixo da relva da casa seguinte. Um edifício ocupa um bloco de casas e desenha-se na casa
 // da frente do bloco, a última dele a ser pintada; as estradas pintam-se logo
 // a seguir ao chão, e a gente que anda nelas depois do que está na casa.
 //
@@ -18,7 +20,9 @@ import {
     BUILDING, ELEV_PX, FONT_BODY, FONT_DISPLAY, MAP_SIZE, RESOURCE, SLAB_PX, TILE_H, TILE_W
 } from './config.js';
 import { canRoad, checkPlacement, flattenBlock, inTerritory } from './buildings.js';
-import { camera, gridToWorld, worldToScreen } from './iso.js';
+import {
+    blockFront, camera, cellToView, gridToWorld, viewToCell, viewToWorld, worldToScreen
+} from './iso.js';
 import { hash2 } from './rng.js';
 import { setSpriteScale, stamp } from './sprite-cache.js';
 import { LIVE, PLAYER_ROOF } from './sprites.js';
@@ -99,18 +103,17 @@ function tileElev(x, y) {
     return game.world.elev[idx(x, y)];
 }
 
-/** Relevo da casa da frente; fora do mapa é o fundo da placa de terra. */
-function frontElev(x, y) {
-    if (x >= MAP_SIZE || y >= MAP_SIZE) return -SLAB_PX / ELEV_PX - 0.6;
-    return tileElev(x, y);
+/** Relevo da casa (vx, vy) da vista; fora do mapa é o fundo da placa de terra. */
+function viewElev(vx, vy) {
+    if (vx >= MAP_SIZE || vy >= MAP_SIZE) return -SLAB_PX / ELEV_PX - 0.6;
+    const c = viewToCell(vx, vy);
+    return tileElev(c.x, c.y);
 }
 
-function drawSide(x0, y0, x1, y1, zTop, zBottom, color, lip) {
-    // Face vertical entre os pontos de grelha (x0,y0) e (x1,y1).
-    const ax = (x0 - y0) * HW;
-    const ay = (x0 + y0) * HH;
-    const bx = (x1 - y1) * HW;
-    const by = (x1 + y1) * HH;
+function drawSide(a, b, zTop, zBottom, color, lip) {
+    // Face vertical entre os pontos de mundo a e b (ao nível do chão).
+    const { x: ax, y: ay } = a;
+    const { x: bx, y: by } = b;
     ctx.fillStyle = color;
     ctx.beginPath();
     ctx.moveTo(ax, ay - zTop);
@@ -141,50 +144,56 @@ function drawWaterShimmer(x, y, t) {
     const i = idx(x, y);
     const phase = (t * 0.6 + game.world.tint[i] * 5 + hash2(x, y, 4) * 3) % 2;
     if (phase >= 1) return;
-    const tx = (x - y) * HW;
-    const ty = (x + y) * HH - game.world.elev[i] * ELEV_PX;
+    const c = gridToWorld(x + 0.5, y + 0.5, game.world.elev[i]);
     const a = Math.sin(phase * Math.PI) * 0.55;
     ctx.strokeStyle = `rgba(255, 255, 255, ${a})`;
     ctx.lineWidth = 1.2;
     const ox = (hash2(x, y, 3) - 0.5) * 10;
     ctx.beginPath();
-    ctx.moveTo(tx + ox - 4, ty + HH + 1);
-    ctx.lineTo(tx + ox + 4, ty + HH + 1);
+    ctx.moveTo(c.x + ox - 4, c.y + 1);
+    ctx.lineTo(c.x + ox + 4, c.y + 1);
     ctx.stroke();
 }
 
-function drawGround(x, y, t, detail) {
-    drawTile(x, y, t, detail);
+/** O chão da casa (x, y) do mapa, que na vista é a casa (vx, vy). */
+function drawGround(x, y, vx, vy, detail) {
+    drawTile(x, y, vx, vy, detail);
     if (game.world.road[idx(x, y)]) drawRoad(x, y, detail);
 }
 
-function drawTile(x, y, t, detail) {
+function drawTile(x, y, vx, vy, detail) {
     const i = idx(x, y);
     const terrain = game.world.terrain[i];
     const e = game.world.elev[i];
     const z = e * ELEV_PX;
     const water = terrain === T_WATER;
 
-    // Lados: só onde a casa da frente é mais baixa.
-    const left = frontElev(x, y + 1);
+    // Lados: só onde a casa da frente (na vista) é mais baixa. A luz vem
+    // sempre da esquerda do ecrã, rode a vista para onde rodar.
+    const left = viewElev(vx, vy + 1);
     if (left < e) {
         const bottom = left * ELEV_PX;
-        drawSide(x, y + 1, x + 1, y + 1, z, bottom, water ? '#2f6f9e' : '#8a5a35', water ? null : '#5d9a3a');
-        if (y + 1 >= MAP_SIZE) {
+        const a = viewToWorld(vx, vy + 1);
+        const b = viewToWorld(vx + 1, vy + 1);
+        drawSide(a, b, z, bottom, water ? '#2f6f9e' : '#8a5a35', water ? null : '#5d9a3a');
+        if (vy + 1 >= MAP_SIZE) {
             // A placa de terra: um veio mais escuro a meio, como as camadas do solo.
-            drawSide(x, y + 1, x + 1, y + 1, z - 10, z - 13, 'rgba(60, 35, 18, 0.35)');
+            drawSide(a, b, z - 10, z - 13, 'rgba(60, 35, 18, 0.35)');
         }
     }
-    const right = frontElev(x + 1, y);
+    const right = viewElev(vx + 1, vy);
     if (right < e) {
         const bottom = right * ELEV_PX;
-        drawSide(x + 1, y + 1, x + 1, y, z, bottom, water ? '#27608a' : '#6e4528', water ? null : '#4f8a31');
-        if (x + 1 >= MAP_SIZE) drawSide(x + 1, y + 1, x + 1, y, z - 10, z - 13, 'rgba(40, 22, 10, 0.35)');
+        const a = viewToWorld(vx + 1, vy + 1);
+        const b = viewToWorld(vx + 1, vy);
+        drawSide(a, b, z, bottom, water ? '#27608a' : '#6e4528', water ? null : '#4f8a31');
+        if (vx + 1 >= MAP_SIZE) drawSide(a, b, z - 10, z - 13, 'rgba(40, 22, 10, 0.35)');
     }
 
     // Tampo.
-    const tx = (x - y) * HW;
-    const ty = (x + y) * HH - z;
+    const top = viewToWorld(vx, vy);
+    const tx = top.x;
+    const ty = top.y - z;
     ctx.beginPath();
     ctx.moveTo(tx, ty);
     ctx.lineTo(tx + HW, ty + HH);
@@ -207,14 +216,16 @@ function drawTile(x, y, t, detail) {
             if (hash2(x, y, 30 + k) < 0.45) continue;
             const u = hash2(x, y, 40 + k) - 0.5;
             const v = hash2(x, y, 50 + k) - 0.5;
+            const f = gridToWorld(x + 0.5 + u * 0.9, y + 0.5 + v * 0.9);
             ctx.fillStyle = colors[k];
-            ctx.fillRect(tx + (u - v) * HW * 0.9, ty + HH + (u + v) * HH * 0.9, 2, 2);
+            ctx.fillRect(f.x, f.y - z, 2, 2);
         }
     } else if (terrain === T_GRASS && hash2(x, y, 60) < 0.16) {
         const u = hash2(x, y, 61) - 0.5;
         const v = hash2(x, y, 62) - 0.5;
-        const px = tx + (u - v) * HW * 0.8;
-        const py = ty + HH + (u + v) * HH * 0.8;
+        const g = gridToWorld(x + 0.5 + u * 0.8, y + 0.5 + v * 0.8);
+        const px = g.x;
+        const py = g.y - z;
         ctx.strokeStyle = 'rgba(40, 90, 30, 0.45)';
         ctx.beginPath();
         ctx.moveTo(px - 2, py);
@@ -261,7 +272,10 @@ function placementMap() {
 
 /** Caminho do losango de um bloco de casas (canto de cima em x, y), ao nível `z` px, encolhido `inset` casas. */
 function blockPath(x, y, size, z, inset = 0) {
-    const p = (gx, gy) => [(gx - gy) * HW, (gx + gy) * HH - z];
+    const p = (gx, gy) => {
+        const w = gridToWorld(gx, gy);
+        return [w.x, w.y - z];
+    };
     const a = p(x + inset, y + inset);
     const b = p(x + size - inset, y + inset);
     const c = p(x + size - inset, y + size - inset);
@@ -305,7 +319,10 @@ function drawRoad(x, y, detail) {
     const x1 = x + 1 - (hasRoad(x + 1, y) ? 0 : ins);
     const y0 = y + (hasRoad(x, y - 1) ? 0 : ins);
     const y1 = y + 1 - (hasRoad(x, y + 1) ? 0 : ins);
-    const p = (gx, gy) => [(gx - gy) * HW, (gx + gy) * HH];
+    const p = (gx, gy) => {
+        const w = gridToWorld(gx, gy);
+        return [w.x, w.y];
+    };
     const pts = [p(x0, y0), p(x1, y0), p(x1, y1), p(x0, y1)];
     ctx.beginPath();
     ctx.moveTo(pts[0][0], pts[0][1]);
@@ -348,8 +365,10 @@ function drawRoadPreview() {
 // ---------- Gente ----------
 
 function drawWalker(w, t) {
-    const { gx, gy, facing } = walkerPlace(w);
-    const [x, y] = [(gx - gy) * HW, (gx + gy) * HH];
+    const { gx, gy, dx, dy } = walkerPlace(w);
+    const { x, y } = gridToWorld(gx, gy);
+    // Olha para o lado do ecrã para onde anda.
+    const facing = gridToWorld(gx + dx, gy + dy).x >= x ? 1 : -1;
     const alpha = walkerAlpha(w);
     if (alpha <= 0) return;
     const moving = w.pos < w.path.length - 1;
@@ -410,10 +429,15 @@ function drawTerritoryBorder(strong) {
         for (let x = CASTLE_CENTER.x - r; x <= CASTLE_CENTER.x + r; x++) {
             if (!inside(x, y)) continue;
             const z = Math.max(0, tileElev(x, y)) * ELEV_PX;
-            const top = [(x - y) * HW, (x + y) * HH - z];
-            const rightP = [top[0] + HW, top[1] + HH];
-            const bottom = [top[0], top[1] + TILE_H];
-            const leftP = [top[0] - HW, top[1] + HH];
+            // Os cantos da casa pelos nomes que têm na vista sem rodar.
+            const corner = (gx, gy) => {
+                const w = gridToWorld(gx, gy);
+                return [w.x, w.y - z];
+            };
+            const top = corner(x, y);
+            const rightP = corner(x + 1, y);
+            const bottom = corner(x + 1, y + 1);
+            const leftP = corner(x, y + 1);
             const edge = (a, b) => { ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); };
             if (!inside(x, y - 1)) edge(top, rightP);
             if (!inside(x + 1, y)) edge(rightP, bottom);
@@ -506,7 +530,7 @@ function drawCaravan(c, t) {
     const gx = c.ax + (c.bx - c.ax) * c.t;
     const gy = c.ay + (c.by - c.ay) * c.t;
     const w = gridToWorld(gx, gy);
-    const dir = Math.sign((c.bx - c.by) - (c.ax - c.ay)) || 1;
+    const dir = Math.sign(gridToWorld(c.bx, c.by).x - gridToWorld(c.ax, c.ay).x) || 1;
     const bob = Math.sin(t * 12 + c.ax) * 0.8;
     ctx.save();
     ctx.translate(w.x, w.y);
@@ -666,8 +690,11 @@ const CHUNK_BUDGET = 4;
 /** Um bloco que não se vê há tantos frames larga a imagem (a memória conta, num telemóvel). */
 const CHUNK_FORGET_FRAMES = 180;
 const chunkCache = new Map();
+/** Os blocos são da grelha da vista: ao rodar, deitam-se todos fora. */
+let chunkRot = 0;
 let frameNo = 0;
 
+/** O bloco (cx, cy) da grelha da vista: as casas da vista que tem e o retângulo de mundo que ocupa. */
 function chunkBounds(cx, cy) {
     const x0 = cx * CHUNK;
     const y0 = cy * CHUNK;
@@ -686,9 +713,10 @@ function chunkBounds(cx, cy) {
 function chunkSignature(b, detail) {
     const w = game.world;
     let sig = (w.seed | 0) ^ (detail ? 0x5bd1e995 : 0);
-    for (let y = Math.max(0, b.y0 - 1); y < Math.min(MAP_SIZE, b.y1 + 1); y++) {
-        for (let x = Math.max(0, b.x0 - 1); x < Math.min(MAP_SIZE, b.x1 + 1); x++) {
-            const i = idx(x, y);
+    for (let vy = Math.max(0, b.y0 - 1); vy < Math.min(MAP_SIZE, b.y1 + 1); vy++) {
+        for (let vx = Math.max(0, b.x0 - 1); vx < Math.min(MAP_SIZE, b.x1 + 1); vx++) {
+            const c = viewToCell(vx, vy);
+            const i = idx(c.x, c.y);
             sig = (Math.imul(sig, 31) + w.terrain[i] * 7 + (w.elev[i] + 1) * 3 + w.road[i] * 17) | 0;
         }
     }
@@ -712,8 +740,9 @@ function paintChunk(entry, b, scale, detail) {
     const screen = ctx;
     ctx = g;
     for (let s = b.x0 + b.y0; s <= b.x1 + b.y1 - 2; s++) {
-        for (let x = Math.max(b.x0, s - b.y1 + 1); x <= Math.min(b.x1 - 1, s - b.y0); x++) {
-            drawGround(x, s - x, 0, detail);
+        for (let vx = Math.max(b.x0, s - b.y1 + 1); vx <= Math.min(b.x1 - 1, s - b.y0); vx++) {
+            const c = viewToCell(vx, s - vx);
+            drawGround(c.x, c.y, vx, s - vx, detail);
         }
     }
     ctx = screen;
@@ -728,6 +757,10 @@ function drawGroundChunks(view, detail) {
     // assim cada bloco vai para o ecrã pixel a pixel, sem ser reamostrado —
     // compor dezenas de imagens grandes reamostradas custava mais do que o resto.
     const scale = ctx.getTransform().a;
+    if (chunkRot !== camera.rot) {
+        chunkCache.clear();
+        chunkRot = camera.rot;
+    }
     let budget = CHUNK_BUDGET;
     for (let s = 0; s <= (CHUNKS - 1) * 2; s++) {
         for (let cx = Math.max(0, s - CHUNKS + 1); cx <= Math.min(CHUNKS - 1, s); cx++) {
@@ -820,11 +853,17 @@ export function render(dt) {
     // Ao toque é o sítio à espera de confirmação; com rato, o que está por baixo dele.
     const hover = ui.placing && ui.placing !== 'road' ? (ui.pending ?? ui.hover) : null;
     const hoverOk = hover ? checkPlacement(ui.placing, hover.x, hover.y, { ignoreCost: true }).ok : false;
+    const hoverFront = hover ? blockFront(hover.x, hover.y, 2) : null;
 
-    // A gente na rua, arrumada pela casa onde se desenha.
+    // A gente na rua, arrumada pela casa onde se desenha: das duas entre as
+    // quais vai, a que está mais à frente na vista, para os pés não ficarem por
+    // baixo do chão da seguinte.
     const walkersAt = new Map();
     for (const w of fx.walkers) {
-        const { cell } = walkerPlace(w);
+        const { from, to } = walkerPlace(w);
+        const a = cellToView(from.x, from.y);
+        const b = cellToView(to.x, to.y);
+        const cell = a.x + a.y >= b.x + b.y ? from : to;
         const i = idx(cell.x, cell.y);
         if (!walkersAt.has(i)) walkersAt.set(i, []);
         walkersAt.get(i).push(w);
@@ -837,10 +876,11 @@ export function render(dt) {
         if (wy < top - ELEV_PX * 2 || wy - SLAB_PX > bottom) continue;
         const x0 = Math.max(0, s - MAP_SIZE + 1);
         const x1 = Math.min(MAP_SIZE - 1, s);
-        for (let x = x0; x <= x1; x++) {
-            const y = s - x;
-            const wx = (x - y) * HW;
+        for (let vx = x0; vx <= x1; vx++) {
+            const vy = s - vx;
+            const wx = (vx - vy) * HW;
             if (wx < leftX || wx > rightX) continue;
+            const { x, y } = viewToCell(vx, vy);
 
             if (detail && game.world.terrain[idx(x, y)] === T_WATER) drawWaterShimmer(x, y, t);
             if (okMap) drawTileOverlay(x, y, okMap);
@@ -851,7 +891,8 @@ export function render(dt) {
             const b = game.world.building[i];
             if (b) {
                 // Um edifício desenha-se na casa da frente do seu bloco, a última a ser pintada.
-                if (x === b.x + b.size - 1 && y === b.y + b.size - 1) {
+                const front = blockFront(b.x, b.y, b.size);
+                if (vx === front.x && vy === front.y) {
                     const cw = gridToWorld(b.x + b.size / 2, b.y + b.size / 2, e);
                     drawBuilding(b, cw.x, cw.y, t);
                 }
@@ -860,7 +901,7 @@ export function render(dt) {
             }
             const people = walkersAt.get(i);
             if (people) for (const w of people) drawWalker(w, t);
-            if (hover && x === hover.x + 1 && y === hover.y + 1) drawGhost(hover.x, hover.y, hoverOk);
+            if (hover && vx === hoverFront.x && vy === hoverFront.y) drawGhost(hover.x, hover.y, hoverOk);
         }
     }
 

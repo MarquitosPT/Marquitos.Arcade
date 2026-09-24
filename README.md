@@ -572,6 +572,11 @@ sozinha — não há nada em cache para invalidar.
 > das pontuações está escondido (comentado em `Pontuacoes.razor`, e o botão 🏆
 > do jogo com `hidden`); as pontuações continuam a ser guardadas. Para lançar,
 > desfazem-se estes três pontos.
+>
+> Para o testar numa app afixada, onde não há barra de endereço, o cartão
+> "Em breve" tem uma entrada secreta: **toque duplo com três dedos** (no
+> computador, Alt + duplo clique) abre o jogo (`wwwroot/secret-play.js`). Vale
+> para qualquer jogo com `IsPlayable: false` e some sozinha quando é lançado.
 
 O primeiro jogo da arcada sem partidas: um reino que cresce enquanto se joga e
 continua de onde ficou. Inspirado no tabuleiro de peças do Carcassonne — o mapa
@@ -658,6 +663,17 @@ dois dias.
   estradas) é a exceção: são milhares de casas, por isso pinta-se por blocos
   de 11x11 numa imagem à parte, à escala do ecrã, e só se repinta quando muda o
   que o bloco tem ou o zoom; os blocos compõem-se por baixo das peças.
+- **A vista roda** de 90 em 90 graus (🔄 Rodar, na barra de baixo, o 🔄 do
+  painel do modo de construção, que toma o lugar dela, ou as teclas Q e E). A rotação vive só entre a grelha e o ecrã (`camera.rot` em `js/iso.js`): cada casa do mapa
+  passa para uma "grelha da vista", rodada à volta do centro do mapa, e só essa
+  é projetada; o resto do jogo continua a falar em casas do mapa. A ordem do
+  pintor, os lados das colinas, os blocos do chão e o toque (`pickTile`) são
+  os da grelha da vista. As peças também rodam: as primitivas de `js/draw.js`
+  pintam as faces viradas para quem olha, as portas e janelas das faces de
+  costas não se veem, e as peças de várias partes pintam-nas por ordem de
+  profundidade (`layered`). A luz é a do ecrã, vem sempre da esquerda. Ficam
+  sempre de frente a mina (um monte de rocha com a entrada à vista) e as pás
+  do moinho (que se vira para o vento).
 - **Arrastar** anda pelo mapa, **beliscar** ou a **roda** aproxima, **tocar**
   escolhe uma casa ou constrói (`js/input.js`). Um toque só conta se o dedo
   quase não se mexeu — largar o dedo no fim de um arrasto não constrói nada.

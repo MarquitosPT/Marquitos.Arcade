@@ -116,7 +116,10 @@
         <div id="placeBanner" class="placeBanner" hidden>
             <div class="placeHead">
                 <span class="placeMode">🔨 Modo de construção</span>
-                <button class="placeExit" id="placeCancelBtn" type="button">Terminar</button>
+                <div class="placeActions">
+                    <button class="placeRotate" id="placeRotateBtn" type="button" title="Rodar a vista (Q / E)" aria-label="Rodar a vista">🔄</button>
+                    <button class="placeExit" id="placeCancelBtn" type="button">Terminar</button>
+                </div>
             </div>
             <p class="placeText" id="placeText" aria-live="polite"></p>
             <div class="placeConfirm" id="placeConfirm" hidden>
@@ -130,6 +133,7 @@
             <button class="toolBtn" data-sheet="market" type="button"><span class="toolIcon">⚖️</span><span class="toolLabel">Mercado</span></button>
             <button class="toolBtn" data-sheet="castle" type="button"><span class="toolIcon">🏰</span><span class="toolLabel">Castelo</span></button>
             <button class="toolBtn" data-sheet="kingdoms" type="button"><span class="toolIcon">👑</span><span class="toolLabel">Reinos</span></button>
+            <button class="toolBtn" id="rotateBtn" type="button" title="Rodar a vista (Q / E)"><span class="toolIcon">🔄</span><span class="toolLabel">Rodar</span></button>
         </nav>
 
         <!-- Painel de baixo: construir, mercado, castelo, reinos e o que está numa casa. -->
@@ -184,7 +188,7 @@
                 </p>
 
                 <p id="hint">Semeia e colhe, abre minas e oficinas, vende nas feiras das vilas vizinhas
-                    e faz do teu o reino mais próspero. Arrasta para andar pelo mapa, belisca ou usa a roda para aproximar.</p>
+                    e faz do teu o reino mais próspero. Arrasta para andar pelo mapa, belisca ou usa a roda para aproximar, e roda a vista com 🔄 (ou Q e E).</p>
             </div>
         </div>
 

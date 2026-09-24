@@ -24,7 +24,7 @@ import { addResource, harvestField, plantField, refreshDerived, stepEconomy, tog
 import { fmt, fmtDuration } from './format.js';
 import { flashQuest, resetHud, updateHud } from './hud.js';
 import { attachControls, setInputHandlers } from './input.js';
-import { anchorFor, camera, gridToWorld, lookAt, panBy, worldToScreen } from './iso.js';
+import { anchorFor, camera, gridToWorld, lookAt, panBy, rotateView, worldToScreen } from './iso.js';
 import { buy, sell, townFor } from './market.js';
 import { createMenu } from './menu.js';
 import { checkQuest } from './quests.js';
@@ -649,12 +649,16 @@ els.speedBtn.addEventListener('click', () => {
     updateHud();
 });
 
+// Roda-se tanto da barra de baixo como do painel do modo de construção, que toma o lugar dela.
+els.rotateBtn.addEventListener('click', () => rotateView(1));
+els.placeRotateBtn.addEventListener('click', () => rotateView(1));
+
 els.questCard.addEventListener('click', () => {
     if (sheetOpen() === 'quest') closeSheet();
     else openSheet('quest');
 });
 
-for (const btn of els.toolbar.querySelectorAll('.toolBtn')) {
+for (const btn of els.toolbar.querySelectorAll('.toolBtn[data-sheet]')) {
     btn.addEventListener('click', () => {
         resumeAudio();
         stopPlacing();
