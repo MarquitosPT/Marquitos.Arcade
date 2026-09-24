@@ -654,15 +654,10 @@ dois dias.
   moinho, fumo, vacas, bandeiras, brilho do ouro — desenha-se a cada frame.
 - **O tabuleiro desenha-se de trás para a frente**, diagonal a diagonal
   (`js/render.js`): o chão de cada casa e logo a seguir o que está em cima dela.
-  É o que faz uma colina tapar o que está atrás. O chão (relva, encostas,
+  É o que faz uma colina tapar o que está atrás. O chão (relva, lados,
   estradas) é a exceção: são milhares de casas, por isso pinta-se por blocos
   de 11x11 numa imagem à parte, à escala do ecrã, e só se repinta quando muda o
   que o bloco tem ou o zoom; os blocos compõem-se por baixo das peças.
-- **As colinas descem em encosta**, não em degrau: a encosta pinta-se na casa
-  de baixo, logo a seguir ao chão dela, e morre a uma distância irregular que
-  sai de um hash dos pontos da grelha — por isso duas encostas que se tocam no
-  mesmo canto concordam nele, e nas pontas de uma colina um leque na casa em
-  diagonal junta os dois lados.
 - **Arrastar** anda pelo mapa, **beliscar** ou a **roda** aproxima, **tocar**
   escolhe uma casa ou constrói (`js/input.js`). Um toque só conta se o dedo
   quase não se mexeu — largar o dedo no fim de um arrasto não constrói nada.
