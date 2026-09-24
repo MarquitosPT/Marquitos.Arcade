@@ -46,7 +46,9 @@
         <div class="game-grid">
             @foreach (var game in Catalog)
             {
-                <article class="game-card @game.Theme @(game.IsPlayable ? "" : "muted")">
+                @* Um jogo em testes abre-se com um toque duplo de três dedos no cartão (ver wwwroot/secret-play.js). *@
+                <article class="game-card @game.Theme @(game.IsPlayable ? "" : "muted")"
+                         data-secret-play="@(game.IsPlayable ? null : game.PlayUrl)">
                     <div class="game-cover">
                         <img src="@game.Cover" alt="Ecrã de jogo: @game.Title" width="960" height="540"
                              loading="lazy" decoding="async" />

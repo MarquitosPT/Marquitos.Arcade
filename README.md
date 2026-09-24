@@ -572,6 +572,11 @@ sozinha — não há nada em cache para invalidar.
 > das pontuações está escondido (comentado em `Pontuacoes.razor`, e o botão 🏆
 > do jogo com `hidden`); as pontuações continuam a ser guardadas. Para lançar,
 > desfazem-se estes três pontos.
+>
+> Para o testar numa app afixada, onde não há barra de endereço, o cartão
+> "Em breve" tem uma entrada secreta: **toque duplo com três dedos** (no
+> computador, Alt + duplo clique) abre o jogo (`wwwroot/secret-play.js`). Vale
+> para qualquer jogo com `IsPlayable: false` e some sozinha quando é lançado.
 
 O primeiro jogo da arcada sem partidas: um reino que cresce enquanto se joga e
 continua de onde ficou. Inspirado no tabuleiro de peças do Carcassonne — o mapa
