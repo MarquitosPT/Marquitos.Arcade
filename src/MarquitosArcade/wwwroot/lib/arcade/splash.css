@@ -29,7 +29,7 @@
    altura da barra de estado. Chegou a servir para esticar o #app e este
    ecrã até ao fundo, mas medido no aparelho ficou claro que o iOS recorta
    tudo no fim do viewport — a esticadela não se via e ainda empurrava o
-   rodapé para fora. Hoje o valor é só diagnóstico, para o ?debug=viewport;
+   rodapé para fora. Hoje o valor é só diagnóstico (lib/arcade/viewport-debug.js);
    quem trata da faixa é o fundo do <html> (ver mais abaixo).
 
    Os `--probe-*` existem pela mesma razão, e a ausência deles denuncia um
@@ -121,7 +121,7 @@
 
 /* Experiência de diagnóstico, ligada pelo ?debug=blur ou por um toque com
    dois dedos enquanto o painel do ?debug=viewport está no ar (ver
-   lib/arcade/standalone-fit.js).
+   lib/arcade/viewport-debug.js, que hoje nenhuma página carrega).
 
    Serve para responder a uma pergunta só: a névoa por trás da barra de
    estado é nossa ou do sistema? O site já põe `backdrop-filter` na barra
