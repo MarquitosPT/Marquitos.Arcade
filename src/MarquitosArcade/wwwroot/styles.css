@@ -1492,7 +1492,7 @@ main {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: 38px;
+  min-height: 16px;
 }
 
 .carouselDot {
