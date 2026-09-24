@@ -155,7 +155,6 @@ export function createBuilding(kind, x, y, extra = {}, { force = false } = {}) {
         if (force) {
             if (mine) {
                 world.terrain[i] = T_HILL;
-                world.elev[i] = 1;
                 if (world.feature[i] !== 'ore') world.feature[i] = null;
             } else {
                 const t = world.terrain[i];

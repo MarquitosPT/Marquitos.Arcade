@@ -71,6 +71,11 @@ export function generateWorld(seed) {
         seed,
         size,
         terrain: new Uint8Array(n),
+        /**
+         * Relevo de cada casa, em níveis. Por agora o chão é todo plano (tudo a
+         * 0): as colinas e os lagos distinguem-se só pela cor. O desenho, o
+         * toque e a gravação já sabem lidar com relevo, para quando voltar.
+         */
         elev: new Int8Array(n),
         /** null | 'tree' | 'rock' | 'ore' */
         feature: new Array(n).fill(null),
@@ -103,17 +108,14 @@ export function generateWorld(seed) {
             world.tint[i] = Math.min(1, Math.max(0, (fbm(x * 0.11 + 5, y * 0.11 + 11, seed + 99, 2) - 0.2) / 0.6 + (jitter - 0.5) * 0.15));
 
             let terrain = meadow > 0.58 ? T_MEADOW : T_GRASS;
-            let elev = 0;
             let feature = null;
 
             if (h < 0.31) {
                 terrain = T_WATER;
-                elev = -1;
             } else if (h < 0.345) {
                 terrain = T_SAND;
             } else if (h > 0.66) {
                 terrain = T_HILL;
-                elev = 1;
                 if (rocks > 0.6 && jitter < 0.22) feature = jitter < 0.07 ? 'ore' : 'rock';
                 else if (forest > 0.6 && jitter < 0.24) feature = 'tree';
             } else if (forest > 0.57 && jitter < 0.32) {
@@ -125,7 +127,6 @@ export function generateWorld(seed) {
             }
 
             world.terrain[i] = terrain;
-            world.elev[i] = elev;
             world.feature[i] = feature;
         }
     }
@@ -252,7 +253,6 @@ function guaranteeStart(world, rng) {
     if (count(radius1 + 4, (i) => world.terrain[i] === T_WATER) < 12) {
         patch(15, 3.2, (i) => {
             world.terrain[i] = T_WATER;
-            world.elev[i] = -1;
             world.feature[i] = null;
         });
     }
@@ -280,7 +280,6 @@ function guaranteeStart(world, rng) {
     if (!mine) {
         const center = patch(19, 3.8, (i, x, y) => {
             world.terrain[i] = T_HILL;
-            world.elev[i] = 1;
             const roll = hash2(x, y, world.seed + 5);
             world.feature[i] = roll < 0.12 ? 'ore' : roll < 0.26 ? 'rock' : null;
         });
@@ -289,7 +288,6 @@ function guaranteeStart(world, rng) {
             if (!inMap(x, y)) return;
             const i = idx(x, y);
             world.terrain[i] = T_HILL;
-            world.elev[i] = 1;
             world.feature[i] = x === center.x && y === center.y ? 'ore' : null;
         });
     }
