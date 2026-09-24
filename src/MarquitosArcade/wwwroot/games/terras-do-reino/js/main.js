@@ -650,9 +650,8 @@ els.speedBtn.addEventListener('click', () => {
     updateHud();
 });
 
-// Roda-se tanto da barra de baixo como do painel do modo de construção, que toma o lugar dela.
-els.rotateBtn.addEventListener('click', () => rotateView(1));
-els.placeRotateBtn.addEventListener('click', () => rotateView(1));
+// No sentido das setas do ícone 🔄: o cenário roda ao contrário dos ponteiros do relógio.
+els.rotateBtn.addEventListener('click', () => rotateView(-1));
 
 /** Esconde ou volta a mostrar os edifícios e as árvores enquanto se constrói. */
 function toggleHideProps() {
