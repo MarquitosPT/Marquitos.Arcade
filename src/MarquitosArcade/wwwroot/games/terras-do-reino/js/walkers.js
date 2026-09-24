@@ -165,9 +165,9 @@ export function stepWalkers(dt) {
 }
 
 /**
- * Onde está a pessoa: ponto de grelha, casa onde deve ser desenhada (a mais à
- * frente das duas entre as quais vai, para os pés não ficarem por baixo do
- * chão da seguinte) e para que lado olha.
+ * Onde está a pessoa: ponto de grelha, as duas casas entre as quais vai
+ * (quem desenha escolhe a mais à frente na vista, para os pés não ficarem por
+ * baixo do chão da seguinte) e o passo que leva, em casas.
  */
 export function walkerPlace(w) {
     const k = Math.min(Math.floor(w.pos), w.path.length - 2);
@@ -180,8 +180,7 @@ export function walkerPlace(w) {
     const off = 0.2 * w.side;
     const gx = a.x + 0.5 + dx * f - dy * off;
     const gy = a.y + 0.5 + dy * f + dx * off;
-    const cell = a.x + a.y >= b.x + b.y ? a : b;
-    return { gx, gy, cell, facing: dx - dy >= 0 ? 1 : -1 };
+    return { gx, gy, from: a, to: b, dx, dy };
 }
 
 /** Transparência de quem está a sair de casa ou a entrar. */

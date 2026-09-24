@@ -7,6 +7,13 @@
 //   ecrã    — píxeis CSS do canvas, depois da câmara (centro e zoom).
 //
 // O relevo (colinas, lagos) só mexe no y de mundo: sobe `ELEV_PX` por nível.
+//
+// A vista roda de 90 em 90 graus (`camera.rot`, de 0 a 3, no sentido dos
+// ponteiros do relógio). A rotação vive entre a grelha e o mundo: a grelha
+// passa primeiro para a "grelha da vista" — a mesma grelha, rodada à volta do
+// centro do mapa — e só essa é projetada. Assim o resto do jogo continua a
+// falar em casas do mapa, e só quem desenha precisa de saber para onde se olha
+// (a ordem do pintor e as faces à vista são as da grelha da vista).
 
 import { ELEV_PX, MAP_SIZE, TILE_H, TILE_W, ZOOM_MAX, ZOOM_MIN } from './config.js';
 import { clamp } from '/lib/arcade/math.js';
@@ -14,25 +21,82 @@ import { clamp } from '/lib/arcade/math.js';
 const HW = TILE_W / 2;
 const HH = TILE_H / 2;
 
-/** Ponto de grelha -> mundo. `elev` em níveis de relevo. */
-export function gridToWorld(gx, gy, elev = 0) {
-    return { x: (gx - gy) * HW, y: (gx + gy) * HH - elev * ELEV_PX };
-}
-
-/** Mundo -> ponto de grelha, ao nível do chão (sem relevo). */
-export function worldToGrid(wx, wy) {
-    return { x: (wx / HW + wy / HH) / 2, y: (wy / HH - wx / HW) / 2 };
-}
-
 export const camera = {
     /** Ponto do mundo no centro do ecrã. */
     x: 0,
     y: MAP_SIZE * HH,
     zoom: 1,
+    /** Para onde se olha: quartos de volta, no sentido dos ponteiros do relógio. */
+    rot: 0,
     /** Tamanho do ecrã em px CSS, atualizado pelo viewport. */
     width: 1,
     height: 1
 };
+
+/** Ponto de grelha -> ponto da grelha da vista. */
+export function toView(gx, gy) {
+    switch (camera.rot) {
+        case 1: return { x: MAP_SIZE - gy, y: gx };
+        case 2: return { x: MAP_SIZE - gx, y: MAP_SIZE - gy };
+        case 3: return { x: gy, y: MAP_SIZE - gx };
+        default: return { x: gx, y: gy };
+    }
+}
+
+/** Ponto da grelha da vista -> ponto de grelha. */
+export function fromView(vx, vy) {
+    switch (camera.rot) {
+        case 1: return { x: vy, y: MAP_SIZE - vx };
+        case 2: return { x: MAP_SIZE - vx, y: MAP_SIZE - vy };
+        case 3: return { x: MAP_SIZE - vy, y: vx };
+        default: return { x: vx, y: vy };
+    }
+}
+
+/** A casa da vista onde fica a casa (x, y) do mapa, e o contrário. */
+export function cellToView(x, y) {
+    const v = toView(x + 0.5, y + 0.5);
+    return { x: Math.floor(v.x), y: Math.floor(v.y) };
+}
+
+export function viewToCell(vx, vy) {
+    const g = fromView(vx + 0.5, vy + 0.5);
+    return { x: Math.floor(g.x), y: Math.floor(g.y) };
+}
+
+/** A casa da vista mais à frente de um bloco de `size` casas (canto de cima em x, y) — a última a ser pintada. */
+export function blockFront(x, y, size) {
+    const a = cellToView(x, y);
+    const b = cellToView(x + size - 1, y + size - 1);
+    return { x: Math.max(a.x, b.x), y: Math.max(a.y, b.y) };
+}
+
+/** Ponto da grelha da vista -> mundo. */
+export function viewToWorld(vx, vy, elev = 0) {
+    return { x: (vx - vy) * HW, y: (vx + vy) * HH - elev * ELEV_PX };
+}
+
+/** Ponto de grelha -> mundo. `elev` em níveis de relevo. */
+export function gridToWorld(gx, gy, elev = 0) {
+    const v = toView(gx, gy);
+    return viewToWorld(v.x, v.y, elev);
+}
+
+/** Mundo -> ponto de grelha, ao nível do chão (sem relevo). */
+export function worldToGrid(wx, wy) {
+    return fromView((wx / HW + wy / HH) / 2, (wy / HH - wx / HW) / 2);
+}
+
+/**
+ * Roda a vista um quarto de volta (`turns` = 1 no sentido dos ponteiros do
+ * relógio, -1 ao contrário), sem sair do sítio: o ponto do mapa que estava no
+ * centro do ecrã continua lá.
+ */
+export function rotateView(turns) {
+    const center = worldToGrid(camera.x, camera.y);
+    camera.rot = (((camera.rot + turns) % 4) + 4) % 4;
+    lookAt(center.x, center.y);
+}
 
 export function worldToScreen(wx, wy) {
     return {
@@ -99,31 +163,33 @@ export function panBy(dxScreen, dyScreen) {
  * @returns {{x: number, y: number, u: number, v: number} | null}
  */
 export function pickTile(sx, sy, elevAt) {
+    // Tudo em casas da vista, onde "à frente" é x + y maior; no fim volta-se ao mapa.
     const w = screenToWorld(sx, sy);
-    const ground = worldToGrid(w.x, w.y);
-    const bx = Math.floor(ground.x);
-    const by = Math.floor(ground.y);
+    const vx0 = (w.x / HW + w.y / HH) / 2;
+    const vy0 = (w.y / HH - w.x / HW) / 2;
+    const bx = Math.floor(vx0);
+    const by = Math.floor(vy0);
 
-    // Candidatas: a casa ao nível do chão e as vizinhas da frente (que, se
-    // forem colinas, sobem para cima do ponto).
+    // Candidatas: a casa ao nível do chão e as que estão à volta dela, sobretudo
+    // as da frente (que, se forem colinas, sobem para cima do ponto).
     const candidates = [];
-    for (let d = 2; d >= -1; d--) {
-        for (let k = -1; k <= 1; k++) {
-            candidates.push({ x: bx + d + k, y: by + d - k });
-        }
+    for (let dy = -1; dy <= 2; dy++) {
+        for (let dx = -1; dx <= 2; dx++) candidates.push({ x: bx + dx, y: by + dy });
     }
-    candidates.push({ x: bx, y: by });
 
     let best = null;
     let bestDepth = -Infinity;
     for (const c of candidates) {
         if (c.x < 0 || c.y < 0 || c.x >= MAP_SIZE || c.y >= MAP_SIZE) continue;
-        const e = elevAt(c.x, c.y);
-        const g = worldToGrid(w.x, w.y + e * ELEV_PX);
-        if (g.x >= c.x && g.x < c.x + 1 && g.y >= c.y && g.y < c.y + 1) {
+        const cell = viewToCell(c.x, c.y);
+        const lift = elevAt(cell.x, cell.y) * ELEV_PX;
+        const vx = (w.x / HW + (w.y + lift) / HH) / 2;
+        const vy = ((w.y + lift) / HH - w.x / HW) / 2;
+        if (vx >= c.x && vx < c.x + 1 && vy >= c.y && vy < c.y + 1) {
             const depth = c.x + c.y;
             if (depth > bestDepth) {
-                best = { x: c.x, y: c.y, u: g.x - c.x, v: g.y - c.y };
+                const g = fromView(vx, vy);
+                best = { x: cell.x, y: cell.y, u: clamp(g.x - cell.x, 0, 0.999), v: clamp(g.y - cell.y, 0, 0.999) };
                 bestDepth = depth;
             }
         }

@@ -8,19 +8,25 @@
 // um terço de oitava: dentro do mesmo degrau reaproveita-se, ao mudar de degrau
 // deita-se a cache fora e volta-se a pintar — assim fica nítida em qualquer
 // zoom sem se pintar de novo a cada roda do rato.
+//
+// As peças rodam com a vista (ver draw.js), por isso ao rodar a cache também
+// vai fora: as imagens guardadas eram as do lado de onde se olhava antes.
 
+import { camera } from './iso.js';
 import { BOUNDS, STATIC } from './sprites.js';
 
 const MAX_SCALE = 5;
 const cache = new Map();
 let scale = 0;
+let rot = 0;
 
 /** Chamar a cada frame com a escala efetiva (zoom x dpr). */
 export function setSpriteScale(value) {
     const next = Math.min(MAX_SCALE, 2 ** (Math.round(Math.log2(Math.max(0.25, value)) * 3) / 3));
-    if (next !== scale) {
+    if (next !== scale || camera.rot !== rot) {
         cache.clear();
         scale = next;
+        rot = camera.rot;
     }
 }
 

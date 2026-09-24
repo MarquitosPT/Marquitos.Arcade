@@ -1,5 +1,5 @@
 // Controlos do tabuleiro: arrastar para andar, beliscar ou rodar a roda para
-// aproximar, tocar para escolher uma casa. O botão direito do rato abre sempre
+// aproximar, Q e E para rodar a vista, tocar para escolher uma casa. O botão direito do rato abre sempre
 // as opções da casa, mesmo a meio de uma construção.
 //
 // Um toque só conta como toque se o dedo quase não se mexeu — senão é um
@@ -7,7 +7,7 @@
 // engano. Com dois dedos é sempre zoom. O toque diz se veio do rato ou do
 // dedo: ao dedo, que não tem pré-visualização, construir pede confirmação.
 
-import { camera, panBy, pickTile, zoomAt } from './iso.js';
+import { camera, panBy, pickTile, rotateView, zoomAt } from './iso.js';
 import { game, ui } from './state.js';
 import { idx } from './world.js';
 
@@ -113,6 +113,8 @@ export function attachControls(canvas) {
             case 'ArrowDown': case 's': case 'S': panBy(0, -KEY_PAN * 3); break;
             case '+': case '=': zoomAt(camera.width / 2, camera.height / 2, 1.15); break;
             case '-': case '_': zoomAt(camera.width / 2, camera.height / 2, 1 / 1.15); break;
+            case 'q': case 'Q': rotateView(-1); break;
+            case 'e': case 'E': rotateView(1); break;
             case 'Escape': handlers.cancel(); break;
             case 'Enter':
                 // Num botão focado, o Enter é do botão.
