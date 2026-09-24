@@ -17,6 +17,7 @@ Blazor Web App (.NET 10, render mode Interactive Server) com ASP.NET Core Identi
   - `tasca-do-ze/`: mini-jogo "Tasca do Zé" (gestão de pedidos), com leaderboard persistido via `/api/scores/tasca-do-ze`.
   - `pong/`: Pong Retro, com modo 1 jogador (vs. CPU, pontuação submetida via `/api/scores/pong`) e 2 jogadores.
   - `maze-run/`: Maze Run, labirintos por níveis — apanhar os cristais abre a saída, e há guardas a impedi-lo. Pelo caminho há cristais de gelo que os congelam, portais que ligam duas pontas do labirinto e portas trancadas com a sua chave (ver [As peças do Maze Run](#as-peças-do-maze-run)). Os níveis vão-se desbloqueando à medida que se concluem, e o progresso fica guardado na conta de quem tem sessão iniciada (ver [Progresso e níveis](#progresso-e-níveis)). Os labirintos não estão desenhados à mão: saem de uma semente por nível (`buildMaze` em `js/maze.js`), como as pistas do Pixel Racing saem do `buildTrack` — **acrescentar um nível é acrescentar uma entrada ao array `LEVELS` do `js/levels.js`**, e mais nada.
+  - `terras-do-reino/`: Terras do Reino, economia medieval contínua num tabuleiro isométrico com relevo — semear e colher trigo, cortar madeira, tirar pedra, abrir minas de ouro, moinhos, padarias, vacarias e oficinas, e comerciar com três vilas vizinhas geridas pelo CPU, que crescem sozinhas e são as rivais na tabela da prosperidade. Não há guerra nem fim de partida: o reino fica gravado (na conta, para quem tem sessão iniciada) e, ao voltar, recupera o tempo em que o jogo esteve fechado. Ver [Terras do Reino](#terras-do-reino).
   - `pixel-racing/`: Pixel Racing, corrida simples em qualquer uma das seis pistas ou campeonato de três, com pontuação via `/api/scores/pixel-racing`. O menu tem dois passos: o primeiro ecrã pergunta só o nome (a quem não tem sessão iniciada) e o modo; a pista (ou a taça, no campeonato), a cor do carro e a dificuldade ficam no ecrã seguinte, já a saber o que se vai correr. As pistas são geradas por `buildTrack` a partir de uma superelipse com harmónicos, e o grau de perícia que o cartão mostra é medido no traçado (`corneringProfile`) em vez de escrito à mão: as três primeiras fazem-se sem levantar o pé, as três da taça Pro são mais compridas, mais estreitas e têm curvas que obrigam a travar ou a entrar a derrapar. A cor sai da paleta única de `CAR_COLORS` e os adversários ficam com três das restantes, por isso nunca há dois carros da mesma cor na pista.
 - `src/MarquitosArcade/wwwroot/lib/arcade/`: SDK partilhado pelos jogos (áudio, leaderboard, armazenamento, viewport do canvas, ciclo de jogo, barra de topo, ecrã de arranque). Módulos ES sem dependências externas. O `splash.css`/`splash.js`/`splash-boot.js` são a exceção que também serve o portal — ver [Ecrã de arranque](#ecrã-de-arranque).
 - `tools/games/smoke-test.mjs`: smoke-test dos jogos em Chromium headless, corrido em cada pull request por `.github/workflows/jogos-smoke-test.yml`. Ver [Testar os jogos](#testar-os-jogos).
@@ -563,6 +564,112 @@ bugs difíceis de ver:
 
 Como o mapa dos guardas se refaz a cada frame, uma porta que abre entra nele
 sozinha — não há nada em cache para invalidar.
+
+## Terras do Reino
+
+O primeiro jogo da arcada sem partidas: um reino que cresce enquanto se joga e
+continua de onde ficou. Inspirado no tabuleiro de peças do Carcassonne — o mapa
+é um tabuleiro de casas em perspetiva isométrica, com colinas que sobem, lagos
+que descem e a "placa" de terra à vista nas bordas —, mas é um jogo de
+economia, não de conquista: ninguém ataca ninguém.
+
+### O ciclo do jogo
+
+1. **Campos** (sem trabalhadores): toca-se para semear e, quando o trigo está
+   dourado, toca-se outra vez para colher. É o primeiro dinheiro do reino, e dá
+   trabalho de propósito — até se construir um **celeiro**, que o faz sozinho.
+2. **Casas** trazem moradores; os edifícios de produção precisam deles como
+   trabalhadores (por ordem de construção: o primeiro a ser feito é o primeiro a
+   ter gente). Quem trabalha paga o imposto inteiro, quem está parado paga um
+   quarto (`IDLE_TAX_SHARE`) — senão encher o mapa de casas era a melhor jogada.
+3. **Cadeias de produção**: trigo → moinho → farinha → padaria → pão; trigo →
+   vacaria → leite → leitaria → queijo; madeira → carpintaria → tábuas. O
+   lenhador precisa de árvores à volta, a pedreira de rochas, a mina de uma veia
+   de ouro numa colina.
+4. **O povo come ao fim de cada dia** (queijo, pão ou leite). Bem alimentado, e
+   com variedade, fica mais contente e paga mais — mas nunca se revolta: um
+   reino sem pão é pobre, não é um reino em guerra.
+5. **O castelo** sobe de nível: alarga o território onde se pode construir,
+   aumenta o armazém e abre o escalão seguinte de edifícios.
+6. **O mercado** vende e compra às vilas vizinhas (ver abaixo).
+
+Os **objetivos** (`js/quests.js`) são o tutorial: uma lista por ordem que leva
+de uma casa e um campo até ao castelo no nível máximo, cada um com recompensa.
+Depois dela, o jogo continua com marcos de prosperidade que vão dobrando.
+
+### As vilas vizinhas (CPU)
+
+Três vilas (`TOWNS` em `js/config.js`), cada uma com o seu ofício: o que
+produzem fica barato no mercado, o que procuram fica caro. Crescem sozinhas,
+edifício a edifício, e comerciam entre si em caravanas que se veem a atravessar
+o mapa. A tabela 👑 Reinos compara a prosperidade de todos.
+
+O preço de cada bem sai do "stock" que as vilas têm dele: no ponto de
+referência é o preço base, com pouco sobe, com muito desce. Vender enche o
+stock, por isso despejar cem trigos de uma vez rende menos do que vender aos
+poucos; com o tempo, o stock volta ao equilíbrio que as vilas ditam. De tempos a
+tempos há uma **feira** numa vila, que faz de um bem o mais procurado durante
+dois dias.
+
+### Mapa, desenho e controlos
+
+- **O mapa sai de uma semente** (`js/world.js`, ruído de valor em `js/rng.js`).
+  À volta do castelo garante-se o que o começo precisa — árvores, rochas, água e
+  uma veia de ouro ao alcance do castelo no nível 3 —, e não só em contagem: tem de
+  haver uma casa livre com árvores (ou rochas) à volta, onde caibam o lenhador e a
+  pedreira. As vilas escolhem entre
+  vários sítios o que tem mais terra à volta. O smoke-test verifica isto em 200
+  sementes.
+- **Nada é imagem**: árvores, casas, moinhos e castelos são polígonos
+  (`js/draw.js`, `js/sprites.js`). A parte estática de cada peça é pintada uma
+  vez numa cache à escala do ecrã (`js/sprite-cache.js`); a parte viva — pás do
+  moinho, fumo, vacas, bandeiras, brilho do ouro — desenha-se a cada frame.
+- **O tabuleiro desenha-se de trás para a frente**, diagonal a diagonal
+  (`js/render.js`): o chão de cada casa e logo a seguir o que está em cima dela.
+  É o que faz uma colina tapar o que está atrás.
+- **Arrastar** anda pelo mapa, **beliscar** ou a **roda** aproxima, **tocar**
+  escolhe uma casa ou constrói (`js/input.js`). Um toque só conta se o dedo
+  quase não se mexeu — largar o dedo no fim de um arrasto não constrói nada.
+- O HUD e os painéis são HTML, não canvas: números que mudam devagar e uma dúzia
+  de bens ganham o vidro verdadeiro e a quebra de linha sem trabalho à mão. Os
+  balões por cima dos edifícios (💤 sem trabalhadores, 📦 armazém cheio, 🌾
+  pronto a colher) são do canvas.
+
+### Gravação e tempo fora do jogo
+
+O reino grava-se pelo mesmo cliente do SDK que o Maze Run usa
+(`lib/arcade/progress.js`): no aparelho sempre, na conta com sessão iniciada.
+Como o servidor aceita até 8 kB por jogo, **a gravação leva a semente do mapa em
+vez do mapa**, e os edifícios como listas curtas de números (`js/save.js`); as
+vilas levam só quantos edifícios têm, porque crescem sempre para os mesmos
+sítios. Um reino com setenta edifícios ocupa perto de 1,5 kB.
+
+A regra de junção é diferente da do Maze Run: **ganha a cópia com mais tempo de
+jogo**. Um reino não se junta campo a campo como as marcas de um nível — são
+dois mundos diferentes —, e o que tem mais horas é o que mais custaria perder.
+Pela mesma razão, o botão do menu só fica ativo depois de a conta responder:
+fundar um reino novo antes disso podia pôr um reino de cinco minutos por cima
+de um de cinco horas guardado noutro aparelho.
+
+Ao voltar, o jogo **recupera o tempo em que esteve fechado**, até três horas
+(`OFFLINE_MAX_SECONDS`), passando a mesma economia em passos de um ou dois
+segundos, e diz o que se fez entretanto.
+
+A pontuação no quadro é a **prosperidade** (moedas, bens ao preço de
+referência, edifícios e castelo), enviada ao sair e ao subir o castelo — só
+quando é melhor do que a última enviada, e limitada ao máximo que o servidor
+aceita (999 999).
+
+### Acrescentar um edifício
+
+1. Uma entrada em `BUILDINGS` (`js/config.js`): custo, escalão, trabalhadores,
+   receita (`recipe`) e, se precisar, vizinhos (`near`) ou sítio (`site`).
+2. O desenho em `STATIC` (e, se mexer, em `LIVE`) no `js/sprites.js`.
+3. Se o edifício fizer coisa que não seja uma receita (como o guarda-florestal
+   ou o celeiro), o passo dele em `js/economy.js`.
+
+A gravação guarda o tipo pelo índice em `BUILDINGS`: **acrescenta-se sempre no
+fim da lista**, senão as gravações antigas trocam os edifícios uns pelos outros.
 
 ## Cache do browser (e o site afixado ao ecrã principal)
 

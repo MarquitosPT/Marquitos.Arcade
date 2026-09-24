@@ -1,0 +1,367 @@
+/*
+ * O painel de baixo: construir, mercado, castelo, reinos e o que está numa casa.
+ *
+ * É um só painel com o conteúdo trocado pelo JS (js/sheets.js), e não cinco
+ * ecrãs: assim o mapa continua à vista por cima dele e dá para ver onde se vai
+ * construir enquanto se escolhe o quê. Em ecrãs largos fica encostado à
+ * esquerda, como uma gaveta; em telemóvel ocupa a largura toda.
+ */
+
+.sheet {
+    position: absolute;
+    left: max(12px, env(safe-area-inset-left));
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 84px);
+    z-index: 18;
+    display: flex;
+    flex-direction: column;
+    width: min(calc(100% - 24px), 440px);
+    max-height: min(62%, 560px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: blur(var(--blur)) saturate(140%);
+    backdrop-filter: blur(var(--blur)) saturate(140%);
+    box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    animation: sheetIn 0.28s cubic-bezier(0.2, 0.9, 0.25, 1) both;
+    overflow: hidden;
+}
+
+.sheet[hidden] { display: none; }
+
+@keyframes sheetIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sheet { animation: none; }
+}
+
+.sheetHead {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 14px 10px 16px;
+    border-bottom: 1px solid rgba(255, 240, 210, 0.1);
+}
+
+.sheetIcon { font-size: 26px; }
+.sheetHeadText { flex: 1; min-width: 0; }
+
+.sheetTitle {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.sheetSub {
+    margin-top: 1px;
+    font-size: 12.5px;
+    color: var(--muted);
+}
+
+.sheetBody {
+    padding: 12px 14px 16px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+}
+
+.sheetSection + .sheetSection { margin-top: 14px; }
+
+.sectionLabel {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--faint);
+}
+
+.sheetText {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--muted);
+}
+
+.sheetText b { color: var(--text); }
+
+/* ---------- Custos ---------- */
+
+.costRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.cost {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 7px;
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    border-radius: var(--radius-pill);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.cost.is-short { color: var(--bad); background: rgba(255, 138, 120, 0.12); }
+
+/* ---------- Cartões dos edifícios ---------- */
+
+.buildGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+    gap: 8px;
+}
+
+.buildCard {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+    padding: 10px;
+    text-align: left;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    background: var(--glass-bg-soft);
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+
+.buildCard:hover { background: var(--glass-bg-hover); border-color: var(--glass-border-strong); }
+.buildCard:active { transform: scale(0.98); }
+
+.buildCard .cardIcon { font-size: 24px; line-height: 1; }
+
+.buildCard .cardName {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.buildCard .cardDesc {
+    font-size: 11.5px;
+    line-height: 1.35;
+    color: var(--muted);
+}
+
+.buildCard .cardNote {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--bad);
+}
+
+.buildCard.is-locked { opacity: 0.55; cursor: not-allowed; }
+.buildCard.is-locked .cardNote { color: var(--faint); }
+
+/* ---------- Mercado ---------- */
+
+.fairNote {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 9px 12px;
+    font-size: 12.5px;
+    line-height: 1.4;
+    border: 1px solid rgba(242, 193, 78, 0.5);
+    border-radius: var(--radius);
+    background: rgba(242, 193, 78, 0.12);
+}
+
+.marketRow {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 6px 10px;
+    padding: 9px 0;
+    border-bottom: 1px solid rgba(255, 240, 210, 0.08);
+}
+
+.marketRow:last-child { border-bottom: none; }
+
+.goodName {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    font-weight: 600;
+    font-size: 13.5px;
+}
+
+.goodName .goodEmoji { font-size: 20px; }
+
+.goodStock {
+    display: block;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--muted);
+}
+
+.goodPrice {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.goodPrice .trend { margin-left: 3px; font-size: 11px; }
+.trend.up { color: var(--ok); }
+.trend.down { color: var(--bad); }
+
+.tradeBtns {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.tradeBtn {
+    padding: 6px 11px;
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-pill);
+    background: var(--glass-bg-soft);
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.tradeBtn:hover:not(:disabled) { background: var(--glass-bg-hover); border-color: var(--accent); }
+.tradeBtn:disabled { opacity: 0.35; cursor: not-allowed; }
+.tradeBtn--sell { border-color: rgba(126, 217, 87, 0.45); }
+.tradeBtn--buy { margin-left: auto; }
+
+/* ---------- Castelo e informação ---------- */
+
+.statGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 9px 11px;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    background: var(--glass-bg-soft);
+}
+
+.statValue {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.statLabel { font-size: 11px; color: var(--muted); }
+
+.sheetActions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.sheetActions .btn { padding: 12px 20px; }
+.sheetActions .btnOutline { padding: 10px 20px; }
+.btn:disabled { filter: grayscale(0.7); opacity: 0.55; cursor: not-allowed; }
+
+.statusLine {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.statusLine.ok { color: var(--ok); }
+.statusLine.warn { color: var(--gold); }
+.statusLine.bad { color: var(--bad); }
+
+.progressTrack {
+    position: relative;
+    height: 6px;
+    margin-top: 8px;
+    border-radius: var(--radius-pill);
+    background: rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+}
+
+.progressTrack::after {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: var(--fill, 0%);
+    border-radius: inherit;
+    background: linear-gradient(100deg, var(--accent-2), var(--accent));
+}
+
+/* ---------- Tabela dos reinos ---------- */
+
+.rankList {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.rankRow {
+    display: grid;
+    grid-template-columns: 28px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    background: var(--glass-bg-soft);
+}
+
+.rankRow.is-player { border-color: rgba(242, 193, 78, 0.65); background: rgba(242, 193, 78, 0.12); }
+
+.rankPos {
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--faint);
+}
+
+.rankName { font-weight: 700; font-size: 13.5px; }
+.rankName small { display: block; font-weight: 500; font-size: 11.5px; color: var(--muted); }
+
+.rankScore {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-right: 6px;
+    border-radius: 3px;
+    vertical-align: 0;
+}
+
+/* Telemóvel: o painel ocupa a largura e sobe um pouco menos. */
+@media (max-width: 520px) {
+    .sheet { width: calc(100% - 24px); max-height: 58%; }
+    .buildGrid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+    .sheet { max-height: calc(100% - 110px); bottom: calc(max(8px, env(safe-area-inset-bottom)) + 74px); }
+    .buildGrid { grid-template-columns: repeat(3, 1fr); }
+}
