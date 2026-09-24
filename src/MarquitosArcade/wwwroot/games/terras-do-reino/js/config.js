@@ -215,6 +215,15 @@ export const BUILDINGS = [
 
 export const BUILDING = Object.fromEntries(BUILDINGS.map((b) => [b.id, b]));
 
+/**
+ * Aplanar uma colina: os trabalhadores cavam a encosta até ao nível do chão e
+ * a casa passa a terra livre. Das pedras que saem da terra aproveitam-se
+ * `FLATTEN_STONE`. As veias de ouro não se aplanam — são o que as colinas têm
+ * de melhor.
+ */
+export const FLATTEN_COST = { coins: 45, wood: 10 };
+export const FLATTEN_STONE = 4;
+
 /** Parte do custo devolvida ao demolir. */
 export const DEMOLISH_REFUND = 0.5;
 

@@ -21,7 +21,7 @@ import { hash2 } from './rng.js';
 import { setSpriteScale, stamp } from './sprite-cache.js';
 import { LIVE, PLAYER_ROOF } from './sprites.js';
 import { castleInfo, fx, game, ui } from './state.js';
-import { CASTLE_CENTER, T_GRASS, T_HILL, T_MEADOW, T_SAND, T_WATER, idx } from './world.js';
+import { CASTLE_CENTER, T_GRASS, T_HILL, T_MEADOW, T_SAND, T_WATER, idx, inMap } from './world.js';
 
 const HW = TILE_W / 2;
 const HH = TILE_H / 2;
@@ -129,6 +129,11 @@ function drawSide(x0, y0, x1, y1, zTop, zBottom, color, lip) {
 }
 
 function drawGround(x, y, t, detail) {
+    drawTile(x, y, t, detail);
+    drawSlopes(x, y, detail);
+}
+
+function drawTile(x, y, t, detail) {
     const i = idx(x, y);
     const terrain = game.world.terrain[i];
     const e = game.world.elev[i];
@@ -212,6 +217,227 @@ function drawGround(x, y, t, detail) {
     }
 }
 
+// ---------- Encostas ----------
+//
+// Uma colina ao lado de terra mais baixa não acaba num degrau a direito: a
+// encosta escorre para a casa vizinha e morre nela a uma distância que muda de
+// ponto para ponto, como terra que assentou. É o que encaixa as colinas na
+// paisagem, em vez de parecerem caixas pousadas em cima dela.
+//
+// A encosta pinta-se na casa de baixo, logo a seguir ao chão dela. Pela ordem
+// do pintor fica à frente do degrau de uma colina de trás, fica por baixo de
+// uma colina da frente (que se pinta depois) e fica sempre por baixo do que
+// estiver construído na casa de baixo.
+//
+// A distância a que a encosta morre sai de um hash dos pontos da grelha, por
+// isso duas encostas que se tocam no mesmo canto concordam nele: uma crista de
+// colinas desce numa só linha, sem dentes entre casas, e nas pontas de uma
+// colina um leque na casa em diagonal junta as encostas dos dois lados.
+
+const SLOPE_MIN = 0.16;
+const SLOPE_MAX = 0.44;
+
+/**
+ * Os quatro lados de uma casa (x, y): onde está o vizinho, o ponto da grelha
+ * onde começa a aresta partilhada, para onde ela segue (`u`), para onde a
+ * encosta entra na casa (`n`) e quanta luz apanha uma encosta virada para ali
+ * (a luz vem de cima, à esquerda).
+ */
+const SIDES = [
+    { dx: 0, dy: -1, ex: 0, ey: 0, u: [1, 0], n: [0, 1], light: -4 },
+    { dx: -1, dy: 0, ex: 0, ey: 0, u: [0, 1], n: [1, 0], light: -9 },
+    { dx: 0, dy: 1, ex: 0, ey: 1, u: [1, 0], n: [0, -1], light: -6, back: true },
+    { dx: 1, dy: 0, ex: 1, ey: 0, u: [0, 1], n: [-1, 0], light: -2, back: true }
+];
+
+/** Os quatro cantos: o vizinho em diagonal e as duas arestas da casa que saem do canto. */
+const CORNERS = [
+    { dx: -1, dy: -1, vx: 0, vy: 0, a: [0, 1], b: [1, 0], light: -7 },
+    { dx: 1, dy: -1, vx: 1, vy: 0, a: [-1, 0], b: [0, 1], light: -3 },
+    { dx: -1, dy: 1, vx: 0, vy: 1, a: [1, 0], b: [0, -1], light: -8, back: true },
+    { dx: 1, dy: 1, vx: 1, vy: 1, a: [-1, 0], b: [0, -1], light: -4, back: true }
+];
+
+/** A casa (hx, hy) desce em encosta para a casa (lx, ly)? */
+function slopesInto(hx, hy, lx, ly) {
+    if (!inMap(hx, hy) || !inMap(lx, ly)) return false;
+    const w = game.world;
+    const h = idx(hx, hy);
+    const l = idx(lx, ly);
+    return w.elev[h] > w.elev[l] && w.terrain[l] !== T_WATER && w.terrain[h] !== T_WATER;
+}
+
+/** Até onde a encosta entra na casa de baixo, num ponto da grelha. */
+function cornerDepth(vx, vy) {
+    return SLOPE_MIN + hash2(vx, vy, 201) * (SLOPE_MAX - SLOPE_MIN);
+}
+
+/** Ponto de grelha (gx, gy) à altura `z` (px) -> mundo. */
+function at(gx, gy, z) {
+    return [(gx - gy) * HW, (gx + gy) * HH - z];
+}
+
+/**
+ * O degradê de uma encosta: a cor da colina, mais escura conforme a luz, no
+ * cimo; a cor da casa de baixo, só um pouco mais escura, no pé — para se ver
+ * onde a encosta assenta sem parecer uma mancha.
+ */
+function slopeFill(from, to, light, low) {
+    const [hh, hs, hl] = GROUND[T_HILL];
+    const [lh, ls, ll] = GROUND[low];
+    const grad = ctx.createLinearGradient(from[0], from[1], to[0], to[1]);
+    grad.addColorStop(0, `hsl(${hh - 4}, ${hs - 2}%, ${hl + light}%)`);
+    grad.addColorStop(0.6, `hsl(${(hh + lh) / 2}, ${(hs + ls) / 2}%, ${(hl + ll) / 2 + light * 0.6}%)`);
+    grad.addColorStop(1, `hsl(${lh}, ${ls}%, ${ll - 4}%)`);
+    return grad;
+}
+
+/** Caminho da curva irregular do pé da encosta, de `foot[0]` a `foot[last]`. */
+function footCurve(path, foot, reverse) {
+    const pts = reverse ? [...foot].reverse() : foot;
+    path.lineTo(pts[0][0], pts[0][1]);
+    for (let k = 1; k < pts.length - 1; k++) {
+        const mx = (pts[k][0] + pts[k + 1][0]) / 2;
+        const my = (pts[k][1] + pts[k + 1][1]) / 2;
+        path.quadraticCurveTo(pts[k][0], pts[k][1], mx, my);
+    }
+    path.lineTo(pts[pts.length - 1][0], pts[pts.length - 1][1]);
+}
+
+/** Recorta ao losango da casa (x, y), ao nível `z`. */
+function clipToTile(x, y, z) {
+    const top = at(x, y, z);
+    ctx.beginPath();
+    ctx.moveTo(top[0], top[1]);
+    ctx.lineTo(top[0] + HW, top[1] + HH);
+    ctx.lineTo(top[0], top[1] + TILE_H);
+    ctx.lineTo(top[0] - HW, top[1] + HH);
+    ctx.closePath();
+    ctx.clip();
+}
+
+/** Uma encosta ao longo de um lado da casa (x, y), vinda da colina vizinha. */
+function drawSideSlope(x, y, side, zTop, zLow, low, detail) {
+    const ex = x + side.ex;
+    const ey = y + side.ey;
+    const { u, n } = side;
+    // Profundidades nas pontas (partilhadas com as encostas vizinhas) e em três
+    // pontos a meio, com o seu próprio tremor.
+    const d0 = cornerDepth(ex, ey);
+    const d1 = cornerDepth(ex + u[0], ey + u[1]);
+    const seed = (ex * 2 + (u[0] ? 0 : 1)) * 197 + ey;
+    const depths = [d0];
+    for (let k = 1; k <= 3; k++) {
+        const wobble = (hash2(seed, k, 203) - 0.5) * 0.24;
+        depths.push(Math.max(0.08, d0 + (d1 - d0) * (k / 4) + 0.04 + wobble));
+    }
+    depths.push(d1);
+
+    const top0 = at(ex, ey, zTop);
+    const top1 = at(ex + u[0], ey + u[1], zTop);
+    const foot = depths.map((d, k) => {
+        const s = k / 4;
+        return at(ex + u[0] * s + n[0] * d, ey + u[1] * s + n[1] * d, zLow);
+    });
+
+    const path = new Path2D();
+    path.moveTo(top0[0], top0[1]);
+    path.lineTo(top1[0], top1[1]);
+    footCurve(path, foot, true);
+    path.closePath();
+
+    ctx.save();
+    if (side.back) clipToTile(x, y, zLow);
+    const midTop = [(top0[0] + top1[0]) / 2, (top0[1] + top1[1]) / 2];
+    ctx.fillStyle = slopeFill(midTop, foot[2], side.light, low);
+    ctx.fill(path);
+
+    // Uma sombra leve onde a encosta assenta na relva.
+    const edge = new Path2D();
+    edge.moveTo(foot[0][0], foot[0][1]);
+    footCurve(edge, foot, false);
+    ctx.strokeStyle = 'rgba(28, 52, 14, 0.16)';
+    ctx.lineWidth = 1.1;
+    ctx.stroke(edge);
+
+    if (detail && !side.back) {
+        // Uma ou outra pedra solta e terra à mostra, a meio da encosta.
+        ctx.clip(path);
+        for (let k = 0; k < 3; k++) {
+            const roll = hash2(seed, k, 211);
+            if (roll > 0.5) continue;
+            const s = 0.15 + hash2(seed, k, 212) * 0.7;
+            const f = 0.3 + hash2(seed, k, 213) * 0.4;
+            const d = depths[Math.round(s * 4)] * f;
+            const [px, py] = at(ex + u[0] * s + n[0] * d, ey + u[1] * s + n[1] * d, zTop + (zLow - zTop) * (0.4 + f * 0.5));
+            if (roll < 0.22) {
+                ctx.fillStyle = 'rgba(120, 84, 50, 0.32)';
+                const rx = 2.5 + hash2(seed, k, 214) * 3;
+                ctx.beginPath();
+                ctx.ellipse(px, py, rx, rx * 0.4, 0, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                ctx.fillStyle = 'rgba(150, 156, 158, 0.9)';
+                ctx.beginPath();
+                ctx.ellipse(px, py, 1.7, 1.1, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+    }
+    ctx.restore();
+}
+
+/** O leque num canto da casa (x, y), onde cai a ponta de uma colina em diagonal. */
+function drawCornerSlope(x, y, corner, zTop, zLow, low) {
+    const vx = x + corner.vx;
+    const vy = y + corner.vy;
+    const d = cornerDepth(vx, vy);
+    const { a, b } = corner;
+    const apex = at(vx, vy, zTop);
+    const pa = at(vx + a[0] * d, vy + a[1] * d, zLow);
+    const pm = at(vx + (a[0] + b[0]) * d * 0.8, vy + (a[1] + b[1]) * d * 0.8, zLow);
+    const pb = at(vx + b[0] * d, vy + b[1] * d, zLow);
+
+    ctx.save();
+    if (corner.back) clipToTile(x, y, zLow);
+    ctx.fillStyle = slopeFill(apex, pm, corner.light, low);
+    ctx.beginPath();
+    ctx.moveTo(apex[0], apex[1]);
+    ctx.lineTo(pa[0], pa[1]);
+    ctx.quadraticCurveTo(pm[0], pm[1], pb[0], pb[1]);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(28, 52, 14, 0.16)';
+    ctx.lineWidth = 1.1;
+    ctx.beginPath();
+    ctx.moveTo(pa[0], pa[1]);
+    ctx.quadraticCurveTo(pm[0], pm[1], pb[0], pb[1]);
+    ctx.stroke();
+    ctx.restore();
+}
+
+/** As encostas que as colinas vizinhas deixam cair na casa (x, y). */
+function drawSlopes(x, y, detail) {
+    const w = game.world;
+    const i = idx(x, y);
+    const low = w.terrain[i];
+    if (low === T_WATER) return;
+    const zLow = w.elev[i] * ELEV_PX;
+    const zOf = (dx, dy) => w.elev[idx(x + dx, y + dy)] * ELEV_PX;
+
+    // Primeiro os cantos: onde há encosta num lado, ela cobre o canto.
+    for (const c of CORNERS) {
+        if (!slopesInto(x + c.dx, y + c.dy, x, y)) continue;
+        if (slopesInto(x + c.dx, y, x, y) || slopesInto(x, y + c.dy, x, y)) continue;
+        drawCornerSlope(x, y, c, zOf(c.dx, c.dy), zLow, low);
+    }
+    for (const side of SIDES) {
+        if (slopesInto(x + side.dx, y + side.dy, x, y)) {
+            drawSideSlope(x, y, side, zOf(side.dx, side.dy), zLow, low, detail);
+        }
+    }
+}
+
 // ---------- Território e modo de construção ----------
 
 /** Mapa de casas válidas para o edifício em construção, refeito só quando algo muda. */
@@ -219,7 +445,7 @@ const placement = { key: '', ok: null };
 
 function placementMap() {
     const kind = ui.placing;
-    const key = `${kind}|${game.buildings.length}|${game.castleLevel}|${game.planted.length}|${Math.floor(fx.time * 2)}`;
+    const key = `${kind}|${game.buildings.length}|${game.castleLevel}|${game.planted.length}|${game.flattened.length}|${Math.floor(fx.time * 2)}`;
     if (placement.key === key) return placement.ok;
     placement.key = key;
     placement.ok = new Uint8Array(MAP_SIZE * MAP_SIZE);

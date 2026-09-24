@@ -598,6 +598,10 @@ economia, não de conquista: ninguém ataca ninguém.
 5. **O castelo** sobe de nível: alarga o território onde se pode construir,
    aumenta o armazém e abre o escalão seguinte de edifícios.
 6. **O mercado** vende e compra às vilas vizinhas (ver abaixo).
+7. **Aplanar colinas**: nas colinas só se fazem minas, por isso uma colina no
+   território (sem veia de ouro) pode ser aplanada na ficha dela, por moedas e
+   madeira (`FLATTEN_COST`), e passa a terra livre — devolvendo alguma pedra
+   (`FLATTEN_STONE`). As veias de ouro não se aplanam.
 
 Os **objetivos** (`js/quests.js`) são o tutorial: uma lista por ordem que leva
 de uma casa e um campo até ao castelo no nível máximo, cada um com recompensa.
@@ -633,6 +637,11 @@ dois dias.
 - **O tabuleiro desenha-se de trás para a frente**, diagonal a diagonal
   (`js/render.js`): o chão de cada casa e logo a seguir o que está em cima dela.
   É o que faz uma colina tapar o que está atrás.
+- **As colinas descem em encosta**, não em degrau: a encosta pinta-se na casa
+  de baixo, logo a seguir ao chão dela, e morre a uma distância irregular que
+  sai de um hash dos pontos da grelha — por isso duas encostas que se tocam no
+  mesmo canto concordam nele, e nas pontas de uma colina um leque na casa em
+  diagonal junta os dois lados.
 - **Arrastar** anda pelo mapa, **beliscar** ou a **roda** aproxima, **tocar**
   escolhe uma casa ou constrói (`js/input.js`). Um toque só conta se o dedo
   quase não se mexeu — largar o dedo no fim de um arrasto não constrói nada.
@@ -648,7 +657,8 @@ O reino grava-se pelo mesmo cliente do SDK que o Maze Run usa
 Como o servidor aceita até 8 kB por jogo, **a gravação leva a semente do mapa em
 vez do mapa**, e os edifícios como listas curtas de números (`js/save.js`); as
 vilas levam só quantos edifícios têm, porque crescem sempre para os mesmos
-sítios. Um reino com setenta edifícios ocupa perto de 1,5 kB.
+sítios. As colinas aplanadas vão como a lista dos índices das casas (`fl`),
+aplicada ao mapa antes de se porem os edifícios. Um reino com setenta edifícios ocupa perto de 1,5 kB.
 
 A regra de junção é diferente da do Maze Run: **ganha a cópia com mais tempo de
 jogo**. Um reino não se junta campo a campo como as marcas de um nível — são

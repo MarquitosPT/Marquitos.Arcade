@@ -264,6 +264,17 @@ function guaranteeStart(world, rng) {
     }
 }
 
+/**
+ * Aplana uma colina: a casa passa a relva ao nível do chão e perde o que
+ * tinha em cima (árvores, rochas). Usado pelo jogador (ver buildings.js) e ao
+ * carregar a gravação, que guarda os índices das casas aplanadas.
+ */
+export function flattenTile(world, i) {
+    world.terrain[i] = T_GRASS;
+    world.elev[i] = 0;
+    world.feature[i] = null;
+}
+
 /** Terra onde se pode construir: nem água, nem colina (só as minas vão lá), nem árvores ou rochas. */
 export function isFreeLand(world, x, y) {
     if (!inMap(x, y)) return false;

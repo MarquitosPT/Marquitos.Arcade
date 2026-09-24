@@ -5,10 +5,12 @@
 // modo de construção pinta as casas válidas a verde, e o `place` recusa.
 
 import {
-    BUILDING, CASTLE_LEVELS, CASTLE_MAX_LEVEL, DEMOLISH_REFUND, RESOURCE
+    BUILDING, CASTLE_LEVELS, CASTLE_MAX_LEVEL, DEMOLISH_REFUND, FLATTEN_COST, FLATTEN_STONE, RESOURCE
 } from './config.js';
 import { castleInfo, fx, game } from './state.js';
-import { CASTLE_TILE, castleDistance, countFeatureNear, idx, inMap, isFreeLand } from './world.js';
+import {
+    CASTLE_TILE, T_HILL, castleDistance, countFeatureNear, flattenTile, idx, inMap, isFreeLand
+} from './world.js';
 
 /** Custo em moedas equivalentes: o que um edifício "vale" para a prosperidade. */
 export function costValue(cost = {}) {
@@ -126,6 +128,39 @@ export function demolish(b) {
     game.world.building[idx(b.x, b.y)] = null;
     fx.puffs.push({ gx: b.x + 0.5, gy: b.y + 0.5, t: 0 });
     return true;
+}
+
+// ---------- Aplanar colinas ----------
+
+/**
+ * Pode aplanar-se a colina (x, y)? Devolve `{ ok, reason }`, como o
+ * `checkPlacement`. Com `ignoreCost` só vê o sítio — é o que decide se a ficha
+ * da colina mostra o botão.
+ */
+export function checkFlatten(x, y, { ignoreCost = false } = {}) {
+    const world = game.world;
+    if (!inMap(x, y)) return { ok: false, reason: 'Fora do mapa' };
+    const i = idx(x, y);
+    if (world.terrain[i] !== T_HILL) return { ok: false, reason: 'Não é uma colina' };
+    if (!inTerritory(x, y)) return { ok: false, reason: 'Fora do território' };
+    if (world.building[i]) return { ok: false, reason: 'Terreno ocupado' };
+    if (world.feature[i] === 'ore') return { ok: false, reason: 'Uma veia de ouro não se aplana' };
+    if (!ignoreCost && !canAfford(FLATTEN_COST)) return { ok: false, reason: 'Faltam recursos' };
+    return { ok: true, reason: '' };
+}
+
+/** Aplana a colina e devolve a pedra aproveitada, ou -1 se não puder. */
+export function flatten(x, y) {
+    if (!checkFlatten(x, y).ok) return -1;
+    pay(FLATTEN_COST);
+    const i = idx(x, y);
+    flattenTile(game.world, i);
+    game.flattened.push(i);
+    game.planted = game.planted.filter((p) => p !== i);
+    const stone = Math.max(0, Math.min(FLATTEN_STONE, game.derived.storage - game.res.stone));
+    game.res.stone += stone;
+    fx.puffs.push({ gx: x + 0.5, gy: y + 0.5, t: 0 });
+    return stone;
 }
 
 // ---------- Castelo ----------

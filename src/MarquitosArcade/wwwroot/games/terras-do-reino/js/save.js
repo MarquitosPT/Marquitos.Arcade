@@ -14,6 +14,7 @@
 //     b: [[tipo, x, y, progresso, fase, crescimento], ...],  // campos
 //        [[tipo, x, y, progresso, parado], ...],             // o resto
 //     pt: [índices de casas com árvores plantadas],
+//     fl: [índices de casas de colina aplanadas],       // opcional: gravações antigas não o têm
 //     m: { s: { bem: stock }, f: feira|null, nf: dia da próxima feira },
 //     t: [[edifícios, relógio, comércio, riqueza], ...],   // uma entrada por vila
 //     q, st, bs                               // objetivo, estatísticas, melhor enviado ao quadro
@@ -32,7 +33,7 @@ import { catchUp, refreshDerived } from './economy.js';
 import { initMarket } from './market.js';
 import { emptyResources, fx, game, ui } from './state.js';
 import { newTowns, placeTowns } from './towns.js';
-import { generateWorld } from './world.js';
+import { T_HILL, flattenTile, generateWorld } from './world.js';
 
 const VERSION = 1;
 const KIND_INDEX = Object.fromEntries(BUILDINGS.map((b, i) => [b.id, i]));
@@ -67,6 +68,7 @@ function resetState(seed) {
     game.buildings = [];
     game.nextId = 1;
     game.planted = [];
+    game.flattened = [];
     game.market = { stock: {}, fair: null, nextFairDay: 3 };
     game.towns = [];
     game.questIndex = 0;
@@ -112,6 +114,7 @@ export function serialize() {
             return row;
         }),
         pt: game.planted.filter((i) => game.world.feature[i] === 'tree'),
+        fl: game.flattened,
         m: {
             s: Object.fromEntries(Object.entries(game.market.stock).map(([k, v]) => [k, Math.round(v)])),
             f: game.market.fair,
@@ -142,6 +145,13 @@ export function loadSave(data = progress.data) {
     game.questIndex = data.q || 0;
     Object.assign(game.stats, data.st || {});
     game.bestSubmitted = data.bs || 0;
+
+    // Primeiro o chão: pode haver edifícios e árvores em cima de uma colina aplanada.
+    for (const i of data.fl || []) {
+        if (!Number.isInteger(i) || game.world.terrain[i] !== T_HILL || game.world.feature[i] === 'ore') continue;
+        flattenTile(game.world, i);
+        game.flattened.push(i);
+    }
 
     for (const row of data.b || []) {
         const def = BUILDINGS[row[0]];

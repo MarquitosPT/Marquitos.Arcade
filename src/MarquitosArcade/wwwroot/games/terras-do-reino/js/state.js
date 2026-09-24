@@ -30,6 +30,8 @@ export const game = {
     nextId: 1,
     /** Casas onde um guarda-florestal plantou árvores (índices), para a gravação. */
     planted: [],
+    /** Casas de colina que o jogador aplanou (índices), para a gravação. */
+    flattened: [],
     market: { stock: {}, fair: null, nextFairDay: 3 },
     towns: [],
     questIndex: 0,

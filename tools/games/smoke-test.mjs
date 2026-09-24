@@ -685,6 +685,8 @@ const GAMES = [
                 const G = '/games/terras-do-reino/js/';
                 const { game } = await import(G + 'state.js');
                 const { checkPlacement, place, upgradeCastle } = await import(G + 'buildings.js');
+                // Uma semente conhecida, com colinas para aplanar dentro do território.
+                (await import(G + 'save.js')).newGame(2107662309);
                 Object.assign(game.res, { coins: 3000, wood: 400, stone: 400 });
                 if (!upgradeCastle()) return -1;
                 let n = 0;
@@ -696,6 +698,30 @@ const GAMES = [
             });
             if (built < 20) throw new Error(`só se construíram ${built} edifícios`);
 
+            // Aplanar uma colina pelo botão da ficha dela: fica terra livre e a gravação lembra-se.
+            const hill = await page.evaluate(async () => {
+                const G = '/games/terras-do-reino/js/';
+                const { checkFlatten } = await import(G + 'buildings.js');
+                const { openSheet } = await import(G + 'sheets.js');
+                for (let y = 0; y < 44; y++) for (let x = 0; x < 44; x++) {
+                    if (checkFlatten(x, y).ok) {
+                        openSheet('tile', `${x},${y}`);
+                        return { x, y };
+                    }
+                }
+                return null;
+            });
+            if (!hill) throw new Error('não há nenhuma colina para aplanar no território');
+            await page.click('#sheetBody [data-action="flatten"]');
+            const flat = await page.evaluate(async ({ x, y }) => {
+                const G = '/games/terras-do-reino/js/';
+                const { game } = await import(G + 'state.js');
+                const { isFreeLand } = await import(G + 'world.js');
+                return isFreeLand(game.world, x, y);
+            }, hill);
+            if (!flat) throw new Error(`a colina em ${hill.x},${hill.y} não ficou aplanada`);
+            await page.click('#sheetCloseBtn');
+
             // Sair grava o reino no aparelho — e cabe no teto do servidor.
             await page.click('#endBtn');
             await page.waitForSelector('#startScreen', { state: 'visible' });
@@ -704,6 +730,7 @@ const GAMES = [
             if (save.length > 8 * 1024) throw new Error(`a gravação tem ${save.length} bytes, acima dos 8 kB do servidor`);
             const data = JSON.parse(save);
             if (data.b.length !== built || data.cl !== 2) throw new Error('a gravação não tem o que se construiu');
+            if (!(data.fl || []).includes(hill.y * 44 + hill.x)) throw new Error('a gravação não tem a colina aplanada');
 
             // Uma hora fora: ao voltar, o reino recupera esse tempo e diz o que se fez.
             await page.evaluate(() => {
@@ -715,11 +742,16 @@ const GAMES = [
             await waitForSplash(page);
             await enterKingdom(page);
             await page.waitForSelector('#welcomeScreen', { state: 'visible' });
-            const back = await page.evaluate(async () => {
+            const back = await page.evaluate(async (h) => {
                 const { game } = await import('/games/terras-do-reino/js/state.js');
-                return { n: game.buildings.length, level: game.castleLevel, day: game.day };
-            });
+                const { T_HILL, idx } = await import('/games/terras-do-reino/js/world.js');
+                return {
+                    n: game.buildings.length, level: game.castleLevel, day: game.day,
+                    flat: game.world.terrain[idx(h.x, h.y)] !== T_HILL
+                };
+            }, hill);
             if (back.n !== built || back.level !== 2) throw new Error(`o reino voltou diferente (${back.n} edifícios, castelo ${back.level})`);
+            if (!back.flat) throw new Error('a colina aplanada voltou a ser colina');
             if (back.day < 60) throw new Error(`a hora fora não foi recuperada (dia ${back.day})`);
             await page.click('#welcomeBtn');
             await sleep(600);

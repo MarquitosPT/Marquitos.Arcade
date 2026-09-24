@@ -16,7 +16,7 @@ import {
     TOWNS, ZOOM_START
 } from './config.js';
 import { resumeAudio, sfx } from './audio.js';
-import { checkPlacement, demolish, place, upgradeCastle } from './buildings.js';
+import { checkPlacement, demolish, flatten, place, upgradeCastle } from './buildings.js';
 import { addResource, harvestField, plantField, refreshDerived, stepEconomy, togglePaused } from './economy.js';
 import { fmt, fmtDuration } from './format.js';
 import { flashQuest, resetHud, updateHud } from './hud.js';
@@ -257,6 +257,18 @@ const actions = {
             refreshDerived();
             closeSheet();
         }
+    },
+    flatten: (at) => {
+        const [x, y] = at.split(',').map(Number);
+        const stone = flatten(x, y);
+        if (stone < 0) {
+            sfx.nope();
+            return;
+        }
+        sfx.build();
+        if (stone > 0) fx.floats.push({ gx: x + 0.5, gy: y + 0.5, text: `+${stone} ${RESOURCE.stone.emoji}`, t: 0 });
+        refreshDerived();
+        saveNow();
     },
     sell: (good, n) => {
         const amount = n === 'all' ? Math.floor(game.res[good]) : Number(n);

@@ -10,10 +10,10 @@
 import { escapeHtml } from '/lib/arcade/index.js';
 
 import {
-    BUILDING, BUILDINGS, DEMOLISH_REFUND, RESOURCE, TOWNS
+    BUILDING, BUILDINGS, DEMOLISH_REFUND, FLATTEN_COST, FLATTEN_STONE, RESOURCE, TOWNS
 } from './config.js';
 import {
-    canAfford, checkPlacement, countOf, inTerritory, missingFor, nextCastleLevel
+    canAfford, checkFlatten, checkPlacement, countOf, inTerritory, missingFor, nextCastleLevel
 } from './buildings.js';
 import { fmt, fmtPrice, pct } from './format.js';
 import { TRADABLE, buyPrice, priceTrend, sellPrice } from './market.js';
@@ -336,13 +336,36 @@ function tileView(arg) {
         };
     }
     if (terrain === T_WATER) return { icon: '💧', title: 'Lago', sub: where, html: '<p class="sheetText">Água limpa. Não se constrói em cima dela, mas enfeita o reino.</p>' };
-    if (terrain === T_HILL) return { icon: '⛰️', title: 'Colina', sub: where, html: '<p class="sheetText">Terreno alto e pedregoso. Só as minas se fazem nas colinas — procura as veias douradas.</p>' };
+    if (terrain === T_HILL) return hillView(x, y, feature, where);
     return {
         icon: '🟩',
         title: 'Terreno livre',
         sub: where,
         html: `<p class="sheetText">${inside ? 'Aqui cabe um edifício.' : 'Ainda fora do alcance do castelo.'}</p>
             ${inside ? '<div class="sheetActions"><button class="btn" type="button" data-action="sheet" data-arg="build">🔨 Construir aqui perto</button></div>' : ''}`
+    };
+}
+
+function hillView(x, y, feature, where) {
+    const text = '<p class="sheetText">Terreno alto e pedregoso. Só as minas se fazem nas colinas — procura as veias douradas.</p>';
+    const site = checkFlatten(x, y, { ignoreCost: true });
+    if (!site.ok) {
+        const why = site.reason === 'Fora do território' ? '' : `<p class="sheetText" style="margin-top:6px">⛏️ ${escapeHtml(site.reason)}.</p>`;
+        return { icon: '⛰️', title: 'Colina', sub: where, html: text + why };
+    }
+    const ok = canAfford(FLATTEN_COST);
+    const lost = feature === 'tree' ? ' A árvore vai-se com a terra.' : feature === 'rock' ? ' Os rochedos partem-se com o resto.' : '';
+    return {
+        icon: '⛰️',
+        title: 'Colina',
+        sub: where,
+        html: `${text}
+            <div class="sheetSection">
+                <p class="sheetText">⛏️ <b>Aplanar</b>: os trabalhadores cavam a colina até ao nível do chão e fica terra livre para construir.
+                Das pedras que saem aproveitam-se ${FLATTEN_STONE} ${RESOURCE.stone.emoji}.${lost}</p>
+                <p class="sheetText" style="margin-top:6px">${costHtml(FLATTEN_COST)}</p>
+            </div>
+            <div class="sheetActions"><button class="btn" type="button" data-action="flatten" data-arg="${x},${y}"${ok ? '' : ' disabled'}>⛏️ Aplanar a colina</button></div>`
     };
 }
 
