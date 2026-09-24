@@ -3,7 +3,8 @@
 //
 // Um toque só conta como toque se o dedo quase não se mexeu — senão é um
 // arrasto, e largar o dedo no fim de um arrasto não pode construir nada por
-// engano. Com dois dedos é sempre zoom.
+// engano. Com dois dedos é sempre zoom. O toque diz se veio do rato ou do
+// dedo: ao dedo, que não tem pré-visualização, construir pede confirmação.
 
 import { camera, panBy, pickTile, zoomAt } from './iso.js';
 import { game, ui } from './state.js';
@@ -13,7 +14,7 @@ import { idx } from './world.js';
 const TAP_SLOP = 8;
 const KEY_PAN = 14;
 
-let handlers = { tap() {}, hover() {}, cancel() {} };
+let handlers = { tap() {}, hover() {}, cancel() {}, confirm() {} };
 
 export function setInputHandlers(next) {
     handlers = { ...handlers, ...next };
@@ -83,7 +84,7 @@ export function attachControls(canvas) {
         pointers.delete(event.pointerId);
         if (pointers.size === 0 && !dragged && event.type === 'pointerup') {
             const tile = pickTile(p.x, p.y, elevAt);
-            if (tile) handlers.tap(tile);
+            if (tile) handlers.tap(tile, event.pointerType);
         }
         if (pointers.size < 2) pinchDistance = 0;
     };
@@ -109,6 +110,11 @@ export function attachControls(canvas) {
             case '+': case '=': zoomAt(camera.width / 2, camera.height / 2, 1.15); break;
             case '-': case '_': zoomAt(camera.width / 2, camera.height / 2, 1 / 1.15); break;
             case 'Escape': handlers.cancel(); break;
+            case 'Enter':
+                // Num botão focado, o Enter é do botão.
+                if (event.target.closest?.('button')) return;
+                handlers.confirm();
+                break;
             default: return;
         }
         event.preventDefault();

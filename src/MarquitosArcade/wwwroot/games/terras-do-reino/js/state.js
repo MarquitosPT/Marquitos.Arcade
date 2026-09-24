@@ -64,8 +64,13 @@ export const ui = {
     roadPreview: null,
     roadPreviewOk: false,
     roadPreviewKey: '',
-    /** Casa por baixo do ponteiro (rato) ou do último toque, em modo de construção. */
+    /** Casa por baixo do ponteiro (rato), em modo de construção. */
     hover: null,
+    /**
+     * Ao toque, o sítio escolhido à espera de ✓ ou ✕: o canto do bloco de um
+     * edifício, ou a casa onde acaba o troço de estrada.
+     */
+    pending: null,
     selected: null
 };
 

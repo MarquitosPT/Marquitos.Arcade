@@ -9,7 +9,7 @@ export const els = byId(
     'nameSlot', 'nameRow', 'accountRow', 'accountName', 'accountInitial', 'playerNameInput',
     'saveCard', 'saveLine', 'saveSub', 'progressNote',
     'hud', 'dayPill', 'popPill', 'happyPill', 'speedBtn', 'resRow', 'questCard', 'questText',
-    'toolbar', 'placeBanner', 'placeText', 'placeCancelBtn',
+    'toolbar', 'placeBanner', 'placeText', 'placeCancelBtn', 'placeConfirm', 'placeNoBtn', 'placeYesBtn',
     'sheet', 'sheetIcon', 'sheetTitle', 'sheetSub', 'sheetBody', 'sheetCloseBtn',
     'toasts'
 );

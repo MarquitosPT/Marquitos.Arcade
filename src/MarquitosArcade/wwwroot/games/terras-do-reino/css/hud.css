@@ -217,25 +217,122 @@ body.in-game .toolbar { display: flex; }
 .placeBanner {
     position: absolute;
     left: 50%;
-    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 84px);
+    bottom: max(12px, env(safe-area-inset-bottom));
     z-index: 17;
     display: flex;
-    align-items: center;
-    gap: 10px;
-    max-width: calc(100% - 24px);
-    padding: 8px 8px 8px 16px;
+    flex-direction: column;
+    gap: 8px;
+    width: min(calc(100% - 24px), 420px);
+    padding: 10px 12px 12px;
     transform: translateX(-50%);
-    font-size: 13.5px;
-    font-weight: 600;
-    border: 1px solid rgba(242, 193, 78, 0.6);
-    border-radius: var(--radius-pill);
+    border: 1.5px solid rgba(242, 193, 78, 0.75);
+    border-radius: 22px;
     background: var(--glass-bg-solid);
-    -webkit-backdrop-filter: blur(14px);
-    backdrop-filter: blur(14px);
-    box-shadow: var(--glass-shadow-sm);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    backdrop-filter: blur(16px) saturate(140%);
+    box-shadow: var(--glass-shadow), 0 0 0 4px rgba(242, 193, 78, 0.16);
 }
 
-.placeBanner b { color: var(--gold); }
+.placeBanner[hidden] { display: none; }
+
+.placeHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.placeMode {
+    font-family: var(--font-display);
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gold);
+}
+
+/* Sair do modo tem de se ler como sair: um botão com nome, não só uma cruz. */
+.placeExit {
+    padding: 7px 14px;
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--on-accent);
+    border: none;
+    border-radius: var(--radius-pill);
+    background: linear-gradient(100deg, #f7d26a, #e59a3a);
+    transition: filter 0.2s ease, transform 0.15s ease;
+}
+
+.placeExit:hover { filter: brightness(1.06); }
+.placeExit:active { transform: scale(0.96); }
+
+.placeText {
+    margin: 0;
+    font-size: 13.5px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.placeText b { color: var(--gold); }
+
+.placeConfirm {
+    display: flex;
+    justify-content: center;
+    gap: 18px;
+}
+
+.placeConfirm[hidden] { display: none; }
+
+.placeBtn {
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1;
+    border: 2px solid transparent;
+    border-radius: 50%;
+    box-shadow: var(--glass-shadow-sm);
+    transition: transform 0.15s ease, filter 0.2s ease, opacity 0.2s ease;
+}
+
+.placeBtn:active { transform: scale(0.92); }
+
+.placeBtn--no {
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.35);
+    background: linear-gradient(140deg, #ff9a7a, var(--accent-3));
+}
+
+.placeBtn--yes {
+    color: #10310a;
+    border-color: rgba(255, 255, 255, 0.45);
+    background: linear-gradient(140deg, #a8ec84, var(--ok));
+}
+
+.placeBtn:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+    filter: grayscale(0.6);
+}
+
+/*
+ * Em modo de construção a barra de ferramentas dá o lugar ao painel do modo,
+ * e o ecrã ganha uma moldura dourada: vê-se logo que um toque no mapa não é
+ * um toque qualquer.
+ */
+body.is-placing .toolbar { display: none; }
+
+body.in-game.is-placing #wrap::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 14;
+    pointer-events: none;
+    box-shadow: inset 0 0 0 4px rgba(242, 193, 78, 0.85), inset 0 0 40px 6px rgba(242, 193, 78, 0.35);
+}
 
 /* ---------- Avisos ---------- */
 
@@ -293,5 +390,18 @@ body.in-game .toolbar { display: flex; }
 @media (orientation: landscape) and (max-height: 520px) {
     .questCard { padding: 6px 10px; }
     .questText { font-size: 12px; }
-    .placeBanner { bottom: calc(max(8px, env(safe-area-inset-bottom)) + 74px); }
+    /* O painel do modo fica baixo: o texto à esquerda, o ✕ e o ✓ à direita. */
+    .placeBanner {
+        bottom: max(8px, env(safe-area-inset-bottom));
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 4px 14px;
+        width: min(calc(100% - 24px), 560px);
+        padding: 8px 12px 10px;
+    }
+    .placeHead { grid-column: 1 / -1; }
+    .placeText { font-size: 12.5px; }
+    .placeConfirm { gap: 10px; }
+    .placeBtn { width: 46px; height: 46px; font-size: 21px; }
 }
