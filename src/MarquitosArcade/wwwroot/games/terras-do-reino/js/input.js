@@ -13,7 +13,7 @@ import { idx } from './world.js';
 const TAP_SLOP = 8;
 const KEY_PAN = 14;
 
-let handlers = { tap() {}, cancel() {} };
+let handlers = { tap() {}, hover() {}, cancel() {} };
 
 export function setInputHandlers(next) {
     handlers = { ...handlers, ...next };
@@ -55,7 +55,7 @@ export function attachControls(canvas) {
 
         // Rato por cima do tabuleiro em modo de construção: mostra onde fica.
         if (!pointers.size && event.pointerType === 'mouse' && ui.placing) {
-            ui.hover = pickTile(p.x, p.y, elevAt);
+            handlers.hover(pickTile(p.x, p.y, elevAt));
             return;
         }
 

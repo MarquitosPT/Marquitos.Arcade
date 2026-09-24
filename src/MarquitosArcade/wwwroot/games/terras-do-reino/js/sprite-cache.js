@@ -28,24 +28,30 @@ export function setSpriteScale(value) {
  * A imagem de uma peça. `key` identifica a variante (tipo + cor + fase...);
  * duas chamadas com a mesma chave têm de pedir o mesmo desenho.
  */
-export function getSprite(key, kind, opts) {
-    let entry = cache.get(key);
+export function getSprite(key, kind, opts, k = 1) {
+    const full = k === 1 ? key : `${key}|${k}`;
+    let entry = cache.get(full);
     if (entry) return entry;
     const [x0, y0, w, h] = BOUNDS[kind] || BOUNDS.default;
     const canvas = document.createElement('canvas');
-    canvas.width = Math.ceil(w * scale);
-    canvas.height = Math.ceil(h * scale);
+    canvas.width = Math.ceil(w * k * scale);
+    canvas.height = Math.ceil(h * k * scale);
     const g = canvas.getContext('2d');
-    g.scale(scale, scale);
+    g.scale(scale * k, scale * k);
     g.translate(-x0, -y0);
     STATIC[kind](g, opts);
-    entry = { canvas, x0, y0, w, h };
-    cache.set(key, entry);
+    entry = { canvas, x0: x0 * k, y0: y0 * k, w: w * k, h: h * k };
+    cache.set(full, entry);
     return entry;
 }
 
-/** Carimba a peça no ponto de mundo (wx, wy) — o contexto já tem a câmara aplicada. */
-export function stamp(ctx, key, kind, opts, wx, wy) {
-    const s = getSprite(key, kind, opts);
+/**
+ * Carimba a peça no ponto de mundo (wx, wy) — o contexto já tem a câmara
+ * aplicada. `k` encolhe a peça à volta desse ponto (as árvores e os rochedos
+ * ocupam uma casa, mais pequena do que a de um edifício); a imagem é pintada
+ * já nesse tamanho, para o carimbo não ter de a encolher a cada frame.
+ */
+export function stamp(ctx, key, kind, opts, wx, wy, k = 1) {
+    const s = getSprite(key, kind, opts, k);
     ctx.drawImage(s.canvas, wx + s.x0, wy + s.y0, s.w, s.h);
 }

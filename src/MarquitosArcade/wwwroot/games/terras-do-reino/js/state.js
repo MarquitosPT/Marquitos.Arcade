@@ -32,6 +32,8 @@ export const game = {
     planted: [],
     /** Casas de colina que o jogador aplanou (índices), para a gravação. */
     flattened: [],
+    /** Sobe sempre que uma estrada abre ou fecha: quem guarda caminhos pelas estradas refá-los. */
+    roadsVersion: 0,
     market: { stock: {}, fair: null, nextFairDay: 3 },
     towns: [],
     questIndex: 0,
@@ -42,9 +44,10 @@ export const game = {
     derived: { residents: 0, workersUsed: 0, taxPerDay: 0, prosperity: 0, storage: 150, fedRatio: 0 }
 };
 
-/** Efeitos que não se guardam: caravanas, números a subir, pó da construção. */
+/** Efeitos que não se guardam: caravanas, gente a andar, números a subir, pó da construção. */
 export const fx = {
     caravans: [],
+    walkers: [],
     floats: [],
     puffs: [],
     /** Relógio global em segundos reais — anima água, nuvens e moinhos mesmo em pausa. */
@@ -53,8 +56,14 @@ export const fx = {
 
 /** O que a interface está a fazer: modo de construção e casa selecionada. */
 export const ui = {
-    /** Id do edifício a construir, ou null. */
+    /** Id do edifício a construir, 'road' para abrir estradas, ou null. */
     placing: null,
+    /** Em modo de estrada: a casa onde acabou o último troço (o próximo começa aí). */
+    roadFrom: null,
+    /** Em modo de estrada, com rato: o troço que se abriria (casas), se se pode pagar e para onde foi pedido. */
+    roadPreview: null,
+    roadPreviewOk: false,
+    roadPreviewKey: '',
     /** Casa por baixo do ponteiro (rato) ou do último toque, em modo de construção. */
     hover: null,
     selected: null

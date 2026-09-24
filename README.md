@@ -599,9 +599,17 @@ economia, não de conquista: ninguém ataca ninguém.
    aumenta o armazém e abre o escalão seguinte de edifícios.
 6. **O mercado** vende e compra às vilas vizinhas (ver abaixo).
 7. **Aplanar colinas**: nas colinas só se fazem minas, por isso uma colina no
-   território (sem veia de ouro) pode ser aplanada na ficha dela, por moedas e
-   madeira (`FLATTEN_COST`), e passa a terra livre — devolvendo alguma pedra
-   (`FLATTEN_STONE`). As veias de ouro não se aplanam.
+   território pode ser aplanada na ficha dela, um bloco de 2x2 casas de cada
+   vez, por moedas e madeira (`FLATTEN_COST`), e passa a terra livre —
+   devolvendo alguma pedra (`FLATTEN_STONE`). As veias de ouro não se aplanam.
+8. **Estradas de pedra** (`ROAD_COST` por casa): no modo de estrada toca-se
+   onde começa e depois onde acaba cada troço, e o caminho contorna sozinho
+   edifícios, árvores, água e colinas (preferindo as estradas que já há). Onde
+   uma estrada encosta a dois edifícios, o povo anda a pé entre eles
+   (`js/walkers.js`): tanto mais gente quanto mais moradores
+   (`RESIDENTS_PER_WALKER`). As vilas calcetam as ruas à volta de cada
+   edifício que fazem e têm a sua própria gente na rua. À volta do castelo fica
+   uma praça de uma casa onde só há estradas.
 
 Os **objetivos** (`js/quests.js`) são o tutorial: uma lista por ordem que leva
 de uma casa e um campo até ao castelo no nível máximo, cada um com recompensa.
@@ -623,7 +631,17 @@ dois dias.
 
 ### Mapa, desenho e controlos
 
+- **O mapa é de 88x88 casas** e uma casa é a peça mais pequena: uma árvore,
+  um rochedo, um troço de estrada. Os edifícios ocupam blocos de 2x2 casas (o
+  castelo 4x4), guardados pelo canto de cima; os raios (território, vizinhos
+  de um lenhador, alcance de um celeiro) contam-se em casas a partir do centro
+  do bloco. Ao construir, o bloco fica centrado no canto de casa mais perto do
+  dedo (`anchorFor` em `js/iso.js`). Os desenhos das peças continuam feitos
+  para o bloco de 2x2 (`js/draw.js`); as árvores e os rochedos, de uma casa só,
+  carimbam-se mais pequenos.
 - **O mapa sai de uma semente** (`js/world.js`, ruído de valor em `js/rng.js`).
+  O relevo e as florestas leem o ruído a meia resolução — as colinas e os lagos
+  têm o tamanho de antes, com margens mais finas.
   À volta do castelo garante-se o que o começo precisa — árvores, rochas, água e
   uma veia de ouro ao alcance do castelo no nível 3 —, e não só em contagem: tem de
   haver uma casa livre com árvores (ou rochas) à volta, onde caibam o lenhador e a
@@ -636,7 +654,10 @@ dois dias.
   moinho, fumo, vacas, bandeiras, brilho do ouro — desenha-se a cada frame.
 - **O tabuleiro desenha-se de trás para a frente**, diagonal a diagonal
   (`js/render.js`): o chão de cada casa e logo a seguir o que está em cima dela.
-  É o que faz uma colina tapar o que está atrás.
+  É o que faz uma colina tapar o que está atrás. O chão (relva, encostas,
+  estradas) é a exceção: são milhares de casas, por isso pinta-se por blocos
+  de 11x11 numa imagem à parte, à escala do ecrã, e só se repinta quando muda o
+  que o bloco tem ou o zoom; os blocos compõem-se por baixo das peças.
 - **As colinas descem em encosta**, não em degrau: a encosta pinta-se na casa
   de baixo, logo a seguir ao chão dela, e morre a uma distância irregular que
   sai de um hash dos pontos da grelha — por isso duas encostas que se tocam no
@@ -658,7 +679,12 @@ Como o servidor aceita até 8 kB por jogo, **a gravação leva a semente do mapa
 vez do mapa**, e os edifícios como listas curtas de números (`js/save.js`); as
 vilas levam só quantos edifícios têm, porque crescem sempre para os mesmos
 sítios. As colinas aplanadas vão como a lista dos índices das casas (`fl`),
-aplicada ao mapa antes de se porem os edifícios. Um reino com setenta edifícios ocupa perto de 1,5 kB.
+aplicada ao mapa antes de se porem os edifícios, e as estradas como um bit por
+casa do quadrado de 60x60 à volta do castelo, em base64 (`r`, 600 caracteres
+fixos). A gravação é a v2 (mapa de 88x88); uma v1, do tempo em que cada casa
+era um edifício, passa a v2 ao carregar, dobrando as coordenadas — o relevo é
+amostrado de modo a que o reino caia no mesmo sítio, e o chão debaixo de cada
+edifício é limpo à força, para nunca ficar nenhum em cima de um lago. Um reino com setenta edifícios ocupa perto de 1,5 kB.
 
 A regra de junção é diferente da do Maze Run: **ganha a cópia com mais tempo de
 jogo**. Um reino não se junta campo a campo como as marcas de um nível — são

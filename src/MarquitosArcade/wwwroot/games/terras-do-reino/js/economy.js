@@ -14,7 +14,7 @@ import {
     BUILDING, CASTLE_LEVELS, DAY_SECONDS, FOODS, HAPPY_BASE, HAPPY_FED, HAPPY_VARIETY, IDLE_TAX_SHARE, RESOURCE,
     TAX_PER_RESIDENT
 } from './config.js';
-import { costValue } from './buildings.js';
+import { centerOf, costValue } from './buildings.js';
 import { driftMarket, marketNewDay } from './market.js';
 import { castleInfo, fx, game } from './state.js';
 import { stepCaravans, stepTowns } from './towns.js';
@@ -34,7 +34,8 @@ export function addResource(res, amount) {
 
 function float(b, text, quiet) {
     if (quiet) return;
-    fx.floats.push({ gx: b.x + 0.5, gy: b.y + 0.5, text, t: 0 });
+    const c = centerOf(b);
+    fx.floats.push({ gx: c.x, gy: c.y, text, t: 0 });
 }
 
 /** Os números que se mostram e que o resto do jogo lê: moradores, armazém, impostos. */
@@ -141,7 +142,7 @@ function stepProducer(b, def, dt, quiet) {
 
     let efficiency = 1;
     if (def.near) {
-        const found = countFeatureNear(game.world, b.x, b.y, def.near.feature, def.near.radius);
+        const found = countFeatureNear(game.world, b.x, b.y, b.size, def.near.feature, def.near.radius);
         if (found < def.near.min) {
             b.status = 'noNear';
             return;
@@ -174,7 +175,7 @@ function stepProducer(b, def, dt, quiet) {
     if (parts.length) float(b, parts.join(' '), quiet);
 }
 
-/** Guarda-florestal: planta uma árvore numa casa livre à volta, de tempos a tempos. */
+/** Guarda-florestal: planta uma árvore numa casa livre à volta, de tempos a tempos (nunca nas estradas). */
 function stepForester(b, def, dt) {
     if (!b.staffed) {
         b.status = 'noWorkers';
@@ -187,7 +188,8 @@ function stepForester(b, def, dt) {
     }
     b.progress = 0;
     const free = [];
-    forEachInRadius(b.x + 0.5, b.y + 0.5, def.plants.radius + 0.25, (x, y) => {
+    const c = centerOf(b);
+    forEachInRadius(c.x, c.y, def.plants.radius, (x, y) => {
         if (isFreeLand(game.world, x, y)) free.push(idx(x, y));
     });
     if (!free.length) {
@@ -214,12 +216,14 @@ function stepBarn(b, def, dt, quiet) {
 
     let empty = null;
     let ripe = null;
-    forEachInRadius(b.x + 0.5, b.y + 0.5, def.farms.radius + 0.25, (x, y) => {
-        const other = game.world.building[idx(x, y)];
-        if (other?.owner !== 'player' || other.kind !== 'field') return;
+    const c = centerOf(b);
+    for (const other of game.buildings) {
+        if (other.kind !== 'field') continue;
+        const o = centerOf(other);
+        if (Math.hypot(o.x - c.x, o.y - c.y) > def.farms.radius) continue;
         if (!ripe && other.stage === 'ripe') ripe = other;
         if (!empty && other.stage === 'empty') empty = other;
-    });
+    }
 
     if (ripe) {
         if (harvestField(ripe, { quiet }) > 0) {

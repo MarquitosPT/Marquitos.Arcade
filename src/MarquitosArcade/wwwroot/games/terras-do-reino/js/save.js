@@ -5,20 +5,26 @@
 // aceita no máximo 8 kB por jogo, por isso guarda-se o mínimo — a semente do
 // mapa em vez do mapa, e os edifícios como listas curtas de números.
 //
-// A forma (v1):
+// A forma (v2):
 //
 //   {
-//     v: 1, seed, saved,                      // semente do mapa e hora da gravação (ms)
+//     v: 2, seed, saved,                      // semente do mapa e hora da gravação (ms)
 //     played, clock, day, cl, happy,          // relógio, nível do castelo, contentamento
 //     res: { coins, wood, ... },
 //     b: [[tipo, x, y, progresso, fase, crescimento], ...],  // campos
 //        [[tipo, x, y, progresso, parado], ...],             // o resto
 //     pt: [índices de casas com árvores plantadas],
-//     fl: [índices de casas de colina aplanadas],       // opcional: gravações antigas não o têm
+//     fl: [índices de casas de colina aplanadas],       // opcional
+//     r: 'base64',                            // estradas: um bit por casa do quadrado à volta do castelo (opcional)
 //     m: { s: { bem: stock }, f: feira|null, nf: dia da próxima feira },
 //     t: [[edifícios, relógio, comércio, riqueza], ...],   // uma entrada por vila
 //     q, st, bs                               // objetivo, estatísticas, melhor enviado ao quadro
 //   }
+//
+// As coordenadas são de casas do mapa de 88x88, e um edifício guarda o canto
+// de cima do seu bloco de 2x2. A v1 era do tempo em que cada casa era um
+// edifício (mapa de 44x44): ao carregar, passa a v2 dobrando as coordenadas —
+// o relevo é amostrado de modo a que o reino caia no mesmo sítio.
 //
 // Junção das duas cópias (aparelho e conta): ganha a que tem mais tempo de
 // jogo. Um reino não se junta campo a campo como as marcas de um nível — são
@@ -33,18 +39,74 @@ import { catchUp, refreshDerived } from './economy.js';
 import { initMarket } from './market.js';
 import { emptyResources, fx, game, ui } from './state.js';
 import { newTowns, placeTowns } from './towns.js';
-import { T_HILL, flattenTile, generateWorld } from './world.js';
+import { CASTLE_CENTER, ROAD_PLAYER, T_HILL, flattenTile, generateWorld, idx, inMap } from './world.js';
 
-const VERSION = 1;
+const VERSION = 2;
+/** Lado do mapa da v1. */
+const V1_SIZE = 44;
+/**
+ * As estradas guardam-se num quadrado à volta do castelo, um bit por casa: é o
+ * que o território máximo alcança. Fica sempre no mesmo tamanho (600
+ * caracteres), por muitas estradas que haja.
+ */
+const ROAD_BOX = 60;
+const ROAD_X0 = CASTLE_CENTER.x - ROAD_BOX / 2;
+const ROAD_Y0 = CASTLE_CENTER.y - ROAD_BOX / 2;
 const KIND_INDEX = Object.fromEntries(BUILDINGS.map((b, i) => [b.id, i]));
 const STAGES = ['empty', 'growing', 'ripe'];
 
-const isSave = (data) => !!data && data.v === VERSION && Number.isFinite(data.seed);
+const isSave = (data) => !!data && (data.v === VERSION || data.v === 1) && Number.isFinite(data.seed);
+
+/** Passa uma gravação v1 (casas de 44x44) a v2 (88x88). As outras vêm como estão. */
+function upgrade(data) {
+    if (!isSave(data) || data.v === VERSION) return data;
+    const cells = (i) => {
+        const x = (i % V1_SIZE) * 2;
+        const y = Math.floor(i / V1_SIZE) * 2;
+        return [idx(x, y), idx(x + 1, y), idx(x, y + 1), idx(x + 1, y + 1)];
+    };
+    return {
+        ...data,
+        v: VERSION,
+        b: (data.b || []).map((row) => [row[0], row[1] * 2, row[2] * 2, ...row.slice(3)]),
+        pt: (data.pt || []).map((i) => cells(i)[0]),
+        fl: (data.fl || []).flatMap(cells)
+    };
+}
+
+function encodeRoads(world) {
+    const bytes = new Uint8Array(Math.ceil((ROAD_BOX * ROAD_BOX) / 8));
+    let any = false;
+    for (let y = 0; y < ROAD_BOX; y++) {
+        for (let x = 0; x < ROAD_BOX; x++) {
+            if (world.road[idx(ROAD_X0 + x, ROAD_Y0 + y)] !== ROAD_PLAYER) continue;
+            const bit = y * ROAD_BOX + x;
+            bytes[bit >> 3] |= 1 << (bit & 7);
+            any = true;
+        }
+    }
+    return any ? btoa(String.fromCharCode(...bytes)) : undefined;
+}
+
+function decodeRoads(text, place) {
+    let raw = '';
+    try {
+        raw = atob(text);
+    } catch {
+        return;
+    }
+    for (let bit = 0; bit < ROAD_BOX * ROAD_BOX; bit++) {
+        if (!(raw.charCodeAt(bit >> 3) & (1 << (bit & 7)))) continue;
+        const x = ROAD_X0 + (bit % ROAD_BOX);
+        const y = ROAD_Y0 + Math.floor(bit / ROAD_BOX);
+        if (inMap(x, y)) place(x, y);
+    }
+}
 
 export const progress = createProgressClient(GAME_ID, {
     storageKey: PROGRESS_STORAGE_KEY,
     empty: () => ({}),
-    accept: (data) => (isSave(data) ? data : {}),
+    accept: (data) => (isSave(data) ? upgrade(data) : {}),
     merge: (local, remote) => {
         if (!isSave(remote)) return local;
         if (!isSave(local)) return remote;
@@ -69,15 +131,18 @@ function resetState(seed) {
     game.nextId = 1;
     game.planted = [];
     game.flattened = [];
+    game.roadsVersion++;
     game.market = { stock: {}, fair: null, nextFairDay: 3 };
     game.towns = [];
     game.questIndex = 0;
     game.stats = { harvested: 0, sold: 0, bought: 0, earned: 0, built: 0 };
     game.bestSubmitted = 0;
     fx.caravans = [];
+    fx.walkers = [];
     fx.floats = [];
     fx.puffs = [];
     ui.placing = null;
+    ui.roadFrom = null;
     ui.selected = null;
     ui.hover = null;
     placeCastle();
@@ -115,6 +180,7 @@ export function serialize() {
         }),
         pt: game.planted.filter((i) => game.world.feature[i] === 'tree'),
         fl: game.flattened,
+        r: encodeRoads(game.world),
         m: {
             s: Object.fromEntries(Object.entries(game.market.stock).map(([k, v]) => [k, Math.round(v)])),
             f: game.market.fair,
@@ -134,6 +200,7 @@ export function serialize() {
  */
 export function loadSave(data = progress.data) {
     if (!isSave(data)) return false;
+    data = upgrade(data);
     resetState(data.seed);
 
     game.played = data.played || 0;
@@ -157,7 +224,10 @@ export function loadSave(data = progress.data) {
         const def = BUILDINGS[row[0]];
         if (!def) continue;
         const [, x, y, prog] = row;
-        const b = createBuilding(def.id, x, y, { progress: prog || 0 });
+        if (!inMap(x, y) || !inMap(x + 1, y + 1)) continue;
+        if (game.world.building[idx(x, y)] || game.world.building[idx(x + 1, y + 1)]
+            || game.world.building[idx(x + 1, y)] || game.world.building[idx(x, y + 1)]) continue;
+        const b = createBuilding(def.id, x, y, { progress: prog || 0 }, { force: true });
         if (def.id === 'field') {
             b.stage = STAGES[row[4]] || 'empty';
             b.growth = row[5] || 0;
@@ -166,8 +236,17 @@ export function loadSave(data = progress.data) {
         }
     }
 
+    if (typeof data.r === 'string') {
+        decodeRoads(data.r, (x, y) => {
+            const i = idx(x, y);
+            if (game.world.building[i] || game.world.terrain[i] === T_HILL) return;
+            game.world.feature[i] = null;
+            game.world.road[i] = ROAD_PLAYER;
+        });
+    }
+
     for (const i of data.pt || []) {
-        if (!game.world.building[i]) {
+        if (!game.world.building[i] && !game.world.road[i]) {
             game.world.feature[i] = 'tree';
             game.planted.push(i);
         }
