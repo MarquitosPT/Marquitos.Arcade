@@ -21,6 +21,7 @@ import {
     P, box, cone, crenels, cylinder, depth, diamond, faceOf, gable, groundShadow, layered, poly, pyramid, shade,
     unturned, wallPatch
 } from './draw.js';
+import { hash2 } from './rng.js';
 
 export const PLAYER_ROOF = '#c8553d';
 const CASTLE_ROOF = '#3f63b8';
@@ -155,78 +156,155 @@ const MOUNTAIN_PAIRS = [
     ['low', 'mid'], ['high', 'mid'], ['low', 'high']
 ];
 
-/** Um monte com a base no ponto (x, y): a face da esquerda ao sol, a da direita na sombra. */
-function mountainPeak(ctx, x, y, kindId, s, flip) {
+/** Pinta um caminho fechado pelos pontos, ou só o traça (para recortar). */
+function outline(ctx, points) {
+    ctx.beginPath();
+    ctx.moveTo(...points[0]);
+    for (let i = 1; i < points.length; i++) ctx.lineTo(...points[i]);
+    ctx.closePath();
+}
+
+/** As pedrinhas soltas no sopé de um monte, à frente dele. */
+function footStones(ctx, x, y, w, rnd) {
+    const n = 2 + Math.floor(rnd() * 3);
+    for (let i = 0; i < n; i++) {
+        const u = -0.85 + (1.7 * (i + 0.2 + rnd() * 0.6)) / n;
+        const sx = x + u * w;
+        const sy = y + (1 - Math.abs(u)) * w * 0.2 + rnd() * 1.5;
+        const grey = ['#9a968c', '#8d8a82', '#a8a296'][Math.floor(rnd() * 3)];
+        boulder(ctx, sx, sy, 0.22 + rnd() * 0.2, grey);
+    }
+}
+
+/**
+ * Um monte com a base no ponto (x, y): a face da esquerda ao sol, a da direita
+ * na sombra. O contorno é quebrado — ressaltos, ombros e às vezes um cabeço ao
+ * lado do cimo — e muda com `seed`, para dois montes do mesmo feitio não serem
+ * iguais.
+ */
+function mountainPeak(ctx, x, y, kindId, s, flip, seed) {
     const kind = MOUNTAIN_KINDS[kindId];
     const w = kind.w * s;
     const h = kind.h * s;
+    let n = 0;
+    const rnd = () => hash2(seed, n++, 41);
+    const jit = (amount) => (rnd() - 0.5) * amount;
     const lit = shade(kind.color, 0.16);
     const dark = shade(kind.color, -0.22);
-    // A crista desce do cimo até à base, um pouco à frente: divide a luz da sombra.
-    const skew = (flip ? -1 : 1) * w * 0.12;
-    const top = [x + skew, y - h];
-    // O cimo é rombo: dois ombros logo abaixo dele, um de cada lado.
-    const capL = [top[0] - w * 0.16, top[1] + h * 0.1];
-    const capR = [top[0] + w * 0.15, top[1] + h * 0.09];
+    const dir = flip ? -1 : 1;
+    const top = [x + dir * w * 0.12 + jit(w * 0.1), y - h];
     const foot = [x + w * 0.12, y + w * 0.22];
     const left = [x - w, y];
     const right = [x + w, y];
 
     if (kindId === 'low') {
-        // Um cabeço redondo: curvas em vez de arestas.
+        // Um cabeço redondo, mas com lombas: curvas por vários pontos.
+        const bl = [x - w * 0.55 + jit(w * 0.1), y - h * (0.6 + rnd() * 0.2)];
+        const br = [x + w * 0.5 + jit(w * 0.1), y - h * (0.55 + rnd() * 0.2)];
+        const mid = [x + w * 0.03, y - h * 0.45];
         ctx.fillStyle = lit;
         ctx.beginPath();
         ctx.moveTo(...left);
-        ctx.quadraticCurveTo(x - w * 0.75, y - h * 1.05, top[0], top[1]);
-        ctx.quadraticCurveTo(x + w * 0.05, y - h * 0.4, ...foot);
+        ctx.quadraticCurveTo(x - w * 0.85, y - h * 0.5, ...bl);
+        ctx.quadraticCurveTo(bl[0] + w * 0.12, top[1] - h * 0.05, ...top);
+        ctx.quadraticCurveTo(x + w * 0.05, y - h * 0.7, ...mid);
+        ctx.lineTo(...foot);
         ctx.closePath();
         ctx.fill();
         ctx.fillStyle = dark;
         ctx.beginPath();
         ctx.moveTo(...top);
-        ctx.quadraticCurveTo(x + w * 0.8, y - h * 1.0, ...right);
+        ctx.quadraticCurveTo(br[0] - w * 0.12, top[1] + h * 0.02, ...br);
+        ctx.quadraticCurveTo(x + w * 0.85, y - h * 0.45, ...right);
         ctx.lineTo(...foot);
-        ctx.quadraticCurveTo(x + w * 0.05, y - h * 0.4, ...top);
+        ctx.lineTo(...mid);
+        ctx.quadraticCurveTo(x + w * 0.05, y - h * 0.7, ...top);
         ctx.closePath();
         ctx.fill();
         // Uns tufos mais claros.
         ctx.fillStyle = shade(kind.color, 0.32);
-        for (const [dx, dy, r] of [[-0.45, 0.45, 0.13], [-0.15, 0.7, 0.1]]) {
+        for (const [dx, dy, r] of [[-0.5, 0.4, 0.12], [-0.18, 0.72, 0.09], [-0.7, 0.18, 0.08]]) {
             ctx.beginPath();
-            ctx.ellipse(x + dx * w, y - dy * h, r * w, r * w * 0.55, 0, 0, Math.PI * 2);
+            ctx.ellipse(x + (dx + jit(0.08)) * w, y - dy * h, r * w, r * w * 0.55, 0, 0, Math.PI * 2);
             ctx.fill();
         }
+        if (rnd() < 0.6) footStones(ctx, x, y, w, rnd);
         return;
     }
 
-    // Um pico de rocha: ombros quebrados de cada lado da crista.
-    const sl = [x - w * 0.55, y - h * 0.48];
-    const sr = [x + w * 0.5, y - h * 0.42];
-    poly(ctx, [left, sl, capL, top, [x + w * 0.02, y - h * 0.45], foot], lit);
-    poly(ctx, [top, capR, sr, right, foot, [x + w * 0.02, y - h * 0.45]], dark);
-    // Estrias de pedra na face ao sol.
+    // Um monte de rocha: o contorno sobe aos ressaltos até ao cimo rombo e
+    // desce do outro lado; às vezes com um cabeço mais baixo ao lado do cimo.
+    const bump = rnd() < 0.55 ? (rnd() < 0.5 ? -1 : 1) : 0;
+    const leftSide = [
+        left,
+        [x - w * 0.8, y - h * (0.2 + rnd() * 0.08)],
+        [x - w * (0.66 + rnd() * 0.06), y - h * (0.3 + rnd() * 0.06)],
+        [x - w * 0.52, y - h * (0.5 + rnd() * 0.1)],
+        [x - w * 0.36, y - h * (bump < 0 ? 0.74 + rnd() * 0.08 : 0.6 + rnd() * 0.08)],
+        [x - w * 0.26, y - h * (bump < 0 ? 0.64 : 0.7 + rnd() * 0.06)],
+        [top[0] - w * 0.14, top[1] + h * (0.08 + rnd() * 0.05)],
+        top
+    ];
+    const rightSide = [
+        top,
+        [top[0] + w * 0.14, top[1] + h * (0.07 + rnd() * 0.05)],
+        [x + w * 0.32, y - h * (bump > 0 ? 0.62 : 0.66 + rnd() * 0.06)],
+        [x + w * 0.42, y - h * (bump > 0 ? 0.72 + rnd() * 0.08 : 0.54 + rnd() * 0.08)],
+        [x + w * 0.56, y - h * (0.42 + rnd() * 0.08)],
+        [x + w * (0.7 + rnd() * 0.06), y - h * (0.3 + rnd() * 0.06)],
+        [x + w * 0.82, y - h * (0.16 + rnd() * 0.06)],
+        right
+    ];
+    // A crista que separa a luz da sombra desce aos zigue-zagues até à base.
+    const crest = [
+        [top[0] + w * 0.02 + jit(w * 0.05), y - h * 0.72],
+        [x + w * 0.1 + jit(w * 0.06), y - h * 0.5],
+        [x - w * 0.02 + jit(w * 0.06), y - h * 0.28],
+        foot
+    ];
+    const litFace = [...leftSide, ...crest];
+    const darkFace = [...rightSide, ...crest.slice().reverse()];
+    outline(ctx, litFace);
+    ctx.fillStyle = lit;
+    ctx.fill();
+    outline(ctx, darkFace);
+    ctx.fillStyle = dark;
+    ctx.fill();
+
+    // Fendas na rocha: na face ao sol e na da sombra.
     ctx.strokeStyle = shade(kind.color, -0.08);
     ctx.lineWidth = 0.9;
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(x - w * 0.5, y - h * 0.3); ctx.lineTo(x - w * 0.25, y - h * 0.55);
-    ctx.moveTo(x - w * 0.2, y - h * 0.12); ctx.lineTo(x - w * 0.05, y - h * 0.32);
+    ctx.moveTo(x - w * 0.55, y - h * 0.28); ctx.lineTo(x - w * 0.42, y - h * 0.4); ctx.lineTo(x - w * 0.3, y - h * 0.52);
+    ctx.moveTo(x - w * 0.24, y - h * 0.12); ctx.lineTo(x - w * 0.12, y - h * 0.3);
+    ctx.stroke();
+    ctx.strokeStyle = shade(kind.color, -0.34);
+    ctx.beginPath();
+    ctx.moveTo(x + w * 0.3, y - h * 0.2); ctx.lineTo(x + w * 0.42, y - h * 0.36);
+    ctx.moveTo(x + w * 0.58, y - h * 0.1); ctx.lineTo(x + w * 0.64, y - h * 0.22);
     ctx.stroke();
 
     if (kind.snow) {
-        // A neve do cimo, com a orla aos bicos: metade ao sol, metade na sombra.
-        const crest = [x + w * 0.02, y - h * 0.45];
-        const at = (p, u) => [top[0] + (p[0] - top[0]) * u, top[1] + (p[1] - top[1]) * u];
-        const l = at(sl, 0.55);
-        const r = at(sr, 0.5);
-        const cl = at(capL, 1);
-        const cr = at(capR, 1);
-        const c = at(crest, 0.52);
-        const bumpL = at([(sl[0] + crest[0]) / 2, (sl[1] + crest[1]) / 2], 0.36);
-        const bumpR = at([(sr[0] + crest[0]) / 2, (sr[1] + crest[1]) / 2], 0.38);
-        poly(ctx, [top, cl, l, bumpL, c], '#f4f6f8');
-        poly(ctx, [top, c, bumpR, r, cr], '#c9d3dd');
+        // A neve do cimo, recortada pelo contorno do monte, com a orla aos bicos.
+        const line = y - h * 0.62;
+        const snow = [[x - w, y - h * 1.2]];
+        for (let i = 0; i <= 8; i++) {
+            snow.push([x - w * 0.6 + (w * 1.2 * i) / 8, line + (i % 2 ? h * 0.1 : -h * 0.02) + jit(h * 0.06)]);
+        }
+        snow.push([x + w, y - h * 1.2]);
+        for (const [face, color] of [[litFace, '#f4f6f8'], [darkFace, '#c9d3dd']]) {
+            ctx.save();
+            outline(ctx, face);
+            ctx.clip();
+            outline(ctx, snow);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.restore();
+        }
     }
+
+    footStones(ctx, x, y, w, rnd);
 }
 
 /** Os montes de uma casa; com `backOnly`, só o de trás (fica atrás de um rochedo ou de um veio de ouro). */
@@ -237,23 +315,23 @@ function mountain(ctx, { variant = 0, backOnly = false }) {
     if (backOnly) {
         // Atrás na vista, rode ela para onde rodar: o rochedo fica à frente.
         const [x, y] = P(0, 0);
-        mountainPeak(ctx, x, y - 7, back, 1, flip);
+        mountainPeak(ctx, x, y - 7, back, 1, flip, variant * 2);
         return;
     }
     layered([
         [-0.1 * side, -0.14, () => {
             const [x, y] = P(-0.1 * side, -0.14);
-            mountainPeak(ctx, x, y, back, 1, flip);
+            mountainPeak(ctx, x, y, back, 1, flip, variant * 2);
         }],
         [0.12 * side, 0.1, () => {
             const [x, y] = P(0.12 * side, 0.1);
-            mountainPeak(ctx, x, y, front, 0.82, !flip);
+            mountainPeak(ctx, x, y, front, 0.82, !flip, variant * 2 + 1);
         }]
     ]);
 }
 
-/** Quantas variantes tem o desenho dos montes (ver `mountain`). */
-export const MOUNTAIN_VARIANTS = MOUNTAIN_PAIRS.length * 2;
+/** Quantas variantes tem o desenho dos montes: cada par, virado para cada lado, com três contornos (ver `mountain`). */
+export const MOUNTAIN_VARIANTS = MOUNTAIN_PAIRS.length * 2 * 3;
 
 // ---------- Campo ----------
 
