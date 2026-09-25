@@ -18,7 +18,7 @@
 // esse lado está virado para quem olha.
 
 import {
-    P, box, cone, crenels, cylinder, depth, diamond, faceOf, gable, groundShadow, layered, poly, pyramid, shade,
+    P, box, cone, crenels, cylinder, depth, diamond, faceOf, groundShadow, layered, poly, shade,
     unturned, wallPatch
 } from './draw.js';
 import { hash2 } from './rng.js';
@@ -837,7 +837,7 @@ function flowerBox(ctx, f, u, hw, z, colors, rnd) {
  * portadas de ripas abertas, `lintel` uma verga de pedra, `flowers` um vaso.
  * w em frações do bloco.
  */
-function houseWindow(ctx, f, u, z0, z1, w, { shutter = null, frame = FRAME, lintel = null, flowers = null, rnd = Math.random } = {}) {
+function houseWindow(ctx, f, u, z0, z1, w, { shutter = null, frame = FRAME, lintel = null, flowers = null, glass = GLASS, rnd = Math.random } = {}) {
     if (!f) return;
     const hw = w / f.w / 2;
     const e = 0.014 / f.w;
@@ -863,8 +863,8 @@ function houseWindow(ctx, f, u, z0, z1, w, { shutter = null, frame = FRAME, lint
     const mh = 0.004 / f.w;
     for (const [ua, ub] of [[u - hw, u - mh], [u + mh, u + hw]]) {
         for (const [za, zb] of [[z0, zm - 0.3], [zm + 0.3, z1]]) {
-            faceQuad(ctx, f, ua, ub, za, zb, shade(GLASS, 0.12));
-            faceQuad(ctx, f, ua, ub, (za + zb) / 2, zb, GLASS);
+            faceQuad(ctx, f, ua, ub, za, zb, shade(glass, 0.12));
+            faceQuad(ctx, f, ua, ub, (za + zb) / 2, zb, glass);
             faceLine(ctx, f, ua + (ub - ua) * 0.25, za + 0.6, ua + (ub - ua) * 0.7, zb - 0.5, 'rgba(255, 255, 255, 0.45)', 0.45, true);
         }
     }
@@ -1324,6 +1324,197 @@ function house(ctx, { roof = PLAYER_ROOF, variant = 0 }) {
     }
 }
 
+// ---------- Texturas dos edifícios ----------
+//
+// Os edifícios usam as mesmas texturas das casas: `walls` pinta a caixa e,
+// em cada face à vista, o reboco, a pedra ou as tábuas; `door` e `windows`
+// põem as portas e janelas das casas numa face 'left' (+y) ou 'right' (+x),
+// como o `wallPatch` de draw.js — as janelas também na face oposta, para
+// se verem de qualquer lado da vista. Os telhados de duas águas são o
+// `tiledRoof` das casas; os de quatro águas e os cónicos também levam telhas.
+
+const SIDE_NORMAL = { left: [0, 1], right: [1, 0] };
+
+/** Paredes com textura: 'plaster', 'timber' (reboco com enxaimel), 'stone', 'bigstone' ou 'planks'. */
+function walls(ctx, a, b, h, color, { ox = 0, oy = 0, z = 0, tex = 'plaster', top = null, seed = null } = {}) {
+    box(ctx, a, b, h, color, { ox, oy, z, top });
+    const rnd = seeded(seed ?? Math.round(a * 997 + b * 331 + h * 17 + z));
+    for (const n of [[0, 1], [1, 0], [0, -1], [-1, 0]]) {
+        const f = houseFace(...n, a, b, ox, oy);
+        if (!f) continue;
+        if (tex === 'stone') stoneWall(ctx, f, z, z + h, color, rnd);
+        else if (tex === 'bigstone') stoneWall(ctx, f, z, z + h, color, rnd, { h: 4, w: 0.15 });
+        else if (tex === 'planks') planks(ctx, f, z, z + h, color, rnd, Math.max(3, Math.round(f.w / 0.07)));
+        else {
+            plaster(ctx, f, z, z + h, color, rnd);
+            if (tex === 'timber') halfTimber(ctx, f, z, z + h, { braces: false });
+        }
+    }
+}
+
+/** Uma porta das casas numa face 'left' ou 'right' de uma caixa a x b. */
+function door(ctx, side, a, b, u, w, h, color = DOOR, { ox = 0, oy = 0, arch = false, frame = '#5a3d26' } = {}) {
+    houseDoor(ctx, houseFace(...SIDE_NORMAL[side], a, b, ox, oy), u, w, h, color, { arch, frame, rnd: seeded(Math.round(u * 100 + h * 7)) });
+}
+
+/**
+ * Uma janela das casas numa face 'left' ou 'right', e outra igual na face
+ * oposta (a menos que `both` seja false). `glass` pinta uma montra ou uma
+ * janela acesa.
+ */
+function windows(ctx, side, a, b, u, w, z0, z1, { ox = 0, oy = 0, both = true, ...opts } = {}) {
+    const [nx, ny] = SIDE_NORMAL[side];
+    const rnd = seeded(Math.round(u * 100 + z0 * 13));
+    houseWindow(ctx, houseFace(nx, ny, a, b, ox, oy), u, z0, z1, w, { rnd, ...opts });
+    if (both) houseWindow(ctx, houseFace(-nx, -ny, a, b, ox, oy), 1 - u, z0, z1, w, { rnd, ...opts, flowers: null });
+}
+
+/**
+ * Telhas numa água triangular, em coordenadas de ecrã: fiadas do beiral (a, b)
+ * até ao cimo, cada uma a cobrir a de baixo, com a ponta arredondada.
+ */
+function tileTriangle(ctx, a, b, apex, c, rnd, rows = 5) {
+    const lerp = (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
+    const dt = 1 / rows;
+    const fills = batch();
+    const edges = batch();
+    for (let r = 0; r < rows; r++) {
+        const t0 = r * dt;
+        const t1 = (r + 1) * dt;
+        const l0 = lerp(a, apex, t0);
+        const r0 = lerp(b, apex, t0);
+        const l1 = lerp(a, apex, t1);
+        const r1 = lerp(b, apex, t1);
+        const n = Math.max(1, Math.round(Math.hypot(r0[0] - l0[0], r0[1] - l0[1]) / 4.5));
+        for (let k = 0; k < n; k++) {
+            const s0 = k / n + 0.01;
+            const s1 = (k + 1) / n - 0.01;
+            const t = tone(rnd, 0.14);
+            const bl = lerp(l0, r0, s0);
+            const br = lerp(l0, r0, s1);
+            const tl = lerp(l1, r1, s0);
+            const tr = lerp(l1, r1, s1);
+            const mid = lerp(l0, r0, (s0 + s1) / 2);
+            const drop = [mid[0], mid[1] + 1.2];
+            const p = fills.path(shade(c, t));
+            p.moveTo(...tl);
+            p.lineTo(...tr);
+            p.lineTo(...br);
+            p.quadraticCurveTo(...drop, ...bl);
+            p.closePath();
+            const e = edges.path(shade(c, t - 0.32));
+            e.moveTo(...br);
+            e.quadraticCurveTo(...drop, ...bl);
+        }
+        fills.fill(ctx);
+        edges.stroke(ctx, 0.5);
+    }
+}
+
+/** Telhado de quatro águas (pirâmide) com telhas: as duas águas da frente, na vista. */
+function tiledPyramid(ctx, a, b, z, rise, roof, { ox = 0, oy = 0, over = 0.04, seed = 3 } = {}) {
+    const rnd = seeded(seed);
+    const base = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sx, sy]) => P(ox + sx * (a / 2 + over), oy + sy * (b / 2 + over), z));
+    const apex = P(ox, oy, z + rise);
+    // O canto mais à frente na vista (o mais baixo no ecrã) e as duas águas que lá se juntam.
+    let k = 0;
+    for (let i = 1; i < 4; i++) if (base[i][1] > base[k][1]) k = i;
+    const prev = base[(k + 3) % 4];
+    const next = base[(k + 1) % 4];
+    const [leftCorner, rightCorner] = prev[0] < next[0] ? [prev, next] : [next, prev];
+    for (const [corner, c] of [[leftCorner, roof], [rightCorner, shade(roof, -0.25)]]) {
+        const [p, q] = corner[0] < base[k][0] ? [corner, base[k]] : [base[k], corner];
+        poly(ctx, [p, q, apex], shade(c, -0.35));
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(...p);
+        ctx.lineTo(...q);
+        ctx.lineTo(...apex);
+        ctx.closePath();
+        ctx.clip();
+        tileTriangle(ctx, p, q, apex, c, rnd, Math.max(4, Math.round(rise / 3)));
+        ctx.restore();
+        ctx.strokeStyle = shade(c, -0.45);
+        ctx.lineWidth = 1.1;
+        ctx.beginPath();
+        ctx.moveTo(...p);
+        ctx.lineTo(...q);
+        ctx.stroke();
+    }
+    // Os rincões: as arestas entre as águas.
+    ctx.strokeStyle = shade(roof, -0.4);
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(...base[k]);
+    ctx.lineTo(...apex);
+    ctx.stroke();
+}
+
+/** Telhado cónico com telhas: fiadas em arco, desencontradas, e a ponta. */
+function tiledCone(ctx, x, y, r, rise, color) {
+    cone(ctx, x, y, r, rise, color);
+    const rows = Math.max(4, Math.round(rise / 3.5));
+    ctx.save();
+    ctx.lineWidth = 0.6;
+    for (let k = 0; k < rows; k++) {
+        const t = k / rows;
+        const cy = y - rise * t;
+        const rr = r * (1 - t);
+        // A orla de cada fiada: um arco da frente do cone.
+        ctx.strokeStyle = 'rgba(40, 20, 10, 0.35)';
+        ctx.beginPath();
+        ctx.ellipse(x, cy, rr, rr * 0.5, 0, 0.05, Math.PI - 0.05);
+        ctx.stroke();
+        // As juntas entre as telhas da fiada.
+        const n = Math.max(3, Math.round(rr / 2.2));
+        ctx.strokeStyle = 'rgba(40, 20, 10, 0.25)';
+        ctx.beginPath();
+        for (let i = 0; i < n; i++) {
+            const ang = ((i + (k % 2) * 0.5 + 0.5) / n) * Math.PI;
+            const h = rise / rows;
+            const bx = x + Math.cos(ang) * rr;
+            const by = cy + Math.sin(ang) * rr * 0.5;
+            const r2 = r * (1 - t - h / rise);
+            const tx = x + Math.cos(ang) * r2;
+            const ty = cy - h + Math.sin(ang) * r2 * 0.5;
+            ctx.moveTo(bx, by);
+            ctx.lineTo(tx, ty);
+        }
+        ctx.stroke();
+    }
+    ctx.restore();
+    // O pináculo.
+    ctx.fillStyle = shade(color, -0.35);
+    ctx.fillRect(x - 0.6, y - rise - 3, 1.2, 3.5);
+}
+
+/** Torre redonda de pedra: o cilindro com as fiadas e as juntas desencontradas. */
+function stoneTower(ctx, r, h, color, { ox = 0, oy = 0, z = 0 } = {}) {
+    const top = cylinder(ctx, r, h, color, { ox, oy, z });
+    const [cx, cy] = P(ox, oy, z);
+    const step = 3.2;
+    ctx.save();
+    ctx.lineWidth = 0.55;
+    for (let zz = step, row = 0; zz < h - 0.5; zz += step, row++) {
+        ctx.strokeStyle = 'rgba(60, 50, 40, 0.35)';
+        ctx.beginPath();
+        ctx.ellipse(cx, cy - zz, r, r * 0.5, 0, 0.02, Math.PI - 0.02);
+        ctx.stroke();
+        const n = Math.max(4, Math.round(r / 2.4));
+        ctx.beginPath();
+        for (let i = 0; i < n; i++) {
+            const ang = ((i + (row % 2) * 0.5 + 0.25) / n) * Math.PI;
+            const x = cx + Math.cos(ang) * r;
+            const y = cy - zz + Math.sin(ang) * r * 0.5;
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y + step);
+        }
+        ctx.stroke();
+    }
+    ctx.restore();
+    return top;
+}
+
 function market(ctx, { roof = PLAYER_ROOF }) {
     diamond(ctx, 0.94, 0.94, 0, '#c9b99a');
     diamond(ctx, 0.86, 0.86, 0.5, '#d8c9a8');
@@ -1332,7 +1523,7 @@ function market(ctx, { roof = PLAYER_ROOF }) {
         for (const [px, py] of [[-0.14, -0.1], [0.14, -0.1], [0.14, 0.1], [-0.14, 0.1]]) {
             box(ctx, 0.025, 0.025, 15, TIMBER, { ox: s.ox + px, oy: s.oy + py, z: 7 });
         }
-        gable(ctx, 0.32, 0.26, 20, 6, s.c, s.c, { ox: s.ox, oy: s.oy, over: 0.02 });
+        tiledRoof(ctx, 0.32, 0.26, 20, 6, s.c, s.c, { ox: s.ox, oy: s.oy, tile: 0.045 });
         // Fruta e pão no balcão.
         const [x, y] = P(s.ox, s.oy, 8);
         for (let i = 0; i < 3; i++) {
@@ -1405,9 +1596,11 @@ function logPile(ctx, ox, oy) {
 function woodcutter(ctx, { roof = '#6f4a2e' }) {
     layered([
         [-0.1, -0.08, () => {
-            box(ctx, 0.46, 0.4, 15, '#a57447', { ox: -0.1, oy: -0.08 });
-            wallPatch(ctx, 'left', 0.46, 0.4, 0.5, 0.1, 0, 9, DOOR, { ox: -0.1, oy: -0.08 });
-            gable(ctx, 0.46, 0.4, 15, 12, roof === PLAYER_ROOF ? '#6f4a2e' : roof, '#a57447', { ox: -0.1, oy: -0.08 });
+            const o = { ox: -0.1, oy: -0.08 };
+            walls(ctx, 0.46, 0.4, 15, '#a57447', { ...o, tex: 'planks' });
+            door(ctx, 'left', 0.46, 0.4, 0.5, 0.1, 9.5, DOOR, o);
+            windows(ctx, 'right', 0.46, 0.4, 0.5, 0.08, 7, 11.5, { ...o, shutter: '#6b4a2b' });
+            tiledRoof(ctx, 0.46, 0.4, 15, 12, roof === PLAYER_ROOF ? '#6f4a2e' : roof, '#a57447', o);
         }],
         [0.28, 0.22, () => logPile(ctx, 0.28, 0.22)],
         // Cepo com o machado.
@@ -1465,9 +1658,11 @@ function sapling(ctx, ox, oy, s = 1) {
 function forester(ctx, { roof = '#4f7d3a' }) {
     layered([
         [-0.1, -0.12, () => {
-            box(ctx, 0.4, 0.36, 13, '#b48a5a', { ox: -0.1, oy: -0.12 });
-            wallPatch(ctx, 'left', 0.4, 0.36, 0.5, 0.1, 0, 8, DOOR, { ox: -0.1, oy: -0.12 });
-            gable(ctx, 0.4, 0.36, 13, 11, roof === PLAYER_ROOF ? '#4f7d3a' : roof, '#b48a5a', { ox: -0.1, oy: -0.12, alongX: false });
+            const o = { ox: -0.1, oy: -0.12 };
+            walls(ctx, 0.4, 0.36, 13, '#b48a5a', { ...o, tex: 'planks' });
+            door(ctx, 'left', 0.4, 0.36, 0.5, 0.1, 8.5, DOOR, o);
+            windows(ctx, 'right', 0.4, 0.36, 0.5, 0.08, 6, 10, { ...o, shutter: '#4f6b3a' });
+            tiledRoof(ctx, 0.4, 0.36, 13, 11, roof === PLAYER_ROOF ? '#4f7d3a' : roof, '#b48a5a', { ...o, alongX: false });
         }],
         [0.25, 0.1, () => sapling(ctx, 0.25, 0.1, 0.8)],
         [0.05, 0.3, () => sapling(ctx, 0.05, 0.3, 1)],
@@ -1476,23 +1671,44 @@ function forester(ctx, { roof = '#4f7d3a' }) {
 }
 
 function millStatic(ctx) {
-    cylinder(ctx, 13, 12, '#b9b2a3');
-    const top = cylinder(ctx, 11, 26, '#d8d0bf', { z: 12 });
-    cone(ctx, top.x, top.y, 13, 18, '#7a5234');
-    // Porta, se o lado dela estiver virado para quem olha.
+    stoneTower(ctx, 13, 12, '#b9b2a3');
+    const top = stoneTower(ctx, 11, 26, '#d8d0bf', { z: 12 });
+    tiledCone(ctx, top.x, top.y, 13, 18, '#7a5234');
+    // Porta em arco e uma janelinha, se o lado deles estiver virado para quem olha.
     if (!faceOf(0, 1)) return;
     const [x, y] = P(0, 0.2);
+    ctx.fillStyle = '#5a3d26';
+    ctx.beginPath();
+    ctx.moveTo(x - 3.8, y - 1.5);
+    ctx.lineTo(x - 3.8, y - 9);
+    ctx.quadraticCurveTo(x, y - 14.5, x + 3.8, y - 9);
+    ctx.lineTo(x + 3.8, y - 1.5);
+    ctx.closePath();
+    ctx.fill();
     ctx.fillStyle = DOOR;
-    ctx.fillRect(x - 3, y - 11, 6, 9);
+    ctx.beginPath();
+    ctx.moveTo(x - 3, y - 2);
+    ctx.lineTo(x - 3, y - 9);
+    ctx.quadraticCurveTo(x, y - 13.4, x + 3, y - 9);
+    ctx.lineTo(x + 3, y - 2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#e0b43c';
+    ctx.fillRect(x + 1.4, y - 6.5, 0.9, 0.9);
+    ctx.fillStyle = FRAME;
+    ctx.fillRect(x - 2.4, y - 28, 4.8, 5.6);
+    ctx.fillStyle = GLASS;
+    ctx.fillRect(x - 1.7, y - 27.3, 3.4, 4.2);
 }
 
 function bakery(ctx, { roof = '#b5652f' }) {
-    box(ctx, 0.62, 0.48, 18, WALL);
-    wallPatch(ctx, 'left', 0.62, 0.48, 0.25, 0.1, 0, 10, DOOR);
-    wallPatch(ctx, 'left', 0.62, 0.48, 0.65, 0.2, 6, 12, '#f4c35b');
-    wallPatch(ctx, 'right', 0.62, 0.48, 0.5, 0.12, 7, 13, WINDOW);
-    gable(ctx, 0.62, 0.48, 18, 14, roof === PLAYER_ROOF ? '#b5652f' : roof, WALL);
-    box(ctx, 0.09, 0.09, 16, '#9a8f80', { ox: 0.18, oy: -0.1, z: 18 });
+    walls(ctx, 0.62, 0.48, 18, WALL, { tex: 'timber' });
+    door(ctx, 'left', 0.62, 0.48, 0.25, 0.1, 10.5);
+    // A montra do pão, acesa pelo forno.
+    windows(ctx, 'left', 0.62, 0.48, 0.65, 0.2, 6, 12.5, { glass: '#e9a93f', both: false });
+    windows(ctx, 'right', 0.62, 0.48, 0.5, 0.1, 8, 13.5, { shutter: '#8a4a2a' });
+    tiledRoof(ctx, 0.62, 0.48, 18, 14, roof === PLAYER_ROOF ? '#b5652f' : roof, WALL);
+    chimney(ctx, 0.18, -0.1, 26, 10, seeded(41));
     // Tabuleta com um pão, na esquina da fachada — quando a fachada está à esquerda.
     if (faceOf(0, 1) !== 'left') return;
     const [x, y] = P(-0.31, 0.24, 14);
@@ -1547,8 +1763,8 @@ function pasture(ctx, { roof = '#8a3b2c' }) {
     layered([
         // Abrigo das vacas, ao fundo.
         [-0.22, -0.25, () => {
-            box(ctx, 0.34, 0.26, 12, '#a57447', { ox: -0.22, oy: -0.25 });
-            gable(ctx, 0.34, 0.26, 12, 8, roof === PLAYER_ROOF ? '#8a3b2c' : roof, '#a57447', { ox: -0.22, oy: -0.25 });
+            walls(ctx, 0.34, 0.26, 12, '#a57447', { ox: -0.22, oy: -0.25, tex: 'planks' });
+            tiledRoof(ctx, 0.34, 0.26, 12, 8, roof === PLAYER_ROOF ? '#8a3b2c' : roof, '#a57447', { ox: -0.22, oy: -0.25 });
         }],
         // Manjedoura.
         [0.22, -0.28, () => box(ctx, 0.2, 0.08, 4, '#9a6a3f', { ox: 0.22, oy: -0.28 })]
@@ -1565,9 +1781,9 @@ function pigsty(ctx, { roof = '#7a4a32' }) {
     layered([
         // O curral coberto, baixo, ao fundo.
         [-0.22, -0.26, () => {
-            box(ctx, 0.34, 0.24, 9, '#a57447', { ox: -0.22, oy: -0.26 });
-            wallPatch(ctx, 'left', 0.34, 0.24, 0.5, 0.14, 0, 6, DOOR, { ox: -0.22, oy: -0.26 });
-            gable(ctx, 0.34, 0.24, 9, 7, roof === PLAYER_ROOF ? '#7a4a32' : roof, '#a57447', { ox: -0.22, oy: -0.26 });
+            walls(ctx, 0.34, 0.24, 9, '#a57447', { ox: -0.22, oy: -0.26, tex: 'planks' });
+            door(ctx, 'left', 0.34, 0.24, 0.5, 0.12, 6.5, DOOR, { ox: -0.22, oy: -0.26 });
+            tiledRoof(ctx, 0.34, 0.24, 9, 7, roof === PLAYER_ROOF ? '#7a4a32' : roof, '#a57447', { ox: -0.22, oy: -0.26 });
         }],
         // O comedouro.
         [0.24, -0.28, () => box(ctx, 0.2, 0.08, 3.5, '#8a5a30', { ox: 0.24, oy: -0.28, top: '#d8b14a' })]
@@ -1578,11 +1794,12 @@ function pigsty(ctx, { roof = '#7a4a32' }) {
 function carpentry(ctx, { roof = '#6d5a4a' }) {
     layered([
         [0, -0.12, () => {
-            box(ctx, 0.72, 0.42, 16, '#b88a5c', { oy: -0.12 });
-            wallPatch(ctx, 'left', 0.72, 0.42, 0.3, 0.2, 0, 11, DOOR, { oy: -0.12 });
-            wallPatch(ctx, 'left', 0.72, 0.42, 0.75, 0.14, 7, 12, WINDOW, { oy: -0.12 });
-            gable(ctx, 0.72, 0.42, 16, 12, roof === PLAYER_ROOF ? '#6d5a4a' : roof, '#b88a5c', { oy: -0.12 });
-            box(ctx, 0.08, 0.08, 12, '#8f877a', { ox: 0.2, oy: -0.2, z: 22 });
+            walls(ctx, 0.72, 0.42, 16, '#b88a5c', { oy: -0.12, tex: 'planks' });
+            door(ctx, 'left', 0.72, 0.42, 0.3, 0.2, 11.5, '#6b4a2b', { oy: -0.12 });
+            windows(ctx, 'left', 0.72, 0.42, 0.75, 0.12, 7, 12.5, { oy: -0.12, shutter: '#5d4028' });
+            windows(ctx, 'right', 0.72, 0.42, 0.5, 0.08, 7, 12.5, { oy: -0.12 });
+            tiledRoof(ctx, 0.72, 0.42, 16, 12, roof === PLAYER_ROOF ? '#6d5a4a' : roof, '#b88a5c', { oy: -0.12 });
+            chimney(ctx, 0.2, -0.2, 22, 10, seeded(43));
         }],
         // Pilhas de tábuas à frente.
         [0.02, 0.3, () => {
@@ -1612,11 +1829,19 @@ function barn(ctx, { roof = '#5b3a2a' }) {
     const o = { ox: -0.06, oy: -0.06 };
     layered([
         [o.ox, o.oy, () => {
-            box(ctx, 0.56, 0.62, 22, red, o);
+            walls(ctx, 0.56, 0.62, 22, red, { ...o, tex: 'planks' });
             // Portão com a cruz branca.
             wallPatch(ctx, 'left', 0.56, 0.62, 0.5, 0.26, 0, 15, '#f1ebe0', o);
             wallPatch(ctx, 'left', 0.56, 0.62, 0.5, 0.22, 1, 14, shade(red, -0.2), o);
-            gable(ctx, 0.56, 0.62, 22, 16, roof === PLAYER_ROOF ? '#5b3a2a' : roof, red, { ...o, alongX: false });
+            const gate = houseFace(0, 1, 0.56, 0.62, o.ox, o.oy);
+            if (gate) {
+                const [u0, u1] = [0.5 - 0.11 / 0.56, 0.5 + 0.11 / 0.56];
+                faceLine(ctx, gate, u0, 1, u1, 14, '#f1ebe0', 1.3);
+                faceLine(ctx, gate, u1, 1, u0, 14, '#f1ebe0', 1.3);
+                faceLine(ctx, gate, 0.5, 1, 0.5, 14, '#f1ebe0', 0.9);
+            }
+            windows(ctx, 'right', 0.56, 0.62, 0.5, 0.08, 16, 20, { ...o, frame: '#f1ebe0' });
+            tiledRoof(ctx, 0.56, 0.62, 22, 16, roof === PLAYER_ROOF ? '#5b3a2a' : roof, red, { ...o, alongX: false });
         }],
         [0.32, 0.18, () => hay(ctx, 0.32, 0.18)],
         [0.3, 0.36, () => hay(ctx, 0.3, 0.36)],
@@ -1627,11 +1852,12 @@ function barn(ctx, { roof = '#5b3a2a' }) {
 function dairy(ctx, { roof = '#5d7fa8' }) {
     const white = '#f4f1ea';
     const parts = [[0, 0, () => {
-        box(ctx, 0.58, 0.5, 18, white);
-        wallPatch(ctx, 'left', 0.58, 0.5, 0.3, 0.1, 0, 10, '#5d7fa8');
-        wallPatch(ctx, 'left', 0.58, 0.5, 0.7, 0.12, 7, 13, WINDOW);
-        wallPatch(ctx, 'right', 0.58, 0.5, 0.5, 0.12, 7, 13, WINDOW);
-        gable(ctx, 0.58, 0.5, 18, 12, roof === PLAYER_ROOF ? '#5d7fa8' : roof, white, { alongX: false });
+        walls(ctx, 0.58, 0.5, 3, PLINTH, { tex: 'stone' });
+        walls(ctx, 0.58, 0.5, 15, white, { z: 3 });
+        door(ctx, 'left', 0.58, 0.5, 0.3, 0.1, 10.5, '#5d7fa8');
+        windows(ctx, 'left', 0.58, 0.5, 0.7, 0.1, 8, 13.5, { shutter: '#5d7fa8' });
+        windows(ctx, 'right', 0.58, 0.5, 0.5, 0.1, 8, 13.5, { shutter: '#5d7fa8' });
+        tiledRoof(ctx, 0.58, 0.5, 18, 12, roof === PLAYER_ROOF ? '#5d7fa8' : roof, white, { alongX: false });
     }]];
     // Bilhas de leite.
     for (const [ox, oy] of [[0.36, 0.22], [0.36, 0.36], [0.22, 0.38]]) {
@@ -1712,9 +1938,9 @@ function coop(ctx, { roof = '#9a5a2a' }) {
             for (const [dx, dy] of [[-0.12, -0.09], [0.12, -0.09], [0.12, 0.09], [-0.12, 0.09]]) {
                 box(ctx, 0.03, 0.03, 5, TIMBER, { ox: o.ox + dx, oy: o.oy + dy });
             }
-            box(ctx, 0.3, 0.24, 9, '#c79a5e', { ...o, z: 5 });
+            walls(ctx, 0.3, 0.24, 9, '#c79a5e', { ...o, z: 5, tex: 'planks' });
             wallPatch(ctx, 'left', 0.3, 0.24, 0.5, 0.08, 5, 10, DOOR, o);
-            gable(ctx, 0.3, 0.24, 14, 8, roof === PLAYER_ROOF ? '#9a5a2a' : roof, '#c79a5e', o);
+            tiledRoof(ctx, 0.3, 0.24, 14, 8, roof === PLAYER_ROOF ? '#9a5a2a' : roof, '#c79a5e', o);
             if (faceOf(0, 1)) poly(ctx, [P(-0.23, -0.1, 5), P(-0.17, -0.1, 5), P(-0.17, 0.06, 0), P(-0.23, 0.06, 0)], '#a57447');
         }],
         // O bebedouro e um cesto de ovos.
@@ -1740,9 +1966,9 @@ function sheepfold(ctx, { roof = '#7a5a3a' }) {
     layered([
         // O abrigo das ovelhas, de palha, ao fundo.
         [-0.2, -0.24, () => {
-            box(ctx, 0.38, 0.28, 11, '#b58b5c', { ox: -0.2, oy: -0.24 });
-            wallPatch(ctx, 'left', 0.38, 0.28, 0.5, 0.14, 0, 8, DOOR, { ox: -0.2, oy: -0.24 });
-            gable(ctx, 0.38, 0.28, 11, 9, roof === PLAYER_ROOF ? '#d0a94f' : roof, '#b58b5c', { ox: -0.2, oy: -0.24 });
+            walls(ctx, 0.38, 0.28, 11, '#b58b5c', { ox: -0.2, oy: -0.24, tex: 'planks' });
+            door(ctx, 'left', 0.38, 0.28, 0.5, 0.13, 8.5, DOOR, { ox: -0.2, oy: -0.24 });
+            tiledRoof(ctx, 0.38, 0.28, 11, 9, roof === PLAYER_ROOF ? '#d0a94f' : roof, '#b58b5c', { ox: -0.2, oy: -0.24 });
         }],
         // Um fardo de lã tosquiada, à espera de ir para a tecelagem.
         [0.26, -0.26, () => {
@@ -1783,13 +2009,12 @@ function weaving(ctx, { roof = '#6f5b8f' }) {
     const o = { ox: 0, oy: -0.1 };
     layered([
         [o.ox, o.oy, () => {
-            box(ctx, 0.74, 0.46, 17, wall, o);
-            for (const u of [0.02, 0.98]) wallPatch(ctx, 'left', 0.74, 0.46, u, 0.03, 0, 17, TIMBER, o);
-            wallPatch(ctx, 'left', 0.74, 0.46, 0.2, 0.1, 0, 11, DOOR, o);
+            walls(ctx, 0.74, 0.46, 17, wall, { ...o, tex: 'timber' });
+            door(ctx, 'left', 0.74, 0.46, 0.2, 0.1, 11, DOOR, o);
             // Janelas largas: os teares precisam de luz.
-            for (const u of [0.45, 0.75]) wallPatch(ctx, 'left', 0.74, 0.46, u, 0.16, 7, 13, WINDOW, o);
-            wallPatch(ctx, 'right', 0.74, 0.46, 0.5, 0.2, 7, 13, WINDOW, o);
-            gable(ctx, 0.74, 0.46, 17, 13, roof === PLAYER_ROOF ? '#6f5b8f' : roof, wall, o);
+            for (const u of [0.45, 0.75]) windows(ctx, 'left', 0.74, 0.46, u, 0.14, 7, 13, { ...o, shutter: '#6f5b8f' });
+            windows(ctx, 'right', 0.74, 0.46, 0.5, 0.16, 7, 13, o);
+            tiledRoof(ctx, 0.74, 0.46, 17, 13, roof === PLAYER_ROOF ? '#6f5b8f' : roof, wall, o);
         }],
         // Os rolos de tecido à porta, em pilha.
         [0.1, 0.32, () => {
@@ -1825,11 +2050,11 @@ function distillery(ctx, { roof = '#7b3b4b' }) {
     const o = { ox: -0.1, oy: -0.1 };
     layered([
         [o.ox, o.oy, () => {
-            box(ctx, 0.56, 0.5, 16, STONE, o);
-            wallPatch(ctx, 'left', 0.56, 0.5, 0.3, 0.12, 0, 11, DOOR, o);
-            wallPatch(ctx, 'left', 0.56, 0.5, 0.72, 0.1, 7, 12, WINDOW, o);
-            wallPatch(ctx, 'right', 0.56, 0.5, 0.5, 0.1, 7, 12, WINDOW, o);
-            gable(ctx, 0.56, 0.5, 16, 12, roof === PLAYER_ROOF ? '#7b3b4b' : roof, STONE, { ...o, alongX: false });
+            walls(ctx, 0.56, 0.5, 16, STONE, { ...o, tex: 'stone' });
+            door(ctx, 'left', 0.56, 0.5, 0.3, 0.12, 11, DOOR, { ...o, arch: true, frame: '#b9b0a0' });
+            windows(ctx, 'left', 0.56, 0.5, 0.72, 0.09, 7.5, 12.5, { ...o, lintel: '#e0d8c8' });
+            windows(ctx, 'right', 0.56, 0.5, 0.5, 0.09, 7.5, 12.5, { ...o, lintel: '#e0d8c8' });
+            tiledRoof(ctx, 0.56, 0.5, 16, 12, roof === PLAYER_ROOF ? '#7b3b4b' : roof, STONE, { ...o, alongX: false });
         }],
         // O alambique de cobre, com o capacete e o tubo.
         [0.3, -0.12, () => {
@@ -1853,16 +2078,14 @@ function tavern(ctx, { roof = '#8a4a2a' }) {
     layered([
         [o.ox, o.oy, () => {
             // Dois andares de enxaimel: o de baixo de pedra, o de cima caiado.
-            box(ctx, 0.62, 0.52, 11, STONE, o);
-            box(ctx, 0.62, 0.52, 10, WALL, { ...o, z: 11 });
-            for (const u of [0.02, 0.5, 0.98]) wallPatch(ctx, 'left', 0.62, 0.52, u, 0.03, 11, 21, TIMBER, o);
-            wallPatch(ctx, 'left', 0.62, 0.52, 0.28, 0.12, 0, 9, DOOR, o);
-            wallPatch(ctx, 'left', 0.62, 0.52, 0.72, 0.16, 3, 8, '#f4c35b', o);
-            wallPatch(ctx, 'left', 0.62, 0.52, 0.28, 0.1, 13, 18, WINDOW, o);
-            wallPatch(ctx, 'left', 0.62, 0.52, 0.74, 0.1, 13, 18, WINDOW, o);
-            wallPatch(ctx, 'right', 0.62, 0.52, 0.5, 0.12, 13, 18, '#f4c35b', o);
-            gable(ctx, 0.62, 0.52, 21, 14, roof === PLAYER_ROOF ? '#8a4a2a' : roof, WALL, o);
-            box(ctx, 0.08, 0.08, 12, '#8f877a', { ox: o.ox + 0.18, oy: o.oy - 0.12, z: 28 });
+            walls(ctx, 0.62, 0.52, 11, STONE, { ...o, tex: 'stone' });
+            walls(ctx, 0.62, 0.52, 10, WALL, { ...o, z: 11, tex: 'timber' });
+            door(ctx, 'left', 0.62, 0.52, 0.28, 0.12, 9.5, DOOR, o);
+            windows(ctx, 'left', 0.62, 0.52, 0.72, 0.15, 3.5, 8.5, { ...o, glass: '#e9a93f', both: false });
+            for (const u of [0.28, 0.74]) windows(ctx, 'left', 0.62, 0.52, u, 0.09, 14, 18.5, { ...o, flowers: ['#e3372f', '#f2c94c'] });
+            windows(ctx, 'right', 0.62, 0.52, 0.5, 0.11, 14, 18.5, { ...o, glass: '#e9a93f' });
+            tiledRoof(ctx, 0.62, 0.52, 21, 14, roof === PLAYER_ROOF ? '#8a4a2a' : roof, WALL, o);
+            chimney(ctx, o.ox + 0.18, o.oy - 0.12, 28, 11, seeded(47));
         }],
         // Mesa e bancos cá fora.
         [0.24, 0.34, () => {
@@ -1906,13 +2129,13 @@ function tailor(ctx, { roof = '#3f6f6a' }) {
     const o = { ox: -0.06, oy: -0.1 };
     layered([
         [o.ox, o.oy, () => {
-            box(ctx, 0.6, 0.46, 19, WALL, o);
-            wallPatch(ctx, 'left', 0.6, 0.46, 0.22, 0.1, 0, 11, DOOR, o);
+            walls(ctx, 0.6, 0.46, 3, PLINTH, { ...o, tex: 'stone' });
+            walls(ctx, 0.6, 0.46, 16, WALL, { ...o, z: 3 });
+            door(ctx, 'left', 0.6, 0.46, 0.22, 0.1, 11, DOOR, o);
             // A montra.
-            wallPatch(ctx, 'left', 0.6, 0.46, 0.64, 0.28, 3, 12, '#9fc3d6', o);
-            wallPatch(ctx, 'left', 0.6, 0.46, 0.64, 0.02, 3, 12, TIMBER, o);
-            wallPatch(ctx, 'right', 0.6, 0.46, 0.5, 0.12, 8, 14, WINDOW, o);
-            pyramid(ctx, 0.6, 0.46, 19, 12, color, o);
+            windows(ctx, 'left', 0.6, 0.46, 0.64, 0.26, 4, 12, { ...o, glass: '#8fb3c8', both: false });
+            windows(ctx, 'right', 0.6, 0.46, 0.5, 0.1, 9, 14.5, { ...o, shutter: color });
+            tiledPyramid(ctx, 0.6, 0.46, 19, 12, color, o);
             // O toldo às riscas por cima da montra.
             if (faceOf(0, 1)) {
                 const y = o.oy + 0.23;
@@ -1935,12 +2158,11 @@ function theatre(ctx, { roof = '#8e2f3c' }) {
     const o = { ox: -0.08, oy: -0.08 };
     const parts = [[o.ox, o.oy, () => {
         box(ctx, 0.72, 0.66, 3, '#cfc6b3', o);
-        box(ctx, 0.66, 0.6, 26, marble, { ...o, z: 3 });
+        walls(ctx, 0.66, 0.6, 26, marble, { ...o, z: 3, tex: 'bigstone' });
         wallPatch(ctx, 'left', 0.66, 0.6, 0.5, 0.16, 3, 16, color, o);
-        wallPatch(ctx, 'right', 0.66, 0.6, 0.3, 0.1, 12, 20, WINDOW, o);
-        wallPatch(ctx, 'right', 0.66, 0.6, 0.7, 0.1, 12, 20, WINDOW, o);
+        for (const u of [0.3, 0.7]) windows(ctx, 'right', 0.66, 0.6, u, 0.09, 12, 20, { ...o, lintel: '#f7f2e6' });
         // Frontão triangular sobre a fachada, e o telhado.
-        gable(ctx, 0.66, 0.6, 29, 13, color, marble, { ...o, alongX: false });
+        tiledRoof(ctx, 0.66, 0.6, 29, 13, color, marble, { ...o, alongX: false });
         // As máscaras da comédia e da tragédia, no frontão.
         if (faceOf(0, 1) === 'left') {
             const [x, y] = P(o.ox, o.oy + 0.31, 34);
@@ -1973,14 +2195,19 @@ function sugarmill(ctx, { roof = '#8a6a3a' }) {
     const o = { ox: -0.08, oy: -0.1 };
     layered([
         [o.ox, o.oy, () => {
-            box(ctx, 0.6, 0.48, 16, '#e6dcc4', o);
-            wallPatch(ctx, 'left', 0.6, 0.48, 0.3, 0.12, 0, 11, DOOR, o);
-            wallPatch(ctx, 'left', 0.6, 0.48, 0.72, 0.1, 7, 12, WINDOW, o);
-            wallPatch(ctx, 'right', 0.6, 0.48, 0.5, 0.1, 7, 12, WINDOW, o);
-            gable(ctx, 0.6, 0.48, 16, 12, roof === PLAYER_ROOF ? '#8a6a3a' : roof, '#e6dcc4', o);
+            walls(ctx, 0.6, 0.48, 3, PLINTH, { ...o, tex: 'stone' });
+            walls(ctx, 0.6, 0.48, 13, '#e6dcc4', { ...o, z: 3 });
+            door(ctx, 'left', 0.6, 0.48, 0.3, 0.12, 11, DOOR, o);
+            windows(ctx, 'left', 0.6, 0.48, 0.72, 0.09, 7.5, 12.5, { ...o, shutter: '#8a6a3a' });
+            windows(ctx, 'right', 0.6, 0.48, 0.5, 0.09, 7.5, 12.5, { ...o, shutter: '#8a6a3a' });
+            tiledRoof(ctx, 0.6, 0.48, 16, 12, roof === PLAYER_ROOF ? '#8a6a3a' : roof, '#e6dcc4', o);
         }],
-        // A chaminé alta das caldeiras.
-        [0.3, -0.26, () => box(ctx, 0.1, 0.1, 40, '#b5654a', { ox: 0.3, oy: -0.26 })],
+        // A chaminé alta das caldeiras, de tijolo.
+        [0.3, -0.26, () => {
+            walls(ctx, 0.1, 0.1, 40, '#b5654a', { ox: 0.3, oy: -0.26, tex: 'stone', seed: 53 });
+            box(ctx, 0.13, 0.13, 2, '#8f4a36', { ox: 0.3, oy: -0.26, z: 40 });
+            diamond(ctx, 0.06, 0.06, 42, '#2a2622', null, 0.3, -0.26);
+        }],
         // A moenda: três rolos de pedra de pé.
         [0.28, 0.24, () => {
             for (const [dx, dy] of [[-0.06, 0], [0.06, 0], [0, 0.08]]) cylinder(ctx, 3.2, 8, '#a39c8e', { ox: 0.28 + dx, oy: 0.24 + dy });
@@ -2022,12 +2249,12 @@ function patisserie(ctx, { roof = '#d27a9a' }) {
     const o = { ox: -0.06, oy: -0.1 };
     layered([
         [o.ox, o.oy, () => {
-            box(ctx, 0.6, 0.48, 18, wall, o);
-            wallPatch(ctx, 'left', 0.6, 0.48, 0.22, 0.1, 0, 11, '#8a4a5a', o);
-            wallPatch(ctx, 'left', 0.6, 0.48, 0.64, 0.28, 3, 12, '#f4d9a8', o);
-            wallPatch(ctx, 'right', 0.6, 0.48, 0.5, 0.12, 8, 14, WINDOW, o);
-            gable(ctx, 0.6, 0.48, 18, 13, color, wall, o);
-            box(ctx, 0.08, 0.08, 10, '#9a8f80', { ox: o.ox + 0.16, oy: o.oy - 0.1, z: 24 });
+            walls(ctx, 0.6, 0.48, 18, wall, o);
+            door(ctx, 'left', 0.6, 0.48, 0.22, 0.1, 11, '#8a4a5a', o);
+            windows(ctx, 'left', 0.6, 0.48, 0.64, 0.26, 4, 12, { ...o, glass: '#f0c98a', both: false });
+            windows(ctx, 'right', 0.6, 0.48, 0.5, 0.1, 9, 14.5, { ...o, shutter: color, flowers: ['#d9577a', '#f7e6f0'] });
+            tiledRoof(ctx, 0.6, 0.48, 18, 13, color, wall, o);
+            chimney(ctx, o.ox + 0.16, o.oy - 0.1, 24, 10, seeded(59));
             // O toldo às riscas cor-de-rosa por cima da montra.
             if (faceOf(0, 1)) {
                 const y = o.oy + 0.24;
@@ -2059,23 +2286,23 @@ function castle(ctx, { level = 1 }) {
     // As torres dos cantos (e, no nível 4, as do meio das muralhas). As que
     // ficam atrás do centro, na vista, pintam-se antes da muralha.
     const corner = (ox, oy, rise) => [ox, oy, () => {
-        const t = cylinder(ctx, 11, towerH, STONE, { ox, oy });
-        cone(ctx, t.x, t.y, 13, rise, CASTLE_ROOF);
+        const t = stoneTower(ctx, 11, towerH, STONE, { ox, oy });
+        tiledCone(ctx, t.x, t.y, 13, rise, CASTLE_ROOF);
     }];
     const towers = [corner(-c, c, 22 + level), corner(c, c, 22 + level)];
     if (level >= 2) towers.push(corner(c, -c, 22 + level), corner(-c, -c, 22));
     if (level >= 4) {
         for (const [ox, oy] of [[0, c], [c, 0]]) {
             towers.push([ox, oy, () => {
-                const t = cylinder(ctx, 8, towerH - 4, STONE, { ox, oy });
-                cone(ctx, t.x, t.y, 10, 16, CASTLE_ROOF);
+                const t = stoneTower(ctx, 8, towerH - 4, STONE, { ox, oy });
+                tiledCone(ctx, t.x, t.y, 10, 16, CASTLE_ROOF);
             }]);
         }
     }
     const behind = towers.filter(([ox, oy]) => depth(ox, oy) < 0);
     layered(behind);
 
-    box(ctx, span, span, wallH, STONE, { top: '#bdb3a0' });
+    walls(ctx, span, span, wallH, STONE, { top: '#bdb3a0', tex: 'bigstone' });
     crenels(ctx, span, span, wallH, STONE, { n: 6 });
 
     // Pátio: a torre de menagem ao meio, e no nível 3 uma torre alta ao lado
@@ -2083,45 +2310,73 @@ function castle(ctx, { level = 1 }) {
     const keepA = 0.62 + level * 0.04;
     const side = level >= 3 ? depth(0.22 + 0.08, -0.34 + 0.08) : 0;
     const sideTower = () => {
-        const t = cylinder(ctx, 8, keepH + 10, '#ddd4c2', { ox: 0.22, oy: -0.34 });
-        cone(ctx, t.x, t.y, 10, 20, CASTLE_ROOF);
+        const t = stoneTower(ctx, 8, keepH + 10, '#ddd4c2', { ox: 0.22, oy: -0.34 });
+        tiledCone(ctx, t.x, t.y, 10, 20, CASTLE_ROOF);
     };
     if (level >= 3 && side < -0.1) sideTower();
-    box(ctx, keepA, keepA, keepH, '#ddd4c2', { oy: -0.08, ox: -0.08 });
+    walls(ctx, keepA, keepA, keepH, '#ddd4c2', { oy: -0.08, ox: -0.08, tex: 'stone' });
     wallPatch(ctx, 'left', keepA, keepA, 0.5, 0.1, keepH - 16, keepH - 8, WINDOW, { ox: -0.08, oy: -0.08 });
     wallPatch(ctx, 'right', keepA, keepA, 0.35, 0.1, keepH - 16, keepH - 8, shade(WINDOW, -0.2), { ox: -0.08, oy: -0.08 });
     if (level >= 3 && Math.abs(side) <= 0.1) sideTower();
     // No nível 5 o telhado da torre de menagem é dourado.
-    pyramid(ctx, keepA, keepA, keepH, 22 + level * 2, level >= 5 ? '#d9a63a' : KEEP_ROOF, { ox: -0.08, oy: -0.08 });
+    tiledPyramid(ctx, keepA, keepA, keepH, 22 + level * 2, level >= 5 ? '#d9a63a' : KEEP_ROOF, { ox: -0.08, oy: -0.08 });
     if (level >= 3 && side > 0.1) sideTower();
 
     // Portão na muralha +y (a da frente-esquerda na vista sem rodar).
     if (faceOf(0, 1)) {
         const gate = P(0.1, span / 2 + 0.005);
-        ctx.fillStyle = '#3b2a1c';
-        ctx.beginPath();
-        ctx.moveTo(gate[0] - 9, gate[1] - 4);
-        ctx.lineTo(gate[0] - 9, gate[1] - 16);
-        ctx.quadraticCurveTo(gate[0], gate[1] - 24, gate[0] + 9, gate[1] - 11);
-        ctx.lineTo(gate[0] + 9, gate[1] + 1);
-        ctx.closePath();
+        // O arco: pedras claras à volta, e dentro o portão de tábuas com ferragens.
+        const arch = (grow) => {
+            ctx.beginPath();
+            ctx.moveTo(gate[0] - 9 - grow, gate[1] - 4 + grow * 0.5);
+            ctx.lineTo(gate[0] - 9 - grow, gate[1] - 16 - grow * 0.5);
+            ctx.quadraticCurveTo(gate[0], gate[1] - 24 - grow * 1.4, gate[0] + 9 + grow, gate[1] - 11 - grow * 0.5);
+            ctx.lineTo(gate[0] + 9 + grow, gate[1] + 1 + grow * 0.5);
+            ctx.closePath();
+        };
+        arch(2);
+        ctx.fillStyle = '#d9d0bd';
         ctx.fill();
+        arch(0);
+        ctx.fillStyle = '#6b4a2b';
+        ctx.fill();
+        ctx.save();
+        ctx.clip();
+        ctx.strokeStyle = '#4a3020';
+        ctx.lineWidth = 0.7;
+        ctx.beginPath();
+        for (let k = -3; k <= 3; k++) {
+            ctx.moveTo(gate[0] + k * 2.6, gate[1] - 26 + k * 1.3);
+            ctx.lineTo(gate[0] + k * 2.6, gate[1] + 2 + k * 1.3);
+        }
+        ctx.stroke();
+        ctx.strokeStyle = '#2f2b28';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        for (const dz of [5, 12]) {
+            ctx.moveTo(gate[0] - 10, gate[1] - dz - 4.5);
+            ctx.lineTo(gate[0] + 10, gate[1] - dz + 5.5);
+        }
+        ctx.moveTo(gate[0] + 0.4, gate[1] - 22);
+        ctx.lineTo(gate[0] + 0.4, gate[1] + 2);
+        ctx.stroke();
+        ctx.restore();
     }
 
     layered(towers.filter((t) => !behind.includes(t)));
 }
 
 function keep(ctx, { roof = '#d8587b' }) {
-    box(ctx, 0.84, 0.84, 9, STONE, { top: '#bdb3a0' });
+    walls(ctx, 0.84, 0.84, 9, STONE, { top: '#bdb3a0', tex: 'bigstone' });
     crenels(ctx, 0.84, 0.84, 9, STONE, { n: 3 });
     layered([
         [-0.05, -0.05, () => {
-            const t = cylinder(ctx, 13, 46, '#ddd4c2', { ox: -0.05, oy: -0.05 });
-            cone(ctx, t.x, t.y, 15, 26, roof);
+            const t = stoneTower(ctx, 13, 46, '#ddd4c2', { ox: -0.05, oy: -0.05 });
+            tiledCone(ctx, t.x, t.y, 15, 26, roof);
         }],
         [0.28, 0.28, () => {
-            const s = cylinder(ctx, 8, 30, STONE, { ox: 0.28, oy: 0.28 });
-            cone(ctx, s.x, s.y, 10, 16, roof);
+            const s = stoneTower(ctx, 8, 30, STONE, { ox: 0.28, oy: 0.28 });
+            tiledCone(ctx, s.x, s.y, 10, 16, roof);
         }]
     ]);
 }
@@ -2190,12 +2445,10 @@ function fishery(ctx, { roof = '#4f6f8f', variant = 0 }) {
     const plank = '#8d6a45';
     const parts = [
         [hut.ox, hut.oy, () => {
-            box(ctx, 0.44, 0.4, 13, plank, hut);
-            // Tábuas ao alto: riscas mais escuras nas paredes.
-            for (const u of [0.2, 0.45, 0.8]) wallPatch(ctx, 'left', 0.44, 0.4, u, 0.012, 0, 13, shade(plank, -0.25), hut);
-            wallPatch(ctx, 'left', 0.44, 0.4, 0.62, 0.1, 0, 9, DOOR, hut);
-            wallPatch(ctx, 'right', 0.44, 0.4, 0.5, 0.1, 6, 10, WINDOW, hut);
-            gable(ctx, 0.44, 0.4, 13, 11, color, plank, { ...hut, alongX: sx !== 0 });
+            walls(ctx, 0.44, 0.4, 13, plank, { ...hut, tex: 'planks' });
+            door(ctx, 'left', 0.44, 0.4, 0.62, 0.1, 9, DOOR, hut);
+            windows(ctx, 'right', 0.44, 0.4, 0.5, 0.08, 6.5, 10.5, { ...hut, shutter: color });
+            tiledRoof(ctx, 0.44, 0.4, 13, 11, color, plank, { ...hut, alongX: sx !== 0 });
         }],
         // O estendal do peixe a secar: duas estacas, uma vara e o peixe pendurado.
         [rack.ox, rack.oy, () => {
