@@ -93,17 +93,21 @@ function costHtml(cost = {}) {
     }).join('')}</span>`;
 }
 
+function servesText(def) {
+    const uses = def.serves.uses ? `, 1 ${RESOURCE[def.serves.uses].emoji} por cada ${def.serves.per}` : '';
+    return `Serve até ${def.serves.residents} moradores por dia${uses}`;
+}
+
 function recipeText(def) {
     if (def.recipe) {
         const side = (map) => Object.entries(map || {}).map(([r, n]) => `${n} ${RESOURCE[r].emoji}`).join(' + ');
         const input = side(def.recipe.in);
-        return `${input ? `${input} → ` : ''}${side(def.recipe.out)} a cada ${def.recipe.time} s`;
+        const made = `${input ? `${input} → ` : ''}${side(def.recipe.out)} a cada ${def.recipe.time} s`;
+        return def.serves ? `${made} · ${servesText(def)}` : made;
     }
     if (def.crop) return `${def.crop.yield} ${RESOURCE[def.crop.res].emoji} por colheita (${def.crop.grow} s a crescer)`;
-    if (def.serves) {
-        const drink = def.serves.drink ? `, 1 ${RESOURCE[def.serves.drink].emoji} por cada ${def.serves.per}` : '';
-        return `Serve até ${def.serves.residents} moradores por dia${drink}`;
-    }
+    if (def.serves) return servesText(def);
+    if (def.lodges) return `Até ${def.lodges.guests} visitantes por dia, a ${def.lodges.fee} 💰 cada, com uma refeição`;
     if (def.id === 'house') return `+${def.residents} moradores`;
     if (def.plants) return `Uma árvore a cada ${def.plants.time} s, até ${def.plants.radius} casas à volta`;
     if (def.farms) return `Semeia e colhe as culturas até ${def.farms.radius} casas à volta`;
@@ -229,12 +233,13 @@ function castleView() {
                 <p class="sheetText">O povo come ao fim de cada dia: 🎂 bolos, 🧀 queijo, 🍞 pão, 🍖 carne, 🍚 arroz, 🐟 peixe, 🥚 ovos ou 🥛 leite. Bem alimentado — e com mais de
                     um tipo de comida — fica contente e paga mais impostos.</p>
                 ${leisureHtml()}
+                ${guestsHtml()}
             </div>
             <div class="sheetSection">${nextHtml}</div>`
     };
 }
 
-/** O convívio: que parte do povo a taberna e o teatro serviram no último fim de dia. */
+/** O convívio e o luxo: que parte do povo a taberna, o teatro e a joalharia serviram no último fim de dia. */
 function leisureHtml() {
     const served = game.derived.served || {};
     const rows = Object.entries(HAPPY_LEISURE).map(([kind, share]) => {
@@ -245,8 +250,18 @@ function leisureHtml() {
     });
     const food = 1 - Object.values(HAPPY_LEISURE).reduce((a, b) => a + b, 0);
     return `<p class="sheetText" style="margin-top:6px">A comida leva o contentamento até ${pct(food)}; o resto é convívio,
-        na 🍺 taberna (com vinho) e no 🎭 teatro.</p>
+        na 🍺 taberna (com vinho) e no 🎭 teatro, e o luxo das 💍 jóias da joalharia.</p>
         ${rows.map(([tone, text]) => `<div class="statusLine ${tone}" style="margin-top:6px">${text}</div>`).join('')}`;
+}
+
+/** Os visitantes que as hospedarias receberam no último fim de dia. */
+function guestsHtml() {
+    const inn = BUILDING.inn;
+    if (inn.tier > castleInfo().tier) return `<div class="statusLine warn" style="margin-top:6px">🔒 ${inn.emoji} ${inn.name}: castelo nível ${inn.tier} (visitantes pagam a estadia)</div>`;
+    if (!game.buildings.some((b) => b.kind === 'inn')) return '';
+    const guests = game.derived.guests || 0;
+    return `<div class="statusLine ${guests ? 'ok' : 'warn'}" style="margin-top:6px">${inn.emoji} ${inn.name}: ${guests} visitante${guests === 1 ? '' : 's'} no último dia
+        (${fmt(guests * inn.lodges.fee)} 💰)</div>`;
 }
 
 function kingdomsView() {
@@ -300,6 +315,10 @@ const STATUS_TEXT = {
 
 /** Taberna e teatro abertos: a barra é o dia a passar, e ao fim dele servem o povo. */
 const VENUE_OK = ['ok', '✅ Aberto — ao fim do dia recebe o povo'];
+/** A hospedaria aberta: ao fim do dia chegam os visitantes. */
+const INN_OK = ['ok', '✅ Aberta — ao fim do dia chegam os visitantes'];
+/** A hospedaria sem nada na despensa: os visitantes não ficam. */
+const INN_HUNGRY = ['warn', '🍽️ Sem comida na despensa — os visitantes não ficam'];
 
 function tileView(arg) {
     const [x, y] = String(arg).split(',').map(Number);
@@ -334,8 +353,9 @@ function tileView(arg) {
                 ${b.stage === 'growing' ? `<div class="progressTrack" style="--fill:${pct(b.growth)}"></div>` : ''}</div>`;
             const act = b.stage === 'ripe' ? ['harvest', `${ripe} Colher`] : b.stage === 'empty' ? ['plant', '🌱 Semear'] : null;
             if (act) body += `<div class="sheetActions"><button class="btn" type="button" data-action="${act[0]}" data-arg="${x},${y}">${act[1]}</button></div>`;
-        } else if (def.recipe || def.plants || def.farms || def.serves) {
-            const [tone, text] = (def.serves && b.status === 'ok' ? VENUE_OK : STATUS_TEXT[b.status]) || STATUS_TEXT.ok;
+        } else if (def.recipe || def.plants || def.farms || def.serves || def.lodges) {
+            const venue = def.lodges ? { ok: INN_OK, noInput: INN_HUNGRY } : def.serves && !def.recipe ? { ok: VENUE_OK } : {};
+            const [tone, text] = venue[b.status] || STATUS_TEXT[b.status] || STATUS_TEXT.ok;
             let extra = '';
             if (def.near) {
                 const found = countFeatureNear(world, b.x, b.y, b.size, def.near.feature, def.near.radius);

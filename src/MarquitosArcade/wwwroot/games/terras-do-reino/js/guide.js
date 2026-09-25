@@ -93,9 +93,16 @@ function rules() {
         ${list([
             `Mesmo sem comer nada de jeito, o povo nunca fica abaixo de <b>${pct(HAPPY_BASE)}</b> contente — isto não é um jogo de revoltas.`,
             `Com todos bem alimentados sobe mais <b>${pct(HAPPY_FED)}</b>, e com <b>dois ou mais tipos de comida</b> na mesa mais <b>${pct(HAPPY_VARIETY)}</b>. A comida leva o contentamento até ${pct(fullFood)}.`,
-            `O resto é convívio: ${joinPt(leisure)}, na proporção do povo que conseguem servir.`,
+            `O resto é convívio e luxo: ${joinPt(leisure)}, na proporção do povo que conseguem servir. A joalharia vende as jóias ao povo: gasta as que houver no armazém.`,
             'O contentamento não salta de um dia para o outro: anda metade do caminho por dia.',
             'Mais contentamento é mais impostos — e os últimos níveis do castelo pedem um povo contente.'
+        ])}
+
+        <h3>🧳 Visitantes</h3>
+        ${list([
+            `A partir do castelo nível ${BUILDING.inn.tier}, a ${building(BUILDING.inn)} recebe quem vem visitar o reino: até <b>${BUILDING.inn.lodges.guests}</b> visitantes por dia, cada um a pagar <b>${BUILDING.inn.lodges.fee} moedas</b>.`,
+            'Chegam tantos mais quanto mais contente estiver o povo: um reino feliz tem fama.',
+            'Os visitantes jantam ao fim do dia, depois do povo, do que sobrar na despensa. Sem comida, não ficam — e não pagam.'
         ])}
 
         <h3>🔨 Construir</h3>
@@ -169,15 +176,18 @@ function quests() {
 const TIER_LABEL = (tier) => (tier === 1 ? 'Desde o início' : `Castelo nível ${tier}`);
 
 function whatItDoes(def) {
+    const serves = () => {
+        const uses = def.serves.uses ? ` · gasta 1 ${RESOURCE[def.serves.uses].emoji} por cada ${def.serves.per}` : '';
+        return `Serve até ${def.serves.residents} moradores por dia${uses}`;
+    };
     if (def.recipe) {
         const input = side(def.recipe.in);
-        return `${input ? `${input} → ` : ''}${side(def.recipe.out)} a cada ${def.recipe.time} s`;
+        const made = `${input ? `${input} → ` : ''}${side(def.recipe.out)} a cada ${def.recipe.time} s`;
+        return def.serves ? `${made}<br>${serves()}` : made;
     }
     if (def.crop) return `${def.crop.yield} ${RESOURCE[def.crop.res].emoji} por colheita · ${def.crop.grow} s a crescer`;
-    if (def.serves) {
-        const drink = def.serves.drink ? ` · gasta 1 ${RESOURCE[def.serves.drink].emoji} por cada ${def.serves.per}` : '';
-        return `Serve até ${def.serves.residents} moradores por dia${drink}`;
-    }
+    if (def.serves) return serves();
+    if (def.lodges) return `Até ${def.lodges.guests} visitantes por dia, a ${def.lodges.fee} 💰 cada · uma refeição por visitante`;
     if (def.residents) return `+${def.residents} moradores`;
     if (def.plants) return `Planta uma árvore a cada ${def.plants.time} s, até ${def.plants.radius.toLocaleString('pt-PT')} casas à volta`;
     if (def.farms) return `Semeia e colhe sozinho as culturas até ${def.farms.radius} casas à volta`;
@@ -195,6 +205,7 @@ function tags(def) {
         t.push(`${f.icon} ${f.need}: pelo menos ${def.near.min} ${f.count} a ${def.near.radius.toLocaleString('pt-PT')} casas (a todo o gás com ${def.near.full})`);
     }
     if (def.serves) t.push(`😊 Até +${pct(HAPPY_LEISURE[def.id] || 0)} de contentamento`);
+    if (def.lodges) t.push('🧳 Mais visitantes quanto mais contente estiver o povo');
     return t.map((x) => `<li>${x}</li>`).join('');
 }
 
@@ -229,7 +240,7 @@ function buildings() {
 
 function goods() {
     const producers = (id) => BUILDINGS.filter((b) => b.recipe?.out?.[id] || b.crop?.res === id);
-    const consumers = (id) => BUILDINGS.filter((b) => b.recipe?.in?.[id] || b.serves?.drink === id);
+    const consumers = (id) => BUILDINGS.filter((b) => b.recipe?.in?.[id] || b.serves?.uses === id || (b.lodges && RESOURCE[id].meals));
     const builds = (id) => {
         const names = BUILDINGS.filter((b) => b.cost[id]).map((b) => `${b.emoji} ${b.name}`);
         if (ROAD_COST[id]) names.unshift('🛣️ Estrada');

@@ -3,8 +3,9 @@
 // A cada passo: contam-se os moradores, distribuem-se os trabalhadores pelos
 // edifícios (por ordem de construção — o primeiro a ser feito é o primeiro a
 // ter gente), cada edifício avança o seu ciclo, os campos crescem e cobram-se
-// os impostos. Ao fim de cada dia o povo come (e vai à taberna e ao teatro),
-// e o contentamento acompanha o que houve na mesa e o convívio.
+// os impostos. Ao fim de cada dia o povo come (e vai à taberna e ao teatro,
+// e compra jóias), o contentamento acompanha o que houve na mesa e o convívio,
+// e a hospedaria recebe os visitantes, que comem do que sobrou.
 
 import {
     BUILDING, CASTLE_LEVELS, DAY_SECONDS, FOODS, HAPPY_BASE, HAPPY_FED, HAPPY_LEISURE, HAPPY_VARIETY, IDLE_TAX_SHARE,
@@ -236,13 +237,15 @@ function stepBarn(b, def, dt, quiet) {
 }
 
 /**
- * Taberna e teatro: ao longo do dia só mostram se podem abrir (e a barra
- * anda com o relógio); é ao fim do dia que servem o povo (ver `leisure`).
+ * Taberna, teatro e hospedaria: ao longo do dia só mostram se podem abrir (e a
+ * barra anda com o relógio); é ao fim do dia que servem o povo (ver `leisure`)
+ * e recebem os visitantes (ver `lodge`).
  */
 function stepVenue(b, def) {
     b.progress = game.clock / DAY_SECONDS;
     if (!b.staffed) b.status = 'noWorkers';
-    else if (def.serves.drink && game.res[def.serves.drink] < 1) b.status = 'noInput';
+    else if (def.serves?.uses && game.res[def.serves.uses] < 1) b.status = 'noInput';
+    else if (def.lodges && !FOODS.some((food) => game.res[food] >= 1)) b.status = 'noInput';
     else b.status = 'ok';
 }
 
@@ -259,10 +262,10 @@ function leisure(residents) {
         const def = BUILDING[kind];
         const open = game.buildings.filter((b) => b.kind === kind && b.staffed && !b.paused).length;
         let people = Math.min(residents, open * def.serves.residents);
-        if (def.serves.drink) {
-            const drink = def.serves.drink;
-            people = Math.min(people, Math.floor(game.res[drink]) * def.serves.per);
-            game.res[drink] -= Math.ceil(people / def.serves.per);
+        const uses = def.serves.uses;
+        if (uses) {
+            people = Math.min(people, Math.floor(game.res[uses]) * def.serves.per);
+            game.res[uses] -= Math.ceil(people / def.serves.per);
         }
         const ratio = residents ? people / residents : 0;
         served[kind] = ratio;
@@ -272,20 +275,51 @@ function leisure(residents) {
     return bonus;
 }
 
-/** O povo come ao fim do dia: primeiro o que mais alimenta. Depois, o convívio. */
-function eat() {
-    const residents = game.derived.residents;
+/**
+ * Tira da despensa até `people` refeições, primeiro o que mais alimenta.
+ * Devolve as refeições servidas e quantos tipos de comida foram à mesa.
+ */
+function serveMeals(people) {
     let meals = 0;
     let kinds = 0;
     for (const food of FOODS) {
         const per = RESOURCE[food].meals;
-        const wanted = Math.ceil((residents - meals) / per);
+        const wanted = Math.ceil((people - meals) / per);
         if (wanted <= 0) break;
         const eaten = Math.min(wanted, Math.floor(game.res[food]));
         if (eaten > 0) kinds++;
         game.res[food] -= eaten;
         meals += eaten * per;
     }
+    return { meals, kinds };
+}
+
+/**
+ * Os visitantes do fim do dia: cada hospedaria aberta recebe até `guests`,
+ * tantos quanto a fama do reino (o contentamento do povo) atrair. Comem do que
+ * o povo deixou na despensa — sem comida não ficam — e pagam a estadia.
+ */
+function lodge(quiet) {
+    let guests = 0;
+    for (const b of game.buildings) {
+        const def = BUILDING[b.kind];
+        if (!def.lodges || !b.staffed || b.paused) continue;
+        const wanted = Math.round(def.lodges.guests * game.happy);
+        const stayed = Math.min(wanted, serveMeals(wanted).meals);
+        if (stayed <= 0) continue;
+        const paid = stayed * def.lodges.fee;
+        game.res.coins += paid;
+        guests += stayed;
+        b.pulse = 0;
+        float(b, `+${paid} ${RESOURCE.coins.emoji}`, quiet);
+    }
+    game.derived.guests = guests;
+}
+
+/** O povo come ao fim do dia: primeiro o que mais alimenta. Depois, o convívio. */
+function eat() {
+    const residents = game.derived.residents;
+    const { meals, kinds } = serveMeals(residents);
     const fed = residents ? Math.min(1, meals / residents) : 0;
     game.derived.fedRatio = fed;
     const variety = kinds >= 2 ? HAPPY_VARIETY : 0;
@@ -317,7 +351,7 @@ export function stepEconomy(dt, { quiet = false } = {}) {
         }
         if (def.crop) stepField(b, dt);
         else if (def.recipe) stepProducer(b, def, dt, quiet);
-        else if (def.serves) stepVenue(b, def);
+        else if (def.serves || def.lodges) stepVenue(b, def);
         else if (def.plants) stepForester(b, def, dt);
         else if (def.farms) stepBarn(b, def, dt, quiet);
     }
@@ -334,6 +368,7 @@ export function stepEconomy(dt, { quiet = false } = {}) {
         game.clock -= DAY_SECONDS;
         game.day++;
         eat();
+        lodge(quiet);
         events.newDay = true;
         events.fair = marketNewDay();
     }

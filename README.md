@@ -17,7 +17,7 @@ Blazor Web App (.NET 10, render mode Interactive Server) com ASP.NET Core Identi
   - `tasca-do-ze/`: mini-jogo "Tasca do Zé" (gestão de pedidos), com leaderboard persistido via `/api/scores/tasca-do-ze`.
   - `pong/`: Pong Retro, com modo 1 jogador (vs. CPU, pontuação submetida via `/api/scores/pong`) e 2 jogadores.
   - `maze-run/`: Maze Run, labirintos por níveis — apanhar os cristais abre a saída, e há guardas a impedi-lo. Pelo caminho há cristais de gelo que os congelam, portais que ligam duas pontas do labirinto e portas trancadas com a sua chave (ver [As peças do Maze Run](#as-peças-do-maze-run)). Os níveis vão-se desbloqueando à medida que se concluem, e o progresso fica guardado na conta de quem tem sessão iniciada (ver [Progresso e níveis](#progresso-e-níveis)). Os labirintos não estão desenhados à mão: saem de uma semente por nível (`buildMaze` em `js/maze.js`), como as pistas do Pixel Racing saem do `buildTrack` — **acrescentar um nível é acrescentar uma entrada ao array `LEVELS` do `js/levels.js`**, e mais nada.
-  - `terras-do-reino/`: Terras do Reino, economia medieval contínua num tabuleiro isométrico com relevo — semear e colher trigo, cortar madeira, tirar pedra, pescar nos lagos, abrir minas de ouro, moinhos, padarias, vacarias, pocilgas e oficinas, lã e tecelagem, vinhas, destilaria e taberna, algodão, alfaiataria e teatro, galinheiro, cana-de-açúcar, arroz e pastelaria, e comerciar com três vilas vizinhas geridas pelo CPU, que crescem sozinhas e são as rivais na tabela da prosperidade. Não há guerra nem fim de partida: o reino fica gravado (na conta, para quem tem sessão iniciada) e, fora do jogo, fica em pausa: ao voltar, continua do ponto exato onde ficou. Ver [Terras do Reino](#terras-do-reino).
+  - `terras-do-reino/`: Terras do Reino, economia medieval contínua num tabuleiro isométrico com relevo — semear e colher trigo, cortar madeira, tirar pedra, pescar nos lagos, abrir minas de ouro, moinhos, padarias, vacarias, pocilgas e oficinas, lã e tecelagem, vinhas, destilaria e taberna, algodão, alfaiataria, teatro e hospedaria para os visitantes, galinheiro, cana-de-açúcar, arroz, pastelaria e joalharia, e comerciar com três vilas vizinhas geridas pelo CPU, que crescem sozinhas e são as rivais na tabela da prosperidade. Não há guerra nem fim de partida: o reino fica gravado (na conta, para quem tem sessão iniciada) e, fora do jogo, fica em pausa: ao voltar, continua do ponto exato onde ficou. Ver [Terras do Reino](#terras-do-reino).
   - `pixel-racing/`: Pixel Racing, corrida simples em qualquer uma das seis pistas ou campeonato de três, com pontuação via `/api/scores/pixel-racing`. O menu tem dois passos: o primeiro ecrã pergunta só o nome (a quem não tem sessão iniciada) e o modo; a pista (ou a taça, no campeonato), a cor do carro e a dificuldade ficam no ecrã seguinte, já a saber o que se vai correr. As pistas são geradas por `buildTrack` a partir de uma superelipse com harmónicos, e o grau de perícia que o cartão mostra é medido no traçado (`corneringProfile`) em vez de escrito à mão: as três primeiras fazem-se sem levantar o pé, as três da taça Pro são mais compridas, mais estreitas e têm curvas que obrigam a travar ou a entrar a derrapar. A cor sai da paleta única de `CAR_COLORS` e os adversários ficam com três das restantes, por isso nunca há dois carros da mesma cor na pista.
 - `src/MarquitosArcade/wwwroot/lib/arcade/`: SDK partilhado pelos jogos (áudio, leaderboard, armazenamento, viewport do canvas, ciclo de jogo, barra de topo, ecrã de arranque). Módulos ES sem dependências externas. O `splash.css`/`splash.js`/`splash-boot.js` são a exceção que também serve o portal — ver [Ecrã de arranque](#ecrã-de-arranque).
 - `tools/games/smoke-test.mjs`: smoke-test dos jogos em Chromium headless, corrido em cada pull request por `.github/workflows/jogos-smoke-test.yml`. Ver [Testar os jogos](#testar-os-jogos).
@@ -609,18 +609,27 @@ economia, não de conquista: ninguém ataca ninguém.
    (uma cultura, como o trigo: semeia-se, cresce e vindima-se — à mão ou pelo
    celeiro) → **destilaria** (uvas → vinho) → **taberna**. No **nível 4**, o
    **campo de algodão** (outra cultura) e a **alfaiataria** (algodão + rolos de
-   tecido → fatos e vestidos, os bens mais caros das feiras), e o **teatro**.
+   tecido → fatos e vestidos, os bens mais caros das feiras), o **teatro** e a
+   **hospedaria** (`lodges` em `BUILDINGS`): ao fim de cada dia recebe até 12
+   visitantes — tantos quanto o contentamento do povo atrair —, que jantam do
+   que sobrar na despensa depois do povo e pagam 12 moedas de estadia cada um.
+   Com uma hospedaria aberta, parte da gente nas estradas são visitantes, de
+   chapéu e mala na mão, a chegar à hospedaria ou a sair dela.
    No **nível 5**, o **canavial** (cultura) → **engenho de açúcar** (cana →
    açúcar), o **arrozal** (cultura que tem de ficar à beira de água; o arroz é
-   comida) e a **pastelaria** (ovos + farinha + açúcar + leite → bolos, a
-   comida mais cara). As culturas são as entradas com `crop` em `BUILDINGS`.
+   comida), a **pastelaria** (ovos + farinha + açúcar + leite → bolos, a
+   comida mais cara) e a **joalharia** (ouro → jóias, que valem uma fortuna nas
+   feiras e que a joalharia vende ao povo, ver abaixo). As culturas são as
+   entradas com `crop` em `BUILDINGS`.
 4. **O povo come ao fim de cada dia** (bolos, queijo, pão, carne, arroz, peixe, ovos ou leite). Bem alimentado, e
    com variedade, fica mais contente e paga mais — mas nunca se revolta: um
    reino sem pão é pobre, não é um reino em guerra. A comida leva o
-   contentamento até 90%; os últimos 10% são o **convívio** (`HAPPY_LEISURE`):
-   ao fim do dia cada **taberna** serve 40 moradores (1 vinho por cada 10) e
-   cada **teatro** 80, e cada um dá a sua parte na proporção do povo servido
-   (`serves` em `BUILDINGS`).
+   contentamento até 90%; os últimos 10% são o **convívio e o luxo**
+   (`HAPPY_LEISURE`): ao fim do dia cada **taberna** serve 40 moradores (1
+   vinho por cada 10, até +4%), cada **teatro** 80 (até +3%) e cada
+   **joalharia** vende jóias a 80 (1 jóia por cada 40, até +3%), e cada um dá a
+   sua parte na proporção do povo servido (`serves` em `BUILDINGS`, com o bem
+   que gasta em `uses`).
 5. **O castelo** sobe de nível: alarga o território onde se pode construir,
    aumenta o armazém e abre o escalão seguinte de edifícios. Os níveis 3 a 5
    são a meta de um reino a sério: além de custarem mais (o 3 pede pão, o 4

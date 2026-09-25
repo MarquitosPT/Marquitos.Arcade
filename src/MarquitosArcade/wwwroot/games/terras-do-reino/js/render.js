@@ -497,6 +497,16 @@ function drawWalker(w, t) {
     ctx.beginPath();
     ctx.arc(0, -10.3 - bob, 1.6, Math.PI, 0);
     ctx.fill();
+    if (w.bag) {
+        // Um visitante: chapéu de aba e a mala na mão.
+        ctx.fillStyle = '#2f2622';
+        ctx.fillRect(-2.6, -11 - bob, 5.2, 0.9);
+        ctx.fillRect(-1.5, -13 - bob, 3, 2.1);
+        ctx.fillStyle = w.bag;
+        ctx.fillRect(1.6, -4.4 - bob, 2.8, 2.4);
+        ctx.fillStyle = '#2f2622';
+        ctx.fillRect(2.5, -5 - bob, 1, 0.7);
+    }
     if (w.load) {
         // Um saco às costas.
         ctx.fillStyle = '#c9a36b';
@@ -979,7 +989,8 @@ function statusIcon(b) {
     const def = BUILDING[b.kind];
     if (def?.crop) return b.stage === 'ripe' ? RESOURCE[def.crop.res].emoji : null;
     if (b.status === 'noInput') {
-        const needs = def.recipe?.in || (def.serves?.drink ? { [def.serves.drink]: 1 } : {});
+        if (def.lodges) return '🍽️';
+        const needs = def.recipe?.in || (def.serves?.uses ? { [def.serves.uses]: 1 } : {});
         const need = Object.keys(needs).find((res) => game.res[res] < needs[res]);
         return need ? RESOURCE[need].emoji : '❔';
     }

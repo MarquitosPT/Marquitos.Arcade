@@ -93,7 +93,8 @@ export const RESOURCES = [
     { id: 'sugarcane', name: 'Cana-de-açúcar', emoji: '🎋', price: 4, tradable: true },
     { id: 'sugar', name: 'Açúcar', emoji: '🍬', price: 14, tradable: true },
     { id: 'rice', name: 'Arroz', emoji: '🍚', price: 7, tradable: true, meals: 2 },
-    { id: 'cakes', name: 'Bolos', emoji: '🎂', price: 45, tradable: true, meals: 3 }
+    { id: 'cakes', name: 'Bolos', emoji: '🎂', price: 45, tradable: true, meals: 3 },
+    { id: 'jewels', name: 'Jóias', emoji: '💍', price: 100, tradable: true }
 ];
 
 export const RESOURCE = Object.fromEntries(RESOURCES.map((r) => [r.id, r]));
@@ -117,18 +118,18 @@ export const TAX_PER_RESIDENT = 4;
 export const IDLE_TAX_SHARE = 0.25;
 /**
  * O contentamento vai de `HAPPY_BASE` (ninguém come nada de jeito) a 1 (todos
- * bem alimentados, com variedade, e com taberna e teatro para todos). Nunca
- * chega a zero: um reino sem pão é pobre, não é um reino em revolta — isto
- * não é um jogo de guerra.
+ * bem alimentados, com variedade, com taberna e teatro para todos e jóias ao
+ * pescoço). Nunca chega a zero: um reino sem pão é pobre, não é um reino em
+ * revolta — isto não é um jogo de guerra.
  *
- * A comida chega aos 90%; os últimos 10% são o convívio (`HAPPY_LEISURE`):
- * cada edifício com `serves` (a taberna, o teatro) dá a sua parte, na
- * proporção dos moradores que consegue servir.
+ * A comida chega aos 90%; os últimos 10% são o convívio e o luxo
+ * (`HAPPY_LEISURE`): cada edifício com `serves` (a taberna, o teatro, a
+ * joalharia) dá a sua parte, na proporção dos moradores que consegue servir.
  */
 export const HAPPY_BASE = 0.4;
 export const HAPPY_FED = 0.4;
 export const HAPPY_VARIETY = 0.1;
-export const HAPPY_LEISURE = { tavern: 0.05, theatre: 0.05 };
+export const HAPPY_LEISURE = { tavern: 0.04, theatre: 0.03, jewelry: 0.03 };
 
 // ---------- Castelo ----------
 
@@ -181,9 +182,14 @@ export const CASTLE_MAX_LEVEL = CASTLE_LEVELS.length - 1;
  * `crop` é uma cultura (trigo, vinha, algodão): semeia-se, cresce `grow`
  * segundos e colhe-se `yield` de `res` — à mão ou pelo celeiro.
  *
- * `serves` é convívio (taberna, teatro): ao fim de cada dia serve até
- * `residents` moradores e deixa-os mais contentes (`HAPPY_LEISURE`). Com
- * `drink`, gasta 1 dele por cada `per` moradores servidos.
+ * `serves` é convívio e luxo (taberna, teatro, joalharia): ao fim de cada dia
+ * serve até `residents` moradores e deixa-os mais contentes (`HAPPY_LEISURE`).
+ * Com `uses`, gasta 1 desse bem por cada `per` moradores servidos (o vinho da
+ * taberna, as jóias que a joalharia vende ao povo).
+ *
+ * `lodges` é a hospedaria: ao fim de cada dia recebe até `guests` visitantes
+ * (mais quanto mais contente estiver o povo — um reino feliz tem fama), que
+ * comem uma refeição do que sobrar na despensa e pagam `fee` moedas cada um.
  */
 export const BUILDINGS = [
     {
@@ -313,7 +319,7 @@ export const BUILDINGS = [
     {
         id: 'tavern', name: 'Taberna', emoji: '🍺', tier: 3,
         cost: { coins: 200, planks: 30, stone: 30 }, workers: 2,
-        serves: { residents: 40, drink: 'wine', per: 10 },
+        serves: { residents: 40, uses: 'wine', per: 10 },
         desc: 'O povo junta-se ao fim do dia para um copo de vinho e dois dedos de conversa. Povo mais contente.'
     },
     {
@@ -358,6 +364,19 @@ export const BUILDINGS = [
         cost: { coins: 700, planks: 60, stone: 60, sugar: 10 }, workers: 3,
         recipe: { in: { eggs: 2, flour: 1, sugar: 1, milk: 1 }, out: { cakes: 1 }, time: 35 },
         desc: 'Bolos com ovos, farinha, açúcar e leite: o povo adora-os e as feiras pagam-nos a peso de ouro.'
+    },
+    {
+        id: 'inn', name: 'Hospedaria', emoji: '🛎️', tier: 4,
+        cost: { coins: 700, planks: 70, stone: 80 }, workers: 3,
+        lodges: { guests: 12, fee: 12 },
+        desc: 'Quartos para quem vem visitar o reino. Os visitantes comem do que sobra na despensa e pagam a estadia: quanto mais contente o povo, mais fama tem o reino e mais visitas chegam.'
+    },
+    {
+        id: 'jewelry', name: 'Joalharia', emoji: '💍', tier: 5,
+        cost: { coins: 1200, planks: 60, stone: 90, gold: 30 }, workers: 3,
+        recipe: { in: { gold: 2 }, out: { jewels: 1 }, time: 30 },
+        serves: { residents: 80, uses: 'jewels', per: 40 },
+        desc: 'Os ourives transformam o ouro das minas em anéis e colares. As jóias valem uma fortuna nas feiras, e o povo que as usa anda mais contente.'
     }
 ];
 
@@ -437,7 +456,7 @@ export const FAIR_EVERY_DAYS = 3;
 export const TOWNS = [
     {
         id: 'rosa', name: 'Vila Rosa', roof: '#d8587b', emoji: '🌸',
-        supplies: ['wheat', 'milk', 'eggs'], demands: ['wood', 'planks', 'stone', 'wine', 'cakes'],
+        supplies: ['wheat', 'milk', 'eggs'], demands: ['wood', 'planks', 'stone', 'wine', 'cakes', 'jewels'],
         kinds: ['house', 'field', 'field', 'pasture', 'house', 'mill']
     },
     {
