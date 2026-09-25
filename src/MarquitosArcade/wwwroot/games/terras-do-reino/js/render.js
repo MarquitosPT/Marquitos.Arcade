@@ -25,7 +25,7 @@ import {
 } from './iso.js';
 import { hash2 } from './rng.js';
 import { setSpriteScale, stamp } from './sprite-cache.js';
-import { LIVE, PLAYER_ROOF } from './sprites.js';
+import { HOUSE_VARIANTS, LIVE, MOUNTAIN_VARIANTS, PLAYER_ROOF } from './sprites.js';
 import { castleInfo, fx, game, ui } from './state.js';
 import { CATCH_SECONDS, boatAlpha, boatPlace } from './boats.js';
 import { walkerAlpha, walkerPlace } from './walkers.js';
@@ -331,24 +331,114 @@ function drawRoad(x, y, detail) {
     ctx.moveTo(pts[0][0], pts[0][1]);
     for (let k = 1; k < 4; k++) ctx.lineTo(pts[k][0], pts[k][1]);
     ctx.closePath();
-    ctx.fillStyle = town ? '#b3a58c' : '#c2b69c';
+    // De perto, o fundo é a argamassa entre as pedras; de longe, a cor da calçada toda.
+    ctx.fillStyle = detail ? (town ? '#9d8f75' : '#a99b80') : (town ? '#b3a58c' : '#c2b69c');
     ctx.fill();
     ctx.strokeStyle = 'rgba(92, 78, 52, 0.28)';
     ctx.lineWidth = 0.8;
     ctx.stroke();
 
-    if (!detail) return;
-    // As pedras da calçada: quatro por casa, com um pouco de acaso na cor.
-    for (let k = 0; k < 4; k++) {
-        const gx = x + 0.28 + (k % 2) * 0.44 + (hash2(x, y, 90 + k) - 0.5) * 0.1;
-        const gy = y + 0.28 + Math.floor(k / 2) * 0.44 + (hash2(x, y, 94 + k) - 0.5) * 0.1;
-        if (gx < x0 + 0.08 || gx > x1 - 0.08 || gy < y0 + 0.08 || gy > y1 - 0.08) continue;
-        const [px, py] = p(gx, gy);
-        const shade = hash2(x, y, 98 + k);
-        ctx.fillStyle = shade < 0.33 ? '#d8cfbb' : shade < 0.66 ? '#aa9c80' : '#b9ac92';
-        ctx.beginPath();
-        ctx.ellipse(px, py, 3.4, 1.7, 0, 0, Math.PI * 2);
-        ctx.fill();
+    if (detail) drawCobbles(x, y, x0, x1, y0, y1, town, p);
+}
+
+const COBBLE_PLAYER = ['#d8cfbb', '#cdc1a6', '#c2b59a', '#b8aa8e', '#ddd3bf'];
+const COBBLE_TOWN = ['#c9bea8', '#bcb09a', '#b0a38a', '#a69a82', '#cfc5b2'];
+
+/**
+ * Filas de pedras por casa (ao longo de y) e pedras por fila (ao longo de x).
+ * A estrada é mais estreita do que a casa nos lados sem continuação: na
+ * largura de um troço cabem 4 filas.
+ */
+const COBBLE_ROWS = 6;
+const COBBLES_PER_ROW = 7;
+/** A junta entre pedras, em casas da grelha. */
+const COBBLE_GAP = 0.012;
+
+/** Se a casa (x, y) se pinta depois da casa (nx, ny) na vista de agora. */
+function paintedAfter(x, y, nx, ny) {
+    const a = cellToView(x, y);
+    const b = cellToView(nx, ny);
+    return a.x + a.y > b.x + b.y;
+}
+
+/**
+ * As pedras da calçada de um troço, em juntas desencontradas: filas ao longo
+ * de x, cada uma desviada meia pedra da anterior. A grelha é a do mapa todo,
+ * por isso o desenho continua de uma casa para a outra: a pedra que fica em
+ * cima da junta entre dois troços pinta-a inteira a casa que se pinta depois
+ * (o chão da outra já lá está por baixo); na ponta de uma estrada fica meia
+ * pedra. As filas cortadas pela margem da estrada juntam-se à fila do lado.
+ * Cada pedra é um polígono quase regular, de cor ao acaso (mas sempre a mesma
+ * na mesma pedra).
+ */
+function drawCobbles(x, y, x0, x1, y0, y1, town, p) {
+    const rowH = 1 / COBBLE_ROWS;
+    const cell = 1 / COBBLES_PER_ROW;
+    const palette = town ? COBBLE_TOWN : COBBLE_PLAYER;
+
+    // As filas: as da grelha, cortadas à margem; uma tira fina junta-se à do lado.
+    const rows = [];
+    for (let k = 0; k < COBBLE_ROWS; k++) {
+        const a = Math.max(y + k * rowH, y0);
+        const b = Math.min(y + (k + 1) * rowH, y1);
+        if (b - a > 1e-6) rows.push({ a, b, g: y * COBBLE_ROWS + k });
+    }
+    if (rows.length > 1 && rows[0].b - rows[0].a < rowH * 0.5) rows[1].a = rows.shift().a;
+    const last = rows.length - 1;
+    if (last > 0 && rows[last].b - rows[last].a < rowH * 0.5) rows[last - 1].b = rows.pop().b;
+
+    const joinLeft = hasRoad(x - 1, y) && paintedAfter(x, y, x - 1, y);
+    const joinRight = hasRoad(x + 1, y) && paintedAfter(x, y, x + 1, y);
+    for (const row of rows) {
+        const offset = (row.g & 1) * cell * 0.5;
+        const pieces = [];
+        for (let k = -1; k <= COBBLES_PER_ROW; k++) {
+            const s0 = x + offset + k * cell;
+            const s1 = s0 + cell;
+            if (s1 <= x0 + 1e-6 || s0 >= x1 - 1e-6) continue;
+            let a = Math.max(s0, x0);
+            let b = Math.min(s1, x1);
+            // Em cima da junta com outro troço: inteira, ou nada (pinta-a o vizinho).
+            if (s0 < x0 - 1e-6 && x0 === x) {
+                if (!joinLeft) continue;
+                a = s0;
+            }
+            if (s1 > x1 + 1e-6 && x1 === x + 1) {
+                if (!joinRight) continue;
+                b = s1;
+            }
+            pieces.push({ a, b, col: Math.round((s0 - offset) * COBBLES_PER_ROW) });
+        }
+        // Uma lasca à margem da estrada junta-se à pedra do lado.
+        if (pieces.length > 1 && pieces[0].b - pieces[0].a < cell * 0.4) pieces[1].a = pieces.shift().a;
+        const end = pieces.length - 1;
+        if (end > 0 && pieces[end].b - pieces[end].a < cell * 0.4) pieces[end - 1].b = pieces.pop().b;
+
+        for (const piece of pieces) {
+            let n = 0;
+            const rnd = () => hash2(piece.col, row.g, 90 + n++);
+            const cx = (piece.a + piece.b) / 2;
+            const cy = (row.a + row.b) / 2;
+            const rx = (piece.b - piece.a) / 2 - COBBLE_GAP;
+            const ry = (row.b - row.a) / 2 - COBBLE_GAP;
+            const sides = 8;
+            const turn = Math.PI / sides + (rnd() - 0.5) * 0.2;
+            ctx.beginPath();
+            for (let k = 0; k < sides; k++) {
+                // Um octógono quase regular que enche o retângulo da pedra.
+                const ang = turn + (k / sides) * Math.PI * 2 + (rnd() - 0.5) * 0.16;
+                const f = 0.96 + rnd() * 0.05;
+                const c = Math.cos(ang);
+                const s2 = Math.sin(ang);
+                const m = Math.max(Math.abs(c), Math.abs(s2)) ** 0.8;
+                const [px, py] = p(cx + (c / m) * rx * f, cy + (s2 / m) * ry * f);
+                if (k === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fillStyle = palette[Math.floor(rnd() * palette.length)];
+            ctx.fill();
+        }
     }
 }
 
@@ -663,7 +753,8 @@ function shoreVariant(x, y, size) {
 
 function drawBuilding(b, wx, wy, t) {
     const kind = b.kind;
-    const variant = variantOf(b.x, b.y);
+    // As casas têm mais variantes do que o resto (ver `house` em sprites.js).
+    const variant = kind === 'house' ? Math.floor(hash2(b.x, b.y, 78) * HOUSE_VARIANTS) : variantOf(b.x, b.y);
     const roof = roofOf(b);
     let key;
     let opts;
@@ -712,6 +803,17 @@ function drawFeature(feature, x, y, wx, wy, t) {
         LIVE.ore(ctx, null, t, { seed: hash2(x, y, 16) });
         ctx.restore();
     }
+}
+
+/**
+ * Os montes de uma casa de colina (ver `mountain` em sprites.js): dois numa
+ * casa sem nada em cima, só o de trás numa casa com rochas ou ouro.
+ */
+function drawMountains(x, y, wx, wy, backOnly = false) {
+    const variant = Math.floor(hash2(x, y, 18) * MOUNTAIN_VARIANTS);
+    const jx = (hash2(x, y, 19) - 0.5) * 4;
+    const k = 0.56 + Math.round(hash2(x, y, 20) * 2) * 0.04;
+    stamp(ctx, `mountain|${variant}|${backOnly ? 1 : 0}`, 'mountain', { variant, backOnly }, wx + jx, wy, k);
 }
 
 // ---------- Peças ocultas (modo de construção) ----------
@@ -770,6 +872,17 @@ function drawFeatureBase(feature, x, y, wx, wy) {
             ctx.fill();
         }
     }
+    ctx.restore();
+}
+
+/** Os montes, rasos: duas manchas de pedra, para se ver que a casa é colina sem tapar o que está atrás. */
+function drawMountainsBase(wx, wy) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(120, 105, 85, 0.5)';
+    ctx.beginPath();
+    ctx.ellipse(wx - 4, wy - 1, 7, 3.4, 0, 0, Math.PI * 2);
+    ctx.ellipse(wx + 5, wy + 1.5, 5, 2.5, 0, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
 }
 
@@ -1183,8 +1296,16 @@ export function render(dt) {
                     }
                 }
             } else if (game.world.feature[i]) {
-                if (hideProps) drawFeatureBase(game.world.feature[i], x, y, wx, gy);
-                else drawFeature(game.world.feature[i], x, y, wx, gy, t);
+                const feature = game.world.feature[i];
+                if (hideProps) {
+                    drawFeatureBase(feature, x, y, wx, gy);
+                } else {
+                    if (feature !== 'tree' && game.world.terrain[i] === T_HILL) drawMountains(x, y, wx, gy, true);
+                    drawFeature(feature, x, y, wx, gy, t);
+                }
+            } else if (game.world.terrain[i] === T_HILL && !game.world.road[i]) {
+                if (hideProps) drawMountainsBase(wx, gy);
+                else drawMountains(x, y, wx, gy);
             }
             const boats = boatsAt.get(i);
             if (boats) for (const boat of boats) drawBoat(boat, t);
