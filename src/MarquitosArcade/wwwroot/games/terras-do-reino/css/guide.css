@@ -30,7 +30,7 @@ body {
     overflow: hidden;
     overscroll-behavior: none;
     /* O fundo da faixa que sobre por baixo: o verde do fim do prado. */
-    background-color: #5d9440;
+    background-color: #4f8235;
 }
 
 body {
@@ -38,10 +38,24 @@ body {
     font-size: 15px;
     line-height: 1.55;
     color: var(--text);
-    /* O céu e o prado do jogo, parados por trás do vidro. */
+    /*
+     * O fundo fica parado — o <body> não rola, quem rola é a .guideScroll, que é
+     * transparente — e o conteúdo desliza por cima dele. São os tons do jogo
+     * num gradiente contínuo: o céu em cima, a descer para o prado e para o
+     * verde mais fundo em baixo, com o sol dourado das moedas e do castelo a
+     * aquecer o canto de cima.
+     */
     background:
-        radial-gradient(60vw 30vw at 30% 8%, rgba(255, 255, 255, 0.45), transparent 70%),
-        linear-gradient(180deg, #5aa6e6 0%, #a9d4f2 40%, #8cc063 41%, #5d9440 100%);
+        radial-gradient(90vw 55vh at 80% 4%, rgba(255, 228, 150, 0.55), transparent 65%),
+        radial-gradient(70vw 40vh at 12% 10%, rgba(255, 255, 255, 0.35), transparent 70%),
+        radial-gradient(130vw 55vh at 50% 108%, rgba(38, 66, 24, 0.6), transparent 70%),
+        linear-gradient(180deg, #5aa6e6 0%, #8cc6ee 24%, #b9dca6 46%, #8cc063 62%, #6fa84a 80%, #4f8235 100%);
+}
+
+/* O vidro dos painéis, mais transparente do que o do jogo: aqui o fundo é para
+   se ver a passar por trás. O desfoque é que mantém o texto legível. */
+:root {
+    --guide-glass: linear-gradient(155deg, rgba(58, 48, 34, 0.6), rgba(30, 26, 20, 0.68) 60%);
 }
 
 .guideScroll {
@@ -173,9 +187,9 @@ b, strong { font-weight: 700; color: #fff; }
     padding: 12px;
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
-    background: var(--glass-bg);
-    -webkit-backdrop-filter: blur(var(--blur));
-    backdrop-filter: blur(var(--blur));
+    background: var(--guide-glass);
+    -webkit-backdrop-filter: blur(var(--blur)) saturate(140%);
+    backdrop-filter: blur(var(--blur)) saturate(140%);
     box-shadow: var(--glass-shadow);
 }
 
@@ -200,7 +214,7 @@ b, strong { font-weight: 700; color: #fff; }
     padding: clamp(18px, 4vw, 28px);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
-    background: var(--glass-bg);
+    background: var(--guide-glass);
     -webkit-backdrop-filter: blur(var(--blur)) saturate(140%);
     backdrop-filter: blur(var(--blur)) saturate(140%);
     box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.18);
