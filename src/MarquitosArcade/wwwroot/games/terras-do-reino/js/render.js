@@ -252,7 +252,7 @@ const placement = { key: '', ok: null };
 
 function placementMap() {
     const kind = ui.placing;
-    const key = `${kind}|${game.buildings.length}|${game.castleLevel}|${game.planted.length}|${game.flattened.length}|${game.roadsVersion}|${Math.floor(fx.time * 2)}`;
+    const key = `${kind}|${game.buildings.length}|${game.castleLevel}|${game.planted.length}|${game.flattened.length}|${game.cleared.length}|${game.roadsVersion}|${Math.floor(fx.time * 2)}`;
     if (placement.key === key) return placement.ok;
     placement.key = key;
     const ok = new Uint8Array(MAP_SIZE * MAP_SIZE);
@@ -1193,7 +1193,7 @@ function drawSelection() {
     let size = 1;
     if (b) {
         ({ x, y, size } = b);
-    } else if (game.world.terrain[idx(sel.x, sel.y)] === T_HILL) {
+    } else if (game.world.terrain[idx(sel.x, sel.y)] === T_HILL && !game.world.feature[idx(sel.x, sel.y)]) {
         ({ x, y } = flattenBlock(sel.x, sel.y));
         size = 2;
     }

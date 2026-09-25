@@ -802,6 +802,36 @@ const GAMES = [
                 return isFreeLand(game.world, x, y);
             }, hill);
             if (!flat) throw new Error(`a colina em ${hill.x},${hill.y} não ficou aplanada`);
+
+            // Limpar a área: cortar uma árvore e partir um rochedo pelos botões das fichas. Custa moedas e não dá nada.
+            const cleared = [];
+            for (const kind of ['tree', 'rock']) {
+                const spot = await page.evaluate(async (kind) => {
+                    const G = '/games/terras-do-reino/js/';
+                    const { game } = await import(G + 'state.js');
+                    const { checkClear } = await import(G + 'buildings.js');
+                    const { openSheet } = await import(G + 'sheets.js');
+                    for (let y = 0; y < 88; y++) for (let x = 0; x < 88; x++) {
+                        if (game.world.feature[y * 88 + x] === kind && checkClear(x, y).ok) {
+                            openSheet('tile', `${x},${y}`);
+                            return { x, y, res: { ...game.res } };
+                        }
+                    }
+                    return null;
+                }, kind);
+                if (!spot) throw new Error(`não há nenhum(a) ${kind} para limpar no território`);
+                await page.click('#sheetBody [data-action="clear"]');
+                const after = await page.evaluate(async ({ x, y }) => {
+                    const G = '/games/terras-do-reino/js/';
+                    const { game } = await import(G + 'state.js');
+                    // Um rochedo numa colina deixa a colina: o que conta é a casa ficar sem nada em cima.
+                    return { free: game.world.feature[y * 88 + x] === null, res: { ...game.res } };
+                }, spot);
+                if (!after.free) throw new Error(`a casa ${spot.x},${spot.y} (${kind}) não ficou limpa`);
+                if (!(after.res.coins < spot.res.coins)) throw new Error(`limpar (${kind}) não custou moedas`);
+                if (after.res.wood > spot.res.wood || after.res.stone > spot.res.stone) throw new Error(`limpar (${kind}) deu madeira ou pedra`);
+                cleared.push(spot.y * 88 + spot.x);
+            }
             await page.click('#sheetCloseBtn');
 
             // Sair grava o reino no aparelho — e cabe no teto do servidor.
@@ -813,6 +843,7 @@ const GAMES = [
             const data = JSON.parse(save);
             if (data.b.length !== built || data.cl !== 2) throw new Error('a gravação não tem o que se construiu');
             if (!(data.fl || []).includes(hill.y * 88 + hill.x)) throw new Error('a gravação não tem a colina aplanada');
+            if (!cleared.every((i) => (data.cr || []).includes(i))) throw new Error('a gravação não tem as casas limpas');
 
             // Uma hora fora: o reino ficou em pausa, e continua do ponto exato
             // onde ficou — o mesmo relógio, os mesmos bens, a mesma vista.
@@ -824,7 +855,7 @@ const GAMES = [
             await page.reload({ waitUntil: 'networkidle' });
             await waitForSplash(page);
             await enterKingdom(page);
-            const back = await page.evaluate(async (h) => {
+            const back = await page.evaluate(async ({ c, ...h }) => {
                 const G = '/games/terras-do-reino/js/';
                 const { game } = await import(G + 'state.js');
                 const { T_HILL, idx } = await import(G + 'world.js');
@@ -834,11 +865,13 @@ const GAMES = [
                 return {
                     n: game.buildings.length, level: game.castleLevel, day: game.day, played: game.played,
                     coins: game.res.coins, zoom: camera.zoom, rot: camera.rot,
-                    flat: game.world.terrain[idx(h.x, h.y)] !== T_HILL
+                    flat: game.world.terrain[idx(h.x, h.y)] !== T_HILL,
+                    clean: c.every((i) => game.world.feature[i] === null)
                 };
-            }, hill);
+            }, { ...hill, c: cleared });
             if (back.n !== built || back.level !== 2) throw new Error(`o reino voltou diferente (${back.n} edifícios, castelo ${back.level})`);
             if (!back.flat) throw new Error('a colina aplanada voltou a ser colina');
+            if (!back.clean) throw new Error('as árvores ou rochedos limpos voltaram');
             if (back.day !== data.day) throw new Error(`o reino andou sem o jogador (dia ${data.day} passou a ${back.day})`);
             if (back.played - data.played > 2) throw new Error(`o relógio andou fora do jogo (${data.played} s passou a ${back.played} s)`);
             if (Math.abs(back.coins - data.res.coins) > 5) throw new Error(`as moedas mudaram fora do jogo (${data.res.coins} passou a ${back.coins})`);

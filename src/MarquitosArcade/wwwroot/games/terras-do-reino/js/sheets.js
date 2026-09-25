@@ -10,11 +10,11 @@
 import { escapeHtml } from '/lib/arcade/index.js';
 
 import {
-    BUILDING, BUILDINGS, DEMOLISH_REFUND, FLATTEN_COST, FLATTEN_STONE, HAPPY_LEISURE, NEAR_FEATURES, RESOURCE, ROAD_COST,
+    BUILDING, BUILDINGS, CLEAR_COST, DEMOLISH_REFUND, FLATTEN_COST, FLATTEN_STONE, HAPPY_LEISURE, NEAR_FEATURES, RESOURCE, ROAD_COST,
     TOWNS
 } from './config.js';
 import {
-    canAfford, canUpgradeCastle, castleNeeds, checkFlatten, checkPlacement, countOf, inTerritory, missingFor,
+    canAfford, canUpgradeCastle, castleNeeds, checkClear, checkFlatten, checkPlacement, countOf, inTerritory, missingFor,
     nextCastleLevel
 } from './buildings.js';
 import { fmt, fmtPrice, pct } from './format.js';
@@ -374,8 +374,8 @@ function tileView(arg) {
                 </div>`
         };
     }
-    if (feature === 'tree') return { icon: '🌳', title: 'Árvore', sub: where, html: '<p class="sheetText">Um <b>🪓 Lenhador</b> aqui perto corta madeira nesta árvore — e as árvores não acabam. Um <b>🌲 Guarda-florestal</b> planta mais.</p>' };
-    if (feature === 'rock') return { icon: '🪨', title: 'Rochedo', sub: where, html: '<p class="sheetText">Uma <b>⛏️ Pedreira</b> aqui perto tira pedra destas rochas.</p>' };
+    if (feature === 'tree') return clearView(x, y, { icon: '🌳', title: 'Árvore', sub: where, html: '<p class="sheetText">Um <b>🪓 Lenhador</b> aqui perto corta madeira nesta árvore — e as árvores não acabam. Um <b>🌲 Guarda-florestal</b> planta mais.</p>' });
+    if (feature === 'rock') return clearView(x, y, { icon: '🪨', title: 'Rochedo', sub: where, html: '<p class="sheetText">Uma <b>⛏️ Pedreira</b> aqui perto tira pedra destas rochas.</p>' });
     if (feature === 'ore') {
         const ok = [[0, 0], [-1, 0], [0, -1], [-1, -1]].some(([dx, dy]) => checkPlacement('goldmine', x + dx, y + dy).ok);
         return {
@@ -396,6 +396,24 @@ function tileView(arg) {
             ${inside ? `<div class="sheetActions"><button class="btn" type="button" data-action="sheet" data-arg="build">🔨 Construir aqui perto</button>
                 <button class="btnOutline" type="button" data-action="roadFrom" data-arg="${x},${y}">🛣️ Estrada a partir daqui</button></div>` : ''}`
     };
+}
+
+/** A ficha de uma árvore ou de um rochedo, com o botão para limpar a casa quando está no território. */
+function clearView(x, y, view) {
+    if (!checkClear(x, y, { ignoreCost: true }).ok) return view;
+    const tree = game.world.feature[idx(x, y)] === 'tree';
+    const cost = CLEAR_COST[tree ? 'tree' : 'rock'];
+    const ok = canAfford(cost);
+    const [what, button] = tree
+        ? ['os lenhadores cortam a árvore e arrancam o cepo', '🪓 Cortar a árvore']
+        : ['os cavouqueiros partem o rochedo e levam os cacos', '⛏️ Partir o rochedo'];
+    view.html += `<div class="sheetSection">
+            <p class="sheetText">🧹 <b>Limpar</b>: ${what}, e a casa fica livre para construir ou abrir estrada.
+            Não se aproveita nada — é só o trabalho.</p>
+            <p class="sheetText" style="margin-top:6px">${costHtml(cost)}</p>
+        </div>
+        <div class="sheetActions"><button class="btn" type="button" data-action="clear" data-arg="${x},${y}"${ok ? '' : ' disabled'}>${button}</button></div>`;
+    return view;
 }
 
 function hillView(x, y, feature, where) {
