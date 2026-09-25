@@ -41,7 +41,7 @@ export const game = {
     /** A melhor prosperidade já enviada ao quadro, para não enviar a mesma duas vezes. */
     bestSubmitted: 0,
     /** Cache dos números derivados, refeita a cada passo da economia. */
-    derived: { residents: 0, workersUsed: 0, taxPerDay: 0, prosperity: 0, storage: 150, fedRatio: 0 }
+    derived: { residents: 0, workersUsed: 0, taxPerDay: 0, prosperity: 0, storage: 150, fedRatio: 0, served: {} }
 };
 
 /** Efeitos que não se guardam: caravanas, gente a andar, barcos, números a subir, pó da construção. */

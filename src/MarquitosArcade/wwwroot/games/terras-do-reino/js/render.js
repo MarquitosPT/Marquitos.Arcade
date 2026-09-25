@@ -19,7 +19,7 @@
 import {
     BUILDING, ELEV_PX, FONT_BODY, FONT_DISPLAY, MAP_SIZE, NEAR_FEATURES, RESOURCE, SLAB_PX, TILE_H, TILE_W
 } from './config.js';
-import { canRoad, checkPlacement, flattenBlock, inTerritory } from './buildings.js';
+import { canRoad, checkPlacement, flattenBlock, inTerritory, isCrop } from './buildings.js';
 import {
     blockFront, camera, cellToView, gridToWorld, viewToCell, viewToWorld, worldToScreen
 } from './iso.js';
@@ -670,9 +670,9 @@ function drawBuilding(b, wx, wy, t) {
     if (kind === 'castle') {
         key = `castle|${game.castleLevel}`;
         opts = { level: game.castleLevel };
-    } else if (kind === 'field') {
+    } else if (isCrop(kind)) {
         const growth = b.stage === 'growing' ? Math.min(5, Math.floor(b.growth * 6)) / 6 : 0;
-        key = `field|${b.stage}|${growth}`;
+        key = `${kind}|${b.stage}|${growth}`;
         opts = { stage: b.stage, growth };
     } else if (kind === 'fishery') {
         // O cais vira-se para a água e vai até ela: o lado e o alcance são a variante do desenho.
@@ -725,13 +725,13 @@ function drawBuildingBase(b) {
     const mine = b.owner === 'player';
     ctx.save();
     blockPath(b.x, b.y, b.size, z, 0.06);
-    ctx.fillStyle = b.kind === 'field' ? 'rgba(150, 110, 60, 0.55)' : 'rgba(168, 150, 120, 0.8)';
+    ctx.fillStyle = isCrop(b.kind) ? 'rgba(150, 110, 60, 0.55)' : 'rgba(168, 150, 120, 0.8)';
     ctx.fill();
     ctx.strokeStyle = mine ? 'rgba(90, 60, 30, 0.85)' : 'rgba(70, 60, 50, 0.6)';
     ctx.lineWidth = 1.4;
     ctx.stroke();
     // Um losango mais pequeno por dentro: as fundações, a dizer "aqui há paredes".
-    if (b.kind !== 'field') {
+    if (!isCrop(b.kind)) {
         blockPath(b.x, b.y, b.size, z, 0.22);
         ctx.strokeStyle = 'rgba(90, 70, 45, 0.5)';
         ctx.lineWidth = 1;
@@ -786,7 +786,7 @@ function drawGhost(x, y, ok) {
     ctx.fill();
     ctx.globalAlpha = ok ? 0.8 : 0.45;
     const variant = kind === 'fishery' ? shoreVariant(x, y, 2) : 0;
-    const opts = kind === 'field' ? { stage: 'empty', growth: 0 } : { roof: PLAYER_ROOF, variant };
+    const opts = isCrop(kind) ? { stage: 'empty', growth: 0 } : { roof: PLAYER_ROOF, variant };
     stamp(ctx, `${kind}|ghost|${variant}`, kind, opts, wx, wy);
     ctx.restore();
 }
@@ -863,10 +863,11 @@ function drawCloudShadows(t) {
 const STATUS_ICON = { noWorkers: '💤', full: '📦', paused: '⏸️' };
 
 function statusIcon(b) {
-    if (b.kind === 'field') return b.stage === 'ripe' ? '🌾' : null;
     const def = BUILDING[b.kind];
+    if (def?.crop) return b.stage === 'ripe' ? RESOURCE[def.crop.res].emoji : null;
     if (b.status === 'noInput') {
-        const need = Object.keys(def.recipe?.in || {}).find((res) => game.res[res] < def.recipe.in[res]);
+        const needs = def.recipe?.in || (def.serves?.drink ? { [def.serves.drink]: 1 } : {});
+        const need = Object.keys(needs).find((res) => game.res[res] < needs[res]);
         return need ? RESOURCE[need].emoji : '❔';
     }
     if (b.status === 'noNear') return NEAR_FEATURES[def.near?.feature]?.icon || '❔';
@@ -903,9 +904,10 @@ function drawScreenOverlays(dt, t) {
             if (!icon) continue;
             const e = Math.max(0, tileElev(b.x, b.y));
             const w = gridToWorld(b.x + b.size / 2, b.y + b.size / 2, e);
-            const s = worldToScreen(w.x, w.y - (b.kind === 'field' ? 20 : 48));
+            const crop = isCrop(b.kind);
+            const s = worldToScreen(w.x, w.y - (crop ? 20 : 48));
             if (s.x < -20 || s.y < -20 || s.x > view.width + 20 || s.y > view.height + 20) continue;
-            drawBubble(s.x, s.y, icon, t, b.kind === 'field');
+            drawBubble(s.x, s.y, icon, t, crop);
         }
     }
 

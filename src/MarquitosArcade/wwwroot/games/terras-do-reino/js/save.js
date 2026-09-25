@@ -11,7 +11,7 @@
 //     v: 2, seed, saved,                      // semente do mapa e hora da gravação (ms)
 //     played, clock, day, cl, happy,          // relógio, nível do castelo, contentamento
 //     res: { coins, wood, ... },
-//     b: [[tipo, x, y, progresso, fase, crescimento], ...],  // campos
+//     b: [[tipo, x, y, progresso, fase, crescimento], ...],  // culturas (trigo, vinha, algodão)
 //        [[tipo, x, y, progresso, parado], ...],             // o resto
 //     pt: [índices de casas com árvores plantadas],
 //     fl: [índices de casas de colina aplanadas],       // opcional
@@ -39,7 +39,7 @@
 import { createProgressClient } from '/lib/arcade/progress.js';
 
 import { BUILDINGS, GAME_ID, PROGRESS_STORAGE_KEY, SPEEDS, START_RESOURCES, ZOOM_MAX, ZOOM_MIN } from './config.js';
-import { createBuilding, placeCastle } from './buildings.js';
+import { createBuilding, isCrop, placeCastle } from './buildings.js';
 import { refreshDerived } from './economy.js';
 import { camera, lookAt, worldToGrid } from './iso.js';
 import { initMarket } from './market.js';
@@ -183,7 +183,7 @@ export function serialize() {
         res,
         b: game.buildings.map((b) => {
             const row = [KIND_INDEX[b.kind], b.x, b.y, r2(b.progress || 0)];
-            if (b.kind === 'field') row.push(STAGES.indexOf(b.stage), r2(b.growth));
+            if (isCrop(b.kind)) row.push(STAGES.indexOf(b.stage), r2(b.growth));
             else if (b.paused) row.push(1);
             return row;
         }),
@@ -249,7 +249,7 @@ export function loadSave(data = progress.data) {
         if (game.world.building[idx(x, y)] || game.world.building[idx(x + 1, y + 1)]
             || game.world.building[idx(x + 1, y)] || game.world.building[idx(x, y + 1)]) continue;
         const b = createBuilding(def.id, x, y, { progress: prog || 0 }, { force: true });
-        if (def.id === 'field') {
+        if (def.crop) {
             b.stage = STAGES[row[4]] || 'empty';
             b.growth = row[5] || 0;
         } else {

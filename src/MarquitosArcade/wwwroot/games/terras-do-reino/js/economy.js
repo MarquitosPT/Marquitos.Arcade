@@ -3,14 +3,14 @@
 // A cada passo: contam-se os moradores, distribuem-se os trabalhadores pelos
 // edifícios (por ordem de construção — o primeiro a ser feito é o primeiro a
 // ter gente), cada edifício avança o seu ciclo, os campos crescem e cobram-se
-// os impostos. Ao fim de cada dia o povo come, e o contentamento acompanha o
-// que houve na mesa.
+// os impostos. Ao fim de cada dia o povo come (e vai à taberna e ao teatro),
+// e o contentamento acompanha o que houve na mesa e o convívio.
 
 import {
-    BUILDING, CASTLE_LEVELS, DAY_SECONDS, FOODS, HAPPY_BASE, HAPPY_FED, HAPPY_VARIETY, IDLE_TAX_SHARE, RESOURCE,
-    TAX_PER_RESIDENT
+    BUILDING, CASTLE_LEVELS, DAY_SECONDS, FOODS, HAPPY_BASE, HAPPY_FED, HAPPY_LEISURE, HAPPY_VARIETY, IDLE_TAX_SHARE,
+    RESOURCE, TAX_PER_RESIDENT
 } from './config.js';
-import { centerOf, costValue } from './buildings.js';
+import { centerOf, costValue, isCrop } from './buildings.js';
 import { driftMarket, marketNewDay } from './market.js';
 import { castleInfo, fx, game } from './state.js';
 import { stepCaravans, stepTowns } from './towns.js';
@@ -96,29 +96,30 @@ export function togglePaused(b) {
     return true;
 }
 
-/** Semear um campo vazio. */
+/** Semear uma cultura vazia. */
 export function plantField(b) {
-    if (b.kind !== 'field' || b.stage !== 'empty') return false;
+    if (!isCrop(b.kind) || b.stage !== 'empty') return false;
     b.stage = 'growing';
     b.growth = 0;
     return true;
 }
 
-/** Colher um campo maduro. Devolve o trigo que entrou (0 se o armazém estava cheio). */
+/** Colher uma cultura madura. Devolve o que entrou (0 se o armazém estava cheio). */
 export function harvestField(b, { quiet = false } = {}) {
-    if (b.kind !== 'field' || b.stage !== 'ripe') return 0;
-    const got = addResource('wheat', BUILDING.field.yield);
+    if (!isCrop(b.kind) || b.stage !== 'ripe') return 0;
+    const crop = BUILDING[b.kind].crop;
+    const got = addResource(crop.res, crop.yield);
     if (got <= 0) return 0;
     b.stage = 'empty';
     b.growth = 0;
     game.stats.harvested += got;
-    float(b, `+${got} ${RESOURCE.wheat.emoji}`, quiet);
+    float(b, `+${got} ${RESOURCE[crop.res].emoji}`, quiet);
     return got;
 }
 
 function stepField(b, dt) {
     if (b.stage !== 'growing') return;
-    b.growth += dt / BUILDING.field.grow;
+    b.growth += dt / BUILDING[b.kind].crop.grow;
     if (b.growth >= 1) {
         b.growth = 1;
         b.stage = 'ripe';
@@ -199,7 +200,7 @@ function stepForester(b, def, dt) {
     b.status = 'ok';
 }
 
-/** Celeiro: colhe os campos maduros à volta e volta a semeá-los. */
+/** Celeiro: colhe as culturas maduras à volta (trigo, vinha, algodão) e volta a semeá-las. */
 function stepBarn(b, def, dt, quiet) {
     if (!b.staffed) {
         b.status = 'noWorkers';
@@ -214,7 +215,7 @@ function stepBarn(b, def, dt, quiet) {
     let ripe = null;
     const c = centerOf(b);
     for (const other of game.buildings) {
-        if (other.kind !== 'field') continue;
+        if (!isCrop(other.kind)) continue;
         const o = centerOf(other);
         if (Math.hypot(o.x - c.x, o.y - c.y) > def.farms.radius) continue;
         if (!ripe && other.stage === 'ripe') ripe = other;
@@ -234,7 +235,44 @@ function stepBarn(b, def, dt, quiet) {
     }
 }
 
-/** O povo come ao fim do dia: primeiro o que mais alimenta. */
+/**
+ * Taberna e teatro: ao longo do dia só mostram se podem abrir (e a barra
+ * anda com o relógio); é ao fim do dia que servem o povo (ver `leisure`).
+ */
+function stepVenue(b, def) {
+    b.progress = game.clock / DAY_SECONDS;
+    if (!b.staffed) b.status = 'noWorkers';
+    else if (def.serves.drink && game.res[def.serves.drink] < 1) b.status = 'noInput';
+    else b.status = 'ok';
+}
+
+/**
+ * O convívio do fim do dia: cada tipo de edifício com `serves` serve até
+ * `residents` moradores por edifício (com gente a trabalhar lá), gastando a
+ * bebida que precisar. Devolve o bónus de contentamento e guarda, para o
+ * painel do castelo, a parte do povo que cada um serviu.
+ */
+function leisure(residents) {
+    let bonus = 0;
+    const served = {};
+    for (const [kind, share] of Object.entries(HAPPY_LEISURE)) {
+        const def = BUILDING[kind];
+        const open = game.buildings.filter((b) => b.kind === kind && b.staffed && !b.paused).length;
+        let people = Math.min(residents, open * def.serves.residents);
+        if (def.serves.drink) {
+            const drink = def.serves.drink;
+            people = Math.min(people, Math.floor(game.res[drink]) * def.serves.per);
+            game.res[drink] -= Math.ceil(people / def.serves.per);
+        }
+        const ratio = residents ? people / residents : 0;
+        served[kind] = ratio;
+        bonus += share * ratio;
+    }
+    game.derived.served = served;
+    return bonus;
+}
+
+/** O povo come ao fim do dia: primeiro o que mais alimenta. Depois, o convívio. */
 function eat() {
     const residents = game.derived.residents;
     let meals = 0;
@@ -251,7 +289,7 @@ function eat() {
     const fed = residents ? Math.min(1, meals / residents) : 0;
     game.derived.fedRatio = fed;
     const variety = kinds >= 2 ? HAPPY_VARIETY : 0;
-    const target = HAPPY_BASE + HAPPY_FED * fed + variety;
+    const target = Math.min(1, HAPPY_BASE + HAPPY_FED * fed + variety + leisure(residents));
     // O contentamento não salta de um dia para o outro: anda metade do caminho.
     game.happy += (target - game.happy) * 0.5;
 }
@@ -277,8 +315,9 @@ export function stepEconomy(dt, { quiet = false } = {}) {
             b.status = 'paused';
             continue;
         }
-        if (b.kind === 'field') stepField(b, dt);
+        if (def.crop) stepField(b, dt);
         else if (def.recipe) stepProducer(b, def, dt, quiet);
+        else if (def.serves) stepVenue(b, def);
         else if (def.plants) stepForester(b, def, dt);
         else if (def.farms) stepBarn(b, def, dt, quiet);
     }

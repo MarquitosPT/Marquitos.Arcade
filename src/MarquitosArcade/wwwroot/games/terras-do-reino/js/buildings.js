@@ -44,6 +44,9 @@ export function isUnlocked(kind) {
     return BUILDING[kind].tier <= castleInfo().tier;
 }
 
+/** Uma cultura (trigo, vinha, algodão): semeia-se e colhe-se, sem trabalhadores. */
+export const isCrop = (kind) => !!BUILDING[kind]?.crop;
+
 export function countOf(kind) {
     return game.buildings.reduce((n, b) => n + (b.kind === kind ? 1 : 0), 0);
 }
@@ -136,7 +139,7 @@ export function createBuilding(kind, x, y, extra = {}, { force = false } = {}) {
         y,
         size,
         progress: 0,
-        /** Campos: 'empty' | 'growing' | 'ripe', e o crescimento de 0 a 1. */
+        /** Culturas: 'empty' | 'growing' | 'ripe', e o crescimento de 0 a 1. */
         stage: 'empty',
         growth: 0,
         staffed: false,

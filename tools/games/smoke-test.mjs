@@ -650,7 +650,7 @@ const GAMES = [
                 const field = game.buildings.find((b) => b.kind === 'field');
                 if (!field || field.stage !== 'growing') return { error: `campo em ${field?.stage}` };
                 const { BUILDING } = await import(G + 'config.js');
-                for (let i = 0; i <= BUILDING.field.grow; i++) stepEconomy(1);
+                for (let i = 0; i <= BUILDING.field.crop.grow; i++) stepEconomy(1);
                 const w = gridToWorld(field.x + 1, field.y + 1);
                 const s = worldToScreen(w.x, w.y);
                 return { stage: field.stage, x: s.x, y: s.y, wheat: game.res.wheat };
