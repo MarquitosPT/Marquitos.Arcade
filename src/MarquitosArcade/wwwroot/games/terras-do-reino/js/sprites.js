@@ -40,7 +40,7 @@ export const BOUNDS = {
     rock: [-30, -34, 60, 52],
     ore: [-30, -34, 60, 52],
     mountain: [-44, -66, 88, 84],
-    field: [-34, -30, 68, 50],
+    field: [-34, -40, 68, 60],
     castle: [-86, -196, 172, 250],
     keep: [-40, -126, 80, 152],
     mill: [-40, -110, 80, 136],
@@ -48,7 +48,7 @@ export const BOUNDS = {
     fishery: [-66, -96, 132, 138],
     vineyard: [-34, -42, 68, 62],
     cottonfield: [-34, -34, 68, 54],
-    canefield: [-34, -48, 68, 68],
+    canefield: [-36, -58, 72, 78],
     paddy: [-34, -32, 68, 52],
     quarry: [-40, -64, 80, 90],
     goldmine: [-44, -64, 88, 90]
@@ -335,249 +335,430 @@ function mountain(ctx, { variant = 0, backOnly = false }) {
 /** Quantas variantes tem o desenho dos montes: cada par, virado para cada lado, com três contornos (ver `mountain`). */
 export const MOUNTAIN_VARIANTS = MOUNTAIN_PAIRS.length * 2 * 3;
 
-// ---------- Campo ----------
+// ---------- Culturas ----------
+//
+// As culturas assentam em terra lavrada: um canteiro um pouco mais alto do
+// que o chão, com os camalhões ao longo de x e os pés plantados em cima
+// deles. Cada fila pinta-se de uma vez, de trás para a frente na vista (ver
+// `cropRows`): uma fila de trigo é uma sebe de caules, uma de vinha é uma
+// latada. `growth` vem em sextos (ver render.js), por isso cada cultura tem
+// seis desenhos de crescimento e um de maduro.
 
-function field(ctx, { stage = 'empty', growth = 0 }) {
-    // Terra lavrada, com os regos ao longo de x.
-    diamond(ctx, 0.92, 0.92, 0, '#8b5a32');
-    diamond(ctx, 0.84, 0.84, 0.5, '#9a6639');
-    ctx.strokeStyle = 'rgba(60, 35, 15, 0.45)';
-    ctx.lineWidth = 1.2;
-    for (let i = 1; i < 6; i++) {
-        const gy = -0.42 + (0.84 * i) / 6;
-        ctx.beginPath();
-        ctx.moveTo(...P(-0.42, gy, 0.5));
-        ctx.lineTo(...P(0.42, gy, 0.5));
-        ctx.stroke();
+/** A altura da terra lavrada acima do chão. */
+const SOIL_Z = 1.2;
+
+/** O y, na peça, do meio do camalhão `i` de `rows`. */
+const ridgeY = (i, rows) => -0.42 + (0.84 * (i + 0.5)) / rows;
+
+/** Terra lavrada: o canteiro com o talude, os camalhões com luz em cima e sombra no rego, e uns torrões. */
+function tilled(ctx, rows = 6, soil = '#8b5a32', seed = 1) {
+    box(ctx, 0.92, 0.92, SOIL_Z, shade(soil, -0.05), { top: shade(soil, -0.12) });
+    const w = 0.84 / rows / 2 - 0.012;
+    for (const { gy } of cropRows(rows)) {
+        poly(ctx, [P(-0.42, gy - w, SOIL_Z + 0.9), P(0.42, gy - w, SOIL_Z + 0.9), P(0.42, gy + w, SOIL_Z + 0.9), P(-0.42, gy + w, SOIL_Z + 0.9)], shade(soil, 0.08));
+        // O lado do camalhão virado para quem olha.
+        const side = depth(0, 1) > 0 ? gy + w : gy - w;
+        poly(ctx, [P(-0.42, side, SOIL_Z), P(0.42, side, SOIL_Z), P(0.42, side, SOIL_Z + 0.9), P(-0.42, side, SOIL_Z + 0.9)], shade(soil, -0.02));
     }
-    if (stage === 'empty') return;
-
-    const ripe = stage === 'ripe';
-    const g = ripe ? 1 : Math.max(0.08, growth);
-    const height = 3 + g * 10;
-    const color = ripe ? '#e7bd45' : g < 0.5 ? '#72b041' : '#a9c14a';
-    const tip = ripe ? '#f7dc7a' : shade(color, 0.2);
-    // Os pés de trigo, de trás para a frente na vista.
-    const stalks = [];
-    for (let row = 1; row < 6; row++) {
-        const gy = -0.42 + (0.84 * row) / 6;
-        for (let k = 0; k < 6; k++) {
-            const gx = -0.36 + (0.72 * k) / 5;
-            const [x, y] = P(gx, gy, 0.5);
-            stalks.push({ x, y });
+    const rnd = seeded(seed);
+    for (const color of [shade(soil, -0.25), shade(soil, 0.22)]) {
+        ctx.fillStyle = color;
+        for (let i = 0; i < 22; i++) {
+            const [x, y] = P(rnd() * 0.8 - 0.4, rnd() * 0.8 - 0.4, SOIL_Z + 0.9);
+            ctx.fillRect(x, y, 1, 0.7);
         }
     }
-    stalks.sort((a, b) => a.y - b.y || a.x - b.x);
-    for (const { x, y } of stalks) {
-        ctx.strokeStyle = shade(color, -0.15);
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.lineTo(x - 1, y - height);
-        ctx.moveTo(x, y);
-        ctx.lineTo(x + 2, y - height * 0.8);
-        ctx.stroke();
-        if (ripe || g > 0.6) {
-            ctx.fillStyle = tip;
-            ctx.beginPath();
-            ctx.ellipse(x - 1, y - height, 1.6, 3, 0, 0, Math.PI * 2);
-            ctx.fill();
-        }
-    }
-}
-
-/** Terra lavrada de uma cultura, com os regos ao longo de x (`rows` regos). */
-function tilled(ctx, rows = 6, soil = '#8b5a32') {
-    diamond(ctx, 0.92, 0.92, 0, soil);
-    diamond(ctx, 0.84, 0.84, 0.5, shade(soil, 0.1));
-    ctx.strokeStyle = 'rgba(60, 35, 15, 0.45)';
-    ctx.lineWidth = 1.2;
-    for (let i = 1; i < rows; i++) {
-        const gy = -0.42 + (0.84 * i) / rows;
-        ctx.beginPath();
-        ctx.moveTo(...P(-0.42, gy, 0.5));
-        ctx.lineTo(...P(0.42, gy, 0.5));
-        ctx.stroke();
-    }
-}
-
-/** Os pés de uma cultura em grelha (`rows` x `cols`), de trás para a frente na vista. */
-function cropSpots(rows, cols, inset = 0.36) {
-    const spots = [];
-    for (let row = 1; row < rows; row++) {
-        const gy = -0.42 + (0.84 * row) / rows;
-        for (let k = 0; k < cols; k++) {
-            const gx = -inset + (2 * inset * k) / (cols - 1);
-            const [x, y] = P(gx, gy, 0.5);
-            spots.push({ x, y, row, k });
-        }
-    }
-    return spots.sort((a, b) => a.y - b.y || a.x - b.x);
 }
 
 /**
- * Vinha: quatro bardos de estacas com o arame, e as cepas a subir por eles.
- * Madura, cheia de cachos roxos.
+ * Os camalhões de uma cultura, de trás para a frente na vista: cada um dá o
+ * seu y na peça e `at(gx, z)`, o ponto de ecrã em cima dele.
  */
-function vineyard(ctx, { stage = 'empty', growth = 0 }) {
-    tilled(ctx, 5, '#9a6a3c');
-    const rows = [];
-    for (let row = 1; row < 5; row++) rows.push(-0.42 + (0.84 * row) / 5);
-    // Estacas e arame: estão lá sempre, mesmo com a vinha podada.
-    const posts = [];
-    for (const gy of rows) {
-        for (const gx of [-0.38, 0, 0.38]) {
-            const [x, y] = P(gx, gy, 0.5);
-            posts.push({ x, y });
-        }
+function cropRows(rows) {
+    const list = [];
+    for (let i = 0; i < rows; i++) {
+        const gy = ridgeY(i, rows);
+        list.push({ i, gy, at: (gx, z = 0) => P(gx, gy, SOIL_Z + 0.9 + z) });
     }
-    posts.sort((a, b) => a.y - b.y || a.x - b.x);
-    ctx.strokeStyle = '#6b4a2b';
-    ctx.lineWidth = 1.6;
-    for (const { x, y } of posts) {
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.lineTo(x, y - 15);
-        ctx.stroke();
-    }
-    ctx.strokeStyle = 'rgba(70, 60, 50, 0.6)';
-    ctx.lineWidth = 0.7;
-    for (const gy of rows) {
-        for (const h of [9, 14]) {
-            ctx.beginPath();
-            ctx.moveTo(...P(-0.38, gy, h));
-            ctx.lineTo(...P(0.38, gy, h));
-            ctx.stroke();
-        }
-    }
-    if (stage === 'empty') return;
+    return list.sort((a, b) => depth(0, a.gy) - depth(0, b.gy));
+}
 
+/** Os pés de uma cultura em grelha (`rows` camalhões x `cols`), de trás para a frente na vista. */
+function cropSpots(rows, cols, inset = 0.36, z = SOIL_Z + 0.9) {
+    const spots = [];
+    for (let row = 0; row < rows; row++) {
+        const gy = ridgeY(row, rows);
+        for (let k = 0; k < cols; k++) {
+            const gx = -inset + (2 * inset * k) / (cols - 1);
+            const [x, y] = P(gx, gy, z);
+            spots.push({ x, y, row, k, d: depth(gx, gy) });
+        }
+    }
+    return spots.sort((a, b) => a.d - b.d || a.x - b.x);
+}
+
+/** Mistura duas cores #rrggbb: t = 0 dá a primeira, t = 1 a segunda. */
+function mix(a, b, t) {
+    const pa = parseInt(a.slice(1), 16);
+    const pb = parseInt(b.slice(1), 16);
+    const ch = (s) => Math.round(((pa >> s) & 255) * (1 - t) + ((pb >> s) & 255) * t);
+    return `rgb(${ch(16)},${ch(8)},${ch(0)})`;
+}
+
+/**
+ * Trigo: cada camalhão é uma sebe de caules. Novo, é erva verde e baixa;
+ * depois cresce e espiga; maduro, fica dourado, com as espigas e as barbas.
+ */
+function field(ctx, { stage = 'empty', growth = 0 }) {
+    tilled(ctx, 7, '#8b5a32', 3);
+    if (stage === 'empty') return;
     const ripe = stage === 'ripe';
     const g = ripe ? 1 : Math.max(0.1, growth);
-    const leaf = g < 0.5 ? '#79b447' : '#4f8f36';
-    const plants = [];
-    for (const gy of rows) {
-        for (let k = 0; k < 6; k++) {
-            const gx = -0.34 + (0.68 * k) / 5;
-            const [x, y] = P(gx, gy, 0.5);
-            plants.push({ x, y, k });
+    const h = 2.5 + g * 11;
+    const color = ripe ? '#d6a33a' : g < 0.5 ? mix('#6fb043', '#8dbb45', g * 2) : mix('#8dbb45', '#c3bd4a', (g - 0.5) * 2);
+    const ear = ripe ? '#f0cd62' : '#b8c95a';
+    const rnd = seeded(11);
+    for (const { at } of cropRows(7)) {
+        const n = 18;
+        const base = [];
+        const tops = [];
+        for (let k = 0; k <= n; k++) {
+            const gx = -0.41 + (0.82 * k) / n;
+            const [x, y] = at(gx);
+            base.push([x, y]);
+            tops.push([x + (rnd() - 0.5) * 2, y - h * (0.82 + rnd() * 0.18)]);
+        }
+        // A sebe, escura por dentro, e os caules por cima, mais claros.
+        poly(ctx, [...base, ...tops.slice().reverse()], shade(color, -0.22));
+        ctx.lineWidth = 0.8;
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+        for (let k = 0; k <= n; k++) {
+            ctx.moveTo(base[k][0], base[k][1]);
+            ctx.lineTo(tops[k][0], tops[k][1]);
+        }
+        ctx.stroke();
+        ctx.strokeStyle = shade(color, 0.25);
+        ctx.beginPath();
+        for (let k = 1; k <= n; k += 2) {
+            ctx.moveTo(base[k][0] + 0.5, base[k][1] - h * 0.3);
+            ctx.lineTo(tops[k][0] + 0.5, tops[k][1]);
+        }
+        ctx.stroke();
+        if (g < 0.6) continue;
+        // As espigas (e as barbas, maduras).
+        for (const [x, y] of tops) {
+            ctx.fillStyle = shade(ear, -0.15);
+            ctx.beginPath();
+            ctx.ellipse(x + 0.3, y + 0.3, 1.1, 2.4, 0.15, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = ear;
+            ctx.beginPath();
+            ctx.ellipse(x, y, 0.9, 2.2, 0.15, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        if (!ripe) continue;
+        ctx.strokeStyle = 'rgba(250, 230, 160, 0.8)';
+        ctx.lineWidth = 0.4;
+        ctx.beginPath();
+        for (const [x, y] of tops) {
+            ctx.moveTo(x, y - 1.8);
+            ctx.lineTo(x - 0.8, y - 4.2);
+            ctx.moveTo(x + 0.3, y - 1.8);
+            ctx.lineTo(x + 1.2, y - 4);
+        }
+        ctx.stroke();
+    }
+}
+
+/** Uma folha: um bico com a nervura, de `a` até `b`, a dobrar para `bend`. */
+function leafShape(ctx, a, b, width, color, bend = 0) {
+    const mx = (a[0] + b[0]) / 2;
+    const my = (a[1] + b[1]) / 2;
+    const nx = -(b[1] - a[1]);
+    const ny = b[0] - a[0];
+    const len = Math.hypot(nx, ny) || 1;
+    const ox = (nx / len) * width;
+    const oy = (ny / len) * width;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(...a);
+    ctx.quadraticCurveTo(mx + ox, my + oy + bend, ...b);
+    ctx.quadraticCurveTo(mx - ox, my - oy + bend, ...a);
+    ctx.fill();
+}
+
+/**
+ * Vinha: quatro bardos de estacas e arame, com as cepas a subir por eles e a
+ * rama a cobrir o arame. Madura, cheia de cachos roxos.
+ */
+function vineyard(ctx, { stage = 'empty', growth = 0 }) {
+    tilled(ctx, 4, '#9a6a3c', 5);
+    const growing = stage !== 'empty';
+    const ripe = stage === 'ripe';
+    const g = ripe ? 1 : growing ? Math.max(0.1, growth) : 0;
+    const rnd = seeded(13);
+    for (const { at } of cropRows(4)) {
+        // As estacas e o arame: estão lá sempre, mesmo com a vinha podada.
+        ctx.strokeStyle = '#6b4a2b';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        for (const gx of [-0.39, 0, 0.39]) {
+            ctx.moveTo(...at(gx));
+            ctx.lineTo(...at(gx, 15));
+        }
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(70, 60, 50, 0.7)';
+        ctx.lineWidth = 0.6;
+        ctx.beginPath();
+        for (const z of [8, 13]) {
+            ctx.moveTo(...at(-0.39, z));
+            ctx.lineTo(...at(0.39, z));
+        }
+        ctx.stroke();
+        // As cepas, torcidas.
+        ctx.strokeStyle = '#5e3d22';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        for (let k = 0; k < 5; k++) {
+            const gx = -0.3 + k * 0.15;
+            const [x, y] = at(gx);
+            ctx.moveTo(x, y);
+            ctx.quadraticCurveTo(x + 1.5, y - 4, x, y - 7.5);
+        }
+        ctx.stroke();
+        if (!growing) continue;
+        // A rama, ao longo do arame: tufos de folhas, mais escuros por baixo.
+        const top = 7 + g * 6;
+        const r = 1.4 + g * 2.4;
+        const n = 12;
+        const clusters = [];
+        for (let k = 0; k <= n; k++) {
+            const gx = -0.38 + (0.76 * k) / n;
+            const [x, y] = at(gx, top - g * 3 * rnd());
+            clusters.push([x, y, rnd()]);
+        }
+        ctx.fillStyle = '#3f7a2e';
+        for (const [x, y] of clusters) {
+            ctx.beginPath();
+            ctx.arc(x, y + r * 0.5, r, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        for (const [x, y, t] of clusters) {
+            ctx.fillStyle = g < 0.5 ? mix('#86c050', '#5d9c3c', t * 0.5) : mix('#5d9c3c', '#4a8a34', t);
+            ctx.beginPath();
+            ctx.arc(x - 0.4, y - 0.2, r * 0.85, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.fillStyle = 'rgba(200, 235, 150, 0.45)';
+        for (const [x, y, t] of clusters) {
+            if (t < 0.5) continue;
+            ctx.beginPath();
+            ctx.arc(x - r * 0.4, y - r * 0.4, r * 0.3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        if (g < 0.7) continue;
+        // Os cachos, pendurados por baixo da rama: verdes, e roxos quando maduros.
+        const [grape, light] = ripe ? ['#4e2463', '#8c5aa6'] : ['#9fb54c', '#cddc86'];
+        for (let k = 1; k < n; k += 3) {
+            const [x, y] = clusters[k];
+            const gy0 = y + r * 0.9;
+            for (const [dx, dy] of [[-1.2, 0], [0, 0], [1.2, 0], [-0.6, 1.1], [0.6, 1.1], [0, 2.2]]) {
+                ctx.fillStyle = grape;
+                ctx.beginPath();
+                ctx.arc(x + dx, gy0 + dy, 0.8, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.fillStyle = light;
+            ctx.fillRect(x - 1.4, gy0 - 0.5, 0.5, 0.5);
+            ctx.fillRect(x + 0.2, gy0 + 0.7, 0.5, 0.5);
         }
     }
-    plants.sort((a, b) => a.y - b.y || a.x - b.x);
-    for (const { x, y, k } of plants) {
-        const h = 4 + g * 10;
-        ctx.strokeStyle = '#6b4a2b';
-        ctx.lineWidth = 1.4;
+}
+
+/** Uma cápsula de algodão aberta: uma bola de fibra com sombra. */
+function boll(ctx, x, y, r) {
+    ctx.fillStyle = '#cfcabd';
+    for (const [dx, dy] of [[-r * 0.5, 0.3], [r * 0.5, 0.3], [0, -r * 0.4]]) {
+        ctx.beginPath();
+        ctx.arc(x + dx + 0.3, y + dy + 0.3, r * 0.7, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.fillStyle = '#fdfcf7';
+    for (const [dx, dy] of [[-r * 0.5, 0], [r * 0.5, 0], [0, -r * 0.5]]) {
+        ctx.beginPath();
+        ctx.arc(x + dx, y + dy, r * 0.62, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+/** Algodão: arbustos de folha larga que dão flor e, maduros, abrem em cápsulas brancas. */
+function cottonfield(ctx, { stage = 'empty', growth = 0 }) {
+    tilled(ctx, 6, '#8e6038', 7);
+    if (stage === 'empty') return;
+    const ripe = stage === 'ripe';
+    const g = ripe ? 1 : Math.max(0.1, growth);
+    const leaf = ripe ? '#6f8f3c' : g < 0.5 ? '#86bf52' : '#5f9a40';
+    const rnd = seeded(17);
+    for (const { x, y } of cropSpots(6, 5, 0.34)) {
+        const h = 1.5 + g * 6;
+        const r = 1.6 + g * 2.6;
+        ctx.strokeStyle = '#6b5a3a';
+        ctx.lineWidth = 0.9;
         ctx.beginPath();
         ctx.moveTo(x, y);
         ctx.lineTo(x, y - h);
         ctx.stroke();
-        ctx.fillStyle = shade(leaf, k % 2 ? -0.08 : 0.06);
-        ctx.beginPath();
-        ctx.ellipse(x, y - h, 2.5 + g * 3, 1.8 + g * 2.2, 0, 0, Math.PI * 2);
-        ctx.fill();
-        if (ripe || g > 0.75) {
-            const color = ripe ? '#6a2c7a' : '#9ab04a';
-            ctx.fillStyle = color;
-            for (const [dx, dy] of [[-1.4, 0], [1.4, 0], [0, 1.6], [0, 3]]) {
-                ctx.beginPath();
-                ctx.arc(x + 1.5 + dx, y - h + 3 + dy, 1.2, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-    }
-}
-
-/** Algodão: arbustos baixos que, maduros, abrem em cápsulas brancas. */
-function cottonfield(ctx, { stage = 'empty', growth = 0 }) {
-    tilled(ctx, 6, '#8e6038');
-    if (stage === 'empty') return;
-    const ripe = stage === 'ripe';
-    const g = ripe ? 1 : Math.max(0.08, growth);
-    const leaf = g < 0.5 ? '#86b84e' : '#5f9440';
-    for (const { x, y, k, row } of cropSpots(6, 5)) {
-        const h = 2 + g * 7;
-        const r = 2 + g * 3.2;
-        ctx.fillStyle = shade(leaf, -0.2);
-        ctx.fillRect(x - 0.6, y - h, 1.2, h);
-        ctx.fillStyle = shade(leaf, (k + row) % 2 ? -0.06 : 0.06);
-        ctx.beginPath();
-        ctx.arc(x - r * 0.4, y - h, r * 0.8, 0, Math.PI * 2);
-        ctx.arc(x + r * 0.4, y - h - 0.6, r * 0.8, 0, Math.PI * 2);
-        ctx.fill();
-        if (ripe || g > 0.7) {
-            ctx.fillStyle = ripe ? '#fbfaf5' : '#dfe8c8';
-            for (const [dx, dy] of [[-1.8, -1.6], [1.6, -2.4], [0, 0.2]]) {
-                ctx.beginPath();
-                ctx.arc(x + dx, y - h + dy, ripe ? 1.7 : 1.1, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-    }
-}
-
-/** Canavial: touceiras de cana alta, verde a crescer e amarelada quando está pronta. */
-function canefield(ctx, { stage = 'empty', growth = 0 }) {
-    tilled(ctx, 5, '#8b5a32');
-    if (stage === 'empty') return;
-    const ripe = stage === 'ripe';
-    const g = ripe ? 1 : Math.max(0.08, growth);
-    const stalk = ripe ? '#c9b24a' : g < 0.5 ? '#7cb84a' : '#5f9e3c';
-    for (const { x, y, k, row } of cropSpots(5, 5)) {
-        const h = 4 + g * 20;
-        for (const dx of [-1.6, 0, 1.6]) {
-            ctx.strokeStyle = shade(stalk, (k + row) % 2 ? -0.1 : 0.05);
-            ctx.lineWidth = 1.4;
+        // As folhas: um arbusto de tufos, com a sombra por baixo e luz por cima.
+        const lobes = [[-r * 0.6, 0], [r * 0.6, -0.3], [0, -r * 0.55], [0, r * 0.25]];
+        ctx.fillStyle = shade(leaf, -0.25);
+        for (const [dx, dy] of lobes) {
             ctx.beginPath();
-            ctx.moveTo(x + dx, y);
-            ctx.lineTo(x + dx * 1.6, y - h + Math.abs(dx));
-            ctx.stroke();
+            ctx.arc(x + dx, y - h + dy + 0.6, r * 0.7, 0, Math.PI * 2);
+            ctx.fill();
         }
-        // As folhas compridas a cair para os lados.
-        ctx.strokeStyle = ripe ? '#9fb04a' : shade(stalk, 0.15);
-        ctx.lineWidth = 1;
+        ctx.fillStyle = shade(leaf, (rnd() - 0.5) * 0.14);
+        for (const [dx, dy] of lobes) {
+            ctx.beginPath();
+            ctx.arc(x + dx - 0.2, y - h + dy, r * 0.6, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.fillStyle = shade(leaf, 0.22);
         ctx.beginPath();
-        ctx.moveTo(x, y - h);
-        ctx.quadraticCurveTo(x - 5, y - h - 2, x - 7, y - h + 4);
-        ctx.moveTo(x, y - h);
-        ctx.quadraticCurveTo(x + 5, y - h - 3, x + 7, y - h + 3);
-        ctx.stroke();
+        ctx.arc(x - r * 0.4, y - h - r * 0.6, r * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+        if (ripe) {
+            for (const [dx, dy] of [[-r * 0.6, -r * 0.3], [r * 0.55, -r * 0.6], [0.2, r * 0.2]]) boll(ctx, x + dx, y - h + dy, 1.7);
+        } else if (g > 0.5) {
+            // As flores, creme e cor-de-rosa, antes das cápsulas.
+            for (const [dx, dy, c] of [[-r * 0.5, -r * 0.4, '#f6ecc0'], [r * 0.5, -r * 0.1, '#f2b6c6']]) {
+                ctx.fillStyle = c;
+                ctx.beginPath();
+                ctx.arc(x + dx, y - h + dy, 0.9, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
     }
 }
 
-/** Arrozal: um canteiro alagado, com as muretas de terra e os pés de arroz a sair da água. */
-function paddy(ctx, { stage = 'empty', growth = 0 }) {
-    diamond(ctx, 0.92, 0.92, 0, '#8b6a3e');
-    diamond(ctx, 0.82, 0.82, 1, '#6fa4bf');
-    // Os reflexos na água e a mureta do meio.
-    diamond(ctx, 0.5, 0.3, 1.2, 'rgba(255, 255, 255, 0.12)', null, -0.1, -0.12);
-    ctx.strokeStyle = '#8b6a3e';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(...P(-0.41, 0, 1.4));
-    ctx.lineTo(...P(0.41, 0, 1.4));
-    ctx.stroke();
+/** Canavial: touceiras de cana grossa, aos nós, com as folhas compridas a cair; madura, amarela e com o penacho. */
+function canefield(ctx, { stage = 'empty', growth = 0 }) {
+    tilled(ctx, 5, '#8b5a32', 9);
     if (stage === 'empty') return;
     const ripe = stage === 'ripe';
     const g = ripe ? 1 : Math.max(0.1, growth);
-    const color = ripe ? '#d8bb52' : g < 0.5 ? '#86c34e' : '#6aae44';
-    for (const { x, y } of cropSpots(6, 6)) {
-        const h = 2 + g * 8;
-        ctx.strokeStyle = shade(color, -0.1);
-        ctx.lineWidth = 1.1;
-        ctx.beginPath();
-        ctx.moveTo(x, y - 1);
-        ctx.lineTo(x - 1.6, y - 1 - h);
-        ctx.moveTo(x, y - 1);
-        ctx.lineTo(x + 1.6, y - 1 - h);
-        ctx.moveTo(x, y - 1);
-        ctx.lineTo(x, y - 1 - h * 1.1);
-        ctx.stroke();
-        if (ripe || g > 0.7) {
-            ctx.fillStyle = ripe ? '#f0d77a' : '#b9d27a';
+    const stalk = ripe ? '#c9b04c' : g < 0.5 ? '#7fbf4c' : '#62a33f';
+    const leaf = ripe ? '#98ad48' : g < 0.5 ? '#8fcb58' : '#4f9637';
+    const rnd = seeded(19);
+    for (const { x, y } of cropSpots(5, 4, 0.33)) {
+        const h = 4 + g * 20;
+        const canes = [-2, -0.7, 0.7, 2].map((dx) => ({ dx, h: h * (0.82 + rnd() * 0.18), lean: dx * 0.5 + (rnd() - 0.5) }));
+        for (const c of canes) {
+            const top = [x + c.dx + c.lean, y - c.h];
+            ctx.strokeStyle = shade(stalk, c.dx < 0 ? 0.06 : -0.12);
+            ctx.lineWidth = 1.3;
             ctx.beginPath();
-            ctx.ellipse(x + 1.8, y - h, 1, 2, 0.5, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.moveTo(x + c.dx * 0.5, y);
+            ctx.lineTo(...top);
+            ctx.stroke();
+            // Os nós da cana.
+            ctx.strokeStyle = ripe ? '#8a5a3a' : shade(stalk, -0.3);
+            ctx.lineWidth = 0.5;
+            ctx.beginPath();
+            for (let z = 3; z < c.h - 2; z += 3.2) {
+                const t = z / c.h;
+                const nx = x + c.dx * 0.5 + (top[0] - x - c.dx * 0.5) * t;
+                ctx.moveTo(nx - 0.8, y - z);
+                ctx.lineTo(nx + 0.8, y - z);
+            }
+            ctx.stroke();
+        }
+        // As folhas, compridas, a sair do cimo e a cair para os lados.
+        for (const [i, c] of canes.entries()) {
+            const [tx, ty] = [x + c.dx + c.lean, y - c.h];
+            const side = i % 2 ? 1 : -1;
+            const len = 4 + g * 5;
+            leafShape(ctx, [tx, ty + 1], [tx + side * len, ty + len * 0.5], 1, shade(leaf, -0.12), -1.5);
+            leafShape(ctx, [tx, ty + 2.5], [tx - side * len * 0.8, ty + len * 0.8], 0.9, leaf, -1);
+            leafShape(ctx, [tx, ty + 1], [tx + side * 0.5, ty - 3 - g * 2], 0.7, shade(leaf, 0.12));
+        }
+        if (!ripe || rnd() < 0.45) continue;
+        // O penacho da cana madura: uma pluma fina, a dobrar com o peso.
+        const c = canes[1 + Math.floor(rnd() * 2)];
+        const [px, py] = [x + c.dx + c.lean, y - c.h];
+        ctx.strokeStyle = 'rgba(236, 226, 205, 0.95)';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        for (const dx of [-0.8, 0, 0.8]) {
+            ctx.moveTo(px, py);
+            ctx.quadraticCurveTo(px + dx, py - 3.5, px + 1.2 + dx * 1.2, py - 4.5);
+        }
+        ctx.stroke();
+    }
+}
+
+/** Arrozal: um canteiro alagado, entre muretas de terra, com as touças de arroz a sair da água; maduro, as panículas douradas dobram-se. */
+function paddy(ctx, { stage = 'empty', growth = 0 }) {
+    const WATER_Z = 1.6;
+    box(ctx, 0.92, 0.92, 2.4, '#8b6a3e', { top: '#9c7a4a' });
+    // A água, mais clara ao fundo do ecrã, com os reflexos do céu.
+    const water = ctx.createLinearGradient(0, -13 - WATER_Z, 0, 13 - WATER_Z);
+    water.addColorStop(0, '#9cc9dc');
+    water.addColorStop(1, '#5f93ad');
+    diamond(ctx, 0.8, 0.8, WATER_Z, water);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.lineWidth = 0.6;
+    ctx.beginPath();
+    for (const [gx, gy, l] of [[-0.2, -0.28, 0.14], [0.12, -0.12, 0.1], [-0.25, 0.18, 0.12], [0.16, 0.26, 0.08]]) {
+        const [x, y] = P(gx, gy, WATER_Z);
+        ctx.moveTo(x - l * 30, y);
+        ctx.lineTo(x + l * 30, y);
+    }
+    ctx.stroke();
+    // A mureta do meio, que divide o canteiro em dois.
+    box(ctx, 0.8, 0.05, 1.2, '#8b6a3e', { z: WATER_Z - 0.4, top: '#9c7a4a' });
+    if (stage === 'empty') return;
+    const ripe = stage === 'ripe';
+    const g = ripe ? 1 : Math.max(0.1, growth);
+    const color = ripe ? '#b7b54a' : g < 0.5 ? '#8fd05a' : '#62ae44';
+    const rnd = seeded(23);
+    // Seis filas: três de cada lado da mureta.
+    for (const { x, y } of cropSpots(6, 6, 0.33, WATER_Z)) {
+        const h = 2 + g * 8;
+        // A roda de água à volta da touça.
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.ellipse(x, y, 2.2, 0.9, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        // As folhas, finas e a abrir em leque.
+        ctx.lineWidth = 0.8;
+        for (const [dx, bend, tone] of [[-2.4, -1, -0.15], [-1, -0.5, 0.05], [0.2, 0, -0.05], [1.4, 0.6, 0.1], [2.6, 1, -0.1]]) {
+            ctx.strokeStyle = shade(color, tone + (rnd() - 0.5) * 0.1);
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.quadraticCurveTo(x + dx * 0.3 + bend, y - h * 0.7, x + dx, y - h * (0.8 + rnd() * 0.2));
+            ctx.stroke();
+        }
+        if (g < 0.7) continue;
+        // As panículas: verdes a encher, douradas e dobradas quando maduras.
+        const grain = ripe ? '#e6c35a' : '#bcd177';
+        for (const side of [-1, 1]) {
+            const [sx, sy] = [x + side * 0.6, y - h * 0.95];
+            const [ex, ey] = ripe ? [sx + side * 3, sy + 2] : [sx + side * 1, sy - 2];
+            ctx.strokeStyle = shade(grain, -0.2);
+            ctx.lineWidth = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(sx, sy);
+            ctx.quadraticCurveTo(sx + side * 1.4, sy - 1.5, ex, ey);
+            ctx.stroke();
+            ctx.fillStyle = grain;
+            for (let k = 1; k <= 3; k++) {
+                const t = k / 3;
+                ctx.beginPath();
+                ctx.ellipse(sx + (ex - sx) * t, sy + (ey - sy) * t - (1 - t) * t * 2, 0.55, 0.85, side * 0.6, 0, Math.PI * 2);
+                ctx.fill();
+            }
         }
     }
 }
