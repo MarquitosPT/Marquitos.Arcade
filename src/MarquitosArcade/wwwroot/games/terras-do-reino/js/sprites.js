@@ -585,10 +585,12 @@ function paddy(ctx, { stage = 'empty', growth = 0 }) {
 // ---------- Casas ----------
 //
 // Seis estilos de casa, cada um em duas orientações (a fachada comprida ao
-// longo de x ou de y): 12 variantes. Os pormenores — janelas com caixilho e
-// portadas, portas de tábuas, enxaimel, fiadas de pedra, telhas — pintam-se
-// nas quatro faces, porque ao rodar a vista qualquer uma pode ficar à frente;
-// `houseFace` diz se a face se vê e dá os pontos dela.
+// longo de x ou de y): 12 variantes. As casas têm textura: telhas soltas,
+// pedras uma a uma, reboco salpicado, vigas com espessura, janelas de quatro
+// vidros e portas de tábuas. Os pormenores pintam-se nas quatro faces, porque
+// ao rodar a vista qualquer uma pode ficar à frente; `houseFace` diz se a face
+// se vê e dá os pontos dela. O acaso das texturas vem de `seeded`, e é sempre
+// o mesmo na mesma variante: a imagem vai para a cache (ver sprite-cache.js).
 
 /** Quantas variantes tem o desenho das casas (ver `house`). */
 export const HOUSE_VARIANTS = 12;
@@ -596,129 +598,345 @@ export const HOUSE_VARIANTS = 12;
 const PLASTER = '#efe2c4';
 const STONE_WALL = '#c9bfae';
 const PLINTH = '#a39a8a';
-const FRAME = '#f3ead6';
-const GLASS = '#3a4a5c';
+const FRAME = '#f5efe2';
+const GLASS = '#34506e';
+const STEP = '#b3ab9b';
+
+/** Um gerador de acaso que dá sempre a mesma sequência para a mesma semente. */
+function seeded(seed) {
+    let n = 0;
+    return () => hash2(seed, n++, 131);
+}
+
+/** Um desvio de tom ao acaso, em cinco degraus: poucos tons, para as texturas se pintarem aos lotes. */
+function tone(rnd, amp) {
+    return Math.round((rnd() - 0.5) * 4) / 4 * amp;
+}
+
+/**
+ * Formas pintadas aos lotes, um caminho por cor: uma textura de centenas de
+ * pedras ou telhas pinta-se com meia dúzia de chamadas em vez de centenas.
+ */
+function batch() {
+    const paths = new Map();
+    return {
+        path(color) {
+            let p = paths.get(color);
+            if (!p) {
+                p = new Path2D();
+                paths.set(color, p);
+            }
+            return p;
+        },
+        fill(ctx) {
+            for (const [color, p] of paths) {
+                ctx.fillStyle = color;
+                ctx.fill(p);
+            }
+            paths.clear();
+        },
+        stroke(ctx, width) {
+            ctx.lineWidth = width;
+            for (const [color, p] of paths) {
+                ctx.strokeStyle = color;
+                ctx.stroke(p);
+            }
+            paths.clear();
+        }
+    };
+}
+
+/** Acrescenta um polígono a um caminho. */
+function addPoly(path, pts) {
+    path.moveTo(...pts[0]);
+    for (let i = 1; i < pts.length; i++) path.lineTo(...pts[i]);
+    path.closePath();
+}
 
 /**
  * Uma face da casa: a de normal (nx, ny) de uma caixa a x b centrada em
  * (ox, oy). Devolve null se estiver de costas; senão, `at(u, z)` dá o ponto
- * à fração u da largura e à altura z, e `tone` o sombreado dessa face.
+ * de ecrã à fração u da largura e à altura z, `grid(u, out)` o ponto da grelha
+ * da peça a `out` para fora da face, e `tone` o sombreado dessa face.
  */
 function houseFace(nx, ny, a, b, ox = 0, oy = 0) {
     const side = faceOf(nx, ny);
     if (!side) return null;
     const w = ny ? a : b;
-    const at = ny
-        ? (u, z) => P(ox + (u - 0.5) * a * ny, oy + ny * (b / 2 + 0.006), z)
-        : (u, z) => P(ox + nx * (a / 2 + 0.006), oy - (u - 0.5) * b * nx, z);
-    return { side, w, at, tone: side === 'right' ? -0.28 : -0.06 };
+    const grid = ny
+        ? (u, out = 0.006) => [ox + (u - 0.5) * a * ny, oy + ny * (b / 2 + out)]
+        : (u, out = 0.006) => [ox + nx * (a / 2 + out), oy - (u - 0.5) * b * nx];
+    const at = (u, z) => P(...grid(u), z);
+    return { side, w, nx, ny, at, grid, tone: side === 'right' ? -0.28 : -0.06 };
+}
+
+function facePath(ctx, f, u0, u1, z0, z1) {
+    ctx.beginPath();
+    ctx.moveTo(...f.at(u0, z0));
+    ctx.lineTo(...f.at(u1, z0));
+    ctx.lineTo(...f.at(u1, z1));
+    ctx.lineTo(...f.at(u0, z1));
+    ctx.closePath();
 }
 
 function faceQuad(ctx, f, u0, u1, z0, z1, color, raw = false) {
-    poly(ctx, [f.at(u0, z0), f.at(u1, z0), f.at(u1, z1), f.at(u0, z1)], raw ? color : shade(color, f.tone));
+    facePath(ctx, f, u0, u1, z0, z1);
+    ctx.fillStyle = raw ? color : shade(color, f.tone);
+    ctx.fill();
 }
 
-function faceLine(ctx, f, u0, z0, u1, z1, color, width = 1) {
-    ctx.strokeStyle = shade(color, f.tone);
+function faceLine(ctx, f, u0, z0, u1, z1, color, width = 1, raw = false) {
+    ctx.strokeStyle = raw ? color : shade(color, f.tone);
     ctx.lineWidth = width;
-    ctx.lineCap = 'round';
     ctx.beginPath();
     ctx.moveTo(...f.at(u0, z0));
     ctx.lineTo(...f.at(u1, z1));
     ctx.stroke();
 }
 
-/** Janela com caixilho, cruzeta, parapeito e (se `shutter`) portadas abertas. w em frações do bloco. */
-function houseWindow(ctx, f, u, z0, z1, w, { shutter = null, frame = FRAME, box: flowers = null } = {}) {
-    if (!f) return;
-    const hw = w / f.w / 2;
-    const e = 0.012 / f.w;
-    if (shutter) {
-        faceQuad(ctx, f, u - hw - e - hw * 1.1, u - hw - e, z0, z1, shutter);
-        faceQuad(ctx, f, u + hw + e, u + hw + e + hw * 1.1, z0, z1, shutter);
+/** Sombra suave numa faixa da face: junto ao chão, ou debaixo do beiral. */
+function faceShade(ctx, f, z0, z1, alpha) {
+    const steps = 4;
+    for (let k = 0; k < steps; k++) {
+        const a = alpha * (1 - k / steps);
+        const za = z0 + ((z1 - z0) * k) / steps;
+        const zb = z0 + ((z1 - z0) * (k + 1)) / steps;
+        faceQuad(ctx, f, 0, 1, Math.min(za, zb), Math.max(za, zb), `rgba(40, 28, 18, ${a})`, true);
     }
-    faceQuad(ctx, f, u - hw - e, u + hw + e, z0 - 0.8, z1 + 0.8, frame);
-    faceQuad(ctx, f, u - hw, u + hw, z0, z1, GLASS);
-    faceLine(ctx, f, u, z0, u, z1, frame, 0.8);
-    faceLine(ctx, f, u - hw, (z0 + z1) / 2, u + hw, (z0 + z1) / 2, frame, 0.8);
-    faceQuad(ctx, f, u - hw - e * 2, u + hw + e * 2, z0 - 1.6, z0 - 0.6, '#8a7a66');
-    if (flowers) {
-        // Um vaso de flores no parapeito.
-        faceQuad(ctx, f, u - hw, u + hw, z0 - 3, z0 - 1.4, '#7a5234');
-        for (let k = 0; k < 3; k++) {
-            const [x, y] = f.at(u - hw * 0.7 + k * hw * 0.7, z0 - 0.6);
-            ctx.fillStyle = k === 1 ? '#f2c94c' : flowers;
-            ctx.beginPath();
-            ctx.arc(x, y, 1.1, 0, Math.PI * 2);
-            ctx.fill();
+}
+
+/** Reboco: salpicos de cor, sombra junto ao chão e debaixo do beiral. */
+function plaster(ctx, f, z0, z1, color, rnd) {
+    if (!f) return;
+    ctx.save();
+    facePath(ctx, f, 0, 1, z0, z1);
+    ctx.clip();
+    const n = Math.round(f.w * (z1 - z0) * 5);
+    const specks = batch();
+    for (let i = 0; i < n; i++) {
+        const [x, y] = f.at(rnd(), z0 + rnd() * (z1 - z0));
+        specks.path(shade(color, f.tone + tone(rnd, 0.14))).rect(x, y, 0.9, 0.55);
+    }
+    specks.fill(ctx);
+    faceShade(ctx, f, z0, z0 + 5, 0.2);
+    faceShade(ctx, f, z1, z1 - 2.5, 0.16);
+    ctx.restore();
+}
+
+/** Parede de pedra: pedras soltas, desencontradas, de tamanho e cor ao acaso, com a argamassa entre elas. */
+function stoneWall(ctx, f, z0, z1, base, rnd, { h = 3, w = 0.1 } = {}) {
+    if (!f) return;
+    ctx.save();
+    facePath(ctx, f, 0, 1, z0, z1);
+    ctx.clip();
+    faceQuad(ctx, f, 0, 1, z0, z1, shade(base, -0.3));
+    const du = w / f.w;
+    const gap = 0.007 / f.w;
+    const stones = batch();
+    const lights = batch();
+    for (let z = z0, row = 0; z < z1 - 0.2; row++) {
+        const zb = Math.min(z1, z + h * (0.85 + rnd() * 0.3));
+        let u = -((row % 2) * 0.5 + rnd() * 0.3) * du;
+        while (u < 1) {
+            const ww = du * (0.65 + rnd() * 0.7);
+            const t = tone(rnd, 0.18);
+            const j = () => (rnd() - 0.5) * 0.35;
+            const u0 = u + gap;
+            const u1 = u + ww - gap;
+            addPoly(stones.path(shade(base, f.tone + t)), [f.at(u0, z + 0.35 + j()), f.at(u1, z + 0.35 + j()), f.at(u1, zb - 0.35 + j()), f.at(u0, zb - 0.35 + j())]);
+            // Um fio de luz no cimo de cada pedra.
+            const lp = lights.path(shade(base, f.tone + t + 0.14));
+            lp.moveTo(...f.at(u0, zb - 0.55));
+            lp.lineTo(...f.at(u1, zb - 0.55));
+            u += ww;
         }
+        z = zb;
     }
+    stones.fill(ctx);
+    lights.stroke(ctx, 0.5);
+    ctx.restore();
 }
 
-/** Porta de tábuas com aro, puxador e um degrau; `arch` arredonda-lhe o cimo. */
-function houseDoor(ctx, f, u, w, h, color = DOOR, { arch = false, frame = '#5a3d26' } = {}) {
+/** Cunhais: pedras grandes, alternadas, nas esquinas de uma parede rebocada. */
+function quoins(ctx, f, z0, z1, color, rnd) {
     if (!f) return;
-    const hw = w / f.w / 2;
-    const e = 0.012 / f.w;
-    faceQuad(ctx, f, u - hw - e, u + hw + e, 0, h + 1, frame);
-    faceQuad(ctx, f, u - hw, u + hw, 0, h, color);
-    if (arch) {
-        // O arco: um meio círculo achatado por cima da porta.
-        const [x0, y0] = f.at(u - hw - e, h + 1);
-        const [x1, y1] = f.at(u + hw + e, h + 1);
-        ctx.fillStyle = shade(frame, f.tone);
-        ctx.beginPath();
-        ctx.moveTo(x0, y0);
-        ctx.quadraticCurveTo((x0 + x1) / 2, (y0 + y1) / 2 - 4.5, x1, y1);
-        ctx.closePath();
-        ctx.fill();
+    const big = 0.075 / f.w;
+    const small = 0.045 / f.w;
+    for (let z = z0, k = 0; z < z1 - 0.5; k++) {
+        const zb = Math.min(z1, z + 2.6);
+        const c = shade(color, f.tone + (rnd() - 0.5) * 0.1);
+        const w0 = k % 2 ? big : small;
+        const w1 = k % 2 ? small : big;
+        faceQuad(ctx, f, 0, w0, z + 0.25, zb - 0.25, c, true);
+        faceQuad(ctx, f, 1 - w1, 1, z + 0.25, zb - 0.25, c, true);
+        z = zb;
     }
-    for (const k of [-1 / 3, 1 / 3]) faceLine(ctx, f, u + hw * k, 0.5, u + hw * k, h - 0.5, shade(color, -0.35), 0.5);
-    const [kx, ky] = f.at(u + hw * 0.6, h * 0.45);
-    ctx.fillStyle = '#e0b43c';
-    ctx.beginPath();
-    ctx.arc(kx, ky, 0.7, 0, Math.PI * 2);
-    ctx.fill();
-    faceQuad(ctx, f, u - hw - e * 2, u + hw + e * 2, -1.2, 0, '#9a917f');
 }
 
-/** Enxaimel numa face: esteios nos cantos, frechal, travessa a meio e escoras em diagonal. */
+/** Uma viga do enxaimel: um traço grosso com a aresta mais escura. */
+function beam(ctx, f, u0, z0, u1, z1, color, width = 1.5) {
+    faceLine(ctx, f, u0, z0, u1, z1, shade(color, -0.3), width + 0.5);
+    faceLine(ctx, f, u0, z0, u1, z1, color, width);
+}
+
+/** Enxaimel numa face: esteios nos cantos e a meio, frechal, travessas e escoras em diagonal. */
 function halfTimber(ctx, f, z0, z1, { color = TIMBER, braces = true } = {}) {
     if (!f) return;
     const mid = (z0 + z1) / 2;
-    faceLine(ctx, f, 0.015, z0, 0.015, z1, color, 1.6);
-    faceLine(ctx, f, 0.985, z0, 0.985, z1, color, 1.6);
-    faceLine(ctx, f, 0, z1 - 0.6, 1, z1 - 0.6, color, 1.4);
-    faceLine(ctx, f, 0, z0 + 0.6, 1, z0 + 0.6, color, 1.2);
-    faceLine(ctx, f, 0, mid, 1, mid, color, 1);
+    const e = 0.02;
+    beam(ctx, f, 0, z0 + 0.6, 1, z0 + 0.6, color, 1.2);
+    beam(ctx, f, 0, mid, 1, mid, color, 0.9);
     if (braces) {
-        faceLine(ctx, f, 0.015, z0 + 0.6, 0.16, mid, color, 1);
-        faceLine(ctx, f, 0.985, z0 + 0.6, 0.84, mid, color, 1);
-        faceLine(ctx, f, 0.5, mid, 0.36, z1 - 0.6, color, 1);
-        faceLine(ctx, f, 0.5, mid, 0.64, z1 - 0.6, color, 1);
-        faceLine(ctx, f, 0.5, z0 + 0.6, 0.5, z1 - 0.6, color, 1);
+        beam(ctx, f, e, z0 + 0.6, 0.18, mid, color, 0.9);
+        beam(ctx, f, 1 - e, z0 + 0.6, 0.82, mid, color, 0.9);
+        beam(ctx, f, 0.5, mid, 0.36, z1 - 0.6, color, 0.9);
+        beam(ctx, f, 0.5, mid, 0.64, z1 - 0.6, color, 0.9);
+        beam(ctx, f, 0.5, z0 + 0.6, 0.5, z1 - 0.6, color, 0.9);
     }
+    beam(ctx, f, e, z0, e, z1, color, 1.4);
+    beam(ctx, f, 1 - e, z0, 1 - e, z1, color, 1.4);
+    beam(ctx, f, 0, z1 - 0.6, 1, z1 - 0.6, color, 1.3);
 }
 
-/** Fiadas de pedra numa face: juntas horizontais e juntas verticais desencontradas. */
-function stoneCourses(ctx, f, z0, z1, color = STONE_WALL) {
+/** Tábuas numa face (o barracão): juntas escuras e veios. */
+function planks(ctx, f, z0, z1, color, rnd, n = 6) {
     if (!f) return;
-    const line = shade(color, -0.2);
-    const step = 3;
-    const cols = Math.max(3, Math.round(f.w / 0.07));
-    for (let z = z0 + step, row = 0; z < z1 - 0.5; z += step, row++) {
-        faceLine(ctx, f, 0, z, 1, z, line, 0.5);
-        for (let k = 0; k < cols; k++) {
-            const u = (k + (row % 2) * 0.5) / cols;
-            if (u > 0.02 && u < 0.98) faceLine(ctx, f, u, z - step, u, z, line, 0.5);
-        }
+    for (let k = 0; k < n; k++) {
+        faceQuad(ctx, f, k / n, (k + 1) / n, z0, z1, shade(color, (rnd() - 0.5) * 0.14));
+        if (k) faceLine(ctx, f, k / n, z0, k / n, z1, shade(color, -0.4), 0.6);
+        const u = (k + 0.3 + rnd() * 0.4) / n;
+        faceLine(ctx, f, u, z0 + 1 + rnd() * 2, u, z1 - 1 - rnd() * 2, shade(color, -0.15), 0.4);
+    }
+    faceShade(ctx, f, z0, z0 + 3, 0.2);
+}
+
+/** Um vaso de flores debaixo de uma janela: a caixa, as folhas e as flores. */
+function flowerBox(ctx, f, u, hw, z, colors, rnd) {
+    faceQuad(ctx, f, u - hw * 1.1, u + hw * 1.1, z - 2.6, z - 0.9, '#7a5234');
+    faceLine(ctx, f, u - hw * 1.1, z - 0.9, u + hw * 1.1, z - 0.9, '#9a6a3f', 0.5);
+    for (let k = 0; k < 7; k++) {
+        const [x, y] = f.at(u - hw + (k / 6) * hw * 2, z - 0.4 + rnd() * 0.6);
+        ctx.fillStyle = k % 2 ? '#3f7d34' : '#56983f';
+        ctx.beginPath();
+        ctx.arc(x, y, 1.1, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    for (let k = 0; k < 4; k++) {
+        const [x, y] = f.at(u - hw * 0.75 + (k / 3) * hw * 1.5, z + 0.3 + rnd() * 0.8);
+        ctx.fillStyle = colors[k % colors.length];
+        ctx.beginPath();
+        ctx.arc(x, y, 1.05, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffe27a';
+        ctx.fillRect(x - 0.25, y - 0.25, 0.5, 0.5);
     }
 }
 
 /**
- * Telhado de duas águas com telhas. É o `gable` de draw.js pintado à mão, para
- * as águas levarem fiadas: primeiro a água de trás, depois a empena que se vê,
- * por fim a água da frente, que cobre o beiral da empena.
+ * Janela de quatro vidros com aro claro, reflexo e parapeito; `shutter` põe-lhe
+ * portadas de ripas abertas, `lintel` uma verga de pedra, `flowers` um vaso.
+ * w em frações do bloco.
+ */
+function houseWindow(ctx, f, u, z0, z1, w, { shutter = null, frame = FRAME, lintel = null, flowers = null, rnd = Math.random } = {}) {
+    if (!f) return;
+    const hw = w / f.w / 2;
+    const e = 0.014 / f.w;
+    if (shutter) {
+        for (const s of [-1, 1]) {
+            const ua = s < 0 ? u - hw - e - hw * 1.05 : u + hw + e;
+            const ub = ua + hw * 1.05;
+            faceQuad(ctx, f, ua, ub, z0, z1, shutter);
+            for (let k = 1; k < 4; k++) {
+                const z = z0 + ((z1 - z0) * k) / 4;
+                faceLine(ctx, f, ua, z, ub, z, shade(shutter, -0.25), 0.45);
+            }
+            facePath(ctx, f, ua, ub, z0, z1);
+            ctx.strokeStyle = shade(shutter, f.tone - 0.3);
+            ctx.lineWidth = 0.45;
+            ctx.stroke();
+        }
+    }
+    if (lintel) faceQuad(ctx, f, u - hw - e * 2, u + hw + e * 2, z1 + 0.8, z1 + 2.2, lintel);
+    faceQuad(ctx, f, u - hw - e, u + hw + e, z0 - 0.8, z1 + 0.8, frame);
+    // Os quatro vidros, mais claros em baixo, com um risco de reflexo.
+    const zm = (z0 + z1) / 2;
+    const mh = 0.004 / f.w;
+    for (const [ua, ub] of [[u - hw, u - mh], [u + mh, u + hw]]) {
+        for (const [za, zb] of [[z0, zm - 0.3], [zm + 0.3, z1]]) {
+            faceQuad(ctx, f, ua, ub, za, zb, shade(GLASS, 0.12));
+            faceQuad(ctx, f, ua, ub, (za + zb) / 2, zb, GLASS);
+            faceLine(ctx, f, ua + (ub - ua) * 0.25, za + 0.6, ua + (ub - ua) * 0.7, zb - 0.5, 'rgba(255, 255, 255, 0.45)', 0.45, true);
+        }
+    }
+    faceLine(ctx, f, u, z0, u, z1, frame, 0.7);
+    faceLine(ctx, f, u - hw, zm, u + hw, zm, frame, 0.7);
+    facePath(ctx, f, u - hw - e, u + hw + e, z0 - 0.8, z1 + 0.8);
+    ctx.strokeStyle = shade(frame, f.tone - 0.35);
+    ctx.lineWidth = 0.4;
+    ctx.stroke();
+    // O parapeito, com a sombra por baixo.
+    faceQuad(ctx, f, u - hw - e * 2, u + hw + e * 2, z0 - 1.9, z0 - 0.8, '#d8d0c0');
+    faceLine(ctx, f, u - hw - e * 2, z0 - 2.1, u + hw + e * 2, z0 - 2.1, 'rgba(40, 28, 18, 0.35)', 0.6, true);
+    if (flowers) flowerBox(ctx, f, u, hw, z0 - 2.1, flowers, rnd);
+}
+
+/**
+ * Porta de tábuas com aro, travessas, dobradiças, puxador e um degrau de pedra
+ * à frente; `arch` arredonda-lhe o cimo.
+ */
+function houseDoor(ctx, f, u, w, h, color = DOOR, { arch = false, frame = '#5a3d26', rnd = Math.random } = {}) {
+    if (!f) return;
+    const hw = w / f.w / 2;
+    const e = 0.014 / f.w;
+    const top = (ua, ub, zz, lift) => {
+        // O contorno da porta, com o cimo em arco se for o caso.
+        ctx.beginPath();
+        ctx.moveTo(...f.at(ua, 0));
+        ctx.lineTo(...f.at(ub, 0));
+        ctx.lineTo(...f.at(ub, zz));
+        if (lift) {
+            const [x0, y0] = f.at(ub, zz);
+            const [x1, y1] = f.at(ua, zz);
+            ctx.quadraticCurveTo((x0 + x1) / 2, (y0 + y1) / 2 - lift, x1, y1);
+        } else {
+            ctx.lineTo(...f.at(ua, zz));
+        }
+        ctx.closePath();
+    };
+    top(u - hw - e, u + hw + e, h + 0.9, arch ? 5.5 : 0);
+    ctx.fillStyle = shade(frame, f.tone);
+    ctx.fill();
+    ctx.save();
+    top(u - hw, u + hw, h, arch ? 4.6 : 0);
+    ctx.clip();
+    const n = 3;
+    for (let k = 0; k < n; k++) {
+        const ua = u - hw + (k / n) * hw * 2;
+        faceQuad(ctx, f, ua, ua + (hw * 2) / n, 0, h + 5, shade(color, (rnd() - 0.5) * 0.14));
+        if (k) faceLine(ctx, f, ua, 0, ua, h + 5, shade(color, -0.4), 0.45);
+    }
+    for (const z of [h * 0.25, h * 0.72]) {
+        faceLine(ctx, f, u - hw, z, u + hw, z, shade(color, -0.25), 0.9);
+        faceLine(ctx, f, u - hw, z, u - hw * 0.35, z, '#2a2420', 0.7);
+    }
+    ctx.restore();
+    const [kx, ky] = f.at(u + hw * 0.55, h * 0.45);
+    ctx.fillStyle = '#e0b43c';
+    ctx.beginPath();
+    ctx.arc(kx, ky, 0.75, 0, Math.PI * 2);
+    ctx.fill();
+    // O degrau: uma lajinha de pedra à frente da porta.
+    const [sx, sy] = f.grid(u, 0.035);
+    const along = f.ny ? w + 0.04 : 0.06;
+    const across = f.ny ? 0.06 : w + 0.04;
+    box(ctx, along, across, 1.2, STEP, { ox: sx, oy: sy });
+}
+
+/**
+ * Telhado de duas águas com telhas soltas. É o `gable` de draw.js pintado à
+ * mão: as telhas assentam em fiadas do beiral para a cumeeira, cada fiada a
+ * cobrir o cimo da de baixo, com a ponta arredondada e cor ao acaso; a
+ * cumeeira leva um capeamento e o beiral mostra a grossura do telhado.
  *
  * O telhado é um pouco mais largo do que a casa: sai `over` para lá das
  * empenas e `eave` nas fachadas, quase rente (um beiral largo, a descer com a
@@ -726,7 +944,10 @@ function stoneCourses(ctx, f, z0, z1, color = STONE_WALL) {
  * contorno do telhado e pinta-se depois das águas: o triângulo acaba certo
  * nos cantos do beiral, sem se ver o corte da água de trás.
  */
-function tiledRoof(ctx, a, b, z, rise, color, wall, { ox = 0, oy = 0, alongX = true, over = 0.02, eave = 0.012, tiles = true, round = false } = {}) {
+function tiledRoof(ctx, a, b, z, rise, color, wall, {
+    ox = 0, oy = 0, alongX = true, over = 0.02, eave = 0.012, round = false, seed = 1, tile = 0.06
+} = {}) {
+    const rnd = seeded(seed);
     const L = (alongX ? a : b) / 2 + over;
     const half = (alongX ? b : a) / 2;
     const W = half + eave;
@@ -740,42 +961,55 @@ function tiledRoof(ctx, a, b, z, rise, color, wall, { ox = 0, oy = 0, alongX = t
     const n = (s) => (alongX ? [0, s] : [s, 0]);
     const planes = [-1, 1].map((s) => ({ s, side: faceOf(...n(s)) }));
     planes.sort((p, q) => (p.side ? 1 : 0) - (q.side ? 1 : 0));
+    const rows = Math.max(3, Math.round(rise / 3));
     const plane = ({ s, side }) => {
         const c = side === null ? shade(color, 0.08) : side === 'left' ? color : shade(color, -0.22);
         const pts = [pt(s, -L, 0), pt(s, L, 0), pt(s, L, 1), pt(s, -L, 1)];
-        poly(ctx, pts, c);
+        poly(ctx, pts, shade(c, -0.35));
         ctx.save();
         ctx.beginPath();
         ctx.moveTo(...pts[0]);
         for (const q of pts.slice(1)) ctx.lineTo(...q);
         ctx.closePath();
         ctx.clip();
-        ctx.strokeStyle = shade(c, -0.2);
-        ctx.lineWidth = 0.6;
-        const rows = 5;
-        ctx.beginPath();
-        for (let r = 1; r < rows; r++) {
-            ctx.moveTo(...pt(s, -L, r / rows));
-            ctx.lineTo(...pt(s, L, r / rows));
-        }
-        if (tiles) {
-            const step = 0.065;
-            for (let r = 0; r < rows; r++) {
-                for (let u = -L + (r % 2) * step / 2; u < L; u += step) {
-                    ctx.moveTo(...pt(s, u, r / rows));
-                    ctx.lineTo(...pt(s, u, (r + 1) / rows));
-                }
+        // Fiada a fiada, do beiral para a cumeeira: cada uma cobre o cimo da
+        // de baixo. Dentro da fiada as telhas pintam-se aos lotes, por tom.
+        const dt = 1 / rows;
+        const fills = batch();
+        const edges = batch();
+        const lights = batch();
+        for (let r = 0; r < rows; r++) {
+            const t0 = r * dt - dt * 0.3;
+            const t1 = (r + 1) * dt;
+            for (let u = -L - (r % 2) * tile * 0.5; u < L; u += tile) {
+                const ua = u + 0.004;
+                const ub = u + tile - 0.004;
+                const um = (ua + ub) / 2;
+                const t = tone(rnd, 0.14);
+                const p = fills.path(shade(c, t));
+                p.moveTo(...pt(s, ua, t1));
+                p.lineTo(...pt(s, ub, t1));
+                p.lineTo(...pt(s, ub, t0 + dt * 0.15));
+                p.quadraticCurveTo(...pt(s, um, t0 - dt * 0.18), ...pt(s, ua, t0 + dt * 0.15));
+                p.closePath();
+                // A ponta da telha, mais escura, e um brilho no dorso.
+                const e = edges.path(shade(c, t - 0.32));
+                e.moveTo(...pt(s, ub, t0 + dt * 0.15));
+                e.quadraticCurveTo(...pt(s, um, t0 - dt * 0.18), ...pt(s, ua, t0 + dt * 0.15));
+                const l = lights.path(shade(c, t + 0.18));
+                l.moveTo(...pt(s, um - tile * 0.12, t0 + dt * 0.35));
+                l.lineTo(...pt(s, um - tile * 0.12, t1 - dt * 0.1));
             }
+            fills.fill(ctx);
+            edges.stroke(ctx, 0.5);
+            lights.stroke(ctx, 0.45);
         }
-        ctx.stroke();
         ctx.restore();
-        // O beiral: uma aresta mais escura.
-        ctx.strokeStyle = shade(c, -0.3);
-        ctx.lineWidth = 0.9;
-        ctx.beginPath();
-        ctx.moveTo(...pts[0]);
-        ctx.lineTo(...pts[1]);
-        ctx.stroke();
+        // A grossura do telhado no beiral, na água que se vê de frente.
+        if (side) {
+            const [p0, p1] = pts;
+            poly(ctx, [p0, p1, [p1[0], p1[1] + 1.3], [p0[0], p0[1] + 1.3]], shade(c, -0.45));
+        }
     };
     const gableEnd = (e) => {
         const nrm = alongX ? [e, 0] : [0, e];
@@ -783,27 +1017,49 @@ function tiledRoof(ctx, a, b, z, rise, color, wall, { ox = 0, oy = 0, alongX = t
         if (!side) return;
         const q = (u, zz) => (alongX ? P(ox + e * L, oy + u, zz) : P(ox + u, oy + e * L, zz));
         const corners = [q(-W, zAt(0)), q(W, zAt(0)), q(0, z + rise)];
-        poly(ctx, corners, shade(wall, side === 'right' ? -0.3 : -0.08));
-        // A borda do telhado ao longo da empena.
-        ctx.strokeStyle = shade(color, -0.3);
-        ctx.lineWidth = 1;
+        const wc = shade(wall, side === 'right' ? -0.3 : -0.08);
+        poly(ctx, corners, wc);
+        // Sombra debaixo do telhado, ao longo das duas bordas da empena.
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(...corners[0]);
+        ctx.lineTo(...corners[1]);
+        ctx.lineTo(...corners[2]);
+        ctx.closePath();
+        ctx.clip();
+        ctx.strokeStyle = 'rgba(40, 28, 18, 0.22)';
+        ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.moveTo(...corners[0]);
         ctx.lineTo(...corners[2]);
         ctx.lineTo(...corners[1]);
         ctx.stroke();
+        ctx.restore();
         if (round) {
             // Um óculo redondo na empena.
             const [x, y] = q(0, z + rise * 0.36);
             ctx.fillStyle = shade(FRAME, side === 'right' ? -0.28 : -0.06);
             ctx.beginPath();
-            ctx.ellipse(x, y, 2.4, 2.1, 0, 0, Math.PI * 2);
+            ctx.ellipse(x, y, 2.5, 2.2, 0, 0, Math.PI * 2);
             ctx.fill();
             ctx.fillStyle = GLASS;
             ctx.beginPath();
-            ctx.ellipse(x, y, 1.6, 1.4, 0, 0, Math.PI * 2);
+            ctx.ellipse(x, y, 1.7, 1.5, 0, 0, Math.PI * 2);
             ctx.fill();
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.fillRect(x - 0.9, y - 0.8, 0.8, 0.5);
         }
+        // A borda do telhado ao longo da empena, com grossura.
+        ctx.strokeStyle = shade(color, -0.4);
+        ctx.lineWidth = 1.9;
+        ctx.beginPath();
+        ctx.moveTo(...corners[0]);
+        ctx.lineTo(...corners[2]);
+        ctx.lineTo(...corners[1]);
+        ctx.stroke();
+        ctx.strokeStyle = shade(color, -0.05);
+        ctx.lineWidth = 0.7;
+        ctx.stroke();
     };
     ctx.save();
     ctx.lineCap = 'butt';
@@ -812,19 +1068,56 @@ function tiledRoof(ctx, a, b, z, rise, color, wall, { ox = 0, oy = 0, alongX = t
     plane(planes[1]);
     gableEnd(-1);
     gableEnd(1);
-    ctx.restore();
-    ctx.strokeStyle = shade(color, -0.35);
-    ctx.lineWidth = 1.2;
+    // O capeamento da cumeeira: telhas de meia-cana ao longo dela.
+    const r0 = pt(1, -L, 1);
+    const r1 = pt(1, L, 1);
+    ctx.strokeStyle = shade(color, -0.4);
+    ctx.lineWidth = 2.6;
     ctx.beginPath();
-    ctx.moveTo(...pt(1, -L, 1));
-    ctx.lineTo(...pt(1, L, 1));
+    ctx.moveTo(...r0);
+    ctx.lineTo(...r1);
     ctx.stroke();
+    ctx.strokeStyle = shade(color, 0.04);
+    ctx.lineWidth = 1.3;
+    ctx.stroke();
+    ctx.strokeStyle = shade(color, -0.4);
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    for (let u = -L + tile; u < L; u += tile * 1.4) {
+        const [x, y] = pt(1, u, 1);
+        ctx.moveTo(x - 0.4, y - 1.1);
+        ctx.lineTo(x + 0.4, y + 1.1);
+    }
+    ctx.stroke();
+    ctx.restore();
 }
 
-/** Chaminé de pedra, com o capelo mais largo em cima. */
-function chimney(ctx, ox, oy, z, h) {
-    box(ctx, 0.07, 0.07, h, '#8f877a', { ox, oy, z });
-    box(ctx, 0.09, 0.09, 1.6, '#7d7568', { ox, oy, z: z + h });
+/** Chaminé de pedra, com o capelo mais largo em cima e a boca escura. */
+function chimney(ctx, ox, oy, z, h, rnd) {
+    const s = 0.1;
+    box(ctx, s, s, h, '#9a9186', { ox, oy, z });
+    for (const n of [[0, 1], [1, 0], [0, -1], [-1, 0]]) {
+        stoneWall(ctx, houseFace(...n, s, s, ox, oy), z, z + h, '#a39a8d', rnd, { h: 2.4, w: 0.05 });
+    }
+    box(ctx, s + 0.025, s + 0.025, 1.8, '#857d71', { ox, oy, z: z + h });
+    diamond(ctx, s * 0.55, s * 0.55, z + h + 1.8, '#2a2622', null, ox, oy);
+}
+
+/** Barril de madeira com aros de ferro. */
+function barrel(ctx, ox, oy, rnd) {
+    const top = cylinder(ctx, 2.8, 5.5, '#8a5a30', { ox, oy });
+    const [x, y] = P(ox, oy);
+    ctx.strokeStyle = '#3a3430';
+    ctx.lineWidth = 0.6;
+    for (const z of [1.2, 4.3]) {
+        ctx.beginPath();
+        ctx.ellipse(x, y - z, 2.8, 1.4, 0, 0, Math.PI);
+        ctx.stroke();
+    }
+    ctx.fillStyle = shade('#8a5a30', -0.3 + rnd() * 0.05);
+    ctx.beginPath();
+    ctx.ellipse(top.x, top.y, 2.1, 1.05, 0, 0, Math.PI * 2);
+    ctx.fill();
 }
 
 /**
@@ -848,16 +1141,19 @@ function houseFrame(along) {
  * pedra sobe do chão, encostada à empena. `houseLive` põe lá o fumo.
  */
 const HOUSE_CHIMNEY = [
-    { u: 0.15, v: -0.1, base: 28, top: 41 },
-    { u: 0.31, v: 0, base: 0, top: 32 },
-    { u: -0.14, v: -0.08, base: 36.5, top: 45 },
+    { u: 0.15, v: -0.1, base: 28, top: 39 },
+    { u: 0.325, v: 0, base: 0, top: 31 },
+    { u: -0.14, v: -0.08, base: 36.5, top: 44 },
     null,
-    { u: 0.08, v: -0.08, base: 28.5, top: 40 },
-    { u: -0.16, v: 0.09, base: 29, top: 41 }
+    { u: 0.08, v: -0.08, base: 28.5, top: 38.5 },
+    { u: -0.16, v: 0.09, base: 29, top: 39 }
 ];
+
+const FLOWERS = ['#e3372f', '#f2c94c', '#d9577a', '#ef7d2f'];
 
 function house(ctx, { roof = PLAYER_ROOF, variant = 0 }) {
     groundShadow(ctx, 26, 10, 0.2, 6, 4);
+    const rnd = seeded(variant * 17 + 3);
     const style = variant % 6;
     const F = houseFrame(Math.floor(variant / 6) % 2 === 0);
     const faces = (a, b, ox = 0, oy = 0) => ({
@@ -865,33 +1161,42 @@ function house(ctx, { roof = PLAYER_ROOF, variant = 0 }) {
         back: houseFace(...F.back, a, b, ox, oy),
         ends: F.ends.map((n) => houseFace(...n, a, b, ox, oy))
     });
+    const all = (f) => [f.front, f.back, ...f.ends].filter(Boolean);
     const chim = HOUSE_CHIMNEY[style];
+    const at = chim ? F.off(chim.u, chim.v) : null;
+    const behind = at && depth(...at) < 0;
+    const putChimney = () => chimney(ctx, at[0], at[1], chim.base, chim.top - chim.base, rnd);
     /**
      * O telhado e a chaminé: a chaminé que fica atrás na vista pinta-se antes
      * do telhado, que lhe tapa o pé; a da frente pinta-se depois, por cima.
      */
-    const at = chim ? F.off(chim.u, chim.v) : null;
-    const behind = at && depth(...at) < 0;
-    const putChimney = () => chimney(ctx, at[0], at[1], chim.base, chim.top - chim.base);
     const roofAndChimney = (drawRoof) => {
         if (behind) putChimney();
         drawRoof();
         if (at && !behind) putChimney();
     };
+    const win = (f, u, z0, z1, w, opts = {}) => houseWindow(ctx, f, u, z0, z1, w, { rnd, ...opts });
+    const door = (f, u, w, h, color, opts = {}) => houseDoor(ctx, f, u, w, h, color, { rnd, ...opts });
+    const plinth = (f, h) => { for (const face of all(f)) stoneWall(ctx, face, 0, h, PLINTH, rnd, { h: 1.6, w: 0.06 }); };
+    const seed = variant * 5 + 1;
 
     if (style === 0) {
         // Casa de enxaimel: soco de pedra, paredes caiadas com vigas escuras.
         const [a, b] = F.dims(0.6, 0.46);
         const f = faces(a, b);
         box(ctx, a, b, 3, PLINTH);
+        plinth(f, 3);
         box(ctx, a, b, 17, PLASTER, { z: 3 });
-        for (const face of [f.front, f.back, ...f.ends]) halfTimber(ctx, face, 3, 20);
-        houseDoor(ctx, f.front, 0.3, 0.1, 11);
-        houseWindow(ctx, f.front, 0.72, 9, 15, 0.08, { shutter: '#7a5234' });
-        houseWindow(ctx, f.back, 0.3, 9, 15, 0.08, { shutter: '#7a5234' });
-        houseWindow(ctx, f.back, 0.72, 9, 15, 0.08, { shutter: '#7a5234' });
-        for (const e of f.ends) houseWindow(ctx, e, 0.5, 9, 15, 0.08);
-        roofAndChimney(() => tiledRoof(ctx, a, b, 20, 15, roof, PLASTER, { alongX: F.along }));
+        for (const face of all(f)) {
+            plaster(ctx, face, 3, 20, PLASTER, rnd);
+            halfTimber(ctx, face, 3, 20);
+        }
+        door(f.front, 0.3, 0.1, 11);
+        win(f.front, 0.72, 9, 15, 0.08, { shutter: '#3f5a78' });
+        win(f.back, 0.3, 9, 15, 0.08, { shutter: '#3f5a78' });
+        win(f.back, 0.72, 9, 15, 0.08, { shutter: '#3f5a78' });
+        for (const e of f.ends) win(e, 0.5, 9, 15, 0.08, { shutter: '#3f5a78' });
+        roofAndChimney(() => tiledRoof(ctx, a, b, 20, 15, roof, PLASTER, { alongX: F.along, seed }));
     } else if (style === 1) {
         // Casa de pedra, baixa, com portadas verdes e chaminé na empena.
         const [a, b] = F.dims(0.58, 0.44);
@@ -899,12 +1204,12 @@ function house(ctx, { roof = PLAYER_ROOF, variant = 0 }) {
         // A chaminé sobe do chão: se fica atrás, as paredes tapam-lhe o pé.
         if (behind) putChimney();
         box(ctx, a, b, 16, STONE_WALL);
-        for (const face of [f.front, f.back, ...f.ends]) stoneCourses(ctx, face, 0, 16);
-        houseDoor(ctx, f.front, 0.5, 0.1, 11, '#5d4028', { arch: true });
-        for (const u of [0.2, 0.8]) houseWindow(ctx, f.front, u, 7, 12, 0.07, { shutter: '#5d7a45' });
-        houseWindow(ctx, f.back, 0.5, 7, 12, 0.07, { shutter: '#5d7a45' });
-        for (const e of f.ends) houseWindow(ctx, e, 0.5, 7, 12, 0.06);
-        tiledRoof(ctx, a, b, 16, 13, roof, STONE_WALL, { alongX: F.along });
+        for (const face of all(f)) stoneWall(ctx, face, 0, 16, STONE_WALL, rnd);
+        door(f.front, 0.5, 0.1, 10.5, '#5d4028', { arch: true, frame: '#b9b0a0' });
+        for (const u of [0.2, 0.8]) win(f.front, u, 7, 12, 0.07, { shutter: '#4f6b3a', lintel: '#d9d1c1' });
+        win(f.back, 0.5, 7, 12, 0.07, { shutter: '#4f6b3a', lintel: '#d9d1c1' });
+        for (const e of f.ends) win(e, 0.5, 7, 12, 0.06, { lintel: '#d9d1c1' });
+        tiledRoof(ctx, a, b, 16, 13, roof, STONE_WALL, { alongX: F.along, seed });
         if (!behind) putChimney();
     } else if (style === 2) {
         // Casa de dois pisos: rés-do-chão de pedra, andar de enxaimel a sair para fora.
@@ -913,63 +1218,73 @@ function house(ctx, { roof = PLAYER_ROOF, variant = 0 }) {
         const f = faces(a, b);
         const g = faces(a2, b2);
         box(ctx, a, b, 12, STONE_WALL);
-        for (const face of [f.front, f.back, ...f.ends]) stoneCourses(ctx, face, 0, 12);
-        houseDoor(ctx, f.front, 0.3, 0.1, 10, '#5d4028');
-        houseWindow(ctx, f.front, 0.72, 5, 10, 0.08, { shutter: '#8a4a3a' });
-        houseWindow(ctx, f.back, 0.5, 5, 10, 0.08, { shutter: '#8a4a3a' });
+        for (const face of all(f)) stoneWall(ctx, face, 0, 12, STONE_WALL, rnd);
+        door(f.front, 0.3, 0.1, 9.5, '#5d4028');
+        win(f.front, 0.72, 4.5, 9.5, 0.08, { shutter: '#8a2f2a' });
+        win(f.back, 0.5, 4.5, 9.5, 0.08, { shutter: '#8a2f2a' });
         box(ctx, a2, b2, 13, PLASTER, { z: 12 });
-        for (const face of [g.front, g.back, ...g.ends]) halfTimber(ctx, face, 12, 25, { braces: false });
-        for (const u of [0.28, 0.72]) {
-            houseWindow(ctx, g.front, u, 16, 22, 0.08, { box: '#e3572f' });
-            houseWindow(ctx, g.back, u, 16, 22, 0.08);
+        // A sombra do andar sobre a parede de baixo.
+        for (const face of all(f)) faceShade(ctx, face, 12, 10, 0.3);
+        for (const face of all(g)) {
+            plaster(ctx, face, 12, 25, PLASTER, rnd);
+            halfTimber(ctx, face, 12, 25, { braces: false });
         }
-        for (const e of g.ends) houseWindow(ctx, e, 0.5, 16, 22, 0.08);
-        roofAndChimney(() => tiledRoof(ctx, a2, b2, 25, 17, roof, PLASTER, { alongX: F.along }));
+        for (const u of [0.28, 0.72]) {
+            win(g.front, u, 16.5, 22, 0.08, { flowers: FLOWERS });
+            win(g.back, u, 16.5, 22, 0.08);
+        }
+        for (const e of g.ends) win(e, 0.5, 16.5, 22, 0.08);
+        roofAndChimney(() => tiledRoof(ctx, a2, b2, 25, 17, roof, PLASTER, { alongX: F.along, seed }));
     } else if (style === 3) {
         // Casa comprida e ocre, com portadas azuis, vasos de flores e um alpendre na porta.
         const wall = '#e8c98f';
         const [a, b] = F.dims(0.7, 0.42);
         const f = faces(a, b);
         box(ctx, a, b, 2.5, PLINTH);
+        plinth(f, 2.5);
         box(ctx, a, b, 15.5, wall, { z: 2.5 });
-        houseDoor(ctx, f.front, 0.5, 0.1, 11, '#4a6a8a');
-        for (const u of [0.18, 0.82]) houseWindow(ctx, f.front, u, 8, 14, 0.08, { shutter: '#4f86c6', box: '#d9577a' });
-        for (const u of [0.25, 0.5, 0.75]) houseWindow(ctx, f.back, u, 8, 14, 0.08, { shutter: '#4f86c6' });
-        for (const e of f.ends) houseWindow(ctx, e, 0.5, 8, 14, 0.08, { shutter: '#4f86c6' });
-        tiledRoof(ctx, a, b, 18, 12, roof, wall, { alongX: F.along });
-        // O alpendre: um telhadinho por cima da porta, sobre duas mãos-francesas.
+        for (const face of all(f)) {
+            plaster(ctx, face, 2.5, 18, wall, rnd);
+            quoins(ctx, face, 2.5, 18, '#d8cdb8', rnd);
+        }
+        door(f.front, 0.5, 0.1, 11, '#3f5f82');
+        for (const u of [0.18, 0.82]) win(f.front, u, 8, 14, 0.08, { shutter: '#3f7cc0', flowers: FLOWERS });
+        for (const u of [0.25, 0.5, 0.75]) win(f.back, u, 8, 14, 0.08, { shutter: '#3f7cc0' });
+        for (const e of f.ends) win(e, 0.5, 8, 14, 0.08, { shutter: '#3f7cc0', flowers: FLOWERS });
+        tiledRoof(ctx, a, b, 18, 12, roof, wall, { alongX: F.along, seed });
+        // O alpendre: um telhadinho por cima da porta.
         if (f.front) {
-            const [px, py] = F.off(0, 0);
             const [n0, n1] = F.front;
             const d = (F.along ? b : a) / 2;
-            tiledRoof(ctx, F.along ? 0.18 : 0.08, F.along ? 0.08 : 0.18, 13, 3, roof, wall, {
-                ox: px + n0 * (d + 0.04), oy: py + n1 * (d + 0.04), alongX: F.along, over: 0.02, tiles: false
+            tiledRoof(ctx, F.along ? 0.18 : 0.08, F.along ? 0.08 : 0.18, 12.5, 3, roof, wall, {
+                ox: n0 * (d + 0.04), oy: n1 * (d + 0.04), alongX: F.along, over: 0.02, seed: seed + 7, tile: 0.036
             });
         }
     } else if (style === 4) {
-        // Casa com anexo: o corpo principal e um barracão encostado, com a lenha.
+        // Casa com anexo: o corpo principal e um barracão de tábuas encostado, com a lenha.
         const [a, b] = F.dims(0.44, 0.44);
         const [sa, sb] = F.dims(0.22, 0.34);
         const [sx, sy] = F.off(0.33, 0.05);
         const f = faces(a, b);
         const main = () => {
             box(ctx, a, b, 3, PLINTH);
+            plinth(f, 3);
             box(ctx, a, b, 17, PLASTER, { z: 3 });
-            for (const face of [f.front, f.back, ...f.ends]) halfTimber(ctx, face, 3, 20);
-            houseDoor(ctx, f.front, 0.4, 0.1, 11);
-            houseWindow(ctx, f.back, 0.5, 9, 15, 0.08, { shutter: '#7a5234' });
-            for (const e of f.ends) houseWindow(ctx, e, 0.5, 9, 15, 0.08, { shutter: '#7a5234' });
-            roofAndChimney(() => tiledRoof(ctx, a, b, 20, 14, roof, PLASTER, { alongX: !F.along }));
+            for (const face of all(f)) {
+                plaster(ctx, face, 3, 20, PLASTER, rnd);
+                halfTimber(ctx, face, 3, 20);
+            }
+            door(f.front, 0.4, 0.1, 11);
+            win(f.back, 0.5, 9, 15, 0.08, { shutter: '#6b4a2b' });
+            for (const e of f.ends) win(e, 0.5, 9, 15, 0.08, { shutter: '#6b4a2b' });
+            roofAndChimney(() => tiledRoof(ctx, a, b, 20, 14, roof, PLASTER, { alongX: !F.along, seed }));
         };
         const shed = () => {
             const sf = faces(sa, sb, sx, sy);
             box(ctx, sa, sb, 11, WOOD, { ox: sx, oy: sy });
-            for (const face of [sf.front, sf.back, ...sf.ends]) {
-                if (!face) continue;
-                for (let k = 1; k < 5; k++) faceLine(ctx, face, k / 5, 0.5, k / 5, 10.5, shade(WOOD, -0.3), 0.5);
-            }
-            houseDoor(ctx, sf.front, 0.5, 0.1, 8, '#6b4a2b', { frame: '#4a3020' });
-            tiledRoof(ctx, sa, sb, 11, 6, shade(roof, -0.1), WOOD, { ox: sx, oy: sy, alongX: F.along });
+            for (const face of all(sf)) planks(ctx, face, 0, 11, WOOD, rnd);
+            door(sf.front, 0.5, 0.1, 8, '#6b4a2b', { frame: '#4a3020' });
+            tiledRoof(ctx, sa, sb, 11, 6, shade(roof, -0.1), WOOD, { ox: sx, oy: sy, alongX: F.along, seed: seed + 3, tile: 0.045 });
         };
         const [lx, ly] = F.off(-0.3, 0.2);
         layered([
@@ -978,32 +1293,35 @@ function house(ctx, { roof = PLAYER_ROOF, variant = 0 }) {
             [lx, ly, () => logPile(ctx, lx, ly)]
         ]);
     } else {
-        // Casa rebocada a cor-de-rosa, com óculo na empena, candeeiro e um barril à porta.
+        // Casa rebocada a cor-de-rosa, com cunhais de pedra, óculo na empena, candeeiro e um barril à porta.
         const wall = '#ecd3c6';
         const [a, b] = F.dims(0.56, 0.48);
         const f = faces(a, b);
         // O barril à porta: se a vista o deixou atrás da casa, pinta-se primeiro.
         const [bx, by] = F.off(-0.34, 0.3);
-        const barrel = () => cylinder(ctx, 2.6, 5, '#8a5a30', { ox: bx, oy: by });
         const barrelBehind = depth(bx, by) < 0;
-        if (barrelBehind) barrel();
+        if (barrelBehind) barrel(ctx, bx, by, rnd);
         box(ctx, a, b, 3, PLINTH);
+        plinth(f, 3);
         box(ctx, a, b, 17, wall, { z: 3 });
-        if (f.front) faceLine(ctx, f.front, 0, 3.2, 1, 3.2, shade(wall, -0.2), 0.8);
-        houseDoor(ctx, f.front, 0.5, 0.11, 12, '#7a3b2e', { arch: true });
-        for (const u of [0.18, 0.82]) houseWindow(ctx, f.front, u, 9, 15, 0.07, { frame: '#fff6ea', box: '#e3572f' });
-        for (const u of [0.3, 0.7]) houseWindow(ctx, f.back, u, 9, 15, 0.07, { frame: '#fff6ea' });
-        for (const e of f.ends) houseWindow(ctx, e, 0.5, 9, 15, 0.07, { frame: '#fff6ea' });
+        for (const face of all(f)) {
+            plaster(ctx, face, 3, 20, wall, rnd);
+            quoins(ctx, face, 3, 20, '#d8d0c2', rnd);
+        }
+        door(f.front, 0.5, 0.11, 11.5, '#7a3b2e', { arch: true, frame: '#cfc6b6' });
+        for (const u of [0.2, 0.8]) win(f.front, u, 9, 15, 0.07, { flowers: FLOWERS, lintel: '#d8d0c2' });
+        for (const u of [0.3, 0.7]) win(f.back, u, 9, 15, 0.07, { lintel: '#d8d0c2' });
+        for (const e of f.ends) win(e, 0.5, 9, 15, 0.07, { lintel: '#d8d0c2' });
         if (f.front) {
             // O candeeiro ao lado da porta.
-            const [lx, ly] = f.front.at(0.66, 12);
-            ctx.fillStyle = '#3a3a3a';
-            ctx.fillRect(lx - 1, ly - 2, 2, 3);
+            const [lx, ly] = f.front.at(0.66, 12.5);
+            ctx.fillStyle = '#2f2b28';
+            ctx.fillRect(lx - 1.1, ly - 2.4, 2.2, 3.4);
             ctx.fillStyle = '#ffd36b';
-            ctx.fillRect(lx - 0.6, ly - 1.6, 1.2, 1.8);
+            ctx.fillRect(lx - 0.6, ly - 1.9, 1.2, 2.2);
         }
-        roofAndChimney(() => tiledRoof(ctx, a, b, 20, 15, roof, wall, { alongX: F.along, round: true, tiles: false }));
-        if (!barrelBehind) barrel();
+        roofAndChimney(() => tiledRoof(ctx, a, b, 20, 15, roof, wall, { alongX: F.along, round: true, seed }));
+        if (!barrelBehind) barrel(ctx, bx, by, rnd);
     }
 }
 
@@ -1040,20 +1358,47 @@ function market(ctx, { roof = PLAYER_ROOF }) {
     ]);
 }
 
+/** Uma pilha de toros deitados: a casca a fugir para trás e o topo cortado, com os anéis. */
 function logPile(ctx, ox, oy) {
     const [x, y] = P(ox, oy);
     for (let row = 0; row < 3; row++) {
         for (let k = 0; k < 3 - row; k++) {
             const cx = x - 6 + k * 6 + row * 3;
             const cy = y - 3 - row * 5;
+            // A casca: o toro a fugir para trás e para cima, na vista.
+            ctx.fillStyle = '#5e3d22';
+            ctx.beginPath();
+            ctx.arc(cx + 4, cy - 2, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(cx - 2.1, cy - 2.1);
+            ctx.lineTo(cx + 1.9, cy - 4.1);
+            ctx.lineTo(cx + 6.1, cy + 0.1);
+            ctx.lineTo(cx + 2.1, cy + 2.1);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = '#7a5234';
+            ctx.lineWidth = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(cx - 0.5, cy - 2.6);
+            ctx.lineTo(cx + 3.5, cy - 4.6);
+            ctx.stroke();
+            // O topo cortado.
             ctx.fillStyle = '#8a5a30';
             ctx.beginPath();
             ctx.arc(cx, cy, 3, 0, Math.PI * 2);
             ctx.fill();
-            ctx.fillStyle = '#d9b27a';
+            ctx.fillStyle = '#e0bb85';
             ctx.beginPath();
-            ctx.arc(cx, cy, 1.8, 0, Math.PI * 2);
+            ctx.arc(cx, cy, 2.3, 0, Math.PI * 2);
             ctx.fill();
+            ctx.strokeStyle = '#b48a55';
+            ctx.lineWidth = 0.4;
+            for (const r of [0.8, 1.6]) {
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                ctx.stroke();
+            }
         }
     }
 }
