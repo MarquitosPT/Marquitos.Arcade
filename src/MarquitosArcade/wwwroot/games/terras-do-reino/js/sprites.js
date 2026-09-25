@@ -719,14 +719,18 @@ function stoneCourses(ctx, f, z0, z1, color = STONE_WALL) {
  * Telhado de duas águas com telhas. É o `gable` de draw.js pintado à mão, para
  * as águas levarem fiadas: primeiro a água de trás, depois a empena que se vê,
  * por fim a água da frente, que cobre o beiral da empena.
+ *
+ * O telhado sai `over` para lá das empenas, mas nas fachadas só `eave`, quase
+ * rente: um beiral largo, a descer com a inclinação, tapava o cimo das portas
+ * e janelas e descia, nos cantos, abaixo da base da empena.
  */
-function tiledRoof(ctx, a, b, z, rise, color, wall, { ox = 0, oy = 0, alongX = true, over = 0.045, tiles = true, round = false } = {}) {
+function tiledRoof(ctx, a, b, z, rise, color, wall, { ox = 0, oy = 0, alongX = true, over = 0.045, eave = 0.012, tiles = true, round = false } = {}) {
     const L = (alongX ? a : b) / 2 + over;
     const half = (alongX ? b : a) / 2;
-    const W = half + over;
+    const W = half + eave;
     // Um ponto da água do lado s: u ao longo da cumeeira, t do beiral (0) à
     // cumeeira (1). A água passa pelo topo da parede e o beiral continua a
-    // descer com a mesma inclinação, abaixo dele: não fica a direito, no ar.
+    // descer com a mesma inclinação: não fica a direito, no ar.
     const zAt = (t) => z + rise * (1 - (W * (1 - t)) / half);
     const pt = (s, u, t) => alongX
         ? P(ox + u, oy + s * W * (1 - t), zAt(t))
