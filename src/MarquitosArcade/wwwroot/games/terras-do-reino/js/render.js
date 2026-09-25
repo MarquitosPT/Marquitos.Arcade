@@ -347,16 +347,14 @@ const COBBLE_TOWN = ['#c9bea8', '#bcb09a', '#b0a38a', '#a69a82', '#cfc5b2'];
 /**
  * As pedras da calçada de um troço: uma grelha de 4 ou 5 pedras por lado,
  * com algumas pedras a ocupar o lugar de duas, cada uma um polígono torto de
- * tamanho e cor ao acaso (mas sempre o mesmo na mesma casa). A sombra de cada
- * pedra é só uma linha de um píxel de ecrã por baixo dela.
+ * tamanho e cor ao acaso (mas sempre o mesmo na mesma casa). Não têm sombra:
+ * a argamassa escura entre elas já lhes dá o relevo.
  */
 function drawCobbles(x, y, x0, x1, y0, y1, town, p) {
     let n = 0;
     const rnd = () => hash2(x, y, 90 + n++);
     const nx = rnd() < 0.5 ? 4 : 5;
     const ny = rnd() < 0.5 ? 4 : 5;
-    // Um píxel do ecrã, em unidades de mundo (o contexto tem a escala do bloco de chão).
-    const px1 = 1 / ctx.getTransform().d;
     const cw = (x1 - x0) / nx;
     const ch = (y1 - y0) / ny;
     const palette = town ? COBBLE_TOWN : COBBLE_PLAYER;
@@ -389,14 +387,8 @@ function drawCobbles(x, y, x0, x1, y0, y1, town, p) {
                 const m = Math.max(Math.abs(c), Math.abs(s2)) ** 0.8;
                 pts.push(p(cx + (c / m) * rx * f, cy + (s2 / m) * ry * f));
             }
-            // Um píxel de sombra por baixo da pedra, depois a pedra, depois o brilho de cima.
+            // A pedra e o brilho de cima.
             const color = palette[Math.floor(rnd() * palette.length)];
-            ctx.beginPath();
-            ctx.moveTo(pts[0][0], pts[0][1] + px1);
-            for (let k = 1; k < sides; k++) ctx.lineTo(pts[k][0], pts[k][1] + px1);
-            ctx.closePath();
-            ctx.fillStyle = 'rgba(70, 56, 36, 0.3)';
-            ctx.fill();
             ctx.beginPath();
             ctx.moveTo(pts[0][0], pts[0][1]);
             for (let k = 1; k < sides; k++) ctx.lineTo(pts[k][0], pts[k][1]);
