@@ -344,56 +344,93 @@ function drawRoad(x, y, detail) {
 const COBBLE_PLAYER = ['#d8cfbb', '#cdc1a6', '#c2b59a', '#b8aa8e', '#ddd3bf'];
 const COBBLE_TOWN = ['#c9bea8', '#bcb09a', '#b0a38a', '#a69a82', '#cfc5b2'];
 
+/** Pedras por lado de uma casa. */
+const COBBLES = 5;
+/** A junta entre pedras, em casas da grelha. */
+const COBBLE_GAP = 0.014;
+
+/** Se a casa (x, y) se pinta depois da casa (nx, ny) na vista de agora. */
+function paintedAfter(x, y, nx, ny) {
+    const a = cellToView(x, y);
+    const b = cellToView(nx, ny);
+    return a.x + a.y > b.x + b.y;
+}
+
 /**
- * As pedras da calçada de um troço: uma grelha de 5 ou 6 pedras por lado,
- * com uma ou outra pedra a ocupar o lugar de duas, cada uma um polígono quase
- * regular, só um pouco torto, de cor ao acaso (mas sempre a mesma na mesma casa). Não têm sombra:
- * a argamassa escura entre elas já lhes dá o relevo.
+ * As pedras da calçada de um troço, em juntas desencontradas: filas ao longo
+ * de x, cada uma desviada meia pedra da anterior. A grelha é a do mapa todo,
+ * por isso o desenho continua de uma casa para a outra: a pedra que fica em
+ * cima da junta entre dois troços pinta-a inteira a casa que se pinta depois
+ * (o chão da outra já lá está por baixo); na ponta de uma estrada fica meia
+ * pedra. As filas cortadas pela margem da estrada juntam-se à fila do lado.
+ * Cada pedra é um polígono quase regular, de cor ao acaso (mas sempre a mesma
+ * na mesma pedra).
  */
 function drawCobbles(x, y, x0, x1, y0, y1, town, p) {
-    let n = 0;
-    const rnd = () => hash2(x, y, 90 + n++);
-    const nx = rnd() < 0.5 ? 5 : 6;
-    const ny = rnd() < 0.5 ? 5 : 6;
-    const cw = (x1 - x0) / nx;
-    const ch = (y1 - y0) / ny;
+    const cell = 1 / COBBLES;
     const palette = town ? COBBLE_TOWN : COBBLE_PLAYER;
-    const taken = new Uint8Array(nx * ny);
-    for (let j = 0; j < ny; j++) {
-        for (let i = 0; i < nx; i++) {
-            if (taken[j * nx + i]) continue;
-            // Às vezes uma pedra comprida, ao longo de x ou de y.
-            let sx = 1;
-            let sy = 1;
-            const r = rnd();
-            if (r < 0.06 && i + 1 < nx && !taken[j * nx + i + 1]) sx = 2;
-            else if (r < 0.12 && j + 1 < ny) sy = 2;
-            for (let dy = 0; dy < sy; dy++) for (let dx = 0; dx < sx; dx++) taken[(j + dy) * nx + i + dx] = 1;
 
-            const cx = x0 + (i + sx / 2) * cw + (rnd() - 0.5) * cw * 0.04;
-            const cy = y0 + (j + sy / 2) * ch + (rnd() - 0.5) * ch * 0.04;
-            const size = 0.95 + rnd() * 0.05;
-            const rx = (sx * cw) / 2 * size;
-            const ry = (sy * ch) / 2 * size;
-            const sides = 6 + Math.floor(rnd() * 3);
-            const turn = Math.PI / sides + (rnd() - 0.5) * 0.3;
-            const pts = [];
+    // As filas: as da grelha, cortadas à margem; uma tira fina junta-se à do lado.
+    const rows = [];
+    for (let k = 0; k < COBBLES; k++) {
+        const a = Math.max(y + k * cell, y0);
+        const b = Math.min(y + (k + 1) * cell, y1);
+        if (b - a > 1e-6) rows.push({ a, b, g: y * COBBLES + k });
+    }
+    if (rows.length > 1 && rows[0].b - rows[0].a < cell * 0.5) rows[1].a = rows.shift().a;
+    const last = rows.length - 1;
+    if (last > 0 && rows[last].b - rows[last].a < cell * 0.5) rows[last - 1].b = rows.pop().b;
+
+    const joinLeft = hasRoad(x - 1, y) && paintedAfter(x, y, x - 1, y);
+    const joinRight = hasRoad(x + 1, y) && paintedAfter(x, y, x + 1, y);
+    for (const row of rows) {
+        const offset = (row.g & 1) * cell * 0.5;
+        const pieces = [];
+        for (let k = -1; k <= COBBLES; k++) {
+            const s0 = x + offset + k * cell;
+            const s1 = s0 + cell;
+            if (s1 <= x0 + 1e-6 || s0 >= x1 - 1e-6) continue;
+            let a = Math.max(s0, x0);
+            let b = Math.min(s1, x1);
+            // Em cima da junta com outro troço: inteira, ou nada (pinta-a o vizinho).
+            if (s0 < x0 - 1e-6 && x0 === x) {
+                if (!joinLeft) continue;
+                a = s0;
+            }
+            if (s1 > x1 + 1e-6 && x1 === x + 1) {
+                if (!joinRight) continue;
+                b = s1;
+            }
+            pieces.push({ a, b, col: Math.round((s0 - offset) * COBBLES) });
+        }
+        // Uma lasca à margem da estrada junta-se à pedra do lado.
+        if (pieces.length > 1 && pieces[0].b - pieces[0].a < cell * 0.4) pieces[1].a = pieces.shift().a;
+        const end = pieces.length - 1;
+        if (end > 0 && pieces[end].b - pieces[end].a < cell * 0.4) pieces[end - 1].b = pieces.pop().b;
+
+        for (const piece of pieces) {
+            let n = 0;
+            const rnd = () => hash2(piece.col, row.g, 90 + n++);
+            const cx = (piece.a + piece.b) / 2;
+            const cy = (row.a + row.b) / 2;
+            const rx = (piece.b - piece.a) / 2 - COBBLE_GAP;
+            const ry = (row.b - row.a) / 2 - COBBLE_GAP;
+            const sides = 8;
+            const turn = Math.PI / sides + (rnd() - 0.5) * 0.2;
+            ctx.beginPath();
             for (let k = 0; k < sides; k++) {
-                const ang = turn + (k / sides) * Math.PI * 2 + (rnd() - 0.5) * 0.22;
-                const f = 0.94 + rnd() * 0.08;
-                // Um polígono quase regular que enche quase todo o retângulo da pedra, para as pedras ficarem encaixadas.
+                // Um octógono quase regular que enche o retângulo da pedra.
+                const ang = turn + (k / sides) * Math.PI * 2 + (rnd() - 0.5) * 0.16;
+                const f = 0.96 + rnd() * 0.05;
                 const c = Math.cos(ang);
                 const s2 = Math.sin(ang);
                 const m = Math.max(Math.abs(c), Math.abs(s2)) ** 0.8;
-                pts.push(p(cx + (c / m) * rx * f, cy + (s2 / m) * ry * f));
+                const [px, py] = p(cx + (c / m) * rx * f, cy + (s2 / m) * ry * f);
+                if (k === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
             }
-            // A pedra, lisa: a cor e a argamassa à volta chegam.
-            const color = palette[Math.floor(rnd() * palette.length)];
-            ctx.beginPath();
-            ctx.moveTo(pts[0][0], pts[0][1]);
-            for (let k = 1; k < sides; k++) ctx.lineTo(pts[k][0], pts[k][1]);
             ctx.closePath();
-            ctx.fillStyle = color;
+            ctx.fillStyle = palette[Math.floor(rnd() * palette.length)];
             ctx.fill();
         }
     }
