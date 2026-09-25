@@ -344,10 +344,15 @@ function drawRoad(x, y, detail) {
 const COBBLE_PLAYER = ['#d8cfbb', '#cdc1a6', '#c2b59a', '#b8aa8e', '#ddd3bf'];
 const COBBLE_TOWN = ['#c9bea8', '#bcb09a', '#b0a38a', '#a69a82', '#cfc5b2'];
 
-/** Pedras por lado de uma casa. */
-const COBBLES = 5;
+/**
+ * Filas de pedras por casa (ao longo de y) e pedras por fila (ao longo de x).
+ * A estrada é mais estreita do que a casa nos lados sem continuação: na
+ * largura de um troço cabem 4 filas.
+ */
+const COBBLE_ROWS = 6;
+const COBBLES_PER_ROW = 7;
 /** A junta entre pedras, em casas da grelha. */
-const COBBLE_GAP = 0.014;
+const COBBLE_GAP = 0.012;
 
 /** Se a casa (x, y) se pinta depois da casa (nx, ny) na vista de agora. */
 function paintedAfter(x, y, nx, ny) {
@@ -367,26 +372,27 @@ function paintedAfter(x, y, nx, ny) {
  * na mesma pedra).
  */
 function drawCobbles(x, y, x0, x1, y0, y1, town, p) {
-    const cell = 1 / COBBLES;
+    const rowH = 1 / COBBLE_ROWS;
+    const cell = 1 / COBBLES_PER_ROW;
     const palette = town ? COBBLE_TOWN : COBBLE_PLAYER;
 
     // As filas: as da grelha, cortadas à margem; uma tira fina junta-se à do lado.
     const rows = [];
-    for (let k = 0; k < COBBLES; k++) {
-        const a = Math.max(y + k * cell, y0);
-        const b = Math.min(y + (k + 1) * cell, y1);
-        if (b - a > 1e-6) rows.push({ a, b, g: y * COBBLES + k });
+    for (let k = 0; k < COBBLE_ROWS; k++) {
+        const a = Math.max(y + k * rowH, y0);
+        const b = Math.min(y + (k + 1) * rowH, y1);
+        if (b - a > 1e-6) rows.push({ a, b, g: y * COBBLE_ROWS + k });
     }
-    if (rows.length > 1 && rows[0].b - rows[0].a < cell * 0.5) rows[1].a = rows.shift().a;
+    if (rows.length > 1 && rows[0].b - rows[0].a < rowH * 0.5) rows[1].a = rows.shift().a;
     const last = rows.length - 1;
-    if (last > 0 && rows[last].b - rows[last].a < cell * 0.5) rows[last - 1].b = rows.pop().b;
+    if (last > 0 && rows[last].b - rows[last].a < rowH * 0.5) rows[last - 1].b = rows.pop().b;
 
     const joinLeft = hasRoad(x - 1, y) && paintedAfter(x, y, x - 1, y);
     const joinRight = hasRoad(x + 1, y) && paintedAfter(x, y, x + 1, y);
     for (const row of rows) {
         const offset = (row.g & 1) * cell * 0.5;
         const pieces = [];
-        for (let k = -1; k <= COBBLES; k++) {
+        for (let k = -1; k <= COBBLES_PER_ROW; k++) {
             const s0 = x + offset + k * cell;
             const s1 = s0 + cell;
             if (s1 <= x0 + 1e-6 || s0 >= x1 - 1e-6) continue;
@@ -401,7 +407,7 @@ function drawCobbles(x, y, x0, x1, y0, y1, town, p) {
                 if (!joinRight) continue;
                 b = s1;
             }
-            pieces.push({ a, b, col: Math.round((s0 - offset) * COBBLES) });
+            pieces.push({ a, b, col: Math.round((s0 - offset) * COBBLES_PER_ROW) });
         }
         // Uma lasca à margem da estrada junta-se à pedra do lado.
         if (pieces.length > 1 && pieces[0].b - pieces[0].a < cell * 0.4) pieces[1].a = pieces.shift().a;
