@@ -1403,7 +1403,6 @@ function logPile(ctx, ox, oy) {
 }
 
 function woodcutter(ctx, { roof = '#6f4a2e' }) {
-    groundShadow(ctx, 24, 10, 0.2, 6, 4);
     layered([
         [-0.1, -0.08, () => {
             box(ctx, 0.46, 0.4, 15, '#a57447', { ox: -0.1, oy: -0.08 });
@@ -1464,7 +1463,6 @@ function sapling(ctx, ox, oy, s = 1) {
 }
 
 function forester(ctx, { roof = '#4f7d3a' }) {
-    groundShadow(ctx, 20, 9, 0.18, 5, 3);
     layered([
         [-0.1, -0.12, () => {
             box(ctx, 0.4, 0.36, 13, '#b48a5a', { ox: -0.1, oy: -0.12 });
@@ -1478,7 +1476,6 @@ function forester(ctx, { roof = '#4f7d3a' }) {
 }
 
 function millStatic(ctx) {
-    groundShadow(ctx, 22, 10, 0.2, 6, 4);
     cylinder(ctx, 13, 12, '#b9b2a3');
     const top = cylinder(ctx, 11, 26, '#d8d0bf', { z: 12 });
     cone(ctx, top.x, top.y, 13, 18, '#7a5234');
@@ -1490,7 +1487,6 @@ function millStatic(ctx) {
 }
 
 function bakery(ctx, { roof = '#b5652f' }) {
-    groundShadow(ctx, 26, 10, 0.2, 6, 4);
     box(ctx, 0.62, 0.48, 18, WALL);
     wallPatch(ctx, 'left', 0.62, 0.48, 0.25, 0.1, 0, 10, DOOR);
     wallPatch(ctx, 'left', 0.62, 0.48, 0.65, 0.2, 6, 12, '#f4c35b');
@@ -1580,7 +1576,6 @@ function pigsty(ctx, { roof = '#7a4a32' }) {
 }
 
 function carpentry(ctx, { roof = '#6d5a4a' }) {
-    groundShadow(ctx, 30, 11, 0.2, 6, 4);
     layered([
         [0, -0.12, () => {
             box(ctx, 0.72, 0.42, 16, '#b88a5c', { oy: -0.12 });
@@ -1613,7 +1608,6 @@ function hay(ctx, ox, oy) {
 }
 
 function barn(ctx, { roof = '#5b3a2a' }) {
-    groundShadow(ctx, 28, 11, 0.2, 6, 4);
     const red = '#a8342d';
     const o = { ox: -0.06, oy: -0.06 };
     layered([
@@ -1631,7 +1625,6 @@ function barn(ctx, { roof = '#5b3a2a' }) {
 }
 
 function dairy(ctx, { roof = '#5d7fa8' }) {
-    groundShadow(ctx, 26, 10, 0.2, 6, 4);
     const white = '#f4f1ea';
     const parts = [[0, 0, () => {
         box(ctx, 0.58, 0.5, 18, white);
@@ -1668,7 +1661,6 @@ function goldmine(ctx) {
 }
 
 function goldmineBody(ctx) {
-    groundShadow(ctx, 26, 10, 0.2, 5, 3);
     // Monte de rocha escavado, com a entrada virada para a esquerda.
     poly(ctx, [P(-0.45, 0.4), P(0.4, 0.45), P(0.3, -0.35), [0, -38], P(-0.4, -0.3)], '#8a7f6a');
     poly(ctx, [P(0.4, 0.45), P(0.3, -0.35), [0, -38], [2, -20]], '#6f6553');
@@ -1787,7 +1779,6 @@ function clothRoll(ctx, ox, oy, color, z = 0) {
 }
 
 function weaving(ctx, { roof = '#6f5b8f' }) {
-    groundShadow(ctx, 30, 11, 0.2, 6, 4);
     const wall = '#eadfca';
     const o = { ox: 0, oy: -0.1 };
     layered([
@@ -1831,7 +1822,6 @@ function cask(ctx, ox, oy, r = 4.5, h = 8) {
 }
 
 function distillery(ctx, { roof = '#7b3b4b' }) {
-    groundShadow(ctx, 28, 11, 0.2, 6, 4);
     const o = { ox: -0.1, oy: -0.1 };
     layered([
         [o.ox, o.oy, () => {
@@ -1859,7 +1849,6 @@ function distillery(ctx, { roof = '#7b3b4b' }) {
 }
 
 function tavern(ctx, { roof = '#8a4a2a' }) {
-    groundShadow(ctx, 28, 11, 0.2, 6, 4);
     const o = { ox: -0.04, oy: -0.06 };
     layered([
         [o.ox, o.oy, () => {
@@ -1913,7 +1902,6 @@ function mannequin(ctx, ox, oy, color) {
 }
 
 function tailor(ctx, { roof = '#3f6f6a' }) {
-    groundShadow(ctx, 26, 10, 0.2, 6, 4);
     const color = roof === PLAYER_ROOF ? '#3f6f6a' : roof;
     const o = { ox: -0.06, oy: -0.1 };
     layered([
@@ -1941,7 +1929,6 @@ function tailor(ctx, { roof = '#3f6f6a' }) {
 }
 
 function theatre(ctx, { roof = '#8e2f3c' }) {
-    groundShadow(ctx, 34, 13, 0.22, 6, 4);
     const color = roof === PLAYER_ROOF ? '#8e2f3c' : roof;
     const marble = '#efe8da';
     diamond(ctx, 0.94, 0.94, 0, '#d6ccb8');
@@ -1983,7 +1970,6 @@ function theatre(ctx, { roof = '#8e2f3c' }) {
 // ---------- Açúcar e doces (castelo nível 5) ----------
 
 function sugarmill(ctx, { roof = '#8a6a3a' }) {
-    groundShadow(ctx, 30, 11, 0.2, 6, 4);
     const o = { ox: -0.08, oy: -0.1 };
     layered([
         [o.ox, o.oy, () => {
@@ -2031,7 +2017,6 @@ function cake(ctx, x, y) {
 }
 
 function patisserie(ctx, { roof = '#d27a9a' }) {
-    groundShadow(ctx, 26, 10, 0.2, 6, 4);
     const color = roof === PLAYER_ROOF ? '#d27a9a' : roof;
     const wall = '#fbf3e6';
     const o = { ox: -0.06, oy: -0.1 };
@@ -2065,7 +2050,6 @@ function patisserie(ctx, { roof = '#d27a9a' }) {
 // ---------- Castelos ----------
 
 function castle(ctx, { level = 1 }) {
-    groundShadow(ctx, 70, 30, 0.22, 10, 8);
     const wallH = 14 + level * 3;
     const towerH = 26 + level * 5;
     const keepH = 34 + level * 9;
@@ -2128,7 +2112,6 @@ function castle(ctx, { level = 1 }) {
 }
 
 function keep(ctx, { roof = '#d8587b' }) {
-    groundShadow(ctx, 30, 12, 0.22, 6, 4);
     box(ctx, 0.84, 0.84, 9, STONE, { top: '#bdb3a0' });
     crenels(ctx, 0.84, 0.84, 9, STONE, { n: 3 });
     layered([
@@ -2205,7 +2188,6 @@ function fishery(ctx, { roof = '#4f6f8f', variant = 0 }) {
     const { side, reach, sx, sy, qx, qy, hut, rack, barrel, net } = fisheryLayout(variant);
     const color = roof === PLAYER_ROOF ? '#4f6f8f' : roof;
     const plank = '#8d6a45';
-    groundShadow(ctx, 24, 10, 0.2, 6, 4);
     const parts = [
         [hut.ox, hut.oy, () => {
             box(ctx, 0.44, 0.4, 13, plank, hut);
