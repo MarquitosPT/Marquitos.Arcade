@@ -351,9 +351,33 @@ export function nextCastleLevel() {
     return game.castleLevel < CASTLE_MAX_LEVEL ? CASTLE_LEVELS[game.castleLevel + 1] : null;
 }
 
+/**
+ * O que o próximo nível exige além do custo (`needs` em CASTLE_LEVELS), como
+ * lista de { label, have, need, ok } — o painel do castelo mostra-a toda.
+ */
+export function castleNeeds(next = nextCastleLevel()) {
+    const needs = next?.needs || {};
+    const list = [];
+    if (needs.residents) {
+        const have = game.derived.residents;
+        list.push({ label: '👥 moradores', have, need: needs.residents, ok: have >= needs.residents });
+    }
+    if (needs.happy) {
+        list.push({
+            label: '😄 contentamento', have: game.happy, need: needs.happy, ok: game.happy >= needs.happy, percent: true
+        });
+    }
+    return list;
+}
+
+export function canUpgradeCastle() {
+    const next = nextCastleLevel();
+    return !!next && canAfford(next.cost) && castleNeeds(next).every((n) => n.ok);
+}
+
 export function upgradeCastle() {
     const next = nextCastleLevel();
-    if (!next || !canAfford(next.cost)) return false;
+    if (!canUpgradeCastle()) return false;
     pay(next.cost);
     game.castleLevel = next.level;
     fx.puffs.push({ gx: CASTLE_TILE.x + CASTLE_SIZE / 2, gy: CASTLE_TILE.y + CASTLE_SIZE / 2, t: 0, big: true });

@@ -607,7 +607,11 @@ economia, não de conquista: ninguém ataca ninguém.
    com variedade, fica mais contente e paga mais — mas nunca se revolta: um
    reino sem pão é pobre, não é um reino em guerra.
 5. **O castelo** sobe de nível: alarga o território onde se pode construir,
-   aumenta o armazém e abre o escalão seguinte de edifícios.
+   aumenta o armazém e abre o escalão seguinte de edifícios. Os níveis 3 e 4
+   são a meta de um reino a sério: além de custarem mais (o 3 pede pão, o 4
+   queijo e ouro), exigem um reino grande e bem tratado — 40 moradores e o povo
+   60% contente para o nível 3, 80 moradores e 75% para o 4 (`needs` em
+   `CASTLE_LEVELS`).
 6. **O mercado** vende e compra às vilas vizinhas (ver abaixo).
 7. **Aplanar colinas**: nas colinas só se fazem minas, por isso uma colina no
    território pode ser aplanada na ficha dela, um bloco de 2x2 casas de cada

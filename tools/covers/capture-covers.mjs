@@ -147,13 +147,13 @@ const GAMES = [
             await page.evaluate(async () => {
                 const G = '/games/terras-do-reino/js/';
                 const { game } = await import(G + 'state.js');
-                const { checkPlacement, place, upgradeCastle } = await import(G + 'buildings.js');
+                const { checkPlacement, place } = await import(G + 'buildings.js');
                 const { plantField, stepEconomy } = await import(G + 'economy.js');
                 const { castleDistance } = await import(G + 'world.js');
                 const { camera, lookAt } = await import(G + 'iso.js');
                 Object.assign(game.res, { coins: 9000, wood: 900, stone: 900, planks: 300 });
-                upgradeCastle();
-                upgradeCastle();
+                // O nível 3 pede um reino grande (moradores, contentamento): na capa salta-se direto para ele.
+                game.castleLevel = 3;
                 const plan = ['market', 'mill', 'bakery', 'house', 'field', 'field', 'house', 'pasture', 'field',
                     'woodcutter', 'quarry', 'field', 'house', 'carpentry', 'field', 'barn', 'field', 'house', 'dairy', 'field'];
                 for (const [n, kind] of plan.entries()) {

@@ -116,13 +116,26 @@ export const HAPPY_VARIETY = 0.1;
 /**
  * Os níveis do castelo. Cada um alarga o território onde se pode construir,
  * aumenta o armazém e abre um novo escalão de edifícios (`tier`).
+ *
+ * Os níveis 3 e 4 são a meta de um reino a sério: além do custo (que já pede
+ * pão, e depois queijo e ouro — as cadeias de produção todas a andar), `needs`
+ * exige um reino grande e bem tratado — `residents` moradores e o povo pelo
+ * menos `happy` contente. Não se paga: tem de se ter.
  */
 export const CASTLE_LEVELS = [
     null,
     { level: 1, radius: 13, storage: 150, tier: 1, residents: 4 },
     { level: 2, radius: 18, storage: 400, tier: 2, residents: 8, cost: { coins: 250, wood: 60, stone: 40 } },
-    { level: 3, radius: 23, storage: 1000, tier: 3, residents: 12, cost: { coins: 700, planks: 40, stone: 80 } },
-    { level: 4, radius: 28, storage: 2500, tier: 3, residents: 20, cost: { coins: 2000, planks: 80, stone: 150, gold: 25 } }
+    {
+        level: 3, radius: 23, storage: 1000, tier: 3, residents: 12,
+        cost: { coins: 1500, planks: 120, stone: 220, bread: 60 },
+        needs: { residents: 40, happy: 0.6 }
+    },
+    {
+        level: 4, radius: 28, storage: 2500, tier: 3, residents: 20,
+        cost: { coins: 5000, planks: 250, stone: 450, gold: 80, cheese: 60 },
+        needs: { residents: 80, happy: 0.75 }
+    }
 ];
 
 export const CASTLE_MAX_LEVEL = CASTLE_LEVELS.length - 1;
