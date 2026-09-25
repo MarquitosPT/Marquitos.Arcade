@@ -9,7 +9,7 @@
 // (x, y). O território conta-se a partir do centro do bloco.
 
 import {
-    BUILDING, BUILDING_SIZE, CASTLE_LEVELS, CASTLE_MAX_LEVEL, DEMOLISH_REFUND, FLATTEN_COST, FLATTEN_STONE, NEAR_FEATURES,
+    BUILDING, BUILDING_SIZE, CASTLE_LEVELS, CASTLE_MAX_LEVEL, CLEAR_COST, DEMOLISH_REFUND, FLATTEN_COST, FLATTEN_STONE, NEAR_FEATURES,
     RESOURCE, ROAD_COST
 } from './config.js';
 import { castleInfo, fx, game } from './state.js';
@@ -336,6 +336,36 @@ export function flatten(x, y) {
     const block = flattenBlock(x, y);
     fx.puffs.push({ gx: block.x + 1, gy: block.y + 1, t: 0 });
     return stone;
+}
+
+// ---------- Limpar árvores e rochedos ----------
+
+/**
+ * Pode limpar-se a casa (x, y) — cortar a árvore ou partir o rochedo? Devolve
+ * `{ ok, reason }`, como o `checkFlatten`. As veias de ouro não se limpam.
+ */
+export function checkClear(x, y, { ignoreCost = false } = {}) {
+    if (!inMap(x, y)) return { ok: false, reason: 'Fora do mapa' };
+    const i = idx(x, y);
+    const cost = CLEAR_COST[game.world.feature[i]];
+    if (!cost || game.world.building[i]) return { ok: false, reason: 'Nada para limpar' };
+    if (!inTerritory(x, y)) return { ok: false, reason: 'Fora do território' };
+    if (!ignoreCost && !canAfford(cost)) return { ok: false, reason: 'Faltam recursos' };
+    return { ok: true, reason: '' };
+}
+
+/** Corta a árvore ou parte o rochedo em (x, y), sem aproveitar nada. */
+export function clearTile(x, y) {
+    if (!checkClear(x, y).ok) return false;
+    const i = idx(x, y);
+    pay(CLEAR_COST[game.world.feature[i]]);
+    game.world.feature[i] = null;
+    // Uma árvore do guarda-florestal só sai da lista dele; uma do mapa fica lembrada.
+    const planted = game.planted.indexOf(i);
+    if (planted >= 0) game.planted.splice(planted, 1);
+    else if (!game.cleared.includes(i)) game.cleared.push(i);
+    fx.puffs.push({ gx: x + 0.5, gy: y + 0.5, t: 0 });
+    return true;
 }
 
 // ---------- Castelo ----------

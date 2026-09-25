@@ -15,6 +15,7 @@
 //        [[tipo, x, y, progresso, parado], ...],             // o resto
 //     pt: [índices de casas com árvores plantadas],
 //     fl: [índices de casas de colina aplanadas],       // opcional
+//     cr: [índices de casas com árvores cortadas ou rochedos partidos],  // opcional
 //     r: 'base64',                            // estradas: um bit por casa do quadrado à volta do castelo (opcional)
 //     m: { s: { bem: stock }, f: feira|null, nf: dia da próxima feira },
 //     t: [[edifícios, relógio, comércio, riqueza], ...],   // uma entrada por vila
@@ -138,6 +139,7 @@ function resetState(seed) {
     game.nextId = 1;
     game.planted = [];
     game.flattened = [];
+    game.cleared = [];
     game.roadsVersion++;
     game.market = { stock: {}, fair: null, nextFairDay: 3 };
     game.towns = [];
@@ -189,6 +191,7 @@ export function serialize() {
         }),
         pt: game.planted.filter((i) => game.world.feature[i] === 'tree'),
         fl: game.flattened,
+        cr: game.cleared,
         r: encodeRoads(game.world),
         m: {
             s: Object.fromEntries(Object.entries(game.market.stock).map(([k, v]) => [k, r2(v)])),
@@ -239,6 +242,12 @@ export function loadSave(data = progress.data) {
         if (!Number.isInteger(i) || game.world.terrain[i] !== T_HILL || game.world.feature[i] === 'ore') continue;
         flattenTile(game.world, i);
         game.flattened.push(i);
+    }
+    for (const i of data.cr || []) {
+        const f = game.world.feature[i];
+        if (!Number.isInteger(i) || (f !== 'tree' && f !== 'rock')) continue;
+        game.world.feature[i] = null;
+        game.cleared.push(i);
     }
 
     for (const row of data.b || []) {

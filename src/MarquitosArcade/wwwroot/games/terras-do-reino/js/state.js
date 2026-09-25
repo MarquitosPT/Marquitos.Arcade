@@ -32,6 +32,8 @@ export const game = {
     planted: [],
     /** Casas de colina que o jogador aplanou (índices), para a gravação. */
     flattened: [],
+    /** Casas onde o jogador cortou uma árvore ou partiu um rochedo do mapa (índices), para a gravação. */
+    cleared: [],
     /** Sobe sempre que uma estrada abre ou fecha: quem guarda caminhos pelas estradas refá-los. */
     roadsVersion: 0,
     market: { stock: {}, fair: null, nextFairDay: 3 },

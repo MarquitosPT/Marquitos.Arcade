@@ -20,7 +20,7 @@ import {
 import { resumeAudio, sfx } from './audio.js';
 import { stepBoats } from './boats.js';
 import {
-    buildRoad, canAfford, canRoad, checkPlacement, demolish, flatten, flattenBlock, isCrop, newRoadCells, place,
+    buildRoad, canAfford, canRoad, checkPlacement, clearTile, demolish, flatten, flattenBlock, isCrop, newRoadCells, place,
     removeRoad, roadPath, upgradeCastle
 } from './buildings.js';
 import { addResource, harvestField, plantField, refreshDerived, stepEconomy, togglePaused } from './economy.js';
@@ -501,6 +501,17 @@ const actions = {
         if (stone > 0) fx.floats.push({ gx: block.x + 1, gy: block.y + 1, text: `+${stone} ${RESOURCE.stone.emoji}`, t: 0 });
         refreshDerived();
         saveNow();
+    },
+    clear: (at) => {
+        const [x, y] = at.split(',').map(Number);
+        if (!clearTile(x, y)) {
+            sfx.nope();
+            return;
+        }
+        sfx.build();
+        refreshDerived();
+        saveNow();
+        openSheet('tile', at);
     },
     sell: (good, n) => {
         const amount = n === 'all' ? Math.floor(game.res[good]) : Number(n);

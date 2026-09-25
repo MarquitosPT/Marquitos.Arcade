@@ -633,6 +633,11 @@ economia, não de conquista: ninguém ataca ninguém.
    território pode ser aplanada na ficha dela, um bloco de 2x2 casas de cada
    vez, por moedas e madeira (`FLATTEN_COST`), e passa a terra livre —
    devolvendo alguma pedra (`FLATTEN_STONE`). As veias de ouro não se aplanam.
+   **Limpar a área**: uma árvore ou um rochedo no território corta-se ou
+   parte-se na ficha da casa, por moedas (`CLEAR_COST`), e a casa fica livre.
+   Não se aproveita a madeira nem a pedra — é só o custo do trabalho. A
+   gravação lembra-se das casas limpas (`cr`); um guarda-florestal perto pode
+   voltar a plantar lá.
 8. **Estradas de pedra** (`ROAD_COST` por casa): no modo de estrada toca-se
    onde começa e depois onde acaba cada troço, e o caminho contorna sozinho
    edifícios, árvores, água e colinas (preferindo as estradas que já há). Onde

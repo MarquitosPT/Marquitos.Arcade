@@ -392,6 +392,13 @@ export const FLATTEN_COST = { coins: 45, wood: 10 };
 export const FLATTEN_STONE = 4;
 
 /**
+ * Limpar uma casa: cortar uma árvore ou partir um rochedo para deixar terra
+ * livre. Paga-se o trabalho e não se aproveita nada — a madeira e a pedra vêm
+ * dos lenhadores e das pedreiras, que precisam delas à volta.
+ */
+export const CLEAR_COST = { tree: { coins: 8 }, rock: { coins: 20 } };
+
+/**
  * Estradas de pedra: um troço por casa. Ligam os edifícios e é por elas que o
  * povo anda de um lado para o outro. Levantar um troço devolve a pedra.
  */
