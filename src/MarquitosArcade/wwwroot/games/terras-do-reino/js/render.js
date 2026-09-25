@@ -387,18 +387,13 @@ function drawCobbles(x, y, x0, x1, y0, y1, town, p) {
                 const m = Math.max(Math.abs(c), Math.abs(s2)) ** 0.8;
                 pts.push(p(cx + (c / m) * rx * f, cy + (s2 / m) * ry * f));
             }
-            // A pedra e o brilho de cima.
+            // A pedra, lisa: a cor e a argamassa à volta chegam.
             const color = palette[Math.floor(rnd() * palette.length)];
             ctx.beginPath();
             ctx.moveTo(pts[0][0], pts[0][1]);
             for (let k = 1; k < sides; k++) ctx.lineTo(pts[k][0], pts[k][1]);
             ctx.closePath();
             ctx.fillStyle = color;
-            ctx.fill();
-            const [hx, hy] = p(cx - rx * 0.2, cy - ry * 0.2);
-            ctx.fillStyle = 'rgba(255, 250, 235, 0.35)';
-            ctx.beginPath();
-            ctx.ellipse(hx, hy - 0.2, Math.max(0.5, (rx + ry) * 5), Math.max(0.3, (rx + ry) * 2.2), 0, 0, Math.PI * 2);
             ctx.fill();
         }
     }
