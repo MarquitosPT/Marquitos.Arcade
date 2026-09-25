@@ -20,8 +20,8 @@ import {
 import { resumeAudio, sfx } from './audio.js';
 import { stepBoats } from './boats.js';
 import {
-    buildRoad, canAfford, canRoad, checkPlacement, demolish, flatten, flattenBlock, newRoadCells, place, removeRoad,
-    roadPath, upgradeCastle
+    buildRoad, canAfford, canRoad, checkPlacement, demolish, flatten, flattenBlock, isCrop, newRoadCells, place,
+    removeRoad, roadPath, upgradeCastle
 } from './buildings.js';
 import { addResource, harvestField, plantField, refreshDerived, stepEconomy, togglePaused } from './economy.js';
 import { fmt } from './format.js';
@@ -319,7 +319,7 @@ function dropPending() {
 }
 
 /** Edifícios que se costumam pôr vários seguidos: o modo de construção fica ligado. */
-const REPEATABLE = new Set(['field', 'house']);
+const REPEATABLE = new Set(['field', 'vineyard', 'cottonfield', 'house']);
 
 function tryPlace(kind, x, y) {
     const check = checkPlacement(kind, x, y);
@@ -330,7 +330,7 @@ function tryPlace(kind, x, y) {
     }
     const b = place(kind, x, y);
     if (!b) return false;
-    if (b.kind === 'field') plantField(b);
+    if (isCrop(b.kind)) plantField(b);
     sfx.build();
     refreshDerived();
     return true;
@@ -376,7 +376,7 @@ function tapTile(tile, pointerType) {
     }
 
     const b = game.world.building[idx(x, y)];
-    if (b?.owner === 'player' && b.kind === 'field' && b.stage !== 'growing') {
+    if (b?.owner === 'player' && isCrop(b.kind) && b.stage !== 'growing') {
         if (b.stage === 'empty') {
             plantField(b);
             sfx.plant();
@@ -384,7 +384,8 @@ function tapTile(tile, pointerType) {
             sfx.harvest();
         } else {
             sfx.nope();
-            toast('📦 O armazém de trigo está cheio: vende ou faz farinha.', 'bad');
+            const res = RESOURCE[BUILDING[b.kind].crop.res];
+            toast(`📦 O armazém já não leva mais ${res.emoji} ${res.name.toLowerCase()}: vende ou transforma.`, 'bad');
         }
         return;
     }

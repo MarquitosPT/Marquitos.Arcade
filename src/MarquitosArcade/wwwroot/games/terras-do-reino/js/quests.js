@@ -1,7 +1,7 @@
 // Objetivos: o fio que ensina o jogo sem tutorial.
 //
 // São uma lista por ordem — um de cada vez, cada um com a sua recompensa —,
-// que leva de uma casa e um campo até ao castelo no nível máximo. Depois da
+// que leva de uma casa e um campo até ao castelo no nível máximo — e ao teatro. Depois da
 // lista, o jogo continua sem fim: os objetivos passam a ser marcos de
 // prosperidade, cada um o dobro do anterior.
 
@@ -31,8 +31,13 @@ export const QUESTS = [
     { text: 'Sobe o castelo ao nível 3', hint: 'Pede tábuas, pedra e pão — e um reino de 40 moradores, contente.', done: () => game.castleLevel >= 3, reward: { coins: 250 } },
     { text: 'Constrói uma leitaria', hint: 'Leite → queijo, o bem mais caro das feiras.', done: built('dairy'), reward: { coins: 200 } },
     { text: 'Abre uma mina de ouro', hint: 'Procura as veias douradas nas colinas.', done: built('goldmine'), reward: { planks: 20 } },
+    { text: 'Constrói um curral de ovelhas e um centro de tecelagem', hint: 'Trigo → lã → rolos de tecido.', done: () => countOf('sheepfold') >= 1 && countOf('weaving') >= 1, reward: { coins: 250 } },
+    { text: 'Planta uma vinha e constrói uma destilaria', hint: 'Toca na vinha para a podar e vindimar; a destilaria faz vinho com as uvas.', done: () => countOf('vineyard') >= 1 && countOf('distillery') >= 1, reward: { coins: 250 } },
+    { text: 'Abre uma taberna', hint: 'Com vinho na adega, o povo convive ao fim do dia e fica mais contente.', done: built('tavern'), reward: { coins: 300 } },
     { text: 'Ultrapassa as três vilas vizinhas', hint: 'Toca em 👑 Reinos para ver a tabela.', done: () => game.derived.prosperity > Math.max(...game.towns.map((_, k) => townProsperity(k))), reward: { coins: 400 } },
-    { text: `Sobe o castelo ao nível ${CASTLE_MAX_LEVEL}`, hint: 'Ouro das minas, queijo da leitaria e um reino grande e feliz.', done: () => game.castleLevel >= CASTLE_MAX_LEVEL, reward: { coins: 1000 } }
+    { text: `Sobe o castelo ao nível ${CASTLE_MAX_LEVEL}`, hint: 'Ouro das minas, queijo da leitaria e um reino grande e feliz.', done: () => game.castleLevel >= CASTLE_MAX_LEVEL, reward: { coins: 1000 } },
+    { text: 'Lavra um campo de algodão e abre uma alfaiataria', hint: 'Algodão e rolos de tecido de lã → fatos e vestidos, os mais caros das feiras.', done: () => countOf('cottonfield') >= 1 && countOf('tailor') >= 1, reward: { coins: 800 } },
+    { text: 'Constrói um teatro', hint: 'A cultura do reino: com taberna e teatro para todos, o povo chega aos 100%.', done: built('theatre'), reward: { coins: 1500 } }
 ];
 
 /** Depois da lista: marcos de prosperidade, cada um o dobro do anterior. */

@@ -80,7 +80,14 @@ export const RESOURCES = [
     { id: 'cheese', name: 'Queijo', emoji: '🧀', price: 16, tradable: true, meals: 3 },
     { id: 'fish', name: 'Peixe', emoji: '🐟', price: 8, tradable: true, meals: 2 },
     { id: 'planks', name: 'Tábuas', emoji: '🪚', price: 9, tradable: true },
-    { id: 'gold', name: 'Ouro', emoji: '✨', price: 30, tradable: true }
+    { id: 'gold', name: 'Ouro', emoji: '✨', price: 30, tradable: true },
+    { id: 'wool', name: 'Lã', emoji: '🧶', price: 6, tradable: true },
+    { id: 'cloth', name: 'Rolos de tecido', emoji: '🧵', price: 24, tradable: true },
+    { id: 'grapes', name: 'Uvas', emoji: '🍇', price: 4, tradable: true },
+    { id: 'wine', name: 'Vinho', emoji: '🍷', price: 20, tradable: true },
+    { id: 'cotton', name: 'Algodão', emoji: '☁️', price: 5, tradable: true },
+    { id: 'suits', name: 'Fatos', emoji: '🧥', price: 55, tradable: true },
+    { id: 'dresses', name: 'Vestidos', emoji: '👗', price: 55, tradable: true }
 ];
 
 export const RESOURCE = Object.fromEntries(RESOURCES.map((r) => [r.id, r]));
@@ -104,12 +111,18 @@ export const TAX_PER_RESIDENT = 4;
 export const IDLE_TAX_SHARE = 0.25;
 /**
  * O contentamento vai de `HAPPY_BASE` (ninguém come nada de jeito) a 1 (todos
- * bem alimentados e com variedade). Nunca chega a zero: um reino sem pão é
- * pobre, não é um reino em revolta — isto não é um jogo de guerra.
+ * bem alimentados, com variedade, e com taberna e teatro para todos). Nunca
+ * chega a zero: um reino sem pão é pobre, não é um reino em revolta — isto
+ * não é um jogo de guerra.
+ *
+ * A comida chega aos 90%; os últimos 10% são o convívio (`HAPPY_LEISURE`):
+ * cada edifício com `serves` (a taberna, o teatro) dá a sua parte, na
+ * proporção dos moradores que consegue servir.
  */
-export const HAPPY_BASE = 0.45;
-export const HAPPY_FED = 0.45;
+export const HAPPY_BASE = 0.4;
+export const HAPPY_FED = 0.4;
 export const HAPPY_VARIETY = 0.1;
+export const HAPPY_LEISURE = { tavern: 0.05, theatre: 0.05 };
 
 // ---------- Castelo ----------
 
@@ -132,7 +145,7 @@ export const CASTLE_LEVELS = [
         needs: { residents: 40, happy: 0.6 }
     },
     {
-        level: 4, radius: 28, storage: 2500, tier: 3, residents: 20,
+        level: 4, radius: 28, storage: 2500, tier: 4, residents: 20,
         cost: { coins: 5000, planks: 250, stone: 450, gold: 80, cheese: 60 },
         needs: { residents: 80, happy: 0.75 }
     }
@@ -152,6 +165,13 @@ export const CASTLE_MAX_LEVEL = CASTLE_LEVELS.length - 1;
  * `recipe` é o que o edifício faz a cada ciclo de `time` segundos, com todos
  * os trabalhadores (`workers`). Sem trabalhadores fica parado; sem o que
  * consome, espera.
+ *
+ * `crop` é uma cultura (trigo, vinha, algodão): semeia-se, cresce `grow`
+ * segundos e colhe-se `yield` de `res` — à mão ou pelo celeiro.
+ *
+ * `serves` é convívio (taberna, teatro): ao fim de cada dia serve até
+ * `residents` moradores e deixa-os mais contentes (`HAPPY_LEISURE`). Com
+ * `drink`, gasta 1 dele por cada `per` moradores servidos.
  */
 export const BUILDINGS = [
     {
@@ -163,7 +183,7 @@ export const BUILDINGS = [
     {
         id: 'field', name: 'Campo de trigo', emoji: '🌾', tier: 1,
         cost: { coins: 12 },
-        grow: 100, yield: 5,
+        crop: { res: 'wheat', grow: 100, yield: 5 },
         desc: 'Toca para semear e, quando estiver dourado, toca outra vez para colher.'
     },
     {
@@ -241,6 +261,54 @@ export const BUILDINGS = [
         near: { feature: 'water', radius: 3.5, min: 4, full: 12 },
         recipe: { out: { fish: 1 }, time: 14 },
         desc: 'Os pescadores saem de barco para o lago e pescam à cana. Tem de ficar à beira de água: quanto mais lago perto, mais peixe.'
+    },
+    {
+        id: 'sheepfold', name: 'Curral de ovelhas', emoji: '🐑', tier: 3,
+        cost: { coins: 160, planks: 20, wood: 20 }, workers: 2,
+        recipe: { in: { wheat: 1 }, out: { wool: 2 }, time: 28 },
+        desc: 'Ovelhas alimentadas a trigo: os pastores tosquiam-nas e juntam a lã.'
+    },
+    {
+        id: 'weaving', name: 'Centro de tecelagem', emoji: '🧵', tier: 3,
+        cost: { coins: 180, planks: 25, stone: 20 }, workers: 3,
+        recipe: { in: { wool: 3 }, out: { cloth: 1 }, time: 30 },
+        desc: 'Os teares fiam a lã do curral e tecem-na em rolos de tecido.'
+    },
+    {
+        id: 'vineyard', name: 'Vinha', emoji: '🍇', tier: 3,
+        cost: { coins: 30, wood: 8 },
+        crop: { res: 'grapes', grow: 140, yield: 6 },
+        desc: 'Toca para podar e, quando os cachos estiverem roxos, toca outra vez para vindimar.'
+    },
+    {
+        id: 'distillery', name: 'Destilaria', emoji: '🛢️', tier: 3,
+        cost: { coins: 170, planks: 20, stone: 25 }, workers: 2,
+        recipe: { in: { grapes: 3 }, out: { wine: 1 }, time: 30 },
+        desc: 'Pisa as uvas da vinha e guarda o vinho em pipas de carvalho.'
+    },
+    {
+        id: 'tavern', name: 'Taberna', emoji: '🍺', tier: 3,
+        cost: { coins: 200, planks: 30, stone: 30 }, workers: 2,
+        serves: { residents: 40, drink: 'wine', per: 10 },
+        desc: 'O povo junta-se ao fim do dia para um copo de vinho e dois dedos de conversa. Povo mais contente.'
+    },
+    {
+        id: 'cottonfield', name: 'Campo de algodão', emoji: '🌿', tier: 4,
+        cost: { coins: 45, wood: 10 },
+        crop: { res: 'cotton', grow: 150, yield: 5 },
+        desc: 'Toca para semear e, quando as cápsulas abrirem brancas, toca outra vez para colher.'
+    },
+    {
+        id: 'tailor', name: 'Alfaiataria', emoji: '🪡', tier: 4,
+        cost: { coins: 400, planks: 40, stone: 40, cloth: 10 }, workers: 3,
+        recipe: { in: { cotton: 2, cloth: 1 }, out: { suits: 1, dresses: 1 }, time: 40 },
+        desc: 'Os alfaiates cortam e cosem fatos e vestidos com algodão e os rolos de tecido de lã. Os mais caros das feiras.'
+    },
+    {
+        id: 'theatre', name: 'Teatro', emoji: '🎭', tier: 4,
+        cost: { coins: 900, planks: 80, stone: 120, gold: 20 }, workers: 4,
+        serves: { residents: 80 },
+        desc: 'Comédias e tragédias todas as noites: a cultura do reino. Povo mais contente.'
     }
 ];
 
@@ -313,17 +381,17 @@ export const FAIR_EVERY_DAYS = 3;
 export const TOWNS = [
     {
         id: 'rosa', name: 'Vila Rosa', roof: '#d8587b', emoji: '🌸',
-        supplies: ['wheat', 'milk'], demands: ['wood', 'planks', 'stone'],
+        supplies: ['wheat', 'milk'], demands: ['wood', 'planks', 'stone', 'wine'],
         kinds: ['house', 'field', 'field', 'pasture', 'house', 'mill']
     },
     {
         id: 'pedralva', name: 'Pedralva', roof: '#5f7fca', emoji: '🪨',
-        supplies: ['stone', 'gold'], demands: ['bread', 'cheese', 'wheat', 'fish'],
+        supplies: ['stone', 'gold'], demands: ['bread', 'cheese', 'wheat', 'fish', 'suits'],
         kinds: ['house', 'quarry', 'house', 'carpentry', 'quarry']
     },
     {
         id: 'carvalhal', name: 'Carvalhal', roof: '#c98434', emoji: '🌳',
-        supplies: ['wood', 'planks'], demands: ['flour', 'milk', 'bread'],
+        supplies: ['wood', 'planks'], demands: ['flour', 'milk', 'bread', 'cloth', 'dresses'],
         kinds: ['house', 'woodcutter', 'house', 'carpentry', 'field']
     }
 ];

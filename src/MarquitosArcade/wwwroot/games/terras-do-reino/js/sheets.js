@@ -10,7 +10,8 @@
 import { escapeHtml } from '/lib/arcade/index.js';
 
 import {
-    BUILDING, BUILDINGS, DEMOLISH_REFUND, FLATTEN_COST, FLATTEN_STONE, NEAR_FEATURES, RESOURCE, ROAD_COST, TOWNS
+    BUILDING, BUILDINGS, DEMOLISH_REFUND, FLATTEN_COST, FLATTEN_STONE, HAPPY_LEISURE, NEAR_FEATURES, RESOURCE, ROAD_COST,
+    TOWNS
 } from './config.js';
 import {
     canAfford, canUpgradeCastle, castleNeeds, checkFlatten, checkPlacement, countOf, inTerritory, missingFor,
@@ -98,10 +99,14 @@ function recipeText(def) {
         const input = side(def.recipe.in);
         return `${input ? `${input} → ` : ''}${side(def.recipe.out)} a cada ${def.recipe.time} s`;
     }
-    if (def.id === 'field') return `${def.yield} ${RESOURCE.wheat.emoji} por colheita (${def.grow} s a crescer)`;
+    if (def.crop) return `${def.crop.yield} ${RESOURCE[def.crop.res].emoji} por colheita (${def.crop.grow} s a crescer)`;
+    if (def.serves) {
+        const drink = def.serves.drink ? `, 1 ${RESOURCE[def.serves.drink].emoji} por cada ${def.serves.per}` : '';
+        return `Serve até ${def.serves.residents} moradores por dia${drink}`;
+    }
     if (def.id === 'house') return `+${def.residents} moradores`;
     if (def.plants) return `Uma árvore a cada ${def.plants.time} s, até ${def.plants.radius} casas à volta`;
-    if (def.farms) return `Semeia e colhe os campos até ${def.farms.radius} casas à volta`;
+    if (def.farms) return `Semeia e colhe as culturas até ${def.farms.radius} casas à volta`;
     return '';
 }
 
@@ -223,9 +228,25 @@ function castleView() {
             <div class="sheetSection">
                 <p class="sheetText">O povo come ao fim de cada dia: 🧀 queijo, 🍞 pão, 🐟 peixe ou 🥛 leite. Bem alimentado — e com mais de
                     um tipo de comida — fica contente e paga mais impostos.</p>
+                ${leisureHtml()}
             </div>
             <div class="sheetSection">${nextHtml}</div>`
     };
+}
+
+/** O convívio: que parte do povo a taberna e o teatro serviram no último fim de dia. */
+function leisureHtml() {
+    const served = game.derived.served || {};
+    const rows = Object.entries(HAPPY_LEISURE).map(([kind, share]) => {
+        const def = BUILDING[kind];
+        if (def.tier > castleInfo().tier) return ['warn', `🔒 ${def.emoji} ${def.name}: castelo nível ${def.tier} (até +${pct(share)})`];
+        const ratio = served[kind] || 0;
+        return [ratio >= 0.995 ? 'ok' : 'warn', `${def.emoji} ${def.name}: ${pct(ratio)} do povo servido (até +${pct(share)})`];
+    });
+    const food = 1 - Object.values(HAPPY_LEISURE).reduce((a, b) => a + b, 0);
+    return `<p class="sheetText" style="margin-top:6px">A comida leva o contentamento até ${pct(food)}; o resto é convívio,
+        na 🍺 taberna (com vinho) e no 🎭 teatro.</p>
+        ${rows.map(([tone, text]) => `<div class="statusLine ${tone}" style="margin-top:6px">${text}</div>`).join('')}`;
 }
 
 function kingdomsView() {
@@ -277,6 +298,9 @@ const STATUS_TEXT = {
     paused: ['warn', '⏸️ Parado por ordem tua — os trabalhadores ficam livres']
 };
 
+/** Taberna e teatro abertos: a barra é o dia a passar, e ao fim dele servem o povo. */
+const VENUE_OK = ['ok', '✅ Aberto — ao fim do dia recebe o povo'];
+
 function tileView(arg) {
     const [x, y] = String(arg).split(',').map(Number);
     const world = game.world;
@@ -303,14 +327,15 @@ function tileView(arg) {
         const recipe = recipeText(def);
         if (recipe) body += `<p class="sheetText" style="margin-top:6px"><b>${escapeHtml(recipe)}</b>${def.workers ? ` · 👷 ${def.workers} trabalhador${def.workers > 1 ? 'es' : ''}` : ''}</p>`;
 
-        if (b.kind === 'field') {
-            const label = b.stage === 'ripe' ? '🌾 Pronto a colher' : b.stage === 'growing' ? `🌱 A crescer (${pct(b.growth)})` : '🟫 Terra lavrada, por semear';
+        if (def.crop) {
+            const ripe = RESOURCE[def.crop.res].emoji;
+            const label = b.stage === 'ripe' ? `${ripe} Pronto a colher` : b.stage === 'growing' ? `🌱 A crescer (${pct(b.growth)})` : '🟫 Terra lavrada, por semear';
             body += `<div class="sheetSection"><div class="statusLine ${b.stage === 'ripe' ? 'ok' : 'warn'}">${label}</div>
                 ${b.stage === 'growing' ? `<div class="progressTrack" style="--fill:${pct(b.growth)}"></div>` : ''}</div>`;
-            const act = b.stage === 'ripe' ? ['harvest', '🌾 Colher'] : b.stage === 'empty' ? ['plant', '🌱 Semear'] : null;
+            const act = b.stage === 'ripe' ? ['harvest', `${ripe} Colher`] : b.stage === 'empty' ? ['plant', '🌱 Semear'] : null;
             if (act) body += `<div class="sheetActions"><button class="btn" type="button" data-action="${act[0]}" data-arg="${x},${y}">${act[1]}</button></div>`;
-        } else if (def.recipe || def.plants || def.farms) {
-            const [tone, text] = STATUS_TEXT[b.status] || STATUS_TEXT.ok;
+        } else if (def.recipe || def.plants || def.farms || def.serves) {
+            const [tone, text] = (def.serves && b.status === 'ok' ? VENUE_OK : STATUS_TEXT[b.status]) || STATUS_TEXT.ok;
             let extra = '';
             if (def.near) {
                 const found = countFeatureNear(world, b.x, b.y, b.size, def.near.feature, def.near.radius);
