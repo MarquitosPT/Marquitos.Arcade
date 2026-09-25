@@ -3363,53 +3363,106 @@ function pastureLive(ctx, b, t) {
     }
 }
 
-/** Um porco cor-de-rosa, gordo, com o focinho e o rabo enrolado. */
-function pig(ctx, x, y, flip, muddy) {
+/**
+ * Um porco cor-de-rosa, gordo, de perfil: o corpo em barril, as patas curtas
+ * com os cascos, as orelhas caídas para a frente, o focinho em disco e o rabo
+ * enrolado. `muddy` suja-o de lama; `root` baixa-lhe o focinho a fossar (0 a 1).
+ */
+function pig(ctx, x, y, flip, muddy, seed = 0, root = 0) {
+    const PINK = '#f2aab0';
+    const DEEP = '#d98890';
     ctx.save();
     ctx.translate(x, y);
-    ctx.scale(flip ? -1 : 1, 1);
+    ctx.scale(flip ? -0.9 : 0.9, 0.9);
     ctx.fillStyle = 'rgba(20, 40, 10, 0.2)';
     ctx.beginPath();
-    ctx.ellipse(0, 1, 6.5, 2, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 0.6, 7.5, 2.2, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#c9848a';
-    ctx.fillRect(-4, -3, 1.5, 3);
-    ctx.fillRect(2.5, -3, 1.5, 3);
-    ctx.fillStyle = '#f0a8ae';
+
+    const leg = (lx, color) => {
+        ctx.fillStyle = color;
+        ctx.fillRect(lx, -3.6, 1.8, 3.2);
+        ctx.fillStyle = '#6a4450';
+        ctx.fillRect(lx, -0.9, 1.8, 0.9);
+    };
+    leg(-4.4, '#c77a83');
+    leg(2.6, '#c77a83');
+
+    // O rabo enrolado, na anca.
+    ctx.strokeStyle = DEEP;
+    ctx.lineWidth = 0.8;
+    ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.ellipse(0, -5.5, 6, 3.6, 0, 0, Math.PI * 2);
-    ctx.fill();
-    if (muddy) {
-        ctx.fillStyle = 'rgba(106, 76, 48, 0.75)';
-        ctx.beginPath();
-        ctx.ellipse(-2, -4, 2.6, 1.6, 0, 0, Math.PI * 2);
-        ctx.fill();
-    }
-    ctx.fillStyle = '#f0a8ae';
-    ctx.beginPath();
-    ctx.arc(5.8, -6.4, 2.8, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#d9848c';
-    ctx.beginPath();
-    ctx.ellipse(8.2, -6, 1.2, 1.4, 0, 0, Math.PI * 2);
-    ctx.fill();
-    poly(ctx, [[4.2, -8.6], [5.6, -11], [6.6, -8.4]], '#d9848c');
-    ctx.strokeStyle = '#d9848c';
-    ctx.lineWidth = 0.9;
-    ctx.beginPath();
-    ctx.arc(-6.6, -6.6, 1.3, 0, Math.PI * 1.5);
+    ctx.moveTo(-6.8, -6);
+    ctx.quadraticCurveTo(-8.4, -6.4, -8.2, -7.4);
+    ctx.arc(-7.4, -7.4, 0.8, Math.PI, Math.PI * 2.6);
     ctx.stroke();
+
+    // O corpo: um barril de lados redondos, mais escuro na barriga.
+    const body = new Path2D();
+    body.ellipse(-0.4, -5.6, 6.8, 3.9, 0, 0, Math.PI * 2);
+    const grad = ctx.createLinearGradient(0, -9.5, 0, -1.7);
+    grad.addColorStop(0, '#f8c3c7');
+    grad.addColorStop(0.55, PINK);
+    grad.addColorStop(1, '#d9939a');
+    ctx.fillStyle = grad;
+    ctx.fill(body);
+    if (muddy) {
+        // A lama, aos borrões, recortada pelo corpo.
+        ctx.save();
+        ctx.clip(body);
+        ctx.fillStyle = 'rgba(106, 76, 48, 0.8)';
+        const rnd = (k) => hash2(seed, k, 61);
+        ctx.beginPath();
+        ctx.ellipse(-3 + rnd(1) * 2, -2.8, 3.4, 1.8, 0, 0, Math.PI * 2);
+        ctx.ellipse(1.5 + rnd(2) * 2, -2.4, 2.4, 1.4, 0, 0, Math.PI * 2);
+        ctx.ellipse(-4 + rnd(3) * 5, -6 - rnd(4) * 2, 1.3, 0.9, rnd(5), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    leg(-5.6, PINK);
+    leg(1.6, PINK);
+
+    // A cabeça, colada ao corpo, que desce quando fossa.
+    const drop = root * 2.6;
+    ctx.save();
+    ctx.translate(5.4, -6.4 + drop);
+    ctx.rotate(root * 0.35);
+    ctx.fillStyle = PINK;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 3.2, 2.9, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // O focinho: um disco achatado, com as duas narinas.
+    ctx.fillStyle = '#e8959c';
+    ctx.beginPath();
+    ctx.ellipse(3.2, 0.5, 1.1, 1.6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#9c5560';
+    ctx.fillRect(3.3, -0.3, 0.5, 0.6);
+    ctx.fillRect(3.3, 0.9, 0.5, 0.6);
+    ctx.fillStyle = '#16100c';
+    ctx.fillRect(1, -1.2, 0.8, 0.8);
+    // A orelha, caída para a frente por cima do olho.
+    poly(ctx, [[-1.2, -2.4], [0.2, -3.8], [2.2, -1.6], [0.6, -1.4]], DEEP);
+    ctx.restore();
     ctx.restore();
 }
 
 function pigstyLive(ctx, b, t) {
     const seed = b.x * 1.9 + b.y * 2.7;
-    for (let i = 0; i < 3; i++) {
+    const pigs = [0, 1, 2].map((i) => {
         const s = t * 0.2 + seed + i * 2.2;
         const gx = Math.sin(s) * 0.14 + [0.12, -0.12, 0.2][i];
         const gy = Math.cos(s * 0.8) * 0.1 + [0.14, 0.12, 0.3][i];
-        const [x, y] = P(gx, gy);
-        pig(ctx, x, y, Math.cos(s) > 0, i !== 1);
+        return { i, s, at: P(gx, gy) };
+    });
+    // Os de trás primeiro, para os da frente lhes passarem por cima.
+    pigs.sort((a, c) => a.at[1] - c.at[1]);
+    for (const { i, s, at: [x, y] } of pigs) {
+        // Fossa o chão quando anda devagar.
+        const root = Math.max(0, Math.min(1, (0.5 - Math.abs(Math.cos(s))) * 3));
+        pig(ctx, x, y, Math.cos(s) > 0, i !== 1, i + Math.floor(seed * 5), root);
     }
 }
 
@@ -3625,39 +3678,99 @@ function fisheryLive(ctx, b, t, { variant = 0 }) {
     smoke(ctx, x, y, t * 0.6, b.x * 0.19);
 }
 
-/** Uma ovelha: um novelo de lã com cabeça e patas escuras. */
-function sheep(ctx, x, y, flip) {
+/**
+ * Uma ovelha de perfil: um novelo de lã aos caracóis, as patas finas e pretas,
+ * a cara preta comprida com as orelhas de lado e um rabinho de lã. `wool` é a
+ * cor da lã; `graze` baixa a cabeça ao pasto (0 a 1).
+ */
+function sheep(ctx, x, y, flip, wool = '#f4f0e6', graze = 0) {
+    const FACE = '#2d2520';
     ctx.save();
     ctx.translate(x, y);
     ctx.scale(flip ? -1 : 1, 1);
     ctx.fillStyle = 'rgba(20, 40, 10, 0.2)';
     ctx.beginPath();
-    ctx.ellipse(0, 1, 6, 2, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 0.6, 6.5, 2, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#2d2520';
-    ctx.fillRect(-3.5, -3, 1.3, 3);
-    ctx.fillRect(2.2, -3, 1.3, 3);
-    ctx.fillStyle = '#f4f0e6';
-    for (const [dx, dy, r] of [[-2.5, -5.5, 3], [1, -6.2, 3.2], [3, -5, 2.6], [-0.5, -4.2, 3]]) {
+
+    const leg = (lx, color) => {
+        ctx.fillStyle = color;
+        ctx.fillRect(lx, -4, 1.1, 4);
+    };
+    leg(-2.8, '#1c1612');
+    leg(3, '#1c1612');
+
+    // A lã: novelos de caracóis, os da sombra por baixo e os da luz por cima.
+    const curls = [
+        [-4.2, -5.4, 2.4], [-2, -7.2, 2.6], [0.8, -7.6, 2.6], [3.4, -6.8, 2.3],
+        [4.4, -4.8, 2], [1.8, -4, 2.5], [-1.2, -4, 2.6], [-3.8, -3.8, 2]
+    ];
+    ctx.fillStyle = shade(wool, -0.2);
+    for (const [cx, cy, r] of curls) {
         ctx.beginPath();
-        ctx.arc(dx, dy, r, 0, Math.PI * 2);
+        ctx.arc(cx + 0.3, cy + 0.5, r, 0, Math.PI * 2);
         ctx.fill();
     }
-    ctx.fillStyle = '#3a302a';
+    ctx.fillStyle = wool;
+    for (const [cx, cy, r] of curls) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, r - 0.3, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.fillStyle = shade(wool, 0.5);
+    for (const [cx, cy, r] of curls.slice(0, 4)) {
+        ctx.beginPath();
+        ctx.arc(cx - 0.6, cy - 0.7, r * 0.35, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    // O rabinho.
+    ctx.fillStyle = wool;
     ctx.beginPath();
-    ctx.ellipse(6, -6.5, 1.8, 1.5, 0, 0, Math.PI * 2);
+    ctx.arc(-6.4, -6, 1.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    leg(-3.8, FACE);
+    leg(2, FACE);
+
+    // A cabeça: preta, comprida, a sair da lã do peito.
+    const drop = graze * 4;
+    ctx.save();
+    ctx.translate(5.2, -6.8 + drop);
+    ctx.rotate(0.5 + graze * 0.6);
+    ctx.fillStyle = FACE;
+    ctx.beginPath();
+    ctx.ellipse(1.2, 0.3, 2.8, 1.7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#4a3f38';
+    ctx.beginPath();
+    ctx.ellipse(3.4, 0.7, 0.8, 0.9, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#f4f0e6';
+    ctx.fillRect(1, -0.6, 0.7, 0.7);
+    // A orelha, caída para o lado.
+    poly(ctx, [[-0.2, -1.2], [-1.2, -2.8], [0.2, -3], [0.9, -1.3]], '#1c1612');
+    ctx.restore();
+    // A lã da nuca, por cima do começo da cabeça.
+    ctx.fillStyle = wool;
+    ctx.beginPath();
+    ctx.arc(4.6, -7.4, 1.7, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
 }
 
 function sheepfoldLive(ctx, b, t) {
     const seed = b.x * 2.3 + b.y * 1.1;
-    for (let i = 0; i < 3; i++) {
+    const flock = [0, 1, 2].map((i) => {
         const s = t * 0.22 + seed + i * 2.1;
         const gx = Math.sin(s) * 0.18 + [-0.1, 0.15, 0.05][i];
         const gy = Math.cos(s * 0.7) * 0.12 + [0.05, 0.12, 0.28][i];
-        const [x, y] = P(gx, gy);
-        sheep(ctx, x, y, Math.cos(s) > 0);
+        return { i, s, at: P(gx, gy) };
+    });
+    // As de trás primeiro, para as da frente lhes passarem por cima.
+    flock.sort((a, c) => a.at[1] - c.at[1]);
+    for (const { i, s, at: [x, y] } of flock) {
+        const graze = Math.max(0, Math.min(1, (0.55 - Math.abs(Math.cos(s))) * 3));
+        sheep(ctx, x, y, Math.cos(s) > 0, ['#f4f0e6', '#ece3cf', '#f7f4ec'][i], graze);
     }
 }
 
