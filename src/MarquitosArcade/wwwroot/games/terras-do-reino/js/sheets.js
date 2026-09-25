@@ -226,7 +226,7 @@ function castleView() {
                 ${stat(`${info.radius} casas`, 'território')}
             </div></div>
             <div class="sheetSection">
-                <p class="sheetText">O povo come ao fim de cada dia: 🧀 queijo, 🍞 pão, 🍖 carne, 🐟 peixe ou 🥛 leite. Bem alimentado — e com mais de
+                <p class="sheetText">O povo come ao fim de cada dia: 🎂 bolos, 🧀 queijo, 🍞 pão, 🍖 carne, 🍚 arroz, 🐟 peixe, 🥚 ovos ou 🥛 leite. Bem alimentado — e com mais de
                     um tipo de comida — fica contente e paga mais impostos.</p>
                 ${leisureHtml()}
             </div>

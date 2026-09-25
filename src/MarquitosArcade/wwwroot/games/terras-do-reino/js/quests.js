@@ -21,6 +21,7 @@ export const QUESTS = [
     { text: 'Constrói um lenhador perto de árvores', hint: 'Quantas mais árvores à volta, mais depressa corta.', done: built('woodcutter'), reward: { coins: 30 } },
     { text: 'Constrói uma pedreira perto de rochas', hint: 'As rochas cinzentas dão pedra para o castelo.', done: built('quarry'), reward: { coins: 30 } },
     { text: 'Constrói uma cabana de pesca à beira de um lago', hint: 'Os pescadores saem de barco e pescam à cana. Peixe é comida para o povo.', done: built('fishery'), reward: { coins: 40 } },
+    { text: 'Constrói um galinheiro', hint: 'As galinhas comem trigo e põem ovos: com o peixe, a mesa já tem variedade.', done: built('coop'), reward: { coins: 40 } },
     { text: 'Tem 16 moradores', hint: 'Cada casa traz quatro. Mais gente, mais trabalho e mais impostos.', done: () => game.derived.residents >= 16, reward: { coins: 60 } },
     { text: 'Sobe o castelo ao nível 2', hint: 'Toca em 🏰 Castelo. Alarga o território e abre novos edifícios.', done: () => game.castleLevel >= 2, reward: { coins: 100 } },
     { text: 'Constrói um moinho e uma padaria', hint: 'Trigo → farinha → pão. Pão na mesa é povo contente.', done: () => countOf('mill') >= 1 && countOf('bakery') >= 1, reward: { wheat: 30 } },
@@ -36,9 +37,13 @@ export const QUESTS = [
     { text: 'Planta uma vinha e constrói uma destilaria', hint: 'Toca na vinha para a podar e vindimar; a destilaria faz vinho com as uvas.', done: () => countOf('vineyard') >= 1 && countOf('distillery') >= 1, reward: { coins: 250 } },
     { text: 'Abre uma taberna', hint: 'Com vinho na adega, o povo convive ao fim do dia e fica mais contente.', done: built('tavern'), reward: { coins: 300 } },
     { text: 'Ultrapassa as três vilas vizinhas', hint: 'Toca em 👑 Reinos para ver a tabela.', done: () => game.derived.prosperity > Math.max(...game.towns.map((_, k) => townProsperity(k))), reward: { coins: 400 } },
-    { text: `Sobe o castelo ao nível ${CASTLE_MAX_LEVEL}`, hint: 'Ouro das minas, queijo da leitaria e um reino grande e feliz.', done: () => game.castleLevel >= CASTLE_MAX_LEVEL, reward: { coins: 1000 } },
+    { text: 'Sobe o castelo ao nível 4', hint: 'Ouro das minas, queijo da leitaria e um reino grande e feliz.', done: () => game.castleLevel >= 4, reward: { coins: 1000 } },
     { text: 'Lavra um campo de algodão e abre uma alfaiataria', hint: 'Algodão e rolos de tecido de lã → fatos e vestidos, os mais caros das feiras.', done: () => countOf('cottonfield') >= 1 && countOf('tailor') >= 1, reward: { coins: 800 } },
-    { text: 'Constrói um teatro', hint: 'A cultura do reino: com taberna e teatro para todos, o povo chega aos 100%.', done: built('theatre'), reward: { coins: 1500 } }
+    { text: 'Constrói um teatro', hint: 'A cultura do reino: com taberna e teatro para todos, o povo chega aos 100%.', done: built('theatre'), reward: { coins: 1500 } },
+    { text: `Sobe o castelo ao nível ${CASTLE_MAX_LEVEL}`, hint: 'Vinho, tecido, ouro e um reino de 120 moradores, 85% contente — taberna e teatro ajudam.', done: () => game.castleLevel >= CASTLE_MAX_LEVEL, reward: { coins: 3000 } },
+    { text: 'Planta um canavial e constrói um engenho de açúcar', hint: 'Cana → açúcar.', done: () => countOf('canefield') >= 1 && countOf('sugarmill') >= 1, reward: { coins: 1500 } },
+    { text: 'Planta um arrozal à beira de água', hint: 'O arroz é comida: mais variedade na mesa.', done: built('paddy'), reward: { coins: 1500 } },
+    { text: 'Abre uma pastelaria', hint: 'Ovos, farinha, açúcar e leite → bolos, o doce do reino.', done: built('patisserie'), reward: { coins: 2500 } }
 ];
 
 /** Depois da lista: marcos de prosperidade, cada um o dobro do anterior. */

@@ -80,6 +80,7 @@ export const RESOURCES = [
     { id: 'cheese', name: 'Queijo', emoji: '🧀', price: 16, tradable: true, meals: 3 },
     { id: 'fish', name: 'Peixe', emoji: '🐟', price: 8, tradable: true, meals: 2 },
     { id: 'meat', name: 'Carne', emoji: '🍖', price: 11, tradable: true, meals: 2 },
+    { id: 'eggs', name: 'Ovos', emoji: '🥚', price: 4, tradable: true, meals: 1 },
     { id: 'planks', name: 'Tábuas', emoji: '🪚', price: 9, tradable: true },
     { id: 'gold', name: 'Ouro', emoji: '✨', price: 30, tradable: true },
     { id: 'wool', name: 'Lã', emoji: '🧶', price: 6, tradable: true },
@@ -88,13 +89,17 @@ export const RESOURCES = [
     { id: 'wine', name: 'Vinho', emoji: '🍷', price: 20, tradable: true },
     { id: 'cotton', name: 'Algodão', emoji: '☁️', price: 5, tradable: true },
     { id: 'suits', name: 'Fatos', emoji: '🧥', price: 55, tradable: true },
-    { id: 'dresses', name: 'Vestidos', emoji: '👗', price: 55, tradable: true }
+    { id: 'dresses', name: 'Vestidos', emoji: '👗', price: 55, tradable: true },
+    { id: 'sugarcane', name: 'Cana-de-açúcar', emoji: '🎋', price: 4, tradable: true },
+    { id: 'sugar', name: 'Açúcar', emoji: '🍬', price: 14, tradable: true },
+    { id: 'rice', name: 'Arroz', emoji: '🍚', price: 7, tradable: true, meals: 2 },
+    { id: 'cakes', name: 'Bolos', emoji: '🎂', price: 45, tradable: true, meals: 3 }
 ];
 
 export const RESOURCE = Object.fromEntries(RESOURCES.map((r) => [r.id, r]));
 
 /** Por onde o povo come: primeiro o que mais alimenta. */
-export const FOODS = ['cheese', 'bread', 'meat', 'fish', 'milk'];
+export const FOODS = ['cakes', 'cheese', 'bread', 'meat', 'rice', 'fish', 'eggs', 'milk'];
 
 export const START_RESOURCES = { coins: 160, wood: 30, stone: 12 };
 
@@ -131,7 +136,7 @@ export const HAPPY_LEISURE = { tavern: 0.05, theatre: 0.05 };
  * Os níveis do castelo. Cada um alarga o território onde se pode construir,
  * aumenta o armazém e abre um novo escalão de edifícios (`tier`).
  *
- * Os níveis 3 e 4 são a meta de um reino a sério: além do custo (que já pede
+ * Os níveis 3, 4 e 5 são a meta de um reino a sério: além do custo (que já pede
  * pão, e depois queijo e ouro — as cadeias de produção todas a andar), `needs`
  * exige um reino grande e bem tratado — `residents` moradores e o povo pelo
  * menos `happy` contente. Não se paga: tem de se ter.
@@ -149,6 +154,12 @@ export const CASTLE_LEVELS = [
         level: 4, radius: 28, storage: 2500, tier: 4, residents: 20,
         cost: { coins: 5000, planks: 250, stone: 450, gold: 80, cheese: 60 },
         needs: { residents: 80, happy: 0.75 }
+    },
+    {
+        // O território já não cresce: logo a seguir começam as terras das vilas vizinhas.
+        level: 5, radius: 28, storage: 5000, tier: 5, residents: 30,
+        cost: { coins: 12000, planks: 400, stone: 700, gold: 150, wine: 80, cloth: 60 },
+        needs: { residents: 120, happy: 0.85 }
     }
 ];
 
@@ -270,6 +281,12 @@ export const BUILDINGS = [
         desc: 'Porcos criados a trigo, no chiqueiro com lama: dão carne para a mesa do povo.'
     },
     {
+        id: 'coop', name: 'Galinheiro', emoji: '🐔', tier: 1,
+        cost: { coins: 40, wood: 15 }, workers: 1,
+        recipe: { in: { wheat: 1 }, out: { eggs: 2 }, time: 20 },
+        desc: 'Galinhas a debicar trigo no terreiro: põem ovos todos os dias.'
+    },
+    {
         id: 'sheepfold', name: 'Curral de ovelhas', emoji: '🐑', tier: 3,
         cost: { coins: 160, planks: 20, wood: 20 }, workers: 2,
         recipe: { in: { wheat: 1 }, out: { wool: 2 }, time: 28 },
@@ -316,6 +333,31 @@ export const BUILDINGS = [
         cost: { coins: 900, planks: 80, stone: 120, gold: 20 }, workers: 4,
         serves: { residents: 80 },
         desc: 'Comédias e tragédias todas as noites: a cultura do reino. Povo mais contente.'
+    },
+    {
+        id: 'canefield', name: 'Canavial', emoji: '🎋', tier: 5,
+        cost: { coins: 70, wood: 15 },
+        crop: { res: 'sugarcane', grow: 160, yield: 6 },
+        desc: 'Toca para plantar e, quando a cana estiver alta e amarela, toca outra vez para cortar.'
+    },
+    {
+        id: 'sugarmill', name: 'Engenho de açúcar', emoji: '🍬', tier: 5,
+        cost: { coins: 500, planks: 50, stone: 60 }, workers: 3,
+        recipe: { in: { sugarcane: 3 }, out: { sugar: 1 }, time: 30 },
+        desc: 'Mói a cana e ferve a calda até cristalizar em açúcar.'
+    },
+    {
+        id: 'paddy', name: 'Arrozal', emoji: '🍚', tier: 5,
+        cost: { coins: 70, wood: 10, stone: 10 },
+        near: { feature: 'water', radius: 3.5, min: 2, full: 2 },
+        crop: { res: 'rice', grow: 150, yield: 6 },
+        desc: 'Um campo alagado à beira de água. Toca para plantar e, quando o arroz amarelar, toca outra vez para colher. É comida.'
+    },
+    {
+        id: 'patisserie', name: 'Pastelaria', emoji: '🧁', tier: 5,
+        cost: { coins: 700, planks: 60, stone: 60, sugar: 10 }, workers: 3,
+        recipe: { in: { eggs: 2, flour: 1, sugar: 1, milk: 1 }, out: { cakes: 1 }, time: 35 },
+        desc: 'Bolos com ovos, farinha, açúcar e leite: o povo adora-os e as feiras pagam-nos a peso de ouro.'
     }
 ];
 
@@ -388,7 +430,7 @@ export const FAIR_EVERY_DAYS = 3;
 export const TOWNS = [
     {
         id: 'rosa', name: 'Vila Rosa', roof: '#d8587b', emoji: '🌸',
-        supplies: ['wheat', 'milk'], demands: ['wood', 'planks', 'stone', 'wine'],
+        supplies: ['wheat', 'milk', 'eggs'], demands: ['wood', 'planks', 'stone', 'wine', 'cakes'],
         kinds: ['house', 'field', 'field', 'pasture', 'house', 'mill']
     },
     {
@@ -398,7 +440,7 @@ export const TOWNS = [
     },
     {
         id: 'carvalhal', name: 'Carvalhal', roof: '#c98434', emoji: '🌳',
-        supplies: ['wood', 'planks'], demands: ['flour', 'milk', 'bread', 'cloth', 'dresses'],
+        supplies: ['wood', 'planks'], demands: ['flour', 'milk', 'bread', 'cloth', 'dresses', 'sugar'],
         kinds: ['house', 'woodcutter', 'house', 'carpentry', 'field']
     }
 ];

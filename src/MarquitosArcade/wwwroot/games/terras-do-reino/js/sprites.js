@@ -45,7 +45,9 @@ export const BOUNDS = {
     // O cais pode sair até três casas para fora do bloco.
     fishery: [-66, -96, 132, 138],
     vineyard: [-34, -42, 68, 62],
-    cottonfield: [-34, -34, 68, 54]
+    cottonfield: [-34, -34, 68, 54],
+    canefield: [-34, -48, 68, 68],
+    paddy: [-34, -32, 68, 52]
 };
 
 // ---------- Natureza ----------
@@ -306,6 +308,72 @@ function cottonfield(ctx, { stage = 'empty', growth = 0 }) {
                 ctx.arc(x + dx, y - h + dy, ripe ? 1.7 : 1.1, 0, Math.PI * 2);
                 ctx.fill();
             }
+        }
+    }
+}
+
+/** Canavial: touceiras de cana alta, verde a crescer e amarelada quando está pronta. */
+function canefield(ctx, { stage = 'empty', growth = 0 }) {
+    tilled(ctx, 5, '#8b5a32');
+    if (stage === 'empty') return;
+    const ripe = stage === 'ripe';
+    const g = ripe ? 1 : Math.max(0.08, growth);
+    const stalk = ripe ? '#c9b24a' : g < 0.5 ? '#7cb84a' : '#5f9e3c';
+    for (const { x, y, k, row } of cropSpots(5, 5)) {
+        const h = 4 + g * 20;
+        for (const dx of [-1.6, 0, 1.6]) {
+            ctx.strokeStyle = shade(stalk, (k + row) % 2 ? -0.1 : 0.05);
+            ctx.lineWidth = 1.4;
+            ctx.beginPath();
+            ctx.moveTo(x + dx, y);
+            ctx.lineTo(x + dx * 1.6, y - h + Math.abs(dx));
+            ctx.stroke();
+        }
+        // As folhas compridas a cair para os lados.
+        ctx.strokeStyle = ripe ? '#9fb04a' : shade(stalk, 0.15);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, y - h);
+        ctx.quadraticCurveTo(x - 5, y - h - 2, x - 7, y - h + 4);
+        ctx.moveTo(x, y - h);
+        ctx.quadraticCurveTo(x + 5, y - h - 3, x + 7, y - h + 3);
+        ctx.stroke();
+    }
+}
+
+/** Arrozal: um canteiro alagado, com as muretas de terra e os pés de arroz a sair da água. */
+function paddy(ctx, { stage = 'empty', growth = 0 }) {
+    diamond(ctx, 0.92, 0.92, 0, '#8b6a3e');
+    diamond(ctx, 0.82, 0.82, 1, '#6fa4bf');
+    // Os reflexos na água e a mureta do meio.
+    diamond(ctx, 0.5, 0.3, 1.2, 'rgba(255, 255, 255, 0.12)', null, -0.1, -0.12);
+    ctx.strokeStyle = '#8b6a3e';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(...P(-0.41, 0, 1.4));
+    ctx.lineTo(...P(0.41, 0, 1.4));
+    ctx.stroke();
+    if (stage === 'empty') return;
+    const ripe = stage === 'ripe';
+    const g = ripe ? 1 : Math.max(0.1, growth);
+    const color = ripe ? '#d8bb52' : g < 0.5 ? '#86c34e' : '#6aae44';
+    for (const { x, y } of cropSpots(6, 6)) {
+        const h = 2 + g * 8;
+        ctx.strokeStyle = shade(color, -0.1);
+        ctx.lineWidth = 1.1;
+        ctx.beginPath();
+        ctx.moveTo(x, y - 1);
+        ctx.lineTo(x - 1.6, y - 1 - h);
+        ctx.moveTo(x, y - 1);
+        ctx.lineTo(x + 1.6, y - 1 - h);
+        ctx.moveTo(x, y - 1);
+        ctx.lineTo(x, y - 1 - h * 1.1);
+        ctx.stroke();
+        if (ripe || g > 0.7) {
+            ctx.fillStyle = ripe ? '#f0d77a' : '#b9d27a';
+            ctx.beginPath();
+            ctx.ellipse(x + 1.8, y - h, 1, 2, 0.5, 0, Math.PI * 2);
+            ctx.fill();
         }
     }
 }
@@ -686,6 +754,37 @@ function goldmineBody(ctx) {
     }
 }
 
+function coop(ctx, { roof = '#9a5a2a' }) {
+    diamond(ctx, 0.92, 0.92, 0, '#b9a36a');
+    diamond(ctx, 0.84, 0.84, 0.4, '#c7b27a');
+    fence(ctx, 0.88, 'back');
+    layered([
+        // A casota das galinhas, em cima de estacas, com a rampa.
+        [-0.2, -0.22, () => {
+            const o = { ox: -0.2, oy: -0.22 };
+            for (const [dx, dy] of [[-0.12, -0.09], [0.12, -0.09], [0.12, 0.09], [-0.12, 0.09]]) {
+                box(ctx, 0.03, 0.03, 5, TIMBER, { ox: o.ox + dx, oy: o.oy + dy });
+            }
+            box(ctx, 0.3, 0.24, 9, '#c79a5e', { ...o, z: 5 });
+            wallPatch(ctx, 'left', 0.3, 0.24, 0.5, 0.08, 5, 10, DOOR, o);
+            gable(ctx, 0.3, 0.24, 14, 8, roof === PLAYER_ROOF ? '#9a5a2a' : roof, '#c79a5e', o);
+            if (faceOf(0, 1)) poly(ctx, [P(-0.23, -0.1, 5), P(-0.17, -0.1, 5), P(-0.17, 0.06, 0), P(-0.23, 0.06, 0)], '#a57447');
+        }],
+        // O bebedouro e um cesto de ovos.
+        [0.26, -0.24, () => cylinder(ctx, 4, 2.5, '#9aa3ab', { ox: 0.26, oy: -0.24 })],
+        [0.3, 0.3, () => {
+            const top = cylinder(ctx, 4.5, 4, '#9a6a3f', { ox: 0.3, oy: 0.3 });
+            ctx.fillStyle = '#f6efe0';
+            for (const [dx, dy] of [[-1.6, 0], [1.6, 0.2], [0, -1.2]]) {
+                ctx.beginPath();
+                ctx.ellipse(top.x + dx, top.y + dy - 0.8, 1.4, 1.8, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }]
+    ]);
+    fence(ctx, 0.88, 'front');
+}
+
 // ---------- Lã, vinho, roupa e cultura (castelo nível 3 e 4) ----------
 
 function sheepfold(ctx, { roof = '#7a5a3a' }) {
@@ -926,6 +1025,88 @@ function theatre(ctx, { roof = '#8e2f3c' }) {
     layered(parts);
 }
 
+// ---------- Açúcar e doces (castelo nível 5) ----------
+
+function sugarmill(ctx, { roof = '#8a6a3a' }) {
+    groundShadow(ctx, 30, 11, 0.2, 6, 4);
+    const o = { ox: -0.08, oy: -0.1 };
+    layered([
+        [o.ox, o.oy, () => {
+            box(ctx, 0.6, 0.48, 16, '#e6dcc4', o);
+            wallPatch(ctx, 'left', 0.6, 0.48, 0.3, 0.12, 0, 11, DOOR, o);
+            wallPatch(ctx, 'left', 0.6, 0.48, 0.72, 0.1, 7, 12, WINDOW, o);
+            wallPatch(ctx, 'right', 0.6, 0.48, 0.5, 0.1, 7, 12, WINDOW, o);
+            gable(ctx, 0.6, 0.48, 16, 12, roof === PLAYER_ROOF ? '#8a6a3a' : roof, '#e6dcc4', o);
+        }],
+        // A chaminé alta das caldeiras.
+        [0.3, -0.26, () => box(ctx, 0.1, 0.1, 40, '#b5654a', { ox: 0.3, oy: -0.26 })],
+        // A moenda: três rolos de pedra de pé.
+        [0.28, 0.24, () => {
+            for (const [dx, dy] of [[-0.06, 0], [0.06, 0], [0, 0.08]]) cylinder(ctx, 3.2, 8, '#a39c8e', { ox: 0.28 + dx, oy: 0.24 + dy });
+        }],
+        // Um molho de cana à espera.
+        [-0.2, 0.34, () => {
+            const [x, y] = P(-0.2, 0.34);
+            ctx.strokeStyle = '#c9b24a';
+            ctx.lineWidth = 1.6;
+            for (let k = 0; k < 5; k++) {
+                ctx.beginPath();
+                ctx.moveTo(x - 9 + k, y - 1 - k * 0.8);
+                ctx.lineTo(x + 7 + k, y - 5 - k * 0.8);
+                ctx.stroke();
+            }
+        }]
+    ]);
+}
+
+/** Um bolo de dois andares, com cobertura e uma cereja. */
+function cake(ctx, x, y) {
+    ctx.fillStyle = '#e8c18a';
+    ctx.fillRect(x - 4, y - 4, 8, 4);
+    ctx.fillStyle = '#f7e6f0';
+    ctx.fillRect(x - 4, y - 5, 8, 1.6);
+    ctx.fillStyle = '#e8c18a';
+    ctx.fillRect(x - 2.5, y - 8, 5, 3);
+    ctx.fillStyle = '#f7e6f0';
+    ctx.fillRect(x - 2.5, y - 9, 5, 1.4);
+    ctx.fillStyle = '#d23a4a';
+    ctx.beginPath();
+    ctx.arc(x, y - 10, 1.1, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+function patisserie(ctx, { roof = '#d27a9a' }) {
+    groundShadow(ctx, 26, 10, 0.2, 6, 4);
+    const color = roof === PLAYER_ROOF ? '#d27a9a' : roof;
+    const wall = '#fbf3e6';
+    const o = { ox: -0.06, oy: -0.1 };
+    layered([
+        [o.ox, o.oy, () => {
+            box(ctx, 0.6, 0.48, 18, wall, o);
+            wallPatch(ctx, 'left', 0.6, 0.48, 0.22, 0.1, 0, 11, '#8a4a5a', o);
+            wallPatch(ctx, 'left', 0.6, 0.48, 0.64, 0.28, 3, 12, '#f4d9a8', o);
+            wallPatch(ctx, 'right', 0.6, 0.48, 0.5, 0.12, 8, 14, WINDOW, o);
+            gable(ctx, 0.6, 0.48, 18, 13, color, wall, o);
+            box(ctx, 0.08, 0.08, 10, '#9a8f80', { ox: o.ox + 0.16, oy: o.oy - 0.1, z: 24 });
+            // O toldo às riscas cor-de-rosa por cima da montra.
+            if (faceOf(0, 1)) {
+                const y = o.oy + 0.24;
+                for (let i = 0; i < 5; i++) {
+                    const xa = o.ox + 0.02 + i * 0.05;
+                    poly(ctx, [P(xa, y, 14), P(xa + 0.05, y, 14), P(xa + 0.05, y + 0.08, 11), P(xa, y + 0.08, 11)],
+                        i % 2 ? wall : color);
+                }
+            }
+        }],
+        // A mesinha cá fora com um bolo.
+        [0.28, 0.3, () => {
+            box(ctx, 0.14, 0.14, 5, WOOD, { ox: 0.28, oy: 0.3 });
+            const [x, y] = P(0.28, 0.3, 5);
+            cake(ctx, x, y);
+        }]
+    ]);
+}
+
 // ---------- Castelos ----------
 
 function castle(ctx, { level = 1 }) {
@@ -971,7 +1152,8 @@ function castle(ctx, { level = 1 }) {
     wallPatch(ctx, 'left', keepA, keepA, 0.5, 0.1, keepH - 16, keepH - 8, WINDOW, { ox: -0.08, oy: -0.08 });
     wallPatch(ctx, 'right', keepA, keepA, 0.35, 0.1, keepH - 16, keepH - 8, shade(WINDOW, -0.2), { ox: -0.08, oy: -0.08 });
     if (level >= 3 && Math.abs(side) <= 0.1) sideTower();
-    pyramid(ctx, keepA, keepA, keepH, 22 + level * 2, KEEP_ROOF, { ox: -0.08, oy: -0.08 });
+    // No nível 5 o telhado da torre de menagem é dourado.
+    pyramid(ctx, keepA, keepA, keepH, 22 + level * 2, level >= 5 ? '#d9a63a' : KEEP_ROOF, { ox: -0.08, oy: -0.08 });
     if (level >= 3 && side > 0.1) sideTower();
 
     // Portão na muralha +y (a da frente-esquerda na vista sem rodar).
@@ -1151,6 +1333,11 @@ export const STATIC = {
     cottonfield,
     tailor,
     theatre,
+    coop,
+    canefield,
+    paddy,
+    sugarmill,
+    patisserie,
     castle,
     keep
 };
@@ -1314,6 +1501,64 @@ function pigstyLive(ctx, b, t) {
     }
 }
 
+/** Uma galinha: corpo branco ou castanho, crista vermelha, a debicar de vez em quando. */
+function hen(ctx, x, y, flip, color, peck) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(flip ? -1 : 1, 1);
+    ctx.fillStyle = 'rgba(20, 40, 10, 0.2)';
+    ctx.beginPath();
+    ctx.ellipse(0, 0.6, 3.6, 1.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#e0a030';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(-0.8, -2);
+    ctx.lineTo(-0.8, 0);
+    ctx.moveTo(0.8, -2);
+    ctx.lineTo(0.8, 0);
+    ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.ellipse(0, -3.6, 3.2, 2.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    poly(ctx, [[-2.6, -4.4], [-4.4, -6.6], [-3.2, -3.2]], shade(color, -0.1));
+    const hy = peck ? -2.4 : -5.8;
+    const hx = peck ? 3.6 : 2.6;
+    ctx.beginPath();
+    ctx.arc(hx, hy, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#d63a2e';
+    ctx.fillRect(hx - 0.6, hy - 2.4, 1.2, 1.2);
+    ctx.fillStyle = '#e0a030';
+    poly(ctx, [[hx + 1.2, hy - 0.4], [hx + 2.6, hy + 0.2], [hx + 1.2, hy + 0.6]], '#e0a030');
+    ctx.restore();
+}
+
+function coopLive(ctx, b, t) {
+    const seed = b.x * 2.9 + b.y * 1.3;
+    const colors = ['#f6f2ea', '#b86a32', '#f6f2ea', '#8a4a22'];
+    for (let i = 0; i < 4; i++) {
+        const s = t * 0.35 + seed + i * 1.7;
+        const gx = Math.sin(s) * 0.16 + [0.05, 0.2, -0.05, 0.15][i];
+        const gy = Math.cos(s * 0.9) * 0.1 + [0.1, 0.05, 0.28, 0.25][i];
+        const [x, y] = P(gx, gy);
+        hen(ctx, x, y, Math.cos(s) > 0, colors[i], Math.sin(t * 3 + i * 2.3 + seed) > 0.6);
+    }
+}
+
+function sugarmillLive(ctx, b, t) {
+    if (b.owner === 'player' && b.status !== 'ok') return;
+    const [x, y] = P(0.3, -0.26, 42);
+    smoke(ctx, x, y, t * 0.7, b.x * 0.31);
+}
+
+function patisserieLive(ctx, b, t) {
+    if (b.owner === 'player' && b.status !== 'ok') return;
+    const [x, y] = P(0.1, -0.2, 36);
+    smoke(ctx, x, y, t * 0.5, b.y * 0.37);
+}
+
 function flag(ctx, x, y, t, color, h = 16) {
     ctx.strokeStyle = '#4a3020';
     ctx.lineWidth = 1.3;
@@ -1455,6 +1700,9 @@ export const LIVE = {
     house: houseLive,
     pasture: pastureLive,
     pigsty: pigstyLive,
+    coop: coopLive,
+    sugarmill: sugarmillLive,
+    patisserie: patisserieLive,
     sheepfold: sheepfoldLive,
     weaving: weavingLive,
     distillery: distilleryLive,
