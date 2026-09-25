@@ -9,8 +9,8 @@
 // (x, y). O território conta-se a partir do centro do bloco.
 
 import {
-    BUILDING, BUILDING_SIZE, CASTLE_LEVELS, CASTLE_MAX_LEVEL, DEMOLISH_REFUND, FLATTEN_COST, FLATTEN_STONE, RESOURCE,
-    ROAD_COST
+    BUILDING, BUILDING_SIZE, CASTLE_LEVELS, CASTLE_MAX_LEVEL, DEMOLISH_REFUND, FLATTEN_COST, FLATTEN_STONE, NEAR_FEATURES,
+    RESOURCE, ROAD_COST
 } from './config.js';
 import { castleInfo, fx, game } from './state.js';
 import {
@@ -101,7 +101,7 @@ export function checkPlacement(kind, x, y, { ignoreCost = false } = {}) {
     if (def.near) {
         const found = countFeatureNear(world, x, y, size, def.near.feature, def.near.radius);
         if (found < def.near.min) {
-            return { ok: false, reason: def.near.feature === 'tree' ? 'Precisa de árvores perto' : 'Precisa de rochas perto' };
+            return { ok: false, reason: NEAR_FEATURES[def.near.feature].need };
         }
     }
 

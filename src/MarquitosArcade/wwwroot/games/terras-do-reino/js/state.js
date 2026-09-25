@@ -44,10 +44,12 @@ export const game = {
     derived: { residents: 0, workersUsed: 0, taxPerDay: 0, prosperity: 0, storage: 150, fedRatio: 0 }
 };
 
-/** Efeitos que não se guardam: caravanas, gente a andar, números a subir, pó da construção. */
+/** Efeitos que não se guardam: caravanas, gente a andar, barcos, números a subir, pó da construção. */
 export const fx = {
     caravans: [],
     walkers: [],
+    /** Os barcos das cabanas de pesca (ver boats.js). */
+    boats: [],
     floats: [],
     puffs: [],
     /** Relógio global em segundos reais — anima água, nuvens e moinhos mesmo em pausa. */

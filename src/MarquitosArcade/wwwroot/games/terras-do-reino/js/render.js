@@ -17,7 +17,7 @@
 // mesmo tamanho em qualquer zoom.
 
 import {
-    BUILDING, ELEV_PX, FONT_BODY, FONT_DISPLAY, MAP_SIZE, RESOURCE, SLAB_PX, TILE_H, TILE_W
+    BUILDING, ELEV_PX, FONT_BODY, FONT_DISPLAY, MAP_SIZE, NEAR_FEATURES, RESOURCE, SLAB_PX, TILE_H, TILE_W
 } from './config.js';
 import { canRoad, checkPlacement, flattenBlock, inTerritory } from './buildings.js';
 import {
@@ -27,8 +27,11 @@ import { hash2 } from './rng.js';
 import { setSpriteScale, stamp } from './sprite-cache.js';
 import { LIVE, PLAYER_ROOF } from './sprites.js';
 import { castleInfo, fx, game, ui } from './state.js';
+import { CATCH_SECONDS, boatAlpha, boatPlace } from './boats.js';
 import { walkerAlpha, walkerPlace } from './walkers.js';
-import { CASTLE_CENTER, ROAD_PLAYER, T_GRASS, T_HILL, T_MEADOW, T_SAND, T_WATER, idx, inMap } from './world.js';
+import {
+    CASTLE_CENTER, ROAD_PLAYER, T_GRASS, T_HILL, T_MEADOW, T_SAND, T_WATER, idx, inMap, shoreSide
+} from './world.js';
 
 const HW = TILE_W / 2;
 const HH = TILE_H / 2;
@@ -414,6 +417,199 @@ function drawWalker(w, t) {
     ctx.restore();
 }
 
+// ---------- Barcos ----------
+
+/**
+ * Um barco a remar ou a pescar. O casco desenha-se na grelha — proa e popa ao
+ * longo da direção em que vai, bordos para os lados — e só depois se projeta:
+ * assim encolhe com a perspetiva e roda com a vista sem contas à parte.
+ */
+function drawBoat(boat, t) {
+    const alpha = boatAlpha(boat);
+    if (alpha <= 0) return;
+    const { gx, gy, dir } = boatPlace(boat);
+    const len = Math.hypot(dir.x, dir.y) || 1;
+    const ux = dir.x / len;
+    const uy = dir.y / len;
+    // Perpendicular à proa, na grelha: o lado para onde o pescador lança a linha.
+    const px = -uy;
+    const py = ux;
+    const rowing = boat.state === 'row' || boat.state === 'back';
+    const bob = Math.sin(t * 2.2 + boat.seed) * 0.7;
+    const at = (along, across, z = 0) => {
+        const w = gridToWorld(gx + ux * along + px * across, gy + uy * along + py * across);
+        return [w.x, w.y - z - bob];
+    };
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+
+    // A esteira atrás do barco quando rema; parado, os anéis na água à volta.
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+    ctx.lineWidth = 1;
+    if (rowing) {
+        for (const side of [-1, 1]) {
+            const a = at(-0.3, side * 0.12, -bob);
+            const b = at(-0.75, side * 0.3, -bob);
+            ctx.beginPath();
+            ctx.moveTo(a[0], a[1]);
+            ctx.lineTo(b[0], b[1]);
+            ctx.stroke();
+        }
+    } else {
+        const c = at(0, 0, -bob);
+        const r = 13 + Math.sin(t * 1.5 + boat.seed) * 1.5;
+        ctx.globalAlpha = alpha * 0.5;
+        ctx.beginPath();
+        ctx.ellipse(c[0], c[1], r, r / 2, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = alpha;
+    }
+
+    // O casco: um fundo mais escuro e a borda por cima, bicudo nas duas pontas.
+    const hull = (z, w, k) => [
+        at(0.36 * k, 0, z), at(0.2 * k, w, z), at(-0.22 * k, w, z),
+        at(-0.32 * k, 0, z), at(-0.22 * k, -w, z), at(0.2 * k, -w, z)
+    ];
+    ctx.fillStyle = 'rgba(20, 50, 80, 0.3)';
+    poly(hull(-1, 0.15, 1));
+    ctx.fillStyle = boat.hull;
+    poly(hull(0, 0.13, 0.9));
+    const rim = hull(3.2, 0.14, 1);
+    ctx.fillStyle = lighten(boat.hull);
+    poly(rim);
+    ctx.fillStyle = '#5a3d24';
+    poly(hull(3.4, 0.09, 0.78));
+    // Uma tábua de través, onde se senta.
+    const s1 = at(0.02, 0.12, 3.4);
+    const s2 = at(0.02, -0.12, 3.4);
+    ctx.strokeStyle = '#c99d66';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(s1[0], s1[1]);
+    ctx.lineTo(s2[0], s2[1]);
+    ctx.stroke();
+
+    // Os remos: quando rema vão e vêm; parado, ficam recolhidos ao longo do barco.
+    ctx.strokeStyle = '#6b4a2b';
+    ctx.lineWidth = 1.2;
+    const stroke = rowing ? Math.sin((t + boat.seed) * 5) : 0;
+    for (const side of [-1, 1]) {
+        const grip = at(0, side * 0.07, 6);
+        const blade = rowing ? at(-0.05 + stroke * 0.15, side * 0.42, 0.5) : at(-0.3, side * 0.12, 4);
+        ctx.beginPath();
+        ctx.moveTo(grip[0], grip[1]);
+        ctx.lineTo(blade[0], blade[1]);
+        ctx.stroke();
+    }
+
+    // O pescador, sentado na tábua.
+    const seat = at(-0.04, 0, 3.4);
+    const [sx, sy] = seat;
+    ctx.fillStyle = boat.shirt;
+    ctx.beginPath();
+    ctx.roundRect(sx - 1.8, sy - 5.6, 3.6, 5, 1.2);
+    ctx.fill();
+    ctx.fillStyle = boat.skin;
+    ctx.beginPath();
+    ctx.arc(sx, sy - 7.2, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+    // O chapéu de palha.
+    ctx.fillStyle = boat.hat;
+    ctx.beginPath();
+    ctx.ellipse(sx, sy - 8.3, 3, 1, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(sx, sy - 8.4, 1.5, Math.PI, 0);
+    ctx.fill();
+
+    if (boat.state === 'fish') drawRod(boat, at, [sx, sy - 4], t);
+    ctx.restore();
+}
+
+/** A cana, a linha e a boia; com peixe, a cana verga e o peixe salta fora de água. */
+function drawRod(boat, at, hands, t) {
+    const biting = boat.bite >= 0;
+    const k = biting ? Math.sin((boat.bite / CATCH_SECONDS) * Math.PI) : 0;
+    // A ponta da cana fica por cima da água, do lado para onde lançou.
+    const tipBase = at(0.1, boat.cast * 0.85, 11);
+    const tip = [tipBase[0], tipBase[1] + k * 5 + Math.sin(t * 1.3 + boat.seed) * 0.6];
+    ctx.strokeStyle = '#8a6a3a';
+    ctx.lineWidth = 1.1;
+    ctx.beginPath();
+    ctx.moveTo(hands[0], hands[1]);
+    ctx.quadraticCurveTo((hands[0] + tip[0]) / 2, Math.min(hands[1], tip[1]) - 3 + k * 4, tip[0], tip[1]);
+    ctx.stroke();
+
+    // A boia na água, a cerca de uma casa do barco.
+    const water = at(0.15, boat.cast * 1.25, 0);
+    const bobber = [water[0], water[1] + (biting ? 1.2 : Math.sin(t * 3 + boat.seed) * 0.5)];
+    ctx.strokeStyle = 'rgba(240, 240, 240, 0.8)';
+    ctx.lineWidth = 0.6;
+    ctx.beginPath();
+    ctx.moveTo(tip[0], tip[1]);
+    ctx.lineTo(bobber[0], bobber[1] - 1);
+    ctx.stroke();
+    if (!biting) {
+        ctx.fillStyle = '#e8483a';
+        ctx.beginPath();
+        ctx.arc(bobber[0], bobber[1] - 1, 1.3, Math.PI, 0);
+        ctx.fill();
+        ctx.fillStyle = '#f6f2ea';
+        ctx.beginPath();
+        ctx.arc(bobber[0], bobber[1] - 1, 1.3, 0, Math.PI);
+        ctx.fill();
+        return;
+    }
+
+    // O peixe a saltar: sobe e volta a cair, a dar ao rabo, com salpicos à volta.
+    const fx0 = bobber[0];
+    const fy0 = bobber[1] - k * 9;
+    ctx.save();
+    ctx.translate(fx0, fy0);
+    ctx.rotate(Math.sin(t * 22) * 0.5 + (boat.cast > 0 ? 0.3 : -0.3));
+    ctx.fillStyle = '#b9c8d4';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 3.4, 1.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#8fa0ad';
+    ctx.beginPath();
+    ctx.moveTo(-2.8, 0);
+    ctx.lineTo(-5, -1.8);
+    ctx.lineTo(-5, 1.8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = `rgba(255, 255, 255, ${0.8 * (1 - k)})`;
+    for (let i = 0; i < 4; i++) {
+        const a = (i / 4) * Math.PI * 2 + boat.seed;
+        ctx.beginPath();
+        ctx.arc(bobber[0] + Math.cos(a) * (3 + k * 4), bobber[1] - Math.abs(Math.sin(a)) * k * 4, 0.9, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+function poly(points) {
+    ctx.beginPath();
+    ctx.moveTo(points[0][0], points[0][1]);
+    for (let k = 1; k < points.length; k++) ctx.lineTo(points[k][0], points[k][1]);
+    ctx.closePath();
+    ctx.fill();
+}
+
+const lightCache = new Map();
+/** A mesma cor, um pouco mais clara (#rrggbb): a borda do barco apanha a luz. */
+function lighten(hex) {
+    let c = lightCache.get(hex);
+    if (!c) {
+        const n = parseInt(hex.slice(1), 16);
+        const up = (v) => Math.min(255, Math.round(v + (255 - v) * 0.22));
+        c = `rgb(${up(n >> 16)}, ${up((n >> 8) & 255)}, ${up(n & 255)})`;
+        lightCache.set(hex, c);
+    }
+    return c;
+}
+
 /** A fronteira do território: as arestas entre casas de dentro e de fora. */
 function drawTerritoryBorder(strong) {
     const radius = castleInfo().radius;
@@ -459,6 +655,12 @@ function roofOf(b) {
     return b.owner === 'player' ? PLAYER_ROOF : b.roof;
 }
 
+/** A variante do desenho da cabana de pesca: o lado da água e a que distância está (ver `fisheryLayout`). */
+function shoreVariant(x, y, size) {
+    const { side, reach } = shoreSide(game.world, x, y, size);
+    return side + 4 * reach;
+}
+
 function drawBuilding(b, wx, wy, t) {
     const kind = b.kind;
     const variant = variantOf(b.x, b.y);
@@ -472,6 +674,11 @@ function drawBuilding(b, wx, wy, t) {
         const growth = b.stage === 'growing' ? Math.min(5, Math.floor(b.growth * 6)) / 6 : 0;
         key = `field|${b.stage}|${growth}`;
         opts = { stage: b.stage, growth };
+    } else if (kind === 'fishery') {
+        // O cais vira-se para a água e vai até ela: o lado e o alcance são a variante do desenho.
+        b.shore ??= shoreVariant(b.x, b.y, b.size);
+        key = `${kind}|${roof}|${b.shore}`;
+        opts = { roof, variant: b.shore };
     } else {
         key = `${kind}|${roof}|${kind === 'house' ? variant : 0}`;
         opts = { roof, variant };
@@ -578,8 +785,9 @@ function drawGhost(x, y, ok) {
     ctx.fillStyle = ok ? 'rgba(126, 217, 87, 0.55)' : 'rgba(235, 87, 87, 0.5)';
     ctx.fill();
     ctx.globalAlpha = ok ? 0.8 : 0.45;
-    const opts = kind === 'field' ? { stage: 'empty', growth: 0 } : { roof: PLAYER_ROOF, variant: 0 };
-    stamp(ctx, `${kind}|ghost`, kind, opts, wx, wy);
+    const variant = kind === 'fishery' ? shoreVariant(x, y, 2) : 0;
+    const opts = kind === 'field' ? { stage: 'empty', growth: 0 } : { roof: PLAYER_ROOF, variant };
+    stamp(ctx, `${kind}|ghost|${variant}`, kind, opts, wx, wy);
     ctx.restore();
 }
 
@@ -661,7 +869,7 @@ function statusIcon(b) {
         const need = Object.keys(def.recipe?.in || {}).find((res) => game.res[res] < def.recipe.in[res]);
         return need ? RESOURCE[need].emoji : '❔';
     }
-    if (b.status === 'noNear') return def.near?.feature === 'rock' ? '🪨' : '🌲';
+    if (b.status === 'noNear') return NEAR_FEATURES[def.near?.feature]?.icon || '❔';
     return STATUS_ICON[b.status] || null;
 }
 
@@ -929,6 +1137,18 @@ export function render(dt) {
         walkersAt.get(i).push(w);
     }
 
+    // Os barcos, da mesma maneira.
+    const boatsAt = new Map();
+    for (const boat of fx.boats) {
+        const { from, to } = boatPlace(boat);
+        const a = cellToView(from.x, from.y);
+        const b = cellToView(to.x, to.y);
+        const cell = a.x + a.y >= b.x + b.y ? from : to;
+        const i = idx(cell.x, cell.y);
+        if (!boatsAt.has(i)) boatsAt.set(i, []);
+        boatsAt.get(i).push(boat);
+    }
+
     drawGroundChunks({ left: leftX, right: rightX, top: top - ELEV_PX * 2, bottom }, detail);
 
     for (let s = 0; s <= (MAP_SIZE - 1) * 2; s++) {
@@ -964,6 +1184,8 @@ export function render(dt) {
                 if (hideProps) drawFeatureBase(game.world.feature[i], x, y, wx, gy);
                 else drawFeature(game.world.feature[i], x, y, wx, gy, t);
             }
+            const boats = boatsAt.get(i);
+            if (boats) for (const boat of boats) drawBoat(boat, t);
             const people = walkersAt.get(i);
             if (people) for (const w of people) drawWalker(w, t);
             if (hover && vx === hoverFront.x && vy === hoverFront.y) drawGhost(hover.x, hover.y, hoverOk);

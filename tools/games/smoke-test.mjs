@@ -597,6 +597,7 @@ const GAMES = [
                         && countFeatureNear(w, x, y, 2, BUILDING[kind].near.feature, BUILDING[kind].near.radius) >= BUILDING[kind].near.min;
                     if (!spot(CASTLE_LEVELS[1].radius, near('woodcutter'))) say('não há onde pôr um lenhador no começo');
                     if (!spot(CASTLE_LEVELS[1].radius, near('quarry'))) say('não há onde pôr uma pedreira no começo');
+                    if (!spot(CASTLE_LEVELS[1].radius, near('fishery'))) say('não há onde pôr uma cabana de pesca no começo');
                     if (!spot(CASTLE_LEVELS[3].radius, (x, y) => isMineBlock(w, x, y, 2))) say('sem sítio para uma mina ao alcance do castelo no nível 3');
                     for (let dy = 0; dy < CASTLE_SIZE; dy++) for (let dx = 0; dx < CASTLE_SIZE; dx++) {
                         const i = idx(CASTLE_TILE.x + dx, CASTLE_TILE.y + dy);

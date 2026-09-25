@@ -10,7 +10,7 @@
 import { escapeHtml } from '/lib/arcade/index.js';
 
 import {
-    BUILDING, BUILDINGS, DEMOLISH_REFUND, FLATTEN_COST, FLATTEN_STONE, RESOURCE, ROAD_COST, TOWNS
+    BUILDING, BUILDINGS, DEMOLISH_REFUND, FLATTEN_COST, FLATTEN_STONE, NEAR_FEATURES, RESOURCE, ROAD_COST, TOWNS
 } from './config.js';
 import {
     canAfford, checkFlatten, checkPlacement, countOf, inTerritory, missingFor, nextCastleLevel
@@ -310,7 +310,7 @@ function tileView(arg) {
             let extra = '';
             if (def.near) {
                 const found = countFeatureNear(world, b.x, b.y, b.size, def.near.feature, def.near.radius);
-                extra = ` · ${found} ${def.near.feature === 'tree' ? 'árvore(s)' : 'rocha(s)'} perto (${pct(Math.min(1, found / def.near.full))})`;
+                extra = ` · ${found} ${NEAR_FEATURES[def.near.feature].count} perto (${pct(Math.min(1, found / def.near.full))})`;
             }
             body += `<div class="sheetSection"><div class="statusLine ${tone}">${text}${extra}</div>
                 <div class="progressTrack" style="--fill:${pct(Math.min(1, b.progress))}"></div></div>`;
@@ -357,7 +357,7 @@ function tileView(arg) {
                 <div class="sheetActions"><button class="btn" type="button" data-action="buildAt" data-arg="goldmine" data-n="${x},${y}"${ok ? '' : ' disabled'}>⛰️ Construir a mina</button></div>`
         };
     }
-    if (terrain === T_WATER) return { icon: '💧', title: 'Lago', sub: where, html: '<p class="sheetText">Água limpa. Não se constrói em cima dela, mas enfeita o reino.</p>' };
+    if (terrain === T_WATER) return { icon: '💧', title: 'Lago', sub: where, html: '<p class="sheetText">Água limpa. Não se constrói em cima dela, mas uma <b>🎣 Cabana de pesca</b> na margem manda os pescadores de barco pescar aqui.</p>' };
     if (terrain === T_HILL) return hillView(x, y, feature, where);
     return {
         icon: '🟩',

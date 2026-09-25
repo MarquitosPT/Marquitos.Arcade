@@ -26,7 +26,7 @@ export const QUESTS = [
     { text: 'Constrói uma vacaria', hint: 'As vacas comem trigo e dão leite.', done: built('pasture'), reward: { coins: 80 } },
     { text: 'Constrói uma carpintaria', hint: 'Tábuas para os edifícios grandes.', done: built('carpentry'), reward: { wood: 40 } },
     { text: 'Constrói um celeiro junto aos campos', hint: 'O celeiro semeia e colhe sozinho à volta dele.', done: built('barn'), reward: { coins: 120 } },
-    { text: 'Deixa o povo 80% contente', hint: 'Pão, leite e queijo: comida que chegue, e variada.', done: () => game.happy >= 0.8, reward: { coins: 150 } },
+    { text: 'Deixa o povo 80% contente', hint: 'Pão, peixe, leite e queijo: comida que chegue, e variada.', done: () => game.happy >= 0.8, reward: { coins: 150 } },
     { text: 'Sobe o castelo ao nível 3', hint: 'As tábuas vêm da carpintaria.', done: () => game.castleLevel >= 3, reward: { coins: 250 } },
     { text: 'Constrói uma leitaria', hint: 'Leite → queijo, o bem mais caro das feiras.', done: built('dairy'), reward: { coins: 200 } },
     { text: 'Abre uma mina de ouro', hint: 'Procura as veias douradas nas colinas.', done: built('goldmine'), reward: { planks: 20 } },

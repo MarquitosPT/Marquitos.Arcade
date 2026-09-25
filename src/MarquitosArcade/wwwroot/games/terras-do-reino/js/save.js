@@ -45,7 +45,7 @@ import { camera, lookAt, worldToGrid } from './iso.js';
 import { initMarket } from './market.js';
 import { emptyResources, fx, game, ui } from './state.js';
 import { newTowns, placeTowns } from './towns.js';
-import { CASTLE_CENTER, ROAD_PLAYER, T_HILL, flattenTile, generateWorld, idx, inMap } from './world.js';
+import { CASTLE_CENTER, ROAD_PLAYER, T_GRASS, T_HILL, T_WATER, flattenTile, generateWorld, idx, inMap } from './world.js';
 
 const VERSION = 2;
 /** Lado do mapa da v1. */
@@ -146,6 +146,7 @@ function resetState(seed) {
     game.bestSubmitted = 0;
     fx.caravans = [];
     fx.walkers = [];
+    fx.boats = [];
     fx.floats = [];
     fx.puffs = [];
     ui.placing = null;
@@ -260,13 +261,15 @@ export function loadSave(data = progress.data) {
         decodeRoads(data.r, (x, y) => {
             const i = idx(x, y);
             if (game.world.building[i] || game.world.terrain[i] === T_HILL) return;
+            // Um lago que o mapa ganhou depois de a estrada ser aberta: fica um aterro por baixo dela.
+            if (game.world.terrain[i] === T_WATER) game.world.terrain[i] = T_GRASS;
             game.world.feature[i] = null;
             game.world.road[i] = ROAD_PLAYER;
         });
     }
 
     for (const i of data.pt || []) {
-        if (!game.world.building[i] && !game.world.road[i]) {
+        if (!game.world.building[i] && !game.world.road[i] && game.world.terrain[i] !== T_WATER) {
             game.world.feature[i] = 'tree';
             game.planted.push(i);
         }

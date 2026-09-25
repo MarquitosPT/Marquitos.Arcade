@@ -12,8 +12,8 @@
 //
 // O castelo do jogador fica sempre ao centro e as três vilas vizinhas longe
 // dele, cada uma para o seu lado. À volta do castelo garante-se o que é preciso
-// para o começo não depender da sorte: árvores, rochas, água e uma colina com
-// ouro ao alcance do castelo no nível 3.
+// para o começo não depender da sorte: árvores, rochas, um lago com margem para
+// a cabana de pesca e uma colina com ouro ao alcance do castelo no nível 3.
 
 import { BUILDING, CASTLE_LEVELS, MAP_SIZE, TOWNS } from './config.js';
 import { createRng, fbm, hash2 } from './rng.js';
@@ -233,7 +233,8 @@ function guaranteeStart(world, rng) {
 
     // Não basta haver árvores e rochas perto: tem de haver um bloco livre, no
     // território inicial, com elas à volta — é lá que vão o lenhador e a
-    // pedreira. Sem isso o castelo nunca passava do nível 1.
+    // pedreira (e, com água, a cabana de pesca). Sem isso o castelo nunca
+    // passava do nível 1.
     const hasSpot = (kind) => {
         const near = BUILDING[kind].near;
         let found = false;
@@ -273,11 +274,14 @@ function guaranteeStart(world, rng) {
     }
 
     // Uma mina precisa de um bloco de colina com uma veia e nada mais em cima.
-    let mine = false;
-    forEachInRadius(CASTLE_CENTER.x, CASTLE_CENTER.y, radius3 - 2, (x, y) => {
-        if (!mine && isMineBlock(world, x, y, 2)) mine = true;
-    });
-    if (!mine) {
+    const mineInReach = () => {
+        let mine = false;
+        forEachInRadius(CASTLE_CENTER.x, CASTLE_CENTER.y, radius3 - 2, (x, y) => {
+            if (!mine && isMineBlock(world, x, y, 2)) mine = true;
+        });
+        return mine;
+    };
+    if (!mineInReach()) {
         const center = patch(19, 3.8, (i, x, y) => {
             world.terrain[i] = T_HILL;
             const roll = hash2(x, y, world.seed + 5);
@@ -290,6 +294,38 @@ function guaranteeStart(world, rng) {
             world.terrain[i] = T_HILL;
             world.feature[i] = x === center.x && y === center.y ? 'ore' : null;
         });
+    }
+
+    // A cabana de pesca precisa de margem: um bloco livre no território
+    // inicial com lago à volta. Se o acaso não a deu, abre-se um lago pequeno,
+    // com uma margem limpa à volta, num sítio que não estrague o resto: as
+    // rochas e as veias ficam, e o lago só fica se o lenhador, a pedreira e a
+    // mina continuarem a ter onde ir. Vem no fim, e por isso não mexe nos
+    // mapas das sementes que já tinham onde pescar.
+    const intact = () => [hasSpot('woodcutter'), hasSpot('quarry'), mineInReach()];
+    const had = intact();
+    for (let tries = 0; tries < 8 && !hasSpot('fishery'); tries++) {
+        const terrain = world.terrain.slice();
+        const feature = world.feature.slice();
+        const angle = rng.next() * Math.PI * 2;
+        const cx = CASTLE_CENTER.x + Math.cos(angle) * 10.5;
+        const cy = CASTLE_CENTER.y + Math.sin(angle) * 10.5;
+        forEachInRadius(cx, cy, 4.4, (x, y) => {
+            const i = idx(x, y);
+            if (castleDistance(x, y) <= CLEAR_RADIUS + 1 || world.feature[i] === 'rock' || world.feature[i] === 'ore') return;
+            const water = Math.hypot(x + 0.5 - cx, y + 0.5 - cy) <= 2.6;
+            if (water) {
+                world.terrain[i] = T_WATER;
+            } else if (world.terrain[i] === T_HILL) {
+                world.terrain[i] = T_GRASS;
+            }
+            world.feature[i] = null;
+        });
+        const still = intact();
+        if (!hasSpot('fishery') || had.some((ok, k) => ok && !still[k])) {
+            world.terrain.set(terrain);
+            world.feature.splice(0, feature.length, ...feature);
+        }
     }
 
     // A areia só faz sentido à beira de água: sem ela à volta, volta a relva.
@@ -359,13 +395,54 @@ export function isMineBlock(world, x, y, size) {
 /**
  * Conta os elementos `feature` à volta do bloco de lado `size` com o canto de
  * cima em (x, y): as casas com o centro a menos de `radius` do centro do
- * bloco, sem contar as do próprio bloco.
+ * bloco, sem contar as do próprio bloco. `feature` 'water' conta as casas de
+ * lago (a água é terreno, não um elemento em cima dele).
  */
 export function countFeatureNear(world, x, y, size, feature, radius) {
+    const has = feature === 'water'
+        ? (i) => world.terrain[i] === T_WATER
+        : (i) => world.feature[i] === feature;
     let total = 0;
     forEachInRadius(x + size / 2, y + size / 2, radius, (tx, ty) => {
         if (tx >= x && ty >= y && tx < x + size && ty < y + size) return;
-        if (world.feature[idx(tx, ty)] === feature) total++;
+        if (has(idx(tx, ty))) total++;
     });
     return total;
+}
+
+/** Os quatro lados de um bloco, na ordem de `shoreSide`: +x, -x, +y, -y. */
+export const SIDES = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+
+/** Quantas filas de casas à frente de cada lado se procura água para o cais. */
+export const SHORE_REACH = 3;
+
+/**
+ * O lado do bloco (canto de cima em x, y) mais virado para a água, para onde
+ * a cabana de pesca estende o cais: `{ side, reach }`, com `side` o índice em
+ * `SIDES` e `reach` a fila (1 é a encostada ao bloco) onde a água começa. Sem
+ * água em nenhuma das `SHORE_REACH` filas, `side` é 4.
+ */
+export function shoreSide(world, x, y, size) {
+    let best = { side: 4, reach: 0 };
+    let most = 0;
+    SIDES.forEach(([dx, dy], side) => {
+        let wet = 0;
+        let reach = 0;
+        for (let d = 1; d <= SHORE_REACH; d++) {
+            let row = 0;
+            for (let k = 0; k < size; k++) {
+                const cx = dx > 0 ? x + size - 1 + d : dx < 0 ? x - d : x + k;
+                const cy = dy > 0 ? y + size - 1 + d : dy < 0 ? y - d : y + k;
+                if (inMap(cx, cy) && world.terrain[idx(cx, cy)] === T_WATER) row++;
+            }
+            if (row && !reach) reach = d;
+            // As filas mais perto contam mais: um cais curto é melhor do que um comprido.
+            wet += row * (SHORE_REACH + 1 - d);
+        }
+        if (wet > most) {
+            most = wet;
+            best = { side, reach };
+        }
+    });
+    return best;
 }
