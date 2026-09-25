@@ -13,7 +13,7 @@ export { createLoop } from './loop.js';
 export { clamp, lerp, lerpAngle, normAngle, pick, rand, shuffle } from './math.js';
 export { createProgressClient } from './progress.js';
 export { bindPlayerNameInput, createScoreClient, fetchAccountDisplayName } from './scores.js';
-export { createSplash } from './splash.js';
+export { createSplash, skipSplashOnNextVisit } from './splash.js';
 export { readJson, readSessionText, readText, writeJson, writeSessionText, writeText } from './storage.js';
 export { createTopBar } from './topbar.js';
 export { createViewport } from './viewport.js';

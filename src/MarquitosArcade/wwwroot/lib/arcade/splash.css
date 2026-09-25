@@ -99,6 +99,12 @@
   display: none !important;
 }
 
+/* De volta ao jogo vindo de uma página dele (splash-skip.js): o ecrã nem chega
+   a pintar-se. O splash.js depois esconde-o a sério. */
+:root.arcade-splash-skip .arcade-splash {
+  display: none !important;
+}
+
 /* Enquanto o ecrã de arranque está no ar, o que está por baixo não faz scroll
    (em iOS o rubber-band chegava a mostrar a página a meio da animação). */
 :root.arcade-splash-lock,

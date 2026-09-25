@@ -12,6 +12,8 @@ import {
     HAPPY_VARIETY, IDLE_TAX_SHARE, NEAR_FEATURES, PRICE_MAX, PRICE_MIN, RESOURCE, RESOURCES, ROAD_COST, SPEEDS, START_RESOURCES,
     TAX_PER_RESIDENT, TOWN_MAX_BUILDINGS, TOWNS
 } from './config.js';
+import { skipSplashOnNextVisit } from '/lib/arcade/splash.js';
+
 import { fmt, pct } from './format.js';
 import { QUESTS, milestone } from './quests.js';
 
@@ -346,3 +348,33 @@ fill('controlosBody', controls());
 
 // Veio de um link com âncora (#castelo): o conteúdo só agora existe, por isso salta-se para lá outra vez.
 if (location.hash) document.getElementById(decodeURIComponent(location.hash.slice(1)))?.scrollIntoView();
+
+// ---------- Voltar ao jogo ----------
+//
+// Quem volta do guia para o jogo não está a arrancar a consola: o jogo abre
+// sem o ecrã de arranque (ver lib/arcade/splash-skip.js). Vale para os links
+// "Voltar ao jogo" e, para quem veio do jogo, para o botão de retroceder do
+// browser — que é o que o `pagehide` apanha quando o jogo não está em cache.
+const GAME_PATH = new URL('./', location.href).pathname;
+const cameFromGame = (() => {
+    try {
+        return new URL(document.referrer).pathname.replace(/index\.html$/, '') === GAME_PATH;
+    } catch {
+        return false;
+    }
+})();
+
+/** Saiu por um link para outro sítio (a arcada): aí o retroceder não é para o jogo. */
+let leftElsewhere = false;
+
+document.addEventListener('click', (event) => {
+    const link = event.target.closest?.('a[href]');
+    if (!link || new URL(link.href).pathname === location.pathname) return;
+    if (new URL(link.href).pathname.replace(/index\.html$/, '') === GAME_PATH) skipSplashOnNextVisit(GAME_PATH);
+    else leftElsewhere = true;
+});
+if (cameFromGame) {
+    window.addEventListener('pagehide', () => {
+        if (!leftElsewhere) skipSplashOnNextVisit(GAME_PATH);
+    });
+}

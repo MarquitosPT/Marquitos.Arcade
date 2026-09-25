@@ -794,6 +794,21 @@ const GAMES = [
             // Um link do índice leva à secção.
             await page.click('.toc a[href="#castelo"]');
             await sleep(600);
+
+            // Voltar ao jogo não repete o ecrã de arranque (lib/arcade/splash-skip.js)...
+            await Promise.all([page.waitForURL('**/terras-do-reino/'), page.click('.guideBar a[href="./"]')]);
+            const back = await page.evaluate(() => ({
+                skip: document.documentElement.classList.contains('arcade-splash-skip'),
+                splash: getComputedStyle(document.getElementById('arcadeSplash')).display
+            }));
+            if (!back.skip || back.splash !== 'none') throw new Error('voltar do guia mostrou o ecrã de arranque');
+            await page.waitForSelector('#playBtn:not([disabled])');
+            // ...mas só dessa vez: a nota é de uso único.
+            await page.reload({ waitUntil: 'domcontentloaded' });
+            if (await page.evaluate(() => document.documentElement.classList.contains('arcade-splash-skip'))) {
+                throw new Error('o ecrã de arranque continuou saltado depois de recarregar o jogo');
+            }
+            if (!(await waitForSplash(page))) throw new Error('o ecrã de arranque não voltou a sair');
         }
     },
     {
