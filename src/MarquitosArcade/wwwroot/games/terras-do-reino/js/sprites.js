@@ -2276,6 +2276,68 @@ function patisserie(ctx, { roof = '#d27a9a' }) {
 
 // ---------- Castelos ----------
 
+/**
+ * O portão do castelo, desenhado na face `wall` (ver `houseFace`): o arco de
+ * pedra com as aduelas e o portão de tábuas com as ferragens seguem a parede,
+ * na perspetiva dela. `u` e `hw` em frações da largura da face.
+ */
+function castleGate(ctx, wall, u, hw, jamb, rise, boards) {
+    const e = hw * 0.35;
+    // O contorno do arco, `grow` mais largo e `lift` mais alto que o vão.
+    const arch = (grow, lift) => {
+        ctx.beginPath();
+        ctx.moveTo(...wall.at(u - hw - grow, 0));
+        ctx.lineTo(...wall.at(u - hw - grow, jamb));
+        ctx.quadraticCurveTo(...wall.at(u, jamb + 2 * (rise + lift)), ...wall.at(u + hw + grow, jamb));
+        ctx.lineTo(...wall.at(u + hw + grow, 0));
+        ctx.closePath();
+    };
+    arch(e, 2.2);
+    ctx.fillStyle = shade('#d9d0bd', wall.tone);
+    ctx.fill();
+    // As aduelas: juntas do arco de pedra, e as das ombreiras.
+    const onArch = (t, grow, lift) => {
+        const x0 = u - hw - grow;
+        const x1 = u + hw + grow;
+        const zc = jamb + 2 * (rise + lift);
+        return wall.at((1 - t) * (1 - t) * x0 + 2 * (1 - t) * t * u + t * t * x1, (1 - t) * (1 - t) * jamb + 2 * (1 - t) * t * zc + t * t * jamb);
+    };
+    ctx.strokeStyle = shade('#a39a8a', wall.tone);
+    ctx.lineWidth = 0.6;
+    ctx.beginPath();
+    for (const t of [0.2, 0.4, 0.6, 0.8]) {
+        ctx.moveTo(...onArch(t, 0, 0));
+        ctx.lineTo(...onArch(t, e, 2.2));
+    }
+    for (const z of [jamb * 0.33, jamb * 0.67]) {
+        ctx.moveTo(...wall.at(u - hw - e, z));
+        ctx.lineTo(...wall.at(u - hw, z));
+        ctx.moveTo(...wall.at(u + hw, z));
+        ctx.lineTo(...wall.at(u + hw + e, z));
+    }
+    ctx.stroke();
+    // O portão de tábuas, com as ferragens ao longo da parede.
+    arch(0, 0);
+    ctx.fillStyle = shade('#6b4a2b', wall.tone);
+    ctx.fill();
+    ctx.save();
+    ctx.clip();
+    for (let k = 1; k < boards; k++) {
+        const uu = u - hw + (2 * hw * k) / boards;
+        faceLine(ctx, wall, uu, 0, uu, jamb + rise, '#4a3020', k === boards / 2 ? 1 : 0.6);
+    }
+    for (const z of [jamb * 0.3, jamb * 0.75]) faceLine(ctx, wall, u - hw, z, u + hw, z, '#2f2b28', 1.2);
+    for (const du of [-0.18, 0.18]) {
+        const [x, y] = wall.at(u + hw * du, jamb * 0.5);
+        ctx.fillStyle = '#2f2b28';
+        ctx.beginPath();
+        ctx.arc(x, y, 0.8, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+
 function castle(ctx, { level = 1 }) {
     const wallH = 14 + level * 3;
     const towerH = 26 + level * 5;
@@ -2296,6 +2358,13 @@ function castle(ctx, { level = 1 }) {
             towers.push([ox, oy, () => {
                 const t = stoneTower(ctx, 8, towerH - 4, STONE, { ox, oy });
                 tiledCone(ctx, t.x, t.y, 10, 16, CASTLE_ROOF);
+                // A torre do meio da muralha +y é a torre de entrada: o portão
+                // fica na face dela virada para fora, como se a torre fosse
+                // uma caixa do tamanho dela (0,354 casas: o raio de 8 píxeis).
+                if (ox === 0) {
+                    const face = houseFace(0, 1, 0.354, 0.354, ox, oy);
+                    if (face) castleGate(ctx, face, 0.5, 0.26, 10, 5, 6);
+                }
             }]);
         }
     }
@@ -2322,46 +2391,11 @@ function castle(ctx, { level = 1 }) {
     tiledPyramid(ctx, keepA, keepA, keepH, 22 + level * 2, level >= 5 ? '#d9a63a' : KEEP_ROOF, { ox: -0.08, oy: -0.08 });
     if (level >= 3 && side > 0.1) sideTower();
 
-    // Portão na muralha +y (a da frente-esquerda na vista sem rodar).
-    if (faceOf(0, 1)) {
-        const gate = P(0.1, span / 2 + 0.005);
-        // O arco: pedras claras à volta, e dentro o portão de tábuas com ferragens.
-        const arch = (grow) => {
-            ctx.beginPath();
-            ctx.moveTo(gate[0] - 9 - grow, gate[1] - 4 + grow * 0.5);
-            ctx.lineTo(gate[0] - 9 - grow, gate[1] - 16 - grow * 0.5);
-            ctx.quadraticCurveTo(gate[0], gate[1] - 24 - grow * 1.4, gate[0] + 9 + grow, gate[1] - 11 - grow * 0.5);
-            ctx.lineTo(gate[0] + 9 + grow, gate[1] + 1 + grow * 0.5);
-            ctx.closePath();
-        };
-        arch(2);
-        ctx.fillStyle = '#d9d0bd';
-        ctx.fill();
-        arch(0);
-        ctx.fillStyle = '#6b4a2b';
-        ctx.fill();
-        ctx.save();
-        ctx.clip();
-        ctx.strokeStyle = '#4a3020';
-        ctx.lineWidth = 0.7;
-        ctx.beginPath();
-        for (let k = -3; k <= 3; k++) {
-            ctx.moveTo(gate[0] + k * 2.6, gate[1] - 26 + k * 1.3);
-            ctx.lineTo(gate[0] + k * 2.6, gate[1] + 2 + k * 1.3);
-        }
-        ctx.stroke();
-        ctx.strokeStyle = '#2f2b28';
-        ctx.lineWidth = 1.2;
-        ctx.beginPath();
-        for (const dz of [5, 12]) {
-            ctx.moveTo(gate[0] - 10, gate[1] - dz - 4.5);
-            ctx.lineTo(gate[0] + 10, gate[1] - dz + 5.5);
-        }
-        ctx.moveTo(gate[0] + 0.4, gate[1] - 22);
-        ctx.lineTo(gate[0] + 0.4, gate[1] + 2);
-        ctx.stroke();
-        ctx.restore();
-    }
+    // Portão na muralha +y (a da frente-esquerda na vista sem rodar), na face
+    // dela. A partir do nível 4 há uma torre a meio dessa muralha: aí o portão
+    // passa para a torre (ver as torres do meio, acima).
+    const wall = level < 4 && houseFace(0, 1, span, span);
+    if (wall) castleGate(ctx, wall, 0.5 + 0.1 / span, 0.2 / span, 12, 7, 10);
 
     layered(towers.filter((t) => !behind.includes(t)));
 }
