@@ -159,6 +159,43 @@ function boxView(ctx, a, b, h, color, { ox = 0, oy = 0, z = 0, top = null } = {}
 }
 
 /**
+ * Buraco: planta a x b casas centrada em (ox, oy), aberto à altura z e com o
+ * fundo à z - d. Pinta o fundo e as duas paredes de dentro que ficam de frente
+ * para quem olha (as do lado de trás, na vista), recortados pela boca do
+ * buraco; `strata` risca-as de camadas de rocha a cada tantos píxeis.
+ */
+export function hole(ctx, a, b, d, color, { ox = 0, oy = 0, z = 0, floor = null, strata = 0 } = {}) {
+    ({ a, b, ox, oy } = viewRect(a, b, ox, oy));
+    const x0 = ox - a / 2;
+    const x1 = ox + a / 2;
+    const y0 = oy - b / 2;
+    const y1 = oy + b / 2;
+    const zb = z - d;
+    // Só se vê o que cabe na boca: o resto do fundo fica escondido pela borda da frente.
+    ctx.save();
+    ctx.beginPath();
+    for (const p of [V(x0, y0, z), V(x1, y0, z), V(x1, y1, z), V(x0, y1, z)]) ctx.lineTo(...p);
+    ctx.closePath();
+    ctx.clip();
+    poly(ctx, [V(x0, y0, zb), V(x1, y0, zb), V(x1, y1, zb), V(x0, y1, zb)], floor || shade(color, 0.06));
+    // A parede do fundo vira-se para +y (meia-luz); a da esquerda para +x (sombra).
+    poly(ctx, [V(x0, y0, z), V(x1, y0, z), V(x1, y0, zb), V(x0, y0, zb)], shade(color, -0.12));
+    poly(ctx, [V(x0, y0, z), V(x0, y1, z), V(x0, y1, zb), V(x0, y0, zb)], shade(color, -0.34));
+    if (strata) {
+    ctx.lineWidth = 0.6;
+    ctx.strokeStyle = shade(color, -0.3);
+    ctx.beginPath();
+    for (let zz = z - strata; zz > zb + 0.5; zz -= strata) {
+        ctx.moveTo(...V(x1, y0, zz));
+        ctx.lineTo(...V(x0, y0, zz));
+        ctx.lineTo(...V(x0, y1, zz));
+    }
+    ctx.stroke();
+    }
+    ctx.restore();
+}
+
+/**
  * Telhado de duas águas por cima de uma caixa a x b, com a cumeeira ao longo
  * de x (`alongX`) ou de y. `wall` pinta a empena (o triângulo da parede).
  */

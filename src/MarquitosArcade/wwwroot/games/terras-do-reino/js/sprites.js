@@ -18,7 +18,7 @@
 // esse lado está virado para quem olha.
 
 import {
-    P, box, cone, crenels, cylinder, depth, diamond, faceOf, groundShadow, layered, poly, shade,
+    P, box, cone, crenels, cylinder, depth, diamond, faceOf, groundShadow, hole, layered, poly, shade,
     unturned, wallPatch
 } from './draw.js';
 import { hash2 } from './rng.js';
@@ -49,7 +49,9 @@ export const BOUNDS = {
     vineyard: [-34, -42, 68, 62],
     cottonfield: [-34, -34, 68, 54],
     canefield: [-34, -48, 68, 68],
-    paddy: [-34, -32, 68, 52]
+    paddy: [-34, -32, 68, 52],
+    quarry: [-40, -64, 80, 90],
+    goldmine: [-44, -64, 88, 90]
 };
 
 // ---------- Natureza ----------
@@ -1618,31 +1620,151 @@ function woodcutter(ctx, { roof = '#6f4a2e' }) {
     ]);
 }
 
+/** Onde fica, na peça, o buraco da pedreira: o centro e o lado dos três socalcos. */
+const QUARRY_PIT = { ox: -0.04, oy: -0.04, sizes: [0.64, 0.44, 0.24], step: 5 };
+
+/** Blocos de pedra talhada: dois deitados lado a lado e um terceiro por cima. */
+function stoneStack(ctx, ox, oy, alongX = true) {
+    const [a, b] = alongX ? [0.12, 0.08] : [0.08, 0.12];
+    const [dx, dy] = alongX ? [0, 0.045] : [0.045, 0];
+    const color = '#d9d2c2';
+    const blocks = [[ox - dx, oy - dy, 0], [ox + dx, oy + dy, 0]]
+        .sort((p, q) => depth(p[0], p[1]) - depth(q[0], q[1]));
+    blocks.push([ox, oy, 4.2]);
+    for (const [x, y, z] of blocks) box(ctx, a, b, 4, color, { ox: x, oy: y, z, top: '#ebe5d8' });
+}
+
+/** Um monte de cascalho e lascas: os restos do que se talhou. */
+function rubble(ctx, ox, oy, seed) {
+    const [x, y] = P(ox, oy);
+    const rnd = seeded(seed);
+    const greys = ['#a39d91', '#948f84', '#b3ad9f'];
+    for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2 + rnd();
+        const r = i < 5 ? 4 + rnd() * 3 : 0;
+        boulder(ctx, x + Math.cos(a) * r, y + Math.sin(a) * r * 0.5, 0.28 + rnd() * 0.16, greys[i % 3]);
+    }
+}
+
+/** A vagoneta de mão: uma caixa de tábuas com rodas, cheia de pedra ou de ouro. */
+function cart(ctx, ox, oy, alongX, load) {
+    const [a, b] = alongX ? [0.2, 0.13] : [0.13, 0.2];
+    const wheels = [-1, 1].flatMap((i) => [-1, 1].map((j) => alongX
+        ? [ox + i * 0.06, oy + j * 0.07]
+        : [ox + j * 0.07, oy + i * 0.06]));
+    const front = (w) => depth(w[0], w[1]) > depth(ox, oy);
+    const wheel = ([wx, wy]) => {
+        const [x, y] = P(wx, wy, 2.4);
+        ctx.fillStyle = '#3b2a18';
+        ctx.beginPath();
+        ctx.arc(x, y, 2.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#7d7f84';
+        ctx.beginPath();
+        ctx.arc(x, y, 0.9, 0, Math.PI * 2);
+        ctx.fill();
+    };
+    wheels.filter((w) => !front(w)).forEach(wheel);
+    walls(ctx, a, b, 5, '#8a6440', { ox, oy, z: 2, tex: 'planks', top: '#5e4128' });
+    wheels.filter(front).forEach(wheel);
+    load(P(ox, oy, 7));
+}
+
 function quarry(ctx) {
-    diamond(ctx, 0.92, 0.92, 0, '#8e887d');
-    diamond(ctx, 0.6, 0.6, -3, '#6f695f');
-    diamond(ctx, 0.36, 0.36, -6, '#5e584f');
-    const parts = [[0.28, 0.24, 7], [0.32, 0.02, 6], [0.08, 0.34, 5], [-0.3, 0.26, 6]]
-        .map(([ox, oy, s]) => [ox, oy, () => box(ctx, 0.14, 0.12, s, '#c5bfb2', { ox, oy })]);
-    // Grua de madeira.
-    parts.push([-0.3, -0.25, () => {
-        const [bx, by] = P(-0.3, -0.25);
-        ctx.strokeStyle = '#6b4a2b';
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.moveTo(bx, by);
-        ctx.lineTo(bx, by - 34);
-        ctx.lineTo(bx + 24, by - 26);
-        ctx.stroke();
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = '#3b2a18';
-        ctx.beginPath();
-        ctx.moveTo(bx + 22, by - 26);
-        ctx.lineTo(bx + 22, by - 8);
-        ctx.stroke();
-    }]);
-    parts.push([0.02, -0.2, () => box(ctx, 0.08, 0.08, 5, '#c5bfb2', { ox: 0.02, oy: -0.2, z: 4 })]);
-    layered(parts);
+    const { ox, oy, sizes, step } = QUARRY_PIT;
+    // O terreiro de pó e cascalho, com o buraco aos socalcos.
+    diamond(ctx, 0.94, 0.94, 0, '#b9ae97');
+    const rnd = seeded(29);
+    for (const color of ['#a59a83', '#cbc2ad']) {
+        ctx.fillStyle = color;
+        for (let i = 0; i < 26; i++) {
+            const [x, y] = P(rnd() * 0.88 - 0.44, rnd() * 0.88 - 0.44);
+            ctx.fillRect(x, y, 1.2, 0.8);
+        }
+    }
+    diamond(ctx, sizes[0] + 0.06, sizes[0] + 0.06, 0, '#c9bfa8', null, ox, oy);
+    // Cada socalco só se vê pela boca dos de cima.
+    ctx.save();
+    sizes.forEach((size, i) => {
+        const last = i === sizes.length - 1;
+        hole(ctx, size, size, last ? step - 2 : step, '#948c7c', { ox, oy, z: -i * step, strata: 2.5, floor: last ? '#5f8196' : '#c2b9a6' });
+        diamond(ctx, size, size, -i * step, null, null, ox, oy);
+        ctx.clip();
+    });
+    // Um brilho na água do fundo.
+    const [wx, wy] = P(ox + 0.04, oy + 0.04, 2 - sizes.length * step);
+    ctx.strokeStyle = 'rgba(220, 235, 245, 0.6)';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(wx - 4, wy);
+    ctx.lineTo(wx + 1, wy);
+    ctx.stroke();
+    ctx.restore();
+
+    const mast = [-0.4, -0.4];
+    const tip = [ox + 0.14, oy - 0.12];
+    layered([
+        // O guindaste: um mastro com a lança deitada sobre o buraco.
+        [...mast, () => {
+            box(ctx, 0.12, 0.1, 4, '#6b4a2b', { ox: mast[0] + 0.02, oy: mast[1] + 0.06 });
+            box(ctx, 0.035, 0.035, 38, TIMBER, { ox: mast[0], oy: mast[1] });
+            ctx.strokeStyle = '#5a3d22';
+            ctx.lineWidth = 2.2;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(...P(...mast, 8));
+            ctx.lineTo(...P(...tip, 30));
+            ctx.stroke();
+            ctx.strokeStyle = '#3b2a18';
+            ctx.lineWidth = 0.7;
+            ctx.beginPath();
+            ctx.moveTo(...P(...mast, 38));
+            ctx.lineTo(...P(...tip, 30));
+            ctx.moveTo(...P(...mast, 38));
+            ctx.lineTo(...P(mast[0] - 0.04, mast[1] + 0.22));
+            ctx.stroke();
+        }],
+        // Um bloco a subir do fundo, pendurado da lança.
+        [...tip, () => {
+            const [x, y] = P(...tip, 30);
+            ctx.strokeStyle = '#3b2a18';
+            ctx.lineWidth = 0.7;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y + 20);
+            ctx.lineTo(x - 3, y + 23);
+            ctx.moveTo(x, y + 20);
+            ctx.lineTo(x + 3, y + 23);
+            ctx.stroke();
+            box(ctx, 0.1, 0.08, 5, '#d9d2c2', { ox: tip[0], oy: tip[1], z: 2, top: '#ebe5d8' });
+        }],
+        // Nas esquinas, à volta do buraco: o que é baixo onde tapava menos.
+        [0.36, -0.3, () => stoneStack(ctx, 0.36, -0.3, false)],
+        [-0.3, 0.36, () => cart(ctx, -0.3, 0.36, true, ([x, y]) => {
+            for (const [dx, dy, s] of [[-3, 0.5, 0.3], [2, 0.5, 0.32], [0, -1, 0.26]]) boulder(ctx, x + dx, y + dy, s, '#b3ad9f');
+        })],
+        [0.38, 0.38, () => rubble(ctx, 0.38, 0.38, 31)],
+        // A picareta e a marreta encostadas às pedras.
+        [0.39, 0.02, () => {
+            const [x, y] = P(0.39, 0.02);
+            ctx.strokeStyle = '#7a5234';
+            ctx.lineWidth = 1.3;
+            ctx.beginPath();
+            ctx.moveTo(x - 3, y);
+            ctx.lineTo(x + 1, y - 11);
+            ctx.moveTo(x + 3, y + 1);
+            ctx.lineTo(x + 5, y - 9);
+            ctx.stroke();
+            ctx.strokeStyle = '#8d949b';
+            ctx.lineWidth = 1.4;
+            ctx.beginPath();
+            ctx.moveTo(x - 3, y - 12);
+            ctx.quadraticCurveTo(x + 1, y - 13.5, x + 5, y - 10);
+            ctx.stroke();
+            ctx.fillStyle = '#6f757c';
+            ctx.fillRect(x + 3.2, y - 11, 4, 2.6);
+        }]
+    ]);
 }
 
 function sapling(ctx, ox, oy, s = 1) {
@@ -1886,45 +2008,133 @@ function goldmine(ctx) {
     unturned(() => goldmineBody(ctx));
 }
 
+/** A boca da mina, na face +y do monte: de X0 a X1, com esta altura. */
+const MINE_MOUTH = { x0: -0.36, x1: 0.02, y: 0.1, h: 17 };
+/** A lanterna, pendurada à frente do esteio da direita. */
+const MINE_LAMP = [0.07, 0.14];
+
 function goldmineBody(ctx) {
-    // Monte de rocha escavado, com a entrada virada para a esquerda.
-    poly(ctx, [P(-0.45, 0.4), P(0.4, 0.45), P(0.3, -0.35), [0, -38], P(-0.4, -0.3)], '#8a7f6a');
-    poly(ctx, [P(0.4, 0.45), P(0.3, -0.35), [0, -38], [2, -20]], '#6f6553');
-    poly(ctx, [P(-0.45, 0.4), [2, -20], [0, -38], P(-0.4, -0.3)], '#9d927b');
-    const [ex, ey] = P(-0.12, 0.28);
-    ctx.fillStyle = '#1e1810';
+    const { x0, x1, y: my, h } = MINE_MOUTH;
+    const mid = (x0 + x1) / 2;
+    groundShadow(ctx, 28, 10, 0.12, 2, 3);
+    // O terreiro de terra batida à frente da boca.
+    diamond(ctx, 0.92, 0.92, 0, '#a8916a');
+    diamond(ctx, 0.62, 0.4, 0.3, '#b9a27a', null, -0.1, 0.24);
+    // O monte: um mais pequeno atrás, à direita, e o grande onde se abre a mina.
+    mountainPeak(ctx, ...P(0.12, -0.36), 'mid', 1.2, true, 7);
+    const [px, py] = P(-0.14, -0.08);
+    mountainPeak(ctx, px, py, 'mid', 1.65, false, 3);
+
+    // Veios de ouro na rocha, ao lado da boca.
+    const [vx, vy] = [px + 12, py - 14];
+    ctx.strokeStyle = '#e8b830';
+    ctx.lineWidth = 1.3;
+    ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(ex - 9, ey);
-    ctx.lineTo(ex - 9, ey - 12);
-    ctx.quadraticCurveTo(ex, ey - 20, ex + 9, ey - 12);
-    ctx.lineTo(ex + 9, ey);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = '#7a5234';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(ex - 10, ey + 1);
-    ctx.lineTo(ex - 10, ey - 14);
-    ctx.lineTo(ex + 10, ey - 14);
-    ctx.lineTo(ex + 10, ey + 1);
+    ctx.moveTo(vx - 10, vy + 2); ctx.lineTo(vx - 5, vy - 2); ctx.lineTo(vx - 1, vy - 1); ctx.lineTo(vx + 3, vy - 5);
+    ctx.moveTo(vx + 9, vy + 4); ctx.lineTo(vx + 13, vy + 1);
     ctx.stroke();
-    // Carris e vagoneta com ouro.
-    ctx.strokeStyle = '#5a4a3a';
-    ctx.lineWidth = 1.2;
+
+    // O entalhe na rocha à volta da boca, mais escuro.
+    poly(ctx, [
+        P(x0 - 0.07, my, 0), P(x0 - 0.09, my, h * 0.75), P(x0 + 0.02, my, h + 6),
+        P(x1 - 0.06, my, h + 7), P(x1 + 0.08, my, h * 0.6), P(x1 + 0.07, my, 0)
+    ], '#7e7262');
+    // O túnel: escuro, com um segundo quadro de escoras mais para dentro.
+    const mouth = ctx.createLinearGradient(0, P(mid, my, h)[1], 0, P(mid, my, 0)[1]);
+    mouth.addColorStop(0, '#120d08');
+    mouth.addColorStop(1, '#2e2216');
+    poly(ctx, [P(x0, my, 0), P(x1, my, 0), P(x1, my, h), P(x0, my, h)], mouth);
+    ctx.strokeStyle = '#4a3624';
+    ctx.lineWidth = 1.4;
     ctx.beginPath();
-    ctx.moveTo(...P(-0.1, 0.3));
-    ctx.lineTo(...P(-0.1, 0.5));
-    ctx.moveTo(...P(-0.02, 0.3));
-    ctx.lineTo(...P(-0.02, 0.5));
+    ctx.moveTo(...P(x0 + 0.07, my - 0.14, 0));
+    ctx.lineTo(...P(x0 + 0.07, my - 0.14, h - 4));
+    ctx.lineTo(...P(x1 - 0.07, my - 0.14, h - 4));
+    ctx.lineTo(...P(x1 - 0.07, my - 0.14, 0));
     ctx.stroke();
-    box(ctx, 0.16, 0.12, 6, '#6b5a48', { ox: 0.18, oy: 0.36 });
-    const [cx, cy] = P(0.18, 0.36, 6);
-    ctx.fillStyle = '#f2c94c';
-    for (const [dx, dy] of [[-3, 0], [2, -1], [0, -3]]) {
-        ctx.beginPath();
-        ctx.arc(cx + dx, cy + dy, 2.2, 0, Math.PI * 2);
-        ctx.fill();
+
+    // Os carris, a sair do túnel pelo terreiro fora, em cima das travessas.
+    const rails = [mid - 0.045, mid + 0.045];
+    ctx.strokeStyle = '#6b4a2b';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    for (let ty = my - 0.06; ty < 0.47; ty += 0.055) {
+        ctx.moveTo(...P(mid - 0.075, ty));
+        ctx.lineTo(...P(mid + 0.075, ty));
     }
+    ctx.stroke();
+    ctx.lineWidth = 0.9;
+    for (const [color, lift] of [['#55595f', 0], ['#a9afb6', 0.6]]) {
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+        for (const rx of rails) {
+            ctx.moveTo(...P(rx, my - 0.12, 0.6 + lift));
+            ctx.lineTo(...P(rx, 0.47, 0.6 + lift));
+        }
+        ctx.stroke();
+    }
+
+    // O quadro de escoras da boca: dois esteios, a padieira e as mãos-francesas.
+    box(ctx, 0.045, 0.045, h, TIMBER, { ox: x0, oy: my });
+    box(ctx, 0.045, 0.045, h, TIMBER, { ox: x1, oy: my });
+    box(ctx, x1 - x0 + 0.1, 0.055, 3.5, WOOD, { ox: mid, oy: my, z: h });
+    ctx.strokeStyle = TIMBER;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(...P(x0 + 0.02, my + 0.03, h - 5));
+    ctx.lineTo(...P(x0 + 0.08, my + 0.03, h));
+    ctx.moveTo(...P(x1 - 0.02, my + 0.03, h - 5));
+    ctx.lineTo(...P(x1 - 0.08, my + 0.03, h));
+    ctx.stroke();
+    // A tabuleta com as picaretas cruzadas.
+    const [sx, sy] = P(mid, my + 0.03, h + 7);
+    ctx.fillStyle = '#c8a064';
+    ctx.fillRect(sx - 5, sy - 2.5, 10, 5.5);
+    ctx.strokeStyle = '#5a3d22';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(sx - 3, sy + 2); ctx.lineTo(sx + 3, sy - 1.5);
+    ctx.moveTo(sx + 3, sy + 2); ctx.lineTo(sx - 3, sy - 1.5);
+    ctx.stroke();
+    // A lanterna, pendurada do esteio da direita (acende-se em `goldmineLive`).
+    const [lx, ly] = P(...MINE_LAMP, h - 4);
+    ctx.strokeStyle = '#3b2a18';
+    ctx.lineWidth = 0.6;
+    ctx.beginPath();
+    ctx.moveTo(lx, ly - 3);
+    ctx.lineTo(lx, ly - 1);
+    ctx.stroke();
+    ctx.fillStyle = '#3b2a18';
+    ctx.fillRect(lx - 1.6, ly - 1, 3.2, 4.4);
+    ctx.fillStyle = '#f6c65b';
+    ctx.fillRect(lx - 0.9, ly - 0.2, 1.8, 2.8);
+
+    // O monte de entulho, à direita, com umas pintas de ouro.
+    rubble(ctx, 0.3, 0.28, 57);
+    const [rx, ry] = P(0.3, 0.28);
+    ctx.fillStyle = '#f2c94c';
+    for (const [dx, dy] of [[-3, -4], [2, -6], [4, -2]]) ctx.fillRect(rx + dx, ry + dy, 1.2, 1.2);
+    // Uma pilha de escoras novas, à espera de entrar no túnel.
+    for (let i = 0; i < 3; i++) box(ctx, 0.04, 0.26, 2, i === 1 ? '#a57447' : '#8a6440', { ox: 0.22 + i * 0.045, oy: 0.02, z: 0 });
+    box(ctx, 0.04, 0.26, 2, '#9a6a3f', { ox: 0.265, oy: 0.02, z: 2 });
+
+    // A vagoneta nos carris, carregada de ouro.
+    cart(ctx, mid, 0.34, false, ([x, y]) => {
+        const nuggets = [[-3, 0.6], [0, 1], [3, 0.4], [-1.6, -1], [1.6, -1.2], [0, -2.6]];
+        for (const [dx, dy] of nuggets) {
+            ctx.fillStyle = '#c9931c';
+            ctx.beginPath();
+            ctx.arc(x + dx + 0.4, y + dy + 0.4, 2.1, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#f2c94c';
+            ctx.beginPath();
+            ctx.arc(x + dx, y + dy, 1.8, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.fillStyle = '#fff1a8';
+        for (const [dx, dy] of [[-3.4, 0], [-0.4, -3.2], [2.6, -0.2]]) ctx.fillRect(x + dx, y + dy, 1, 1);
+    });
 }
 
 function coop(ctx, { roof = '#9a5a2a' }) {
@@ -3262,6 +3472,53 @@ function oreLive(ctx, b, t, { seed = 0 }) {
     ctx.stroke();
 }
 
+/** A poeira que sobe do fundo da pedreira, quando os canteiros estão a trabalhar. */
+function quarryLive(ctx, b, t) {
+    if (b.owner === 'player' && b.status !== 'ok') return;
+    const { ox, oy, sizes, step } = QUARRY_PIT;
+    const [x, y] = P(ox, oy, -step);
+    for (let i = 0; i < 3; i++) {
+        const phase = (t * 0.35 + i / 3 + b.x * 0.07) % 1;
+        ctx.fillStyle = `rgba(226, 216, 192, ${0.35 * (1 - phase)})`;
+        ctx.beginPath();
+        ctx.arc(x + Math.sin(phase * 5 + i) * 5, y - phase * 16, 2 + phase * 4, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+/** A lanterna da boca da mina a tremeluzir e o ouro da vagoneta a brilhar. */
+function goldmineLive(ctx, b, t) {
+    const working = b.owner !== 'player' || b.status === 'ok';
+    unturned(() => {
+        const [lx, ly] = P(...MINE_LAMP, MINE_MOUTH.h - 4);
+        const k = working ? 0.75 + Math.sin(t * 9 + b.x) * 0.12 + Math.sin(t * 23) * 0.08 : 0;
+        if (k > 0) {
+            const glow = ctx.createRadialGradient(lx, ly + 1, 0, lx, ly + 1, 9);
+            glow.addColorStop(0, `rgba(255, 214, 120, ${0.55 * k})`);
+            glow.addColorStop(1, 'rgba(255, 214, 120, 0)');
+            ctx.fillStyle = glow;
+            ctx.beginPath();
+            ctx.arc(lx, ly + 1, 9, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        if (!working) return;
+        const phase = (t * 0.5) % 1;
+        if (phase > 0.3) return;
+        const s = Math.sin((phase / 0.3) * Math.PI);
+        const mid = (MINE_MOUTH.x0 + MINE_MOUTH.x1) / 2;
+        const [x, y] = P(mid, 0.34, 9);
+        const gx = x - 2 + Math.floor(t * 0.5) % 3 * 2;
+        ctx.strokeStyle = `rgba(255, 248, 200, ${s})`;
+        ctx.lineWidth = 1.1;
+        ctx.beginPath();
+        ctx.moveTo(gx - 3.5 * s, y - 1);
+        ctx.lineTo(gx + 3.5 * s, y - 1);
+        ctx.moveTo(gx, y - 1 - 3.5 * s);
+        ctx.lineTo(gx, y - 1 + 3.5 * s);
+        ctx.stroke();
+    });
+}
+
 /** Fumo do fumeiro da cabana de pesca, quando os pescadores estão a trabalhar. */
 function fisheryLive(ctx, b, t, { variant = 0 }) {
     if (b.owner === 'player' && b.status !== 'ok') return;
@@ -3366,5 +3623,7 @@ export const LIVE = {
     theatre: theatreLive,
     castle: castleLive,
     keep: keepLive,
+    quarry: quarryLive,
+    goldmine: goldmineLive,
     ore: oreLive
 };

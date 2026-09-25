@@ -1,0 +1,25 @@
+<!doctype html><html><body style="margin:0;background:#6fa84a">
+<canvas id="c" width="1600" height="900"></canvas>
+<script type="module">
+import { STATIC, LIVE, BOUNDS } from '../js/sprites.js';
+import { camera } from '../js/iso.js';
+const kinds = new URLSearchParams(location.search).get('k').split(',');
+const c = document.getElementById('c'); const ctx = c.getContext('2d');
+const S = +(new URLSearchParams(location.search).get('s') || 3);
+kinds.forEach((k, row) => {
+  for (let rot = 0; rot < 4; rot++) {
+    camera.rot = rot;
+    ctx.save();
+    ctx.translate((0.5 + rot) * 400, (0.8 + row) * 110 * S);
+    ctx.scale(S, S);
+    ctx.fillStyle = '#7fae55';
+    ctx.beginPath(); ctx.moveTo(-32,0);ctx.lineTo(0,-16);ctx.lineTo(32,0);ctx.lineTo(0,16);ctx.closePath();ctx.fill();
+    { const [x0,y0,w,h] = BOUNDS[k] || BOUNDS.default; ctx.strokeStyle='red'; ctx.lineWidth=0.3; ctx.strokeRect(x0,y0,w,h); }
+    STATIC[k](ctx, { roof: '#c8553d', variant: 0 });
+    if (LIVE[k]) LIVE[k](ctx, { owner: 'player', status: 'ok', x: 3, y: 4 }, 1.2, { roof: '#c8553d', variant: 0 });
+    ctx.restore();
+  }
+});
+camera.rot = 0;
+document.title = 'done';
+</script></body></html>
