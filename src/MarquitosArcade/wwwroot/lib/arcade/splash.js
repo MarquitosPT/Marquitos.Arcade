@@ -35,6 +35,20 @@ const DEFAULTS = {
 
 const SESSION_KEY = 'arcade:splash-seen';
 
+// A nota de regresso que o splash-skip.js lê (a mesma chave de lá; a validade vive lá).
+const SKIP_KEY = 'arcade:splash-skip';
+
+/**
+ * Pede que a próxima visita a `path` abra sem ecrã de arranque — para uma
+ * página de um jogo (o guia) que vai devolver o jogador ao jogo. A nota é de
+ * uso único e caduca em segundos, por isso uma visita mais tarde, ou a outra
+ * página, arranca como sempre. Quem a lê é o splash-skip.js, no <head> do jogo.
+ */
+export function skipSplashOnNextVisit(path) {
+    // Sem o `index.html`: o jogo abre por `/games/<slug>/` e por `.../index.html`.
+    writeSessionText(SKIP_KEY, JSON.stringify({ path: path.replace(/index\.html$/, ''), at: Date.now() }));
+}
+
 /**
  * Prende um ecrã de arranque já presente no DOM.
  *
@@ -65,7 +79,9 @@ export function createSplash(root, options = {}) {
 
     // Já se viu o arranque neste separador: some sem sequer pintar um frame.
     // É o que separa o portal (arranca uma vez) dos jogos (arrancam sempre).
-    if (config.once === 'session' && readSessionText(SESSION_KEY) === '1') {
+    // O mesmo quando se volta ao jogo de uma página dele (splash-skip.js).
+    const skipped = document.documentElement.classList.contains('arcade-splash-skip');
+    if (skipped || (config.once === 'session' && readSessionText(SESSION_KEY) === '1')) {
         hideNow();
         return { ready() {}, dismiss() {}, reapply, done };
     }

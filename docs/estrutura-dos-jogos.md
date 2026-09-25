@@ -105,6 +105,7 @@ Módulos ES sem dependências externas, importáveis por caminho absoluto
 | `dom.js`       | Seletores, `escapeHtml`, grupos de ecrãs e de botões                 |
 | `topbar.js`    | Barra de topo comum (arcada, pontuações, pausa, sair)                |
 | `splash.js`    | Ecrã de arranque da arcada: tempo mínimo, barra e saída              |
+| `splash-skip.js` | Script clássico no `<head>`: sem arranque ao voltar de uma página do jogo (o guia) |
 | `math.js`      | `clamp`, `lerp`, ângulos, aleatórios, `shuffle`                      |
 
 Antes disto, o mesmo `safeGet`/`safeSet` de `localStorage`, o mesmo
