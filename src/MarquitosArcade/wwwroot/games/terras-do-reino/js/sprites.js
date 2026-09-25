@@ -1152,7 +1152,6 @@ const HOUSE_CHIMNEY = [
 const FLOWERS = ['#e3372f', '#f2c94c', '#d9577a', '#ef7d2f'];
 
 function house(ctx, { roof = PLAYER_ROOF, variant = 0 }) {
-    groundShadow(ctx, 26, 10, 0.2, 6, 4);
     const rnd = seeded(variant * 17 + 3);
     const style = variant % 6;
     const F = houseFrame(Math.floor(variant / 6) % 2 === 0);
