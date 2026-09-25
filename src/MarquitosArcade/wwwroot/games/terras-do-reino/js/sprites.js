@@ -2274,6 +2274,271 @@ function patisserie(ctx, { roof = '#d27a9a' }) {
     ]);
 }
 
+// ---------- Visitas e luxo (castelo níveis 4 e 5) ----------
+
+/** Uma mala de viagem de couro, com a pega por cima. */
+function suitcase(ctx, ox, oy, color, { z = 0, a = 0.1, b = 0.05, h = 4 } = {}) {
+    box(ctx, a, b, h, color, { ox, oy, z });
+    const [x, y] = P(ox, oy, z + h);
+    ctx.strokeStyle = shade(color, -0.35);
+    ctx.lineWidth = 0.9;
+    ctx.beginPath();
+    ctx.arc(x, y - 0.2, 1.3, Math.PI, 0);
+    ctx.stroke();
+}
+
+function inn(ctx, { roof = '#3f6f8a' }) {
+    const color = roof === PLAYER_ROOF ? '#3f6f8a' : roof;
+    const a = 0.66;
+    const b = 0.54;
+    const o = { ox: -0.06, oy: -0.08 };
+    layered([
+        [o.ox, o.oy, () => {
+            // Três pisos: o de baixo de pedra, os dois de cima de enxaimel caiado.
+            walls(ctx, a, b, 11, STONE, { ...o, tex: 'stone' });
+            walls(ctx, a, b, 9, WALL, { ...o, z: 11, tex: 'timber' });
+            walls(ctx, a, b, 9, WALL, { ...o, z: 20, tex: 'timber', seed: 71 });
+            door(ctx, 'left', a, b, 0.5, 0.13, 9.5, DOOR, { ...o, arch: true });
+            for (const u of [0.18, 0.82]) windows(ctx, 'left', a, b, u, 0.1, 3.5, 8.5, { ...o, glass: '#e9a93f', both: false });
+            // Os quartos: uma janela por quarto, com portadas e vasos de flores.
+            for (const z of [13, 22]) {
+                for (const u of [0.2, 0.5, 0.8]) windows(ctx, 'left', a, b, u, 0.08, z, z + 5, { ...o, shutter: color, flowers: ['#e3372f', '#f2c94c', '#d9577a'] });
+                for (const u of [0.3, 0.7]) windows(ctx, 'right', a, b, u, 0.08, z, z + 5, { ...o, shutter: color });
+            }
+            tiledRoof(ctx, a, b, 29, 14, color, WALL, o);
+            chimney(ctx, o.ox + 0.2, o.oy - 0.12, 36, 10, seeded(83));
+        }],
+        // As malas dos visitantes que acabaram de chegar.
+        [0.3, 0.34, () => {
+            box(ctx, 0.14, 0.09, 5, '#7a4a2a', { ox: 0.3, oy: 0.34 });
+            box(ctx, 0.14, 0.02, 1, '#c9a24a', { ox: 0.3, oy: 0.34, z: 3 });
+            suitcase(ctx, 0.3, 0.34, '#3f5f8a', { z: 5 });
+        }],
+        [0.14, 0.4, () => suitcase(ctx, 0.14, 0.4, '#8a3f3f', { a: 0.08, h: 5 })]
+    ]);
+    // A tabuleta com a campainha, na esquina da fachada — quando a fachada está à esquerda.
+    if (faceOf(0, 1) !== 'left') return;
+    const [x, y] = P(o.ox - a / 2, o.oy + b / 2, 19);
+    ctx.fillStyle = TIMBER;
+    ctx.fillRect(x - 10, y - 2, 10, 1.5);
+    ctx.fillStyle = '#e9d9a8';
+    ctx.fillRect(x - 10, y, 8, 6.5);
+    ctx.fillStyle = '#c9a24a';
+    ctx.beginPath();
+    ctx.arc(x - 6, y + 4.8, 2.4, Math.PI, 0);
+    ctx.fill();
+    ctx.fillRect(x - 8.8, y + 4.8, 5.6, 0.9);
+    ctx.fillRect(x - 6.4, y + 1.6, 0.8, 1);
+}
+
+function jewelry(ctx, { roof = '#4a3f8a' }) {
+    const color = roof === PLAYER_ROOF ? '#4a3f8a' : roof;
+    const marble = '#f3ede2';
+    const gold = '#e0b43c';
+    const a = 0.56;
+    const b = 0.46;
+    const o = { ox: -0.06, oy: -0.1 };
+    layered([
+        [o.ox, o.oy, () => {
+            walls(ctx, a, b, 3, PLINTH, { ...o, tex: 'stone' });
+            walls(ctx, a, b, 15, marble, { ...o, z: 3, tex: 'bigstone' });
+            // Uma cinta dourada por baixo do beiral.
+            walls(ctx, a, b, 1.2, gold, { ...o, z: 18 });
+            door(ctx, 'left', a, b, 0.22, 0.1, 11, color, { ...o, arch: true, frame: gold });
+            // A montra, com as joias à mostra.
+            windows(ctx, 'left', a, b, 0.64, 0.24, 4, 12.5, { ...o, glass: '#bfe0ec', frame: gold, both: false });
+            windows(ctx, 'right', a, b, 0.5, 0.09, 8, 14, { ...o, shutter: color, frame: gold });
+            tiledPyramid(ctx, a, b, 19.2, 13, color, o);
+            // O remate dourado no bico do telhado.
+            const [x, y] = P(o.ox, o.oy, 32.2);
+            ctx.fillStyle = gold;
+            ctx.fillRect(x - 0.6, y - 4, 1.2, 4);
+            ctx.beginPath();
+            ctx.arc(x, y - 5, 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#fff4c2';
+            ctx.beginPath();
+            ctx.arc(x - 0.6, y - 5.6, 0.7, 0, Math.PI * 2);
+            ctx.fill();
+        }],
+        // Um arbusto aparado em vaso de pedra, à porta.
+        [0.3, 0.3, () => {
+            cylinder(ctx, 3, 4, '#cfc6b3', { ox: 0.3, oy: 0.3 });
+            const [x, y] = P(0.3, 0.3, 4);
+            ctx.fillStyle = '#3f8a45';
+            ctx.beginPath();
+            ctx.arc(x, y - 3, 3.6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#5aa54a';
+            ctx.beginPath();
+            ctx.arc(x - 1, y - 4, 1.6, 0, Math.PI * 2);
+            ctx.fill();
+        }]
+    ]);
+    // A tabuleta com o anel, na esquina da fachada — quando a fachada está à esquerda.
+    if (faceOf(0, 1) !== 'left') return;
+    const [x, y] = P(o.ox - a / 2, o.oy + b / 2, 16);
+    ctx.fillStyle = TIMBER;
+    ctx.fillRect(x - 9, y - 2, 9, 1.5);
+    ctx.fillStyle = color;
+    ctx.fillRect(x - 9, y, 7, 6.5);
+    ctx.strokeStyle = gold;
+    ctx.lineWidth = 1.1;
+    ctx.beginPath();
+    ctx.arc(x - 5.5, y + 4, 1.9, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = '#7fd3f0';
+    poly(ctx, [[x - 5.5, y + 0.6], [x - 4.3, y + 1.6], [x - 5.5, y + 2.6], [x - 6.7, y + 1.6]], '#7fd3f0');
+}
+
+// ---------- Serviços do reino (castelo nível 4) ----------
+
+/** Uma árvore pequena de pátio, de copa redonda. */
+function yardTree(ctx, ox, oy) {
+    const [x, y] = P(ox, oy);
+    ctx.fillStyle = '#6b4a2b';
+    ctx.fillRect(x - 1.2, y - 8, 2.4, 8);
+    for (const [dx, dy, r, c] of [[-3, -10, 4.6, '#3f8a45'], [3, -11, 4.6, '#3f8a45'], [0, -14, 5, '#4c9a3c'], [-1.5, -15, 2.2, '#6ab45a']]) {
+        ctx.fillStyle = c;
+        ctx.beginPath();
+        ctx.arc(x + dx, y + dy, r, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+/** A sineira da escola: onde fica o sino (ver `schoolLive`), sobre a cumeeira. */
+const SCHOOL = { a: 0.66, b: 0.5, ox: -0.06, oy: -0.1, ridge: 30 };
+
+function school(ctx, { roof = '#9a4a32' }) {
+    const color = roof === PLAYER_ROOF ? '#9a4a32' : roof;
+    const wall = '#ecd9a8';
+    const { a, b, ridge } = SCHOOL;
+    const o = { ox: SCHOOL.ox, oy: SCHOOL.oy };
+    layered([
+        [o.ox, o.oy, () => {
+            walls(ctx, a, b, 3, PLINTH, { ...o, tex: 'stone' });
+            walls(ctx, a, b, 15, wall, { ...o, z: 3 });
+            door(ctx, 'left', a, b, 0.5, 0.12, 11, DOOR, { ...o, arch: true });
+            // As salas de aula: janelas altas, para entrar muita luz.
+            for (const u of [0.16, 0.3, 0.7, 0.84]) windows(ctx, 'left', a, b, u, 0.08, 6, 14.5, { ...o, both: false, lintel: '#f4ead0' });
+            for (const u of [0.25, 0.5, 0.75]) windows(ctx, 'right', a, b, u, 0.08, 6, 14.5, { ...o, lintel: '#f4ead0' });
+            tiledRoof(ctx, a, b, 18, ridge - 18, color, wall, o);
+            // A sineira, a cavalo da cumeeira, com o vão escuro onde balança o sino.
+            box(ctx, 0.12, 0.12, 8, wall, { ...o, z: ridge - 3 });
+            const [x, y] = P(o.ox, o.oy, ridge);
+            ctx.fillStyle = '#3a2e24';
+            ctx.beginPath();
+            ctx.moveTo(x - 2, y);
+            ctx.lineTo(x - 2, y - 3.2);
+            ctx.arc(x, y - 3.2, 2, Math.PI, 0);
+            ctx.lineTo(x + 2, y);
+            ctx.closePath();
+            ctx.fill();
+            tiledPyramid(ctx, 0.12, 0.12, ridge + 5, 6, color, { ...o, over: 0.015 });
+        }],
+        // Uma árvore no pátio do recreio.
+        [0.3, 0.32, () => yardTree(ctx, 0.3, 0.32)]
+    ]);
+}
+
+function clinic(ctx, { roof = '#4f7f6a' }) {
+    const color = roof === PLAYER_ROOF ? '#4f7f6a' : roof;
+    const wall = '#f6f5f0';
+    const red = '#d63a2e';
+    const a = 0.64;
+    const b = 0.5;
+    const o = { ox: -0.06, oy: -0.1 };
+    layered([
+        [o.ox, o.oy, () => {
+            walls(ctx, a, b, 3, PLINTH, { ...o, tex: 'stone' });
+            walls(ctx, a, b, 16, wall, { ...o, z: 3 });
+            door(ctx, 'left', a, b, 0.24, 0.14, 11, '#5a7f9a', o);
+            windows(ctx, 'left', a, b, 0.8, 0.1, 7, 14, { ...o, both: false });
+            for (const u of [0.25, 0.75]) windows(ctx, 'right', a, b, u, 0.09, 7, 14, o);
+            // A cruz vermelha, em todas as fachadas: vê-se de qualquer lado.
+            for (const [n, u] of [[[0, 1], 0.54], [[1, 0], 0.5], [[0, -1], 0.5], [[-1, 0], 0.5]]) {
+                const f = houseFace(...n, a, b, o.ox, o.oy);
+                if (!f) continue;
+                const bar = 0.0175 / f.w;
+                const arm = 0.055 / f.w;
+                faceQuad(ctx, f, u - bar, u + bar, 7.5, 15.5, red);
+                faceQuad(ctx, f, u - arm, u + arm, 10.4, 12.6, red);
+            }
+            tiledRoof(ctx, a, b, 19, 11, color, wall, o);
+        }],
+        // Os canteiros de ervas medicinais.
+        [0.28, 0.34, () => {
+            for (const [dx, dy] of [[0, 0], [0.12, -0.06]]) {
+                const ox = 0.28 + dx;
+                const oy = 0.34 + dy;
+                box(ctx, 0.1, 0.06, 2.5, '#8a6a4a', { ox, oy });
+                const [x, y] = P(ox, oy, 2.5);
+                for (const [px, c] of [[-2.4, '#5aa54a'], [0, '#7cc06a'], [2.4, '#4c9a3c']]) {
+                    ctx.fillStyle = c;
+                    ctx.beginPath();
+                    ctx.arc(x + px, y - 1.2, 1.6, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }]
+    ]);
+}
+
+/** O marco do correio: um cilindro vermelho com a cúpula e a ranhura das cartas. */
+function postBox(ctx, ox, oy) {
+    cylinder(ctx, 2.4, 9, '#c8322a', { ox, oy });
+    const [x, y] = P(ox, oy, 9);
+    ctx.fillStyle = '#a82a22';
+    ctx.beginPath();
+    ctx.ellipse(x, y, 2.4, 1.2, 0, Math.PI, 0);
+    ctx.arc(x, y, 2.4, 0, Math.PI, true);
+    ctx.fill();
+    ctx.fillStyle = '#e0443a';
+    ctx.beginPath();
+    ctx.arc(x - 0.6, y - 1.4, 0.9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#2a1a18';
+    ctx.fillRect(x - 1.4, y + 2.2, 2.8, 0.7);
+}
+
+function post(ctx, { roof = '#b8322a' }) {
+    const color = roof === PLAYER_ROOF ? '#b8322a' : roof;
+    const wall = '#f2e2b0';
+    const a = 0.6;
+    const b = 0.48;
+    const o = { ox: -0.06, oy: -0.1 };
+    layered([
+        [o.ox, o.oy, () => {
+            walls(ctx, a, b, 3, PLINTH, { ...o, tex: 'stone' });
+            walls(ctx, a, b, 14, wall, { ...o, z: 3 });
+            door(ctx, 'left', a, b, 0.28, 0.12, 11, '#6b4a2b', { ...o, arch: true });
+            windows(ctx, 'left', a, b, 0.72, 0.18, 5, 12.5, { ...o, both: false, shutter: color });
+            windows(ctx, 'right', a, b, 0.5, 0.09, 7, 13, { ...o, shutter: color });
+            tiledRoof(ctx, a, b, 17, 11, color, wall, o);
+            chimney(ctx, o.ox + 0.16, o.oy - 0.1, 22, 9, seeded(97));
+        }],
+        [0.3, 0.3, () => postBox(ctx, 0.3, 0.3)],
+        // Encomendas à espera do carteiro.
+        [-0.24, 0.36, () => {
+            box(ctx, 0.1, 0.08, 4, '#b98a52', { ox: -0.24, oy: 0.36 });
+            box(ctx, 0.07, 0.06, 3, '#c9a066', { ox: -0.24, oy: 0.36, z: 4 });
+        }]
+    ]);
+    // A tabuleta com a corneta dos correios, na esquina da fachada — quando a fachada está à esquerda.
+    if (faceOf(0, 1) !== 'left') return;
+    const [x, y] = P(o.ox - a / 2, o.oy + b / 2, 16);
+    ctx.fillStyle = TIMBER;
+    ctx.fillRect(x - 9, y - 2, 9, 1.5);
+    ctx.fillStyle = color;
+    ctx.fillRect(x - 9, y, 7.5, 6.5);
+    ctx.strokeStyle = '#f2c94c';
+    ctx.lineWidth = 0.9;
+    ctx.beginPath();
+    ctx.arc(x - 5.3, y + 3.4, 1.8, 0.2, Math.PI * 1.8);
+    ctx.stroke();
+    poly(ctx, [[x - 3.6, y + 3.4], [x - 2.4, y + 1.6], [x - 2.4, y + 5.2]], '#f2c94c');
+}
+
 // ---------- Castelos ----------
 
 /**
@@ -2673,6 +2938,11 @@ export const STATIC = {
     paddy,
     sugarmill,
     patisserie,
+    inn,
+    jewelry,
+    school,
+    clinic,
+    post,
     castle,
     keep
 };
@@ -2893,6 +3163,47 @@ function patisserieLive(ctx, b, t) {
     smoke(ctx, x, y, t * 0.5, b.y * 0.37);
 }
 
+function innLive(ctx, b, t) {
+    if (b.owner === 'player' && b.status !== 'ok') return;
+    const [x, y] = P(0.14, -0.2, 46);
+    smoke(ctx, x, y, t * 0.5, b.x * 0.41);
+}
+
+/** O remate dourado da joalharia a cintilar, enquanto os ourives trabalham. */
+function jewelryLive(ctx, b, t) {
+    if (b.owner === 'player' && b.status !== 'ok') return;
+    const phase = (t * 0.7 + b.x * 0.13 + b.y * 0.07) % 1;
+    if (phase > 0.4) return;
+    const k = Math.sin((phase / 0.4) * Math.PI);
+    const [x, y] = P(-0.06, -0.1, 32.2);
+    ctx.strokeStyle = `rgba(255, 248, 210, ${k})`;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(x - 5 * k, y - 5);
+    ctx.lineTo(x + 5 * k, y - 5);
+    ctx.moveTo(x, y - 5 - 5 * k);
+    ctx.lineTo(x, y - 5 + 5 * k);
+    ctx.stroke();
+}
+
+/** O sino da escola: balança um bocado ao começo de cada aula. */
+function schoolLive(ctx, b, t) {
+    const [x, y] = P(SCHOOL.ox, SCHOOL.oy, SCHOOL.ridge);
+    const ringing = (b.owner !== 'player' || b.status === 'ok') && (t + b.x * 0.7) % 6 < 1.4;
+    const angle = ringing ? Math.sin(t * 9) * 0.45 : 0;
+    ctx.save();
+    ctx.translate(x, y - 4.6);
+    ctx.rotate(angle);
+    ctx.fillStyle = '#d9a63a';
+    ctx.beginPath();
+    ctx.moveTo(-1.5, 3.2);
+    ctx.quadraticCurveTo(-1.3, 0, 0, 0);
+    ctx.quadraticCurveTo(1.3, 0, 1.5, 3.2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+}
+
 function flag(ctx, x, y, t, color, h = 16) {
     ctx.strokeStyle = '#4a3020';
     ctx.lineWidth = 1.3;
@@ -3045,6 +3356,9 @@ export const LIVE = {
     coop: coopLive,
     sugarmill: sugarmillLive,
     patisserie: patisserieLive,
+    inn: innLive,
+    school: schoolLive,
+    jewelry: jewelryLive,
     sheepfold: sheepfoldLive,
     weaving: weavingLive,
     distillery: distilleryLive,

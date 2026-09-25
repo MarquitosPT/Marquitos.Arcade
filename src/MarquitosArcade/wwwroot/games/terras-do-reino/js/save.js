@@ -19,7 +19,7 @@
 //     r: 'base64',                            // estradas: um bit por casa do quadrado à volta do castelo (opcional)
 //     m: { s: { bem: stock }, f: feira|null, nf: dia da próxima feira },
 //     t: [[edifícios, relógio, comércio, riqueza], ...],   // uma entrada por vila
-//     q, st, bs,                              // objetivo, estatísticas, melhor enviado ao quadro
+//     q, qn, st, bs,                          // objetivo, quantos objetivos tinha a lista, estatísticas, melhor enviado ao quadro
 //     vw: [x, y, zoom, rotação], sp           // a vista e a velocidade do relógio (opcionais)
 //   }
 //
@@ -44,6 +44,7 @@ import { createBuilding, isCrop, placeCastle } from './buildings.js';
 import { refreshDerived } from './economy.js';
 import { camera, lookAt, worldToGrid } from './iso.js';
 import { initMarket } from './market.js';
+import { QUESTS } from './quests.js';
 import { emptyResources, fx, game, ui } from './state.js';
 import { newTowns, placeTowns } from './towns.js';
 import { CASTLE_CENTER, ROAD_PLAYER, T_GRASS, T_HILL, T_WATER, flattenTile, generateWorld, idx, inMap } from './world.js';
@@ -61,6 +62,9 @@ const ROAD_X0 = CASTLE_CENTER.x - ROAD_BOX / 2;
 const ROAD_Y0 = CASTLE_CENTER.y - ROAD_BOX / 2;
 const KIND_INDEX = Object.fromEntries(BUILDINGS.map((b, i) => [b.id, i]));
 const STAGES = ['empty', 'growing', 'ripe'];
+
+/** Quantos objetivos tinha a lista antes de a gravação guardar `qn`. */
+const OLD_QUEST_COUNT = 31;
 
 const isSave = (data) => !!data && (data.v === VERSION || data.v === 1) && Number.isFinite(data.seed);
 
@@ -200,6 +204,7 @@ export function serialize() {
         },
         t: game.towns.map((t) => [t.n, r2(t.timer), r2(t.trade), r2(t.wealth)]),
         q: game.questIndex,
+        qn: QUESTS.length,
         st: Object.fromEntries(Object.entries(game.stats).map(([k, v]) => [k, Math.round(v)])),
         bs: game.bestSubmitted,
         vw: viewNow(),
@@ -232,7 +237,7 @@ export function loadSave(data = progress.data) {
     game.castleLevel = data.cl || 1;
     game.happy = Number.isFinite(data.happy) ? data.happy : 0.45;
     Object.assign(game.res, data.res || {});
-    game.questIndex = data.q || 0;
+    game.questIndex = questIndexFrom(data);
     Object.assign(game.stats, data.st || {});
     game.bestSubmitted = data.bs || 0;
     game.speed = SPEEDS.includes(data.sp) ? data.sp : 1;
@@ -302,6 +307,17 @@ export function loadSave(data = progress.data) {
 
     refreshDerived();
     return true;
+}
+
+/**
+ * O objetivo gravado. Os objetivos novos entram no fim da lista, antes dos
+ * marcos de prosperidade: quem ainda ia na lista chega a eles pelo caminho;
+ * quem já ia nos marcos fica no marco em que estava, sem recuar nenhum.
+ */
+function questIndexFrom(data) {
+    const q = data.q || 0;
+    const count = Number.isInteger(data.qn) ? data.qn : OLD_QUEST_COUNT;
+    return q < count ? q : q + QUESTS.length - count;
 }
 
 /**

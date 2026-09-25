@@ -471,6 +471,8 @@ function drawWalker(w, t) {
     ctx.globalAlpha = alpha;
     ctx.translate(x, y);
     ctx.scale(facing, 1);
+    // As crianças da escola são mais pequenas.
+    if (w.role === 'child') ctx.scale(0.72, 0.72);
     ctx.fillStyle = 'rgba(20, 40, 10, 0.25)';
     ctx.beginPath();
     ctx.ellipse(0, 0, 3, 1.2, 0, 0, Math.PI * 2);
@@ -497,6 +499,31 @@ function drawWalker(w, t) {
     ctx.beginPath();
     ctx.arc(0, -10.3 - bob, 1.6, Math.PI, 0);
     ctx.fill();
+    if (w.bag) {
+        // Um visitante: chapéu de aba e a mala na mão.
+        ctx.fillStyle = '#2f2622';
+        ctx.fillRect(-2.6, -11 - bob, 5.2, 0.9);
+        ctx.fillRect(-1.5, -13 - bob, 3, 2.1);
+        ctx.fillStyle = w.bag;
+        ctx.fillRect(1.6, -4.4 - bob, 2.8, 2.4);
+        ctx.fillStyle = '#2f2622';
+        ctx.fillRect(2.5, -5 - bob, 1, 0.7);
+    }
+    if (w.role === 'child') {
+        // A mochila da escola.
+        ctx.fillStyle = '#e0a030';
+        ctx.fillRect(-3.4, -8 - bob, 1.8, 3.4);
+    }
+    if (w.role === 'postman') {
+        // O boné da farda e a sacola das cartas, com uma carta a espreitar.
+        ctx.fillStyle = '#7a1f1a';
+        ctx.fillRect(-1.7, -11.8 - bob, 3.4, 1.3);
+        ctx.fillRect(0.6, -10.9 - bob, 1.8, 0.6);
+        ctx.fillStyle = '#6b4a2b';
+        ctx.fillRect(-2.9, -6 - bob, 2.6, 2.6);
+        ctx.fillStyle = '#f7f2e6';
+        ctx.fillRect(-2.5, -6.8 - bob, 1.8, 1);
+    }
     if (w.load) {
         // Um saco às costas.
         ctx.fillStyle = '#c9a36b';
@@ -979,7 +1006,8 @@ function statusIcon(b) {
     const def = BUILDING[b.kind];
     if (def?.crop) return b.stage === 'ripe' ? RESOURCE[def.crop.res].emoji : null;
     if (b.status === 'noInput') {
-        const needs = def.recipe?.in || (def.serves?.drink ? { [def.serves.drink]: 1 } : {});
+        if (def.lodges) return '🍽️';
+        const needs = def.recipe?.in || (def.serves?.uses ? { [def.serves.uses]: 1 } : {});
         const need = Object.keys(needs).find((res) => game.res[res] < needs[res]);
         return need ? RESOURCE[need].emoji : '❔';
     }

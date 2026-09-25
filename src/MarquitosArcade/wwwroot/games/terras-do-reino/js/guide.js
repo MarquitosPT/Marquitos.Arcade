@@ -9,7 +9,7 @@
 import {
     AUTOSAVE_SECONDS, BUILDING, BUILDINGS, BUY_MARKUP, CASTLE_LEVELS, CASTLE_MAX_LEVEL, CASTLE_RESIDENTS, CLEAR_COST, DAY_SECONDS,
     DEMOLISH_REFUND, FAIR_DAYS, FAIR_EVERY_DAYS, FLATTEN_COST, FLATTEN_STONE, FOODS, HAPPY_BASE, HAPPY_FED, HAPPY_LEISURE,
-    HAPPY_VARIETY, IDLE_TAX_SHARE, NEAR_FEATURES, PRICE_MAX, PRICE_MIN, RESOURCE, RESOURCES, ROAD_COST, SPEEDS, START_RESOURCES,
+    HAPPY_VARIETY, IDLE_TAX_SHARE, NEAR_FEATURES, PRICE_MAX, PRICE_MIN, RESOURCE, RESOURCES, ROAD_COST, SERVICE_EFFECTS, SPEEDS, START_RESOURCES,
     TAX_PER_RESIDENT, TOWN_MAX_BUILDINGS, TOWNS
 } from './config.js';
 import { skipSplashOnNextVisit } from '/lib/arcade/splash.js';
@@ -93,10 +93,26 @@ function rules() {
         ${list([
             `Mesmo sem comer nada de jeito, o povo nunca fica abaixo de <b>${pct(HAPPY_BASE)}</b> contente — isto não é um jogo de revoltas.`,
             `Com todos bem alimentados sobe mais <b>${pct(HAPPY_FED)}</b>, e com <b>dois ou mais tipos de comida</b> na mesa mais <b>${pct(HAPPY_VARIETY)}</b>. A comida leva o contentamento até ${pct(fullFood)}.`,
-            `O resto é convívio: ${joinPt(leisure)}, na proporção do povo que conseguem servir.`,
+            `O resto é convívio e luxo: ${joinPt(leisure)}, na proporção do povo que conseguem servir. A joalharia vende as joias ao povo: gasta as que houver no armazém.`,
             'O contentamento não salta de um dia para o outro: anda metade do caminho por dia.',
             'Mais contentamento é mais impostos — e os últimos níveis do castelo pedem um povo contente.'
         ])}
+
+        <h3>🧳 Visitantes</h3>
+        ${list([
+            `A partir do castelo nível ${BUILDING.inn.tier}, o ${building(BUILDING.inn)} recebe quem vem visitar o reino: até <b>${BUILDING.inn.lodges.guests}</b> visitantes por dia, cada um a pagar <b>${BUILDING.inn.lodges.fee} moedas</b>.`,
+            'Chegam tantos mais quanto mais contente estiver o povo: um reino feliz tem fama.',
+            'Os visitantes jantam ao fim do dia, depois do povo, do que sobrar na despensa. Sem comida, não ficam — e não pagam.'
+        ])}
+
+        <h3>🏛️ Serviços do reino</h3>
+        <p>A partir do castelo nível ${BUILDING.school.tier} há serviços para o povo. Cada um serve até ${BUILDING.school.service.residents} moradores
+            enquanto tiver gente a trabalhar, e o efeito é tanto maior quanto maior a parte do povo servida:</p>
+        ${list(BUILDINGS.filter((def) => def.service).map((def) => {
+        const effects = Object.entries(SERVICE_EFFECTS).filter(([k]) => def.service[k]).map(([k, e]) => `até <b>+${pct(def.service[k])}</b> ${e.text}`);
+        return `${building(def)}: ${joinPt(effects)}.`;
+    }))}
+        <p>Nas estradas veem-se as crianças a caminho da escola e os carteiros a distribuir as cartas.</p>
 
         <h3>🔨 Construir</h3>
         ${list([
@@ -169,15 +185,19 @@ function quests() {
 const TIER_LABEL = (tier) => (tier === 1 ? 'Desde o início' : `Castelo nível ${tier}`);
 
 function whatItDoes(def) {
+    const serves = () => {
+        const uses = def.serves.uses ? ` · gasta 1 ${RESOURCE[def.serves.uses].emoji} por cada ${def.serves.per}` : '';
+        return `Serve até ${def.serves.residents} moradores por dia${uses}`;
+    };
     if (def.recipe) {
         const input = side(def.recipe.in);
-        return `${input ? `${input} → ` : ''}${side(def.recipe.out)} a cada ${def.recipe.time} s`;
+        const made = `${input ? `${input} → ` : ''}${side(def.recipe.out)} a cada ${def.recipe.time} s`;
+        return def.serves ? `${made}<br>${serves()}` : made;
     }
     if (def.crop) return `${def.crop.yield} ${RESOURCE[def.crop.res].emoji} por colheita · ${def.crop.grow} s a crescer`;
-    if (def.serves) {
-        const drink = def.serves.drink ? ` · gasta 1 ${RESOURCE[def.serves.drink].emoji} por cada ${def.serves.per}` : '';
-        return `Serve até ${def.serves.residents} moradores por dia${drink}`;
-    }
+    if (def.serves) return serves();
+    if (def.lodges) return `Até ${def.lodges.guests} visitantes por dia, a ${def.lodges.fee} 💰 cada · uma refeição por visitante`;
+    if (def.service) return `Serve até ${def.service.residents} moradores, todos os dias`;
     if (def.residents) return `+${def.residents} moradores`;
     if (def.plants) return `Planta uma árvore a cada ${def.plants.time} s, até ${def.plants.radius.toLocaleString('pt-PT')} casas à volta`;
     if (def.farms) return `Semeia e colhe sozinho as culturas até ${def.farms.radius} casas à volta`;
@@ -195,6 +215,12 @@ function tags(def) {
         t.push(`${f.icon} ${f.need}: pelo menos ${def.near.min} ${f.count} a ${def.near.radius.toLocaleString('pt-PT')} casas (a todo o gás com ${def.near.full})`);
     }
     if (def.serves) t.push(`😊 Até +${pct(HAPPY_LEISURE[def.id] || 0)} de contentamento`);
+    if (def.lodges) t.push('🧳 Mais visitantes quanto mais contente estiver o povo');
+    if (def.service) {
+        for (const [k, e] of Object.entries(SERVICE_EFFECTS)) {
+            if (def.service[k]) t.push(`${e.icon} Até +${pct(def.service[k])} ${e.text}, na proporção do povo servido`);
+        }
+    }
     return t.map((x) => `<li>${x}</li>`).join('');
 }
 
@@ -229,7 +255,7 @@ function buildings() {
 
 function goods() {
     const producers = (id) => BUILDINGS.filter((b) => b.recipe?.out?.[id] || b.crop?.res === id);
-    const consumers = (id) => BUILDINGS.filter((b) => b.recipe?.in?.[id] || b.serves?.drink === id);
+    const consumers = (id) => BUILDINGS.filter((b) => b.recipe?.in?.[id] || b.serves?.uses === id || (b.lodges && RESOURCE[id].meals));
     const builds = (id) => {
         const names = BUILDINGS.filter((b) => b.cost[id]).map((b) => `${b.emoji} ${b.name}`);
         if (ROAD_COST[id]) names.unshift('🛣️ Estrada');
