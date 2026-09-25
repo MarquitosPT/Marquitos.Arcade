@@ -135,23 +135,24 @@ function ore(ctx) {
 // ---------- Montes ----------
 //
 // As casas de colina sem nada em cima levam dois montes, escolhidos entre três
-// feitios: o baixo (um cabeço redondo e verde), o médio (um pico de rocha) e o
-// alto (um pico com neve no cimo). Cada casa junta dois deles, um atrás e
+// feitios: o baixo (um cabeço redondo e verde), o médio (um monte de rocha) e
+// o alto (um monte com neve no cimo). Cada casa junta dois deles, um atrás e
 // outro à frente; como são postos na grelha da peça, rodam com a vista e
 // pintam-se de trás para a frente com `layered`. Casas de colina vizinhas
-// fazem assim uma serra.
+// fazem assim uma serra. As casas de colina com rochas ou ouro levam só o
+// monte de trás, e o rochedo pinta-se à frente dele.
 
 /** Os três feitios: meia largura, altura, cor e se tem neve. */
 const MOUNTAIN_KINDS = {
-    low: { w: 17, h: 14, color: '#7d9650' },
-    mid: { w: 19, h: 24, color: '#9a8b73' },
-    high: { w: 21, h: 35, color: '#8c8883', snow: true }
+    low: { w: 18, h: 12, color: '#7d9650' },
+    mid: { w: 20, h: 17, color: '#9a8b73' },
+    high: { w: 22, h: 24, color: '#8c8883', snow: true }
 };
 
-/** Os pares de feitios: [o de trás, o da frente]. Metade tem o mais alto atrás, metade à frente. */
+/** Os pares de feitios: [o de trás, o da frente]. Quase todos têm um monte verde. */
 const MOUNTAIN_PAIRS = [
-    ['mid', 'low'], ['high', 'low'], ['high', 'mid'],
-    ['low', 'mid'], ['mid', 'high'], ['low', 'high']
+    ['mid', 'low'], ['high', 'low'], ['low', 'low'],
+    ['low', 'mid'], ['high', 'mid'], ['low', 'high']
 ];
 
 /** Um monte com a base no ponto (x, y): a face da esquerda ao sol, a da direita na sombra. */
@@ -164,6 +165,9 @@ function mountainPeak(ctx, x, y, kindId, s, flip) {
     // A crista desce do cimo até à base, um pouco à frente: divide a luz da sombra.
     const skew = (flip ? -1 : 1) * w * 0.12;
     const top = [x + skew, y - h];
+    // O cimo é rombo: dois ombros logo abaixo dele, um de cada lado.
+    const capL = [top[0] - w * 0.16, top[1] + h * 0.1];
+    const capR = [top[0] + w * 0.15, top[1] + h * 0.09];
     const foot = [x + w * 0.12, y + w * 0.22];
     const left = [x - w, y];
     const right = [x + w, y];
@@ -198,8 +202,8 @@ function mountainPeak(ctx, x, y, kindId, s, flip) {
     // Um pico de rocha: ombros quebrados de cada lado da crista.
     const sl = [x - w * 0.55, y - h * 0.48];
     const sr = [x + w * 0.5, y - h * 0.42];
-    poly(ctx, [left, sl, top, [x + w * 0.02, y - h * 0.45], foot], lit);
-    poly(ctx, [top, sr, right, foot, [x + w * 0.02, y - h * 0.45]], dark);
+    poly(ctx, [left, sl, capL, top, [x + w * 0.02, y - h * 0.45], foot], lit);
+    poly(ctx, [top, capR, sr, right, foot, [x + w * 0.02, y - h * 0.45]], dark);
     // Estrias de pedra na face ao sol.
     ctx.strokeStyle = shade(kind.color, -0.08);
     ctx.lineWidth = 0.9;
@@ -215,19 +219,27 @@ function mountainPeak(ctx, x, y, kindId, s, flip) {
         const at = (p, u) => [top[0] + (p[0] - top[0]) * u, top[1] + (p[1] - top[1]) * u];
         const l = at(sl, 0.55);
         const r = at(sr, 0.5);
+        const cl = at(capL, 1);
+        const cr = at(capR, 1);
         const c = at(crest, 0.52);
         const bumpL = at([(sl[0] + crest[0]) / 2, (sl[1] + crest[1]) / 2], 0.36);
         const bumpR = at([(sr[0] + crest[0]) / 2, (sr[1] + crest[1]) / 2], 0.38);
-        poly(ctx, [top, l, bumpL, c], '#f4f6f8');
-        poly(ctx, [top, c, bumpR, r], '#c9d3dd');
+        poly(ctx, [top, cl, l, bumpL, c], '#f4f6f8');
+        poly(ctx, [top, c, bumpR, r, cr], '#c9d3dd');
     }
 }
 
-function mountain(ctx, { variant = 0 }) {
+/** Os montes de uma casa; com `backOnly`, só o de trás (fica atrás de um rochedo ou de um veio de ouro). */
+function mountain(ctx, { variant = 0, backOnly = false }) {
     const [back, front] = MOUNTAIN_PAIRS[variant % MOUNTAIN_PAIRS.length];
     const flip = Math.floor(variant / MOUNTAIN_PAIRS.length) % 2 === 1;
     const side = flip ? -1 : 1;
-    groundShadow(ctx, 30, 11, 0.16, 4, 3);
+    if (backOnly) {
+        // Atrás na vista, rode ela para onde rodar: o rochedo fica à frente.
+        const [x, y] = P(0, 0);
+        mountainPeak(ctx, x, y - 7, back, 1, flip);
+        return;
+    }
     layered([
         [-0.1 * side, -0.14, () => {
             const [x, y] = P(-0.1 * side, -0.14);

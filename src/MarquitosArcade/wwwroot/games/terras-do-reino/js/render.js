@@ -714,12 +714,15 @@ function drawFeature(feature, x, y, wx, wy, t) {
     }
 }
 
-/** Os dois montes de uma casa de colina sem nada em cima (ver `mountain` em sprites.js). */
-function drawMountains(x, y, wx, wy) {
+/**
+ * Os montes de uma casa de colina (ver `mountain` em sprites.js): dois numa
+ * casa sem nada em cima, só o de trás numa casa com rochas ou ouro.
+ */
+function drawMountains(x, y, wx, wy, backOnly = false) {
     const variant = Math.floor(hash2(x, y, 18) * MOUNTAIN_VARIANTS);
     const jx = (hash2(x, y, 19) - 0.5) * 4;
     const k = 0.56 + Math.round(hash2(x, y, 20) * 2) * 0.04;
-    stamp(ctx, `mountain|${variant}`, 'mountain', { variant }, wx + jx, wy, k);
+    stamp(ctx, `mountain|${variant}|${backOnly ? 1 : 0}`, 'mountain', { variant, backOnly }, wx + jx, wy, k);
 }
 
 // ---------- Peças ocultas (modo de construção) ----------
@@ -1202,8 +1205,13 @@ export function render(dt) {
                     }
                 }
             } else if (game.world.feature[i]) {
-                if (hideProps) drawFeatureBase(game.world.feature[i], x, y, wx, gy);
-                else drawFeature(game.world.feature[i], x, y, wx, gy, t);
+                const feature = game.world.feature[i];
+                if (hideProps) {
+                    drawFeatureBase(feature, x, y, wx, gy);
+                } else {
+                    if (feature !== 'tree' && game.world.terrain[i] === T_HILL) drawMountains(x, y, wx, gy, true);
+                    drawFeature(feature, x, y, wx, gy, t);
+                }
             } else if (game.world.terrain[i] === T_HILL && !game.world.road[i]) {
                 if (hideProps) drawMountainsBase(wx, gy);
                 else drawMountains(x, y, wx, gy);
