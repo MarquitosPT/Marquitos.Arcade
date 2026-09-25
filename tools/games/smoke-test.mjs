@@ -756,6 +756,48 @@ const GAMES = [
     },
     {
         slug: 'terras-do-reino',
+        // O guia (guia.html): abre-se pelo "Como jogar" do menu e é todo montado
+        // a partir do config.js — tem de trazer todos os edifícios, bens,
+        // níveis e objetivos, e a página não pode rolar para o lado.
+        name: 'terras-do-reino-guia',
+        viewport: { width: 390, height: 780 },
+        canvas: false,
+        menuSelector: '#startScreen',
+        async play(page) {
+            await Promise.all([page.waitForURL('**/guia.html'), page.click('#guideLink')]);
+            await page.waitForSelector('.bCard');
+            const found = await page.evaluate(async () => {
+                const G = '/games/terras-do-reino/js/';
+                const { BUILDINGS, RESOURCES, CASTLE_MAX_LEVEL } = await import(G + 'config.js');
+                const { QUESTS } = await import(G + 'quests.js');
+                return {
+                    buildings: document.querySelectorAll('#edificiosBody .bCard[id^="edificio-"]').length,
+                    wantBuildings: BUILDINGS.length,
+                    goods: document.querySelectorAll('#bensBody .gCard').length,
+                    wantGoods: RESOURCES.length,
+                    levels: document.querySelectorAll('#casteloBody .lvlCard').length,
+                    wantLevels: CASTLE_MAX_LEVEL,
+                    quests: document.querySelectorAll('#objetivosBody .quest').length,
+                    wantQuests: QUESTS.length,
+                    empty: [...document.querySelectorAll('section.card > div')].filter((el) => !el.textContent.trim()).map((el) => el.id),
+                    overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+                    undefinedText: document.body.innerText.includes('undefined') || document.body.innerText.includes('NaN')
+                };
+            });
+            if (found.empty.length) throw new Error(`secções vazias no guia: ${found.empty.join(', ')}`);
+            for (const what of ['buildings', 'goods', 'levels', 'quests']) {
+                const want = found[`want${what[0].toUpperCase()}${what.slice(1)}`];
+                if (found[what] !== want) throw new Error(`o guia mostra ${found[what]} ${what} em vez de ${want}`);
+            }
+            if (found.overflow > 0) throw new Error(`o guia rola ${found.overflow}px para o lado`);
+            if (found.undefinedText) throw new Error('o guia tem "undefined" ou "NaN" no texto');
+            // Um link do índice leva à secção.
+            await page.click('.toc a[href="#castelo"]');
+            await sleep(600);
+        }
+    },
+    {
+        slug: 'terras-do-reino',
         name: 'terras-do-reino-gravacao',
         // Ao alto, como num telemóvel.
         viewport: { width: 400, height: 820 },

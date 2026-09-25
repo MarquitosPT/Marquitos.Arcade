@@ -50,6 +50,14 @@ button { cursor: pointer; }
 
 .btnOutline:hover { background: var(--glass-bg-hover); border-color: var(--accent); }
 
+/* O "Como jogar" do menu é um link para o guia (guia.html) com cara de botão. */
+a.btnOutline {
+    display: block;
+    text-align: center;
+    text-decoration: none;
+    color: var(--text);
+}
+
 .iconBtn {
     display: grid;
     place-items: center;

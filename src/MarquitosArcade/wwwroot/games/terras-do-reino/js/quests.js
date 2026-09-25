@@ -46,8 +46,8 @@ export const QUESTS = [
     { text: 'Abre uma pastelaria', hint: 'Ovos, farinha, açúcar e leite → bolos, o doce do reino.', done: built('patisserie'), reward: { coins: 2500 } }
 ];
 
-/** Depois da lista: marcos de prosperidade, cada um o dobro do anterior. */
-function milestone(index) {
+/** Depois da lista: marcos de prosperidade, cada um o dobro do anterior. `index` conta a partir do início da lista. */
+export function milestone(index) {
     const target = 10000 * 2 ** (index - QUESTS.length);
     return {
         text: `Chega a ${target.toLocaleString('pt-PT')} de prosperidade`,
