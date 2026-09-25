@@ -78,6 +78,7 @@ export const RESOURCES = [
     { id: 'bread', name: 'Pão', emoji: '🍞', price: 10, tradable: true, meals: 2 },
     { id: 'milk', name: 'Leite', emoji: '🥛', price: 5, tradable: true, meals: 1 },
     { id: 'cheese', name: 'Queijo', emoji: '🧀', price: 16, tradable: true, meals: 3 },
+    { id: 'fish', name: 'Peixe', emoji: '🐟', price: 8, tradable: true, meals: 2 },
     { id: 'planks', name: 'Tábuas', emoji: '🪚', price: 9, tradable: true },
     { id: 'gold', name: 'Ouro', emoji: '✨', price: 30, tradable: true }
 ];
@@ -85,7 +86,7 @@ export const RESOURCES = [
 export const RESOURCE = Object.fromEntries(RESOURCES.map((r) => [r.id, r]));
 
 /** Por onde o povo come: primeiro o que mais alimenta. */
-export const FOODS = ['cheese', 'bread', 'milk'];
+export const FOODS = ['cheese', 'bread', 'fish', 'milk'];
 
 export const START_RESOURCES = { coins: 160, wood: 30, stone: 12 };
 
@@ -115,13 +116,26 @@ export const HAPPY_VARIETY = 0.1;
 /**
  * Os níveis do castelo. Cada um alarga o território onde se pode construir,
  * aumenta o armazém e abre um novo escalão de edifícios (`tier`).
+ *
+ * Os níveis 3 e 4 são a meta de um reino a sério: além do custo (que já pede
+ * pão, e depois queijo e ouro — as cadeias de produção todas a andar), `needs`
+ * exige um reino grande e bem tratado — `residents` moradores e o povo pelo
+ * menos `happy` contente. Não se paga: tem de se ter.
  */
 export const CASTLE_LEVELS = [
     null,
     { level: 1, radius: 13, storage: 150, tier: 1, residents: 4 },
     { level: 2, radius: 18, storage: 400, tier: 2, residents: 8, cost: { coins: 250, wood: 60, stone: 40 } },
-    { level: 3, radius: 23, storage: 1000, tier: 3, residents: 12, cost: { coins: 700, planks: 40, stone: 80 } },
-    { level: 4, radius: 28, storage: 2500, tier: 3, residents: 20, cost: { coins: 2000, planks: 80, stone: 150, gold: 25 } }
+    {
+        level: 3, radius: 23, storage: 1000, tier: 3, residents: 12,
+        cost: { coins: 1500, planks: 120, stone: 220, bread: 60 },
+        needs: { residents: 40, happy: 0.6 }
+    },
+    {
+        level: 4, radius: 28, storage: 2500, tier: 3, residents: 20,
+        cost: { coins: 5000, planks: 250, stone: 450, gold: 80, cheese: 60 },
+        needs: { residents: 80, happy: 0.75 }
+    }
 ];
 
 export const CASTLE_MAX_LEVEL = CASTLE_LEVELS.length - 1;
@@ -131,8 +145,9 @@ export const CASTLE_MAX_LEVEL = CASTLE_LEVELS.length - 1;
 /**
  * `site` diz onde se pode pôr: 'land' é terra livre (relva ou prado), 'ore' é
  * uma colina com uma veia de ouro debaixo. `near` exige vizinhos: um lenhador
- * sem árvores perto não corta nada. Os raios contam-se em casas, a partir do
- * centro do edifício.
+ * sem árvores perto não corta nada, uma cabana de pesca sem água não pesca. Os
+ * raios contam-se em casas, a partir do centro do edifício; `feature` é um
+ * elemento do mapa ('tree', 'rock') ou 'water', que conta as casas de lago.
  *
  * `recipe` é o que o edifício faz a cada ciclo de `time` segundos, com todos
  * os trabalhadores (`workers`). Sem trabalhadores fica parado; sem o que
@@ -218,10 +233,37 @@ export const BUILDINGS = [
         site: 'ore',
         recipe: { out: { gold: 1 }, time: 35 },
         desc: 'Escava a veia de ouro de uma colina. Só se constrói numa colina com uma veia.'
+    },
+    {
+        // No fim da lista: a gravação guarda o índice do edifício (ver save.js).
+        id: 'fishery', name: 'Cabana de pesca', emoji: '🎣', tier: 1,
+        cost: { coins: 45, wood: 20 }, workers: 2,
+        near: { feature: 'water', radius: 3.5, min: 4, full: 12 },
+        recipe: { out: { fish: 1 }, time: 14 },
+        desc: 'Os pescadores saem de barco para o lago e pescam à cana. Tem de ficar à beira de água: quanto mais lago perto, mais peixe.'
     }
 ];
 
 export const BUILDING = Object.fromEntries(BUILDINGS.map((b) => [b.id, b]));
+
+/** Como se fala do que um edifício precisa à volta (`near.feature`): no cartão, na ficha e no balão. */
+export const NEAR_FEATURES = {
+    tree: { icon: '🌲', need: 'Precisa de árvores perto', count: 'árvore(s)' },
+    rock: { icon: '🪨', need: 'Precisa de rochas perto', count: 'rocha(s)' },
+    water: { icon: '💧', need: 'Tem de ficar à beira de água', count: 'casa(s) de água' }
+};
+
+/**
+ * Os barcos da cabana de pesca: um por trabalhador. Só se veem — o peixe sai
+ * da receita, como nas outras oficinas —, mas vão remando pelo lago até um
+ * sítio, pescam à cana um bocado e voltam ao cais.
+ */
+export const BOAT_SPEED = 0.9;
+/** Até onde um barco se afasta do cais, em casas. */
+export const BOAT_RANGE = 6;
+/** Segundos a pescar em cada sítio (entre um e outro). */
+export const BOAT_FISH_MIN = 5;
+export const BOAT_FISH_MAX = 11;
 
 /**
  * Aplanar uma colina: os trabalhadores cavam um bocado de 2x2 casas até ao
@@ -276,7 +318,7 @@ export const TOWNS = [
     },
     {
         id: 'pedralva', name: 'Pedralva', roof: '#5f7fca', emoji: '🪨',
-        supplies: ['stone', 'gold'], demands: ['bread', 'cheese', 'wheat'],
+        supplies: ['stone', 'gold'], demands: ['bread', 'cheese', 'wheat', 'fish'],
         kinds: ['house', 'quarry', 'house', 'carpentry', 'quarry']
     },
     {

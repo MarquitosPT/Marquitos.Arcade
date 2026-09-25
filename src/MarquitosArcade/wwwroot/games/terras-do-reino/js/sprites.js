@@ -41,7 +41,9 @@ export const BOUNDS = {
     field: [-34, -30, 68, 50],
     castle: [-86, -196, 172, 250],
     keep: [-40, -126, 80, 152],
-    mill: [-40, -110, 80, 136]
+    mill: [-40, -110, 80, 136],
+    // O cais pode sair até três casas para fora do bloco.
+    fishery: [-66, -96, 132, 138]
 };
 
 // ---------- Natureza ----------
@@ -613,6 +615,122 @@ function keep(ctx, { roof = '#d8587b' }) {
     ]);
 }
 
+/** Um peixe pendurado (ou no balde): um fuso prateado com a cauda. */
+function hangingFish(ctx, x, y, color = '#a9b8c4') {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.ellipse(x, y + 3, 1.4, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    poly(ctx, [[x, y + 5.5], [x - 1.6, y + 7.6], [x + 1.6, y + 7.6]], shade(color, -0.2));
+}
+
+/**
+ * O cais: tábuas que saem do bloco pelo lado `side` (0: +x, 1: -x, 2: +y,
+ * 3: -y, na grelha da peça) até à água, `reach` casas mais à frente, com as
+ * estacas a espreitar. É lá que os barcos atracam (ver boats.js).
+ */
+const SIDE_DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+
+function pier(ctx, side, reach) {
+    const [sx, sy] = SIDE_DIRS[side];
+    // Uma casa é meio bloco: o cais passa por cima da terra que houver e entra
+    // dois terços de casa na água.
+    const len = reach * 0.5 - 0.17;
+    const cx = sx * (0.5 + len / 2 - 0.08);
+    const cy = sy * (0.5 + len / 2 - 0.08);
+    const a = sx ? len + 0.16 : 0.18;
+    const b = sy ? len + 0.16 : 0.18;
+    // As estacas: da água até às tábuas.
+    for (const k of reach > 1 ? [0.3, 0.62, 0.95] : [0.3, 0.95]) {
+        for (const w of [-1, 1]) {
+            const px = sx * (0.5 + len * k - 0.08) + (sx ? 0 : w * 0.08);
+            const py = sy * (0.5 + len * k - 0.08) + (sy ? 0 : w * 0.08);
+            box(ctx, 0.025, 0.025, 6, '#5a3d24', { ox: px, oy: py, z: -3 });
+        }
+    }
+    box(ctx, a, b, 1.6, '#b58a57', { ox: cx, oy: cy, z: 2.4, top: '#c99d66' });
+}
+
+/**
+ * Onde fica cada coisa da cabana de pesca, conforme o lado da água: a cabana
+ * de costas para o lago, o cais para ele, o resto ao longo da margem.
+ * `variant` é `side + 4 * reach` de `shoreSide` (world.js); abaixo de 4 não
+ * há água à beira e não há cais.
+ */
+function fisheryLayout(variant) {
+    const side = variant % 4;
+    const reach = Math.floor(variant / 4);
+    const [sx, sy] = SIDE_DIRS[side];
+    // Perpendicular ao cais.
+    const [qx, qy] = [-sy, sx];
+    const at = (along, across) => ({ ox: sx * along + qx * across, oy: sy * along + qy * across });
+    return {
+        side, reach, sx, sy, qx, qy,
+        hut: at(-0.14, -0.08),
+        rack: at(0.2, 0.24),
+        barrel: at(0.26, -0.26),
+        net: at(-0.3, 0.3)
+    };
+}
+
+function fishery(ctx, { roof = '#4f6f8f', variant = 0 }) {
+    const { side, reach, sx, sy, qx, qy, hut, rack, barrel, net } = fisheryLayout(variant);
+    const color = roof === PLAYER_ROOF ? '#4f6f8f' : roof;
+    const plank = '#8d6a45';
+    groundShadow(ctx, 24, 10, 0.2, 6, 4);
+    const parts = [
+        [hut.ox, hut.oy, () => {
+            box(ctx, 0.44, 0.4, 13, plank, hut);
+            // Tábuas ao alto: riscas mais escuras nas paredes.
+            for (const u of [0.2, 0.45, 0.8]) wallPatch(ctx, 'left', 0.44, 0.4, u, 0.012, 0, 13, shade(plank, -0.25), hut);
+            wallPatch(ctx, 'left', 0.44, 0.4, 0.62, 0.1, 0, 9, DOOR, hut);
+            wallPatch(ctx, 'right', 0.44, 0.4, 0.5, 0.1, 6, 10, WINDOW, hut);
+            gable(ctx, 0.44, 0.4, 13, 11, color, plank, { ...hut, alongX: sx !== 0 });
+        }],
+        // O estendal do peixe a secar: duas estacas, uma vara e o peixe pendurado.
+        [rack.ox, rack.oy, () => {
+            const a = P(rack.ox - qx * 0.12, rack.oy - qy * 0.12);
+            const b = P(rack.ox + qx * 0.12, rack.oy + qy * 0.12);
+            ctx.strokeStyle = '#6b4a2b';
+            ctx.lineWidth = 1.6;
+            ctx.beginPath();
+            ctx.moveTo(a[0], a[1]);
+            ctx.lineTo(a[0], a[1] - 13);
+            ctx.lineTo(b[0], b[1] - 13);
+            ctx.lineTo(b[0], b[1]);
+            ctx.stroke();
+            for (let k = 1; k <= 3; k++) {
+                const u = k / 4;
+                hangingFish(ctx, a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u - 12, k === 2 ? '#c7a26a' : '#a9b8c4');
+            }
+        }],
+        // Barrica do peixe salgado.
+        [barrel.ox, barrel.oy, () => {
+            const top = cylinder(ctx, 4, 6, '#8a5a30', barrel);
+            ctx.fillStyle = '#c9d4dc';
+            ctx.beginPath();
+            ctx.ellipse(top.x, top.y, 3, 1.4, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }],
+        // Uma rede estendida no chão, a secar.
+        [net.ox, net.oy, () => {
+            const [x, y] = P(net.ox, net.oy);
+            ctx.strokeStyle = 'rgba(80, 64, 44, 0.75)';
+            ctx.lineWidth = 0.7;
+            ctx.beginPath();
+            for (let k = -2; k <= 2; k++) {
+                ctx.moveTo(x - 8 + k * 2, y - 2 - k);
+                ctx.lineTo(x + 2 + k * 2, y + 3 - k);
+                ctx.moveTo(x - 7 + k * 2.2, y + 2 + k * 0.4);
+                ctx.lineTo(x + 3 + k * 2.2, y - 3 + k * 0.4);
+            }
+            ctx.stroke();
+        }]
+    ];
+    if (reach) parts.push([sx * 0.75, sy * 0.75, () => pier(ctx, side, reach)]);
+    layered(parts);
+}
+
 // ---------- Tabelas ----------
 
 export const STATIC = {
@@ -632,6 +750,7 @@ export const STATIC = {
     barn,
     dairy,
     goldmine,
+    fishery,
     castle,
     keep
 };
@@ -795,8 +914,17 @@ function oreLive(ctx, b, t, { seed = 0 }) {
     ctx.stroke();
 }
 
+/** Fumo do fumeiro da cabana de pesca, quando os pescadores estão a trabalhar. */
+function fisheryLive(ctx, b, t, { variant = 0 }) {
+    if (b.owner === 'player' && b.status !== 'ok') return;
+    const { hut } = fisheryLayout(variant);
+    const [x, y] = P(hut.ox, hut.oy, 26);
+    smoke(ctx, x, y, t * 0.6, b.x * 0.19);
+}
+
 export const LIVE = {
     mill: millBlades,
+    fishery: fisheryLive,
     bakery: bakeryLive,
     carpentry: chimneyLive,
     house: houseLive,

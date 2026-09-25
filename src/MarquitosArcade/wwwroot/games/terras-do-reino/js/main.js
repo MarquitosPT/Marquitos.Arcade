@@ -18,6 +18,7 @@ import {
     TOWNS, ZOOM_START
 } from './config.js';
 import { resumeAudio, sfx } from './audio.js';
+import { stepBoats } from './boats.js';
 import {
     buildRoad, canAfford, canRoad, checkPlacement, demolish, flatten, flattenBlock, newRoadCells, place, removeRoad,
     roadPath, upgradeCastle
@@ -80,7 +81,10 @@ const loop = createLoop(
         }
 
         // A gente anda ao ritmo do relógio do jogo; no menu, devagar, ao natural.
-        stepWalkers(game.phase === 'playing' ? (game.paused ? 0 : dt * game.speed) : dt);
+        // E os barcos das cabanas de pesca também.
+        const walkDt = game.phase === 'playing' ? (game.paused ? 0 : dt * game.speed) : dt;
+        stepWalkers(walkDt);
+        stepBoats(walkDt);
 
         timers.hud += dt;
         if (timers.hud >= 0.25 && game.phase === 'playing') {
@@ -111,7 +115,7 @@ function onNewDay() {
     const d = game.derived;
     if (d.residents >= 12 && d.fedRatio < 0.5 && game.day - hungerWarnedDay >= 4) {
         hungerWarnedDay = game.day;
-        toast('🍞 O povo come pouco: pão, leite ou queijo deixam-no contente — e pagam mais impostos.');
+        toast('🍞 O povo come pouco: pão, peixe, leite ou queijo deixam-no contente — e pagam mais impostos.');
     }
 }
 

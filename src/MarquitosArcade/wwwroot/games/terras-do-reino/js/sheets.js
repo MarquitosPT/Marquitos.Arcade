@@ -10,10 +10,11 @@
 import { escapeHtml } from '/lib/arcade/index.js';
 
 import {
-    BUILDING, BUILDINGS, DEMOLISH_REFUND, FLATTEN_COST, FLATTEN_STONE, RESOURCE, ROAD_COST, TOWNS
+    BUILDING, BUILDINGS, DEMOLISH_REFUND, FLATTEN_COST, FLATTEN_STONE, NEAR_FEATURES, RESOURCE, ROAD_COST, TOWNS
 } from './config.js';
 import {
-    canAfford, checkFlatten, checkPlacement, countOf, inTerritory, missingFor, nextCastleLevel
+    canAfford, canUpgradeCastle, castleNeeds, checkFlatten, checkPlacement, countOf, inTerritory, missingFor,
+    nextCastleLevel
 } from './buildings.js';
 import { fmt, fmtPrice, pct } from './format.js';
 import { TRADABLE, buyPrice, priceTrend, sellPrice } from './market.js';
@@ -195,13 +196,16 @@ function castleView() {
     const next = nextCastleLevel();
     let nextHtml = '<p class="sheetText">O castelo está no nível máximo. O reino não tem fim: continua a crescer!</p>';
     if (next) {
+        const needs = castleNeeds(next);
         const unlocks = BUILDINGS.filter((b) => b.tier === next.tier && b.tier > info.tier).map((b) => `${b.emoji} ${b.name}`);
         nextHtml = `<span class="sectionLabel">Nível ${next.level}</span>
             <p class="sheetText">Território até <b>${next.radius} casas</b>, armazém de <b>${fmt(next.storage)}</b>,
                 <b>+${next.residents - info.residents}</b> moradores no castelo${unlocks.length ? `, e abre: <b>${unlocks.join(', ')}</b>` : ''}.</p>
             <div style="margin-top:8px">${costHtml(next.cost)}</div>
+            ${needs.map((n) => `<div class="statusLine ${n.ok ? 'ok' : 'warn'}" style="margin-top:6px">${n.ok ? '✓' : '✗'} ${n.label}:
+                ${n.percent ? `${pct(n.have)} de ${pct(n.need)}` : `${fmt(n.have)} de ${fmt(n.need)}`}</div>`).join('')}
             <div class="sheetActions">
-                <button class="btn" type="button" data-action="upgrade"${canAfford(next.cost) ? '' : ' disabled'}>🏰 Subir ao nível ${next.level}</button>
+                <button class="btn" type="button" data-action="upgrade"${canUpgradeCastle() ? '' : ' disabled'}>🏰 Subir ao nível ${next.level}</button>
             </div>`;
     }
     return {
@@ -217,7 +221,7 @@ function castleView() {
                 ${stat(`${info.radius} casas`, 'território')}
             </div></div>
             <div class="sheetSection">
-                <p class="sheetText">O povo come ao fim de cada dia: 🧀 queijo, 🍞 pão ou 🥛 leite. Bem alimentado — e com mais de
+                <p class="sheetText">O povo come ao fim de cada dia: 🧀 queijo, 🍞 pão, 🐟 peixe ou 🥛 leite. Bem alimentado — e com mais de
                     um tipo de comida — fica contente e paga mais impostos.</p>
             </div>
             <div class="sheetSection">${nextHtml}</div>`
@@ -310,7 +314,7 @@ function tileView(arg) {
             let extra = '';
             if (def.near) {
                 const found = countFeatureNear(world, b.x, b.y, b.size, def.near.feature, def.near.radius);
-                extra = ` · ${found} ${def.near.feature === 'tree' ? 'árvore(s)' : 'rocha(s)'} perto (${pct(Math.min(1, found / def.near.full))})`;
+                extra = ` · ${found} ${NEAR_FEATURES[def.near.feature].count} perto (${pct(Math.min(1, found / def.near.full))})`;
             }
             body += `<div class="sheetSection"><div class="statusLine ${tone}">${text}${extra}</div>
                 <div class="progressTrack" style="--fill:${pct(Math.min(1, b.progress))}"></div></div>`;
@@ -357,7 +361,7 @@ function tileView(arg) {
                 <div class="sheetActions"><button class="btn" type="button" data-action="buildAt" data-arg="goldmine" data-n="${x},${y}"${ok ? '' : ' disabled'}>⛰️ Construir a mina</button></div>`
         };
     }
-    if (terrain === T_WATER) return { icon: '💧', title: 'Lago', sub: where, html: '<p class="sheetText">Água limpa. Não se constrói em cima dela, mas enfeita o reino.</p>' };
+    if (terrain === T_WATER) return { icon: '💧', title: 'Lago', sub: where, html: '<p class="sheetText">Água limpa. Não se constrói em cima dela, mas uma <b>🎣 Cabana de pesca</b> na margem manda os pescadores de barco pescar aqui.</p>' };
     if (terrain === T_HILL) return hillView(x, y, feature, where);
     return {
         icon: '🟩',

@@ -597,6 +597,7 @@ const GAMES = [
                         && countFeatureNear(w, x, y, 2, BUILDING[kind].near.feature, BUILDING[kind].near.radius) >= BUILDING[kind].near.min;
                     if (!spot(CASTLE_LEVELS[1].radius, near('woodcutter'))) say('não há onde pôr um lenhador no começo');
                     if (!spot(CASTLE_LEVELS[1].radius, near('quarry'))) say('não há onde pôr uma pedreira no começo');
+                    if (!spot(CASTLE_LEVELS[1].radius, near('fishery'))) say('não há onde pôr uma cabana de pesca no começo');
                     if (!spot(CASTLE_LEVELS[3].radius, (x, y) => isMineBlock(w, x, y, 2))) say('sem sítio para uma mina ao alcance do castelo no nível 3');
                     for (let dy = 0; dy < CASTLE_SIZE; dy++) for (let dx = 0; dx < CASTLE_SIZE; dx++) {
                         const i = idx(CASTLE_TILE.x + dx, CASTLE_TILE.y + dy);
@@ -731,8 +732,15 @@ const GAMES = [
                 }
                 if (!path) return -1;
                 buildRoad(path);
-                for (let i = 0; i < 40; i++) stepWalkers(0.25);
-                return fx.walkers.filter((w) => w.group === 'player').length;
+                // Conta o máximo ao longo do tempo, não só no fim: num caminho
+                // curto cada um chega e entra em poucos segundos, e o último
+                // instante pode calhar entre dois.
+                let most = 0;
+                for (let i = 0; i < 40; i++) {
+                    stepWalkers(0.25);
+                    most = Math.max(most, fx.walkers.filter((w) => w.group === 'player').length);
+                }
+                return most;
             });
             if (walkers < 0) throw new Error('não deu para ligar dois edifícios por estrada');
             if (walkers < 1) throw new Error('ninguém anda na estrada entre dois edifícios');
