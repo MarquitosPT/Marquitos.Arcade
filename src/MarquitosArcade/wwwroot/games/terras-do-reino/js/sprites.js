@@ -2368,28 +2368,36 @@ function castle(ctx, { level = 1 }) {
             }]);
         }
     }
+    // Pátio: a torre de menagem ao meio e, a partir do nível 3, uma torre alta
+    // no canto +x/-y dela, com o eixo na aresta desse canto. Quando o canto
+    // não fica à frente na vista, a torre pinta-se antes de tudo o que está à frente
+    // dela (logo a seguir às torres dos cantos de trás), e a torre de menagem
+    // tapa-lhe metade; quando fica à frente, pinta-se por cima, no fim.
+    const keepA = 0.62 + level * 0.04;
+    const k = -0.08;
+    const sx = k + keepA / 2;
+    const sy = k - keepA / 2;
+    // Nas vistas em que o canto fica ao lado (à mesma profundidade do centro),
+    // conta como atrás: a torre de menagem tapa-lhe metade.
+    const sideBehind = depth(sx, sy) <= depth(k, k) + 1e-9;
+    const sideTower = () => {
+        const t = stoneTower(ctx, 8, keepH + 10, '#ddd4c2', { ox: sx, oy: sy });
+        tiledCone(ctx, t.x, t.y, 10, 20, CASTLE_ROOF);
+    };
+
     const behind = towers.filter(([ox, oy]) => depth(ox, oy) < 0);
     layered(behind);
+    if (level >= 3 && sideBehind) sideTower();
 
     walls(ctx, span, span, wallH, STONE, { top: '#bdb3a0', tex: 'bigstone' });
     crenels(ctx, span, span, wallH, STONE, { n: 6 });
 
-    // Pátio: a torre de menagem ao meio, e no nível 3 uma torre alta ao lado
-    // dela — atrás, entre as paredes e o telhado, ou à frente, conforme a vista.
-    const keepA = 0.62 + level * 0.04;
-    const side = level >= 3 ? depth(0.22 + 0.08, -0.34 + 0.08) : 0;
-    const sideTower = () => {
-        const t = stoneTower(ctx, 8, keepH + 10, '#ddd4c2', { ox: 0.22, oy: -0.34 });
-        tiledCone(ctx, t.x, t.y, 10, 20, CASTLE_ROOF);
-    };
-    if (level >= 3 && side < -0.1) sideTower();
-    walls(ctx, keepA, keepA, keepH, '#ddd4c2', { oy: -0.08, ox: -0.08, tex: 'stone' });
-    wallPatch(ctx, 'left', keepA, keepA, 0.5, 0.1, keepH - 16, keepH - 8, WINDOW, { ox: -0.08, oy: -0.08 });
-    wallPatch(ctx, 'right', keepA, keepA, 0.35, 0.1, keepH - 16, keepH - 8, shade(WINDOW, -0.2), { ox: -0.08, oy: -0.08 });
-    if (level >= 3 && Math.abs(side) <= 0.1) sideTower();
+    walls(ctx, keepA, keepA, keepH, '#ddd4c2', { oy: k, ox: k, tex: 'stone' });
+    wallPatch(ctx, 'left', keepA, keepA, 0.5, 0.1, keepH - 16, keepH - 8, WINDOW, { ox: k, oy: k });
+    wallPatch(ctx, 'right', keepA, keepA, 0.35, 0.1, keepH - 16, keepH - 8, shade(WINDOW, -0.2), { ox: k, oy: k });
     // No nível 5 o telhado da torre de menagem é dourado.
-    tiledPyramid(ctx, keepA, keepA, keepH, 22 + level * 2, level >= 5 ? '#d9a63a' : KEEP_ROOF, { ox: -0.08, oy: -0.08 });
-    if (level >= 3 && side > 0.1) sideTower();
+    tiledPyramid(ctx, keepA, keepA, keepH, 22 + level * 2, level >= 5 ? '#d9a63a' : KEEP_ROOF, { ox: k, oy: k });
+    if (level >= 3 && !sideBehind) sideTower();
 
     // Portão na muralha +y (a da frente-esquerda na vista sem rodar), na face
     // dela. A partir do nível 4 há uma torre a meio dessa muralha: aí o portão
