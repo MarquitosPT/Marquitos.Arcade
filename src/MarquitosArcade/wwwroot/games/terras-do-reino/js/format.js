@@ -17,13 +17,4 @@ export function fmtShort(n) {
 /** Preço: com uma casa decimal enquanto for pequeno. */
 export const fmtPrice = (p) => (p < 10 ? ONE.format(p) : INT.format(Math.round(p)));
 
-export function fmtDuration(seconds) {
-    const s = Math.floor(seconds);
-    const h = Math.floor(s / 3600);
-    const m = Math.floor((s % 3600) / 60);
-    if (h) return `${h} h ${m} min`;
-    if (m) return `${m} min`;
-    return `${s} s`;
-}
-
 export const pct = (x) => `${Math.round(x * 100)}%`;

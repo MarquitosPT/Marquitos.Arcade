@@ -5,10 +5,6 @@
 // ter gente), cada edifício avança o seu ciclo, os campos crescem e cobram-se
 // os impostos. Ao fim de cada dia o povo come, e o contentamento acompanha o
 // que houve na mesa.
-//
-// O mesmo `stepEconomy` serve o jogo ao vivo e a recuperação do tempo em que o
-// jogo esteve fechado (`catchUp`) — com `quiet`, não há números a flutuar nem
-// caravanas a sair.
 
 import {
     BUILDING, CASTLE_LEVELS, DAY_SECONDS, FOODS, HAPPY_BASE, HAPPY_FED, HAPPY_VARIETY, IDLE_TAX_SHARE, RESOURCE,
@@ -264,7 +260,7 @@ function eat() {
  * Um passo da economia.
  * @param {number} dt Segundos de jogo.
  * @param {object} [options]
- * @param {boolean} [options.quiet] Sem efeitos visuais (recuperação do tempo fora).
+ * @param {boolean} [options.quiet] Sem efeitos visuais: nem números a flutuar nem caravanas a sair.
  * @returns {{ newDay: boolean, fair: object|null }} O que aconteceu que o jogo possa querer anunciar.
  */
 export function stepEconomy(dt, { quiet = false } = {}) {
@@ -304,29 +300,4 @@ export function stepEconomy(dt, { quiet = false } = {}) {
     }
 
     return events;
-}
-
-/**
- * O tempo em que o jogo esteve fechado, em passos de um segundo. Devolve o que
- * mudou nos bens, para o jogo contar ao jogador o que se fez sem ele.
- */
-export function catchUp(seconds) {
-    const before = { ...game.res };
-    const days = game.day;
-    // Passos de um segundo chegam para tudo; em ausências longas passa-se a
-    // dois, para a recuperação não prender o ecrã mais de um instante.
-    const step = seconds > 3600 ? 2 : 1;
-    let left = Math.floor(seconds);
-    while (left > 0) {
-        const dt = Math.min(step, left);
-        stepEconomy(dt, { quiet: true });
-        left -= dt;
-    }
-    refreshDerived();
-    const delta = {};
-    for (const [res, amount] of Object.entries(game.res)) {
-        const diff = Math.floor(amount) - Math.floor(before[res] || 0);
-        if (diff) delta[res] = diff;
-    }
-    return { delta, days: game.day - days };
 }

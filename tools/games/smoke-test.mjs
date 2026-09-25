@@ -806,7 +806,8 @@ const GAMES = [
             if (data.b.length !== built || data.cl !== 2) throw new Error('a gravação não tem o que se construiu');
             if (!(data.fl || []).includes(hill.y * 88 + hill.x)) throw new Error('a gravação não tem a colina aplanada');
 
-            // Uma hora fora: ao voltar, o reino recupera esse tempo e diz o que se fez.
+            // Uma hora fora: o reino ficou em pausa, e continua do ponto exato
+            // onde ficou — o mesmo relógio, os mesmos bens, a mesma vista.
             await page.evaluate(() => {
                 const d = JSON.parse(localStorage.getItem('terrasDoReinoSave_v1'));
                 d.saved -= 3600 * 1000;
@@ -815,19 +816,41 @@ const GAMES = [
             await page.reload({ waitUntil: 'networkidle' });
             await waitForSplash(page);
             await enterKingdom(page);
-            await page.waitForSelector('#welcomeScreen', { state: 'visible' });
             const back = await page.evaluate(async (h) => {
-                const { game } = await import('/games/terras-do-reino/js/state.js');
-                const { T_HILL, idx } = await import('/games/terras-do-reino/js/world.js');
+                const G = '/games/terras-do-reino/js/';
+                const { game } = await import(G + 'state.js');
+                const { T_HILL, idx } = await import(G + 'world.js');
+                const { camera } = await import(G + 'iso.js');
+                // Pára já, para o relógio não andar enquanto se compara.
+                game.paused = true;
                 return {
-                    n: game.buildings.length, level: game.castleLevel, day: game.day,
+                    n: game.buildings.length, level: game.castleLevel, day: game.day, played: game.played,
+                    coins: game.res.coins, zoom: camera.zoom, rot: camera.rot,
                     flat: game.world.terrain[idx(h.x, h.y)] !== T_HILL
                 };
             }, hill);
             if (back.n !== built || back.level !== 2) throw new Error(`o reino voltou diferente (${back.n} edifícios, castelo ${back.level})`);
             if (!back.flat) throw new Error('a colina aplanada voltou a ser colina');
-            if (back.day < 60) throw new Error(`a hora fora não foi recuperada (dia ${back.day})`);
-            await page.click('#welcomeBtn');
+            if (back.day !== data.day) throw new Error(`o reino andou sem o jogador (dia ${data.day} passou a ${back.day})`);
+            if (back.played - data.played > 2) throw new Error(`o relógio andou fora do jogo (${data.played} s passou a ${back.played} s)`);
+            if (Math.abs(back.coins - data.res.coins) > 5) throw new Error(`as moedas mudaram fora do jogo (${data.res.coins} passou a ${back.coins})`);
+            if (!data.vw || back.zoom !== data.vw[2] || back.rot !== data.vw[3]) throw new Error('a vista não voltou como estava');
+            if (await page.$('#welcomeScreen')) throw new Error('ainda há ecrã de boas-vindas do tempo fora');
+
+            // Esconder a página a meio do jogo põe o reino em pausa até se carregar em "Continuar".
+            await page.evaluate(async () => {
+                (await import('/games/terras-do-reino/js/state.js')).game.paused = false;
+                Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+                document.dispatchEvent(new Event('visibilitychange'));
+                Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+                document.dispatchEvent(new Event('visibilitychange'));
+            });
+            await page.waitForSelector('#pauseScreen', { state: 'visible' });
+            const frozen = await page.evaluate(() => import('/games/terras-do-reino/js/state.js').then((m) => m.game.played));
+            await sleep(1000);
+            const still = await page.evaluate(() => import('/games/terras-do-reino/js/state.js').then((m) => m.game.played));
+            if (still !== frozen) throw new Error('o relógio andou com a página escondida');
+            await page.click('#resumeBtn');
             await sleep(600);
         }
     },

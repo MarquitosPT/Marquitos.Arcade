@@ -18,7 +18,8 @@
 //     r: 'base64',                            // estradas: um bit por casa do quadrado à volta do castelo (opcional)
 //     m: { s: { bem: stock }, f: feira|null, nf: dia da próxima feira },
 //     t: [[edifícios, relógio, comércio, riqueza], ...],   // uma entrada por vila
-//     q, st, bs                               // objetivo, estatísticas, melhor enviado ao quadro
+//     q, st, bs,                              // objetivo, estatísticas, melhor enviado ao quadro
+//     vw: [x, y, zoom, rotação], sp           // a vista e a velocidade do relógio (opcionais)
 //   }
 //
 // As coordenadas são de casas do mapa de 88x88, e um edifício guarda o canto
@@ -30,12 +31,17 @@
 // jogo. Um reino não se junta campo a campo como as marcas de um nível — são
 // dois mundos diferentes —, e o que tem mais horas é o que o jogador mais
 // perderia.
+//
+// Fora do jogo o reino fica em pausa: não se recupera tempo nenhum ao voltar.
+// A gravação leva tudo o que é preciso para continuar do ponto exato onde se
+// saiu — os contadores a meio com duas casas decimais, a vista e a velocidade.
 
 import { createProgressClient } from '/lib/arcade/progress.js';
 
-import { BUILDINGS, GAME_ID, OFFLINE_MAX_SECONDS, PROGRESS_STORAGE_KEY, START_RESOURCES } from './config.js';
+import { BUILDINGS, GAME_ID, PROGRESS_STORAGE_KEY, SPEEDS, START_RESOURCES, ZOOM_MAX, ZOOM_MIN } from './config.js';
 import { createBuilding, placeCastle } from './buildings.js';
-import { catchUp, refreshDerived } from './economy.js';
+import { refreshDerived } from './economy.js';
+import { camera, lookAt, worldToGrid } from './iso.js';
 import { initMarket } from './market.js';
 import { emptyResources, fx, game, ui } from './state.js';
 import { newTowns, placeTowns } from './towns.js';
@@ -120,6 +126,7 @@ const r2 = (n) => Math.round(n * 100) / 100;
 
 function resetState(seed) {
     game.seed = seed;
+    game.speed = 1;
     game.world = generateWorld(seed);
     game.played = 0;
     game.clock = 0;
@@ -161,13 +168,13 @@ export function newGame(seed = Math.floor(Math.random() * 2 ** 31)) {
 
 export function serialize() {
     const res = {};
-    for (const [k, v] of Object.entries(game.res)) if (v) res[k] = Math.round(v * 10) / 10;
+    for (const [k, v] of Object.entries(game.res)) if (v) res[k] = r2(v);
 
     return {
         v: VERSION,
         seed: game.seed,
         saved: Date.now(),
-        played: Math.round(game.played),
+        played: r2(game.played),
         clock: r2(game.clock),
         day: game.day,
         cl: game.castleLevel,
@@ -183,21 +190,32 @@ export function serialize() {
         fl: game.flattened,
         r: encodeRoads(game.world),
         m: {
-            s: Object.fromEntries(Object.entries(game.market.stock).map(([k, v]) => [k, Math.round(v)])),
+            s: Object.fromEntries(Object.entries(game.market.stock).map(([k, v]) => [k, r2(v)])),
             f: game.market.fair,
             nf: game.market.nextFairDay
         },
-        t: game.towns.map((t) => [t.n, Math.round(t.timer), Math.round(t.trade), Math.round(t.wealth)]),
+        t: game.towns.map((t) => [t.n, r2(t.timer), r2(t.trade), r2(t.wealth)]),
         q: game.questIndex,
         st: Object.fromEntries(Object.entries(game.stats).map(([k, v]) => [k, Math.round(v)])),
-        bs: game.bestSubmitted
+        bs: game.bestSubmitted,
+        vw: viewNow(),
+        sp: game.speed
     };
 }
 
 /**
- * Carrega a gravação para o estado. Não recupera o tempo fora — isso é o
- * `resumeOffline`, à parte, para o menu poder mostrar o reino antes de o
- * jogador decidir continuar.
+ * A vista em jogo: a casa ao centro do ecrã, o zoom e a rotação. No menu a
+ * câmara anda a passear, e fica a vista da última gravação.
+ */
+function viewNow() {
+    if (game.phase !== 'playing') return progress.data?.vw;
+    const g = worldToGrid(camera.x, camera.y);
+    return [r2(g.x), r2(g.y), r2(camera.zoom), camera.rot];
+}
+
+/**
+ * Carrega a gravação para o estado. A vista não: o menu mostra o reino com a
+ * câmara dele, e a vista gravada só se põe ao entrar (`restoreView`).
  */
 export function loadSave(data = progress.data) {
     if (!isSave(data)) return false;
@@ -213,6 +231,7 @@ export function loadSave(data = progress.data) {
     game.questIndex = data.q || 0;
     Object.assign(game.stats, data.st || {});
     game.bestSubmitted = data.bs || 0;
+    game.speed = SPEEDS.includes(data.sp) ? data.sp : 1;
 
     // Primeiro o chão: pode haver edifícios e árvores em cima de uma colina aplanada.
     for (const i of data.fl || []) {
@@ -274,15 +293,17 @@ export function loadSave(data = progress.data) {
 }
 
 /**
- * Recupera o tempo em que o jogo esteve fechado, até ao teto de três horas.
- * @returns {{ seconds: number, delta: object, days: number } | null}
+ * Põe a câmara onde estava quando se gravou.
+ * @returns {boolean} false se a gravação não tem vista (é de antes de a ter).
  */
-export function resumeOffline(data = progress.data) {
-    if (!isSave(data) || !data.saved) return null;
-    const seconds = Math.min(OFFLINE_MAX_SECONDS, Math.max(0, (Date.now() - data.saved) / 1000));
-    if (seconds < 30) return null;
-    const result = catchUp(seconds);
-    return { seconds, ...result };
+export function restoreView(data = progress.data) {
+    const vw = data?.vw;
+    if (!Array.isArray(vw) || vw.length < 4 || !vw.every(Number.isFinite)) return false;
+    const [x, y, zoom, rot] = vw;
+    camera.rot = ((Math.round(rot) % 4) + 4) % 4;
+    camera.zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoom));
+    lookAt(x, y);
+    return true;
 }
 
 export function saveNow() {

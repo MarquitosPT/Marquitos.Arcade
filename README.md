@@ -17,7 +17,7 @@ Blazor Web App (.NET 10, render mode Interactive Server) com ASP.NET Core Identi
   - `tasca-do-ze/`: mini-jogo "Tasca do Zé" (gestão de pedidos), com leaderboard persistido via `/api/scores/tasca-do-ze`.
   - `pong/`: Pong Retro, com modo 1 jogador (vs. CPU, pontuação submetida via `/api/scores/pong`) e 2 jogadores.
   - `maze-run/`: Maze Run, labirintos por níveis — apanhar os cristais abre a saída, e há guardas a impedi-lo. Pelo caminho há cristais de gelo que os congelam, portais que ligam duas pontas do labirinto e portas trancadas com a sua chave (ver [As peças do Maze Run](#as-peças-do-maze-run)). Os níveis vão-se desbloqueando à medida que se concluem, e o progresso fica guardado na conta de quem tem sessão iniciada (ver [Progresso e níveis](#progresso-e-níveis)). Os labirintos não estão desenhados à mão: saem de uma semente por nível (`buildMaze` em `js/maze.js`), como as pistas do Pixel Racing saem do `buildTrack` — **acrescentar um nível é acrescentar uma entrada ao array `LEVELS` do `js/levels.js`**, e mais nada.
-  - `terras-do-reino/`: Terras do Reino, economia medieval contínua num tabuleiro isométrico com relevo — semear e colher trigo, cortar madeira, tirar pedra, abrir minas de ouro, moinhos, padarias, vacarias e oficinas, e comerciar com três vilas vizinhas geridas pelo CPU, que crescem sozinhas e são as rivais na tabela da prosperidade. Não há guerra nem fim de partida: o reino fica gravado (na conta, para quem tem sessão iniciada) e, ao voltar, recupera o tempo em que o jogo esteve fechado. Ver [Terras do Reino](#terras-do-reino).
+  - `terras-do-reino/`: Terras do Reino, economia medieval contínua num tabuleiro isométrico com relevo — semear e colher trigo, cortar madeira, tirar pedra, abrir minas de ouro, moinhos, padarias, vacarias e oficinas, e comerciar com três vilas vizinhas geridas pelo CPU, que crescem sozinhas e são as rivais na tabela da prosperidade. Não há guerra nem fim de partida: o reino fica gravado (na conta, para quem tem sessão iniciada) e, fora do jogo, fica em pausa: ao voltar, continua do ponto exato onde ficou. Ver [Terras do Reino](#terras-do-reino).
   - `pixel-racing/`: Pixel Racing, corrida simples em qualquer uma das seis pistas ou campeonato de três, com pontuação via `/api/scores/pixel-racing`. O menu tem dois passos: o primeiro ecrã pergunta só o nome (a quem não tem sessão iniciada) e o modo; a pista (ou a taça, no campeonato), a cor do carro e a dificuldade ficam no ecrã seguinte, já a saber o que se vai correr. As pistas são geradas por `buildTrack` a partir de uma superelipse com harmónicos, e o grau de perícia que o cartão mostra é medido no traçado (`corneringProfile`) em vez de escrito à mão: as três primeiras fazem-se sem levantar o pé, as três da taça Pro são mais compridas, mais estreitas e têm curvas que obrigam a travar ou a entrar a derrapar. A cor sai da paleta única de `CAR_COLORS` e os adversários ficam com três das restantes, por isso nunca há dois carros da mesma cor na pista.
 - `src/MarquitosArcade/wwwroot/lib/arcade/`: SDK partilhado pelos jogos (áudio, leaderboard, armazenamento, viewport do canvas, ciclo de jogo, barra de topo, ecrã de arranque). Módulos ES sem dependências externas. O `splash.css`/`splash.js`/`splash-boot.js` são a exceção que também serve o portal — ver [Ecrã de arranque](#ecrã-de-arranque).
 - `tools/games/smoke-test.mjs`: smoke-test dos jogos em Chromium headless, corrido em cada pull request por `.github/workflows/jogos-smoke-test.yml`. Ver [Testar os jogos](#testar-os-jogos).
@@ -682,7 +682,7 @@ dois dias.
   balões por cima dos edifícios (💤 sem trabalhadores, 📦 armazém cheio, 🌾
   pronto a colher) são do canvas.
 
-### Gravação e tempo fora do jogo
+### Gravação e pausa fora do jogo
 
 O reino grava-se pelo mesmo cliente do SDK que o Maze Run usa
 (`lib/arcade/progress.js`): no aparelho sempre, na conta com sessão iniciada.
@@ -704,9 +704,14 @@ Pela mesma razão, o botão do menu só fica ativo depois de a conta responder:
 fundar um reino novo antes disso podia pôr um reino de cinco minutos por cima
 de um de cinco horas guardado noutro aparelho.
 
-Ao voltar, o jogo **recupera o tempo em que esteve fechado**, até três horas
-(`OFFLINE_MAX_SECONDS`), passando a mesma economia em passos de um ou dois
-segundos, e diz o que se fez entretanto.
+**Fora do jogo o reino fica em pausa.** Ao esconder a página a meio do jogo
+(outro separador, outra aplicação, o ecrã do telemóvel a apagar), o jogo grava e
+abre o ecrã de pausa, e só volta a andar quando o jogador carrega em
+"Continuar". Ao sair para o menu, ou ao fechar a página, não se recupera tempo
+nenhum ao voltar: o reino continua **do ponto exato onde ficou**. Para isso a
+gravação leva os contadores a meio (bens, ciclos, relógio das vilas, stock do
+mercado) com duas casas decimais, a vista (`vw`: a casa ao centro do ecrã, o
+zoom e a rotação) e a velocidade do relógio (`sp`).
 
 A pontuação no quadro é a **prosperidade** (moedas, bens ao preço de
 referência, edifícios e castelo), enviada ao sair e ao subir o castelo — só
