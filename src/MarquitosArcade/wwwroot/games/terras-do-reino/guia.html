@@ -19,89 +19,95 @@
           href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" />
 
     <!-- Os tokens do jogo, mas não o base.css: este é uma página que rola, não um canvas em ecrã inteiro. -->
+    <!-- Mede o viewport curto das apps afixadas em iOS (ver o ficheiro). -->
+    <script src="/lib/arcade/standalone-fit.js"></script>
+
     <link rel="stylesheet" href="css/theme.css" />
     <link rel="stylesheet" href="css/guide.css" />
 </head>
 
 <body>
-    <header class="guideBar">
-        <a class="barBtn" href="./">
-            <span aria-hidden="true">←</span>
-            <span>Voltar ao jogo</span>
-        </a>
-        <a class="barBtn barBtn--quiet" href="/">Arcade</a>
-    </header>
+    <!-- Quem rola é esta caixa, não o documento (ver .guideScroll no guide.css). -->
+    <div class="guideScroll" id="guideScroll">
+        <header class="guideBar">
+            <a class="barBtn" href="./">
+                <span aria-hidden="true">←</span>
+                <span>Voltar ao jogo</span>
+            </a>
+            <a class="barBtn barBtn--quiet" href="/">Arcade</a>
+        </header>
 
-    <main class="guide">
-        <div class="hero">
-            <span class="brandBadge" aria-hidden="true">🏰</span>
-            <h1 class="title">Terras do Reino</h1>
-            <p class="heroSub">Como jogar · regras, níveis, edifícios e bens</p>
-        </div>
+        <main class="guide">
+            <div class="hero">
+                <span class="brandBadge" aria-hidden="true">🏰</span>
+                <h1 class="title">Terras do Reino</h1>
+                <p class="heroSub">Como jogar · regras, níveis, edifícios e bens</p>
+            </div>
 
-        <nav class="toc" aria-label="Neste guia">
-            <a href="#reino">👑 O jogo</a>
-            <a href="#regras">📏 Regras</a>
-            <a href="#castelo">🏰 Níveis do castelo</a>
-            <a href="#objetivos">📜 Objetivos</a>
-            <a href="#edificios">🔨 Edifícios</a>
-            <a href="#bens">📦 Bens</a>
-            <a href="#mercado">⚖️ Mercado e vilas</a>
-            <a href="#terreno">🌳 Terreno</a>
-            <a href="#controlos">🎮 Controlos</a>
-        </nav>
+            <nav class="toc" aria-label="Neste guia">
+                <a href="#reino">👑 O jogo</a>
+                <a href="#regras">📏 Regras</a>
+                <a href="#castelo">🏰 Níveis do castelo</a>
+                <a href="#objetivos">📜 Objetivos</a>
+                <a href="#edificios">🔨 Edifícios</a>
+                <a href="#bens">📦 Bens</a>
+                <a href="#mercado">⚖️ Mercado e vilas</a>
+                <a href="#terreno">🌳 Terreno</a>
+                <a href="#controlos">🎮 Controlos</a>
+            </nav>
 
-        <!-- O conteúdo de cada secção sai do config.js do jogo (js/guide.js):
-             mudar um custo no jogo muda-o aqui também. -->
-        <section class="card" id="reino" aria-labelledby="reinoTitle">
-            <h2 id="reinoTitle">👑 O jogo</h2>
-            <div id="reinoBody"></div>
-        </section>
+            <!-- O conteúdo de cada secção sai do config.js do jogo (js/guide.js):
+                 mudar um custo no jogo muda-o aqui também. -->
+            <section class="card" id="reino" aria-labelledby="reinoTitle">
+                <h2 id="reinoTitle">👑 O jogo</h2>
+                <div id="reinoBody"></div>
+            </section>
 
-        <section class="card" id="regras" aria-labelledby="regrasTitle">
-            <h2 id="regrasTitle">📏 Regras</h2>
-            <div id="regrasBody"></div>
-        </section>
+            <section class="card" id="regras" aria-labelledby="regrasTitle">
+                <h2 id="regrasTitle">📏 Regras</h2>
+                <div id="regrasBody"></div>
+            </section>
 
-        <section class="card" id="castelo" aria-labelledby="casteloTitle">
-            <h2 id="casteloTitle">🏰 Níveis do castelo</h2>
-            <div id="casteloBody"></div>
-        </section>
+            <section class="card" id="castelo" aria-labelledby="casteloTitle">
+                <h2 id="casteloTitle">🏰 Níveis do castelo</h2>
+                <div id="casteloBody"></div>
+            </section>
 
-        <section class="card" id="objetivos" aria-labelledby="objetivosTitle">
-            <h2 id="objetivosTitle">📜 Objetivos</h2>
-            <div id="objetivosBody"></div>
-        </section>
+            <section class="card" id="objetivos" aria-labelledby="objetivosTitle">
+                <h2 id="objetivosTitle">📜 Objetivos</h2>
+                <div id="objetivosBody"></div>
+            </section>
 
-        <section class="card" id="edificios" aria-labelledby="edificiosTitle">
-            <h2 id="edificiosTitle">🔨 Edifícios</h2>
-            <div id="edificiosBody"></div>
-        </section>
+            <section class="card" id="edificios" aria-labelledby="edificiosTitle">
+                <h2 id="edificiosTitle">🔨 Edifícios</h2>
+                <div id="edificiosBody"></div>
+            </section>
 
-        <section class="card" id="bens" aria-labelledby="bensTitle">
-            <h2 id="bensTitle">📦 Bens</h2>
-            <div id="bensBody"></div>
-        </section>
+            <section class="card" id="bens" aria-labelledby="bensTitle">
+                <h2 id="bensTitle">📦 Bens</h2>
+                <div id="bensBody"></div>
+            </section>
 
-        <section class="card" id="mercado" aria-labelledby="mercadoTitle">
-            <h2 id="mercadoTitle">⚖️ Mercado e vilas vizinhas</h2>
-            <div id="mercadoBody"></div>
-        </section>
+            <section class="card" id="mercado" aria-labelledby="mercadoTitle">
+                <h2 id="mercadoTitle">⚖️ Mercado e vilas vizinhas</h2>
+                <div id="mercadoBody"></div>
+            </section>
 
-        <section class="card" id="terreno" aria-labelledby="terrenoTitle">
-            <h2 id="terrenoTitle">🌳 Terreno, estradas e limpeza</h2>
-            <div id="terrenoBody"></div>
-        </section>
+            <section class="card" id="terreno" aria-labelledby="terrenoTitle">
+                <h2 id="terrenoTitle">🌳 Terreno, estradas e limpeza</h2>
+                <div id="terrenoBody"></div>
+            </section>
 
-        <section class="card" id="controlos" aria-labelledby="controlosTitle">
-            <h2 id="controlosTitle">🎮 Controlos</h2>
-            <div id="controlosBody"></div>
-        </section>
+            <section class="card" id="controlos" aria-labelledby="controlosTitle">
+                <h2 id="controlosTitle">🎮 Controlos</h2>
+                <div id="controlosBody"></div>
+            </section>
 
-        <div class="guideEnd">
-            <a class="btn" href="./">🏰 Ir para o reino</a>
-        </div>
-    </main>
+            <div class="guideEnd">
+                <a class="btn" href="./">🏰 Ir para o reino</a>
+            </div>
+        </main>
+    </div>
 
     <script type="module" src="js/guide.js"></script>
 </body>

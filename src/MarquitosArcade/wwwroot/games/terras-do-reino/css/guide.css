@@ -11,29 +11,69 @@
     box-sizing: border-box;
 }
 
-html {
+/*
+ * Quem rola é a `.guideScroll`, não o documento — o mesmo que o `.page-scroll`
+ * do portal (wwwroot/styles.css). Com o documento a rolar, o Safari deixava
+ * arrastar a página inteira para o lado nas margens (o elástico, e o gesto de
+ * recuar no histórico), e via-se a faixa preta por trás dela. O documento fica
+ * exatamente à medida do ecrã e sem nada para rolar; a caixa lá dentro só aceita
+ * o dedo na vertical (`pan-y`) e não passa o fim da rolagem ao documento
+ * (`contain`). As tabelas reabrem o arrasto de lado (ver .tableWrap).
+ */
+html,
+body {
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
+    width: 100%;
+    /* A folga das apps afixadas em iOS (lib/arcade/standalone-fit.js), como no jogo. */
+    height: calc(100dvh + var(--viewport-gap, 0px));
+    overflow: hidden;
+    overscroll-behavior: none;
+    /* O fundo da faixa que sobre por baixo: o verde do fim do prado. */
+    background-color: #4f8235;
+}
+
+body {
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--text);
+    /*
+     * O fundo fica parado — o <body> não rola, quem rola é a .guideScroll, que é
+     * transparente — e o conteúdo desliza por cima dele. São os tons do jogo
+     * num gradiente contínuo: o céu em cima, a descer para o prado e para o
+     * verde mais fundo em baixo, com o sol dourado das moedas e do castelo a
+     * aquecer o canto de cima.
+     */
+    background:
+        radial-gradient(90vw 55vh at 80% 4%, rgba(255, 228, 150, 0.55), transparent 65%),
+        radial-gradient(70vw 40vh at 12% 10%, rgba(255, 255, 255, 0.35), transparent 70%),
+        radial-gradient(130vw 55vh at 50% 108%, rgba(38, 66, 24, 0.6), transparent 70%),
+        linear-gradient(180deg, #5aa6e6 0%, #8cc6ee 24%, #b9dca6 46%, #8cc063 62%, #6fa84a 80%, #4f8235 100%);
+}
+
+/* O vidro dos painéis, mais transparente do que o do jogo: aqui o fundo é para
+   se ver a passar por trás. O desfoque é que mantém o texto legível. */
+:root {
+    --guide-glass: linear-gradient(155deg, rgba(58, 48, 34, 0.6), rgba(30, 26, 20, 0.68) 60%);
+}
+
+.guideScroll {
+    height: 100%;
+    overflow-y: auto;
+    /* Escrito à parte: com um eixo em `auto` e o outro em `visible`, o
+       `visible` passava também a `auto` e a caixa aceitava arrasto de lado. */
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
     /* A barra de cima é fixa: um salto para uma secção não a pode deixar por baixo dela. */
     scroll-padding-top: calc(env(safe-area-inset-top) + 70px);
 }
 
 @media (prefers-reduced-motion: reduce) {
-    html { scroll-behavior: auto; }
-}
-
-body {
-    min-height: 100vh;
-    font-family: var(--font-body);
-    font-size: 15px;
-    line-height: 1.55;
-    color: var(--text);
-    /* O céu e o prado do jogo, fixos por trás do vidro. */
-    background:
-        radial-gradient(60vw 30vw at 30% 8%, rgba(255, 255, 255, 0.45), transparent 70%),
-        linear-gradient(180deg, #5aa6e6 0%, #a9d4f2 40%, #8cc063 41%, #5d9440 100%) fixed;
-    background-color: #6fa84a;
+    .guideScroll { scroll-behavior: auto; }
 }
 
 a { color: var(--accent); }
@@ -147,9 +187,9 @@ b, strong { font-weight: 700; color: #fff; }
     padding: 12px;
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
-    background: var(--glass-bg);
-    -webkit-backdrop-filter: blur(var(--blur));
-    backdrop-filter: blur(var(--blur));
+    background: var(--guide-glass);
+    -webkit-backdrop-filter: blur(var(--blur)) saturate(140%);
+    backdrop-filter: blur(var(--blur)) saturate(140%);
     box-shadow: var(--glass-shadow);
 }
 
@@ -174,7 +214,7 @@ b, strong { font-weight: 700; color: #fff; }
     padding: clamp(18px, 4vw, 28px);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
-    background: var(--glass-bg);
+    background: var(--guide-glass);
     -webkit-backdrop-filter: blur(var(--blur)) saturate(140%);
     backdrop-filter: blur(var(--blur)) saturate(140%);
     box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.18);
@@ -274,6 +314,11 @@ p + .bullets,
 .tableWrap {
     margin-top: 14px;
     overflow-x: auto;
+    /* Exceção ao `pan-y` da .guideScroll: aqui é preciso arrastar de lado para
+       ver as colunas que não cabem. O `contain` não deixa esse arrasto, ao
+       chegar ao fim da tabela, passar para a página. */
+    touch-action: pan-x pan-y;
+    overscroll-behavior-x: contain;
     border: 1px solid var(--glass-border);
     border-radius: var(--radius);
     -webkit-overflow-scrolling: touch;
@@ -308,6 +353,26 @@ p + .bullets,
 .table tbody tr:last-child td { border-bottom: none; }
 
 .table tbody th { font-weight: 600; }
+
+/* Num telemóvel a tabela dos controlos empilha-se: uma ação por bloco, cada
+   coluna com a sua etiqueta. Assim cabe inteira e não é preciso arrastá-la
+   de lado. */
+@media (max-width: 560px) {
+    .table--stack thead { display: none; }
+    .table--stack tr { display: block; padding: 10px 12px; border-bottom: 1px solid rgba(255, 240, 210, 0.1); }
+    .table--stack tbody tr:last-child { border-bottom: none; }
+    .table--stack th,
+    .table--stack td { display: block; padding: 2px 0; border: none; }
+    .table--stack tbody th { margin-bottom: 4px; color: var(--accent); }
+    /* Etiqueta à esquerda e texto à direita, que embrulha na sua coluna. */
+    .table--stack td { display: grid; grid-template-columns: 124px 1fr; gap: 8px; }
+    .table--stack td::before {
+        content: attr(data-label);
+        padding-top: 1px;
+        font-size: 11.5px;
+        color: var(--faint);
+    }
+}
 
 .table .num { white-space: nowrap; font-variant-numeric: tabular-nums; }
 
