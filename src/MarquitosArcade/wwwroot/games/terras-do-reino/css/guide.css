@@ -11,29 +11,55 @@
     box-sizing: border-box;
 }
 
-html {
+/*
+ * Quem rola é a `.guideScroll`, não o documento — o mesmo que o `.page-scroll`
+ * do portal (wwwroot/styles.css). Com o documento a rolar, o Safari deixava
+ * arrastar a página inteira para o lado nas margens (o elástico, e o gesto de
+ * recuar no histórico), e via-se a faixa preta por trás dela. O documento fica
+ * exatamente à medida do ecrã e sem nada para rolar; a caixa lá dentro só aceita
+ * o dedo na vertical (`pan-y`) e não passa o fim da rolagem ao documento
+ * (`contain`). As tabelas reabrem o arrasto de lado (ver .tableWrap).
+ */
+html,
+body {
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
+    width: 100%;
+    /* A folga das apps afixadas em iOS (lib/arcade/standalone-fit.js), como no jogo. */
+    height: calc(100dvh + var(--viewport-gap, 0px));
+    overflow: hidden;
+    overscroll-behavior: none;
+    /* O fundo da faixa que sobre por baixo: o verde do fim do prado. */
+    background-color: #5d9440;
+}
+
+body {
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--text);
+    /* O céu e o prado do jogo, parados por trás do vidro. */
+    background:
+        radial-gradient(60vw 30vw at 30% 8%, rgba(255, 255, 255, 0.45), transparent 70%),
+        linear-gradient(180deg, #5aa6e6 0%, #a9d4f2 40%, #8cc063 41%, #5d9440 100%);
+}
+
+.guideScroll {
+    height: 100%;
+    overflow-y: auto;
+    /* Escrito à parte: com um eixo em `auto` e o outro em `visible`, o
+       `visible` passava também a `auto` e a caixa aceitava arrasto de lado. */
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
     /* A barra de cima é fixa: um salto para uma secção não a pode deixar por baixo dela. */
     scroll-padding-top: calc(env(safe-area-inset-top) + 70px);
 }
 
 @media (prefers-reduced-motion: reduce) {
-    html { scroll-behavior: auto; }
-}
-
-body {
-    min-height: 100vh;
-    font-family: var(--font-body);
-    font-size: 15px;
-    line-height: 1.55;
-    color: var(--text);
-    /* O céu e o prado do jogo, fixos por trás do vidro. */
-    background:
-        radial-gradient(60vw 30vw at 30% 8%, rgba(255, 255, 255, 0.45), transparent 70%),
-        linear-gradient(180deg, #5aa6e6 0%, #a9d4f2 40%, #8cc063 41%, #5d9440 100%) fixed;
-    background-color: #6fa84a;
+    .guideScroll { scroll-behavior: auto; }
 }
 
 a { color: var(--accent); }
@@ -274,6 +300,11 @@ p + .bullets,
 .tableWrap {
     margin-top: 14px;
     overflow-x: auto;
+    /* Exceção ao `pan-y` da .guideScroll: aqui é preciso arrastar de lado para
+       ver as colunas que não cabem. O `contain` não deixa esse arrasto, ao
+       chegar ao fim da tabela, passar para a página. */
+    touch-action: pan-x pan-y;
+    overscroll-behavior-x: contain;
     border: 1px solid var(--glass-border);
     border-radius: var(--radius);
     -webkit-overflow-scrolling: touch;
@@ -308,6 +339,26 @@ p + .bullets,
 .table tbody tr:last-child td { border-bottom: none; }
 
 .table tbody th { font-weight: 600; }
+
+/* Num telemóvel a tabela dos controlos empilha-se: uma ação por bloco, cada
+   coluna com a sua etiqueta. Assim cabe inteira e não é preciso arrastá-la
+   de lado. */
+@media (max-width: 560px) {
+    .table--stack thead { display: none; }
+    .table--stack tr { display: block; padding: 10px 12px; border-bottom: 1px solid rgba(255, 240, 210, 0.1); }
+    .table--stack tbody tr:last-child { border-bottom: none; }
+    .table--stack th,
+    .table--stack td { display: block; padding: 2px 0; border: none; }
+    .table--stack tbody th { margin-bottom: 4px; color: var(--accent); }
+    /* Etiqueta à esquerda e texto à direita, que embrulha na sua coluna. */
+    .table--stack td { display: grid; grid-template-columns: 124px 1fr; gap: 8px; }
+    .table--stack td::before {
+        content: attr(data-label);
+        padding-top: 1px;
+        font-size: 11.5px;
+        color: var(--faint);
+    }
+}
 
 .table .num { white-space: nowrap; font-variant-numeric: tabular-nums; }
 

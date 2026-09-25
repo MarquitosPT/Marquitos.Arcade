@@ -327,8 +327,8 @@ function controls() {
         ['Cancelar / fechar', '✕ ou Terminar', 'Esc'],
         ['Velocidade do tempo', 'Botão ⏩ no topo', 'Botão ⏩ no topo'],
         ['Pausa', 'Botão Pausa', 'Botão Pausa']
-    ].map(([what, touch, desk]) => `<tr><th scope="row">${what}</th><td>${touch}</td><td>${desk}</td></tr>`).join('');
-    return `<div class="tableWrap"><table class="table">
+    ].map(([what, touch, desk]) => `<tr><th scope="row">${what}</th><td data-label="📱 Toque">${touch}</td><td data-label="🖥️ Teclado e rato">${desk}</td></tr>`).join('');
+    return `<div class="tableWrap"><table class="table table--stack">
             <thead><tr><th scope="col">Ação</th><th scope="col">📱 Toque</th><th scope="col">🖥️ Teclado e rato</th></tr></thead>
             <tbody>${rows}</tbody>
         </table></div>

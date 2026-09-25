@@ -780,7 +780,19 @@ const GAMES = [
                     quests: document.querySelectorAll('#objetivosBody .quest').length,
                     wantQuests: QUESTS.length,
                     empty: [...document.querySelectorAll('section.card > div')].filter((el) => !el.textContent.trim()).map((el) => el.id),
-                    overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+                    // Nem o documento nem a caixa que rola podem ir para o lado.
+                    overflow: Math.max(
+                        document.documentElement.scrollWidth - document.documentElement.clientWidth,
+                        document.getElementById('guideScroll').scrollWidth - document.getElementById('guideScroll').clientWidth,
+                        // As tabelas empilham-se no telemóvel: nenhuma se arrasta de lado.
+                        ...[...document.querySelectorAll('.tableWrap')].map((el) => el.scrollWidth - el.clientWidth)
+                    ),
+                    // Quem rola é a .guideScroll, e só na vertical (o elástico do Safari nas margens).
+                    scroller: (() => {
+                        const el = getComputedStyle(document.getElementById('guideScroll'));
+                        const doc = document.scrollingElement;
+                        return el.touchAction === 'pan-y' && el.overflowX === 'hidden' && doc.scrollHeight <= doc.clientHeight;
+                    })(),
                     undefinedText: document.body.innerText.includes('undefined') || document.body.innerText.includes('NaN')
                 };
             });
@@ -791,6 +803,7 @@ const GAMES = [
             }
             if (found.overflow > 0) throw new Error(`o guia rola ${found.overflow}px para o lado`);
             if (found.undefinedText) throw new Error('o guia tem "undefined" ou "NaN" no texto');
+            if (!found.scroller) throw new Error('o guia rola o documento em vez da .guideScroll (só na vertical)');
             // Um link do índice leva à secção.
             await page.click('.toc a[href="#castelo"]');
             await sleep(600);
