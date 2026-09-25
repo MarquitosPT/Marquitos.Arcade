@@ -25,7 +25,7 @@ import {
 } from './iso.js';
 import { hash2 } from './rng.js';
 import { setSpriteScale, stamp } from './sprite-cache.js';
-import { LIVE, PLAYER_ROOF } from './sprites.js';
+import { LIVE, MOUNTAIN_VARIANTS, PLAYER_ROOF } from './sprites.js';
 import { castleInfo, fx, game, ui } from './state.js';
 import { CATCH_SECONDS, boatAlpha, boatPlace } from './boats.js';
 import { walkerAlpha, walkerPlace } from './walkers.js';
@@ -714,6 +714,14 @@ function drawFeature(feature, x, y, wx, wy, t) {
     }
 }
 
+/** Os dois montes de uma casa de colina sem nada em cima (ver `mountain` em sprites.js). */
+function drawMountains(x, y, wx, wy) {
+    const variant = Math.floor(hash2(x, y, 18) * MOUNTAIN_VARIANTS);
+    const jx = (hash2(x, y, 19) - 0.5) * 4;
+    const k = 0.56 + Math.round(hash2(x, y, 20) * 2) * 0.04;
+    stamp(ctx, `mountain|${variant}`, 'mountain', { variant }, wx + jx, wy, k);
+}
+
 // ---------- Peças ocultas (modo de construção) ----------
 //
 // Com "ocultar" ligado, cada edifício fica só com a base no chão e cada
@@ -770,6 +778,17 @@ function drawFeatureBase(feature, x, y, wx, wy) {
             ctx.fill();
         }
     }
+    ctx.restore();
+}
+
+/** Os montes, rasos: duas manchas de pedra, para se ver que a casa é colina sem tapar o que está atrás. */
+function drawMountainsBase(wx, wy) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(120, 105, 85, 0.5)';
+    ctx.beginPath();
+    ctx.ellipse(wx - 4, wy - 1, 7, 3.4, 0, 0, Math.PI * 2);
+    ctx.ellipse(wx + 5, wy + 1.5, 5, 2.5, 0, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
 }
 
@@ -1185,6 +1204,9 @@ export function render(dt) {
             } else if (game.world.feature[i]) {
                 if (hideProps) drawFeatureBase(game.world.feature[i], x, y, wx, gy);
                 else drawFeature(game.world.feature[i], x, y, wx, gy, t);
+            } else if (game.world.terrain[i] === T_HILL && !game.world.road[i]) {
+                if (hideProps) drawMountainsBase(wx, gy);
+                else drawMountains(x, y, wx, gy);
             }
             const boats = boatsAt.get(i);
             if (boats) for (const boat of boats) drawBoat(boat, t);

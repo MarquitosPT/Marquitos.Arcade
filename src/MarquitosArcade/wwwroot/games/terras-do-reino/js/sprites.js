@@ -1,4 +1,4 @@
-// Os desenhos do reino: árvores, rochas, campos, casas, oficinas e castelos.
+// Os desenhos do reino: árvores, rochas, montes, campos, casas, oficinas e castelos.
 //
 // Não há imagens: cada peça é desenhada com as primitivas de draw.js, à volta
 // do ponto de chão da sua casa. Cada desenho tem duas partes:
@@ -38,6 +38,7 @@ export const BOUNDS = {
     tree: [-28, -78, 56, 96],
     rock: [-30, -34, 60, 52],
     ore: [-30, -34, 60, 52],
+    mountain: [-44, -66, 88, 84],
     field: [-34, -30, 68, 50],
     castle: [-86, -196, 172, 250],
     keep: [-40, -126, 80, 152],
@@ -130,6 +131,117 @@ function ore(ctx) {
         ctx.fill();
     }
 }
+
+// ---------- Montes ----------
+//
+// As casas de colina sem nada em cima levam dois montes, escolhidos entre três
+// feitios: o baixo (um cabeço redondo e verde), o médio (um pico de rocha) e o
+// alto (um pico com neve no cimo). Cada casa junta dois deles, um atrás e
+// outro à frente; como são postos na grelha da peça, rodam com a vista e
+// pintam-se de trás para a frente com `layered`. Casas de colina vizinhas
+// fazem assim uma serra.
+
+/** Os três feitios: meia largura, altura, cor e se tem neve. */
+const MOUNTAIN_KINDS = {
+    low: { w: 17, h: 14, color: '#7d9650' },
+    mid: { w: 19, h: 24, color: '#9a8b73' },
+    high: { w: 21, h: 35, color: '#8c8883', snow: true }
+};
+
+/** Os pares de feitios: [o de trás, o da frente]. Metade tem o mais alto atrás, metade à frente. */
+const MOUNTAIN_PAIRS = [
+    ['mid', 'low'], ['high', 'low'], ['high', 'mid'],
+    ['low', 'mid'], ['mid', 'high'], ['low', 'high']
+];
+
+/** Um monte com a base no ponto (x, y): a face da esquerda ao sol, a da direita na sombra. */
+function mountainPeak(ctx, x, y, kindId, s, flip) {
+    const kind = MOUNTAIN_KINDS[kindId];
+    const w = kind.w * s;
+    const h = kind.h * s;
+    const lit = shade(kind.color, 0.16);
+    const dark = shade(kind.color, -0.22);
+    // A crista desce do cimo até à base, um pouco à frente: divide a luz da sombra.
+    const skew = (flip ? -1 : 1) * w * 0.12;
+    const top = [x + skew, y - h];
+    const foot = [x + w * 0.12, y + w * 0.22];
+    const left = [x - w, y];
+    const right = [x + w, y];
+
+    if (kindId === 'low') {
+        // Um cabeço redondo: curvas em vez de arestas.
+        ctx.fillStyle = lit;
+        ctx.beginPath();
+        ctx.moveTo(...left);
+        ctx.quadraticCurveTo(x - w * 0.75, y - h * 1.05, top[0], top[1]);
+        ctx.quadraticCurveTo(x + w * 0.05, y - h * 0.4, ...foot);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = dark;
+        ctx.beginPath();
+        ctx.moveTo(...top);
+        ctx.quadraticCurveTo(x + w * 0.8, y - h * 1.0, ...right);
+        ctx.lineTo(...foot);
+        ctx.quadraticCurveTo(x + w * 0.05, y - h * 0.4, ...top);
+        ctx.closePath();
+        ctx.fill();
+        // Uns tufos mais claros.
+        ctx.fillStyle = shade(kind.color, 0.32);
+        for (const [dx, dy, r] of [[-0.45, 0.45, 0.13], [-0.15, 0.7, 0.1]]) {
+            ctx.beginPath();
+            ctx.ellipse(x + dx * w, y - dy * h, r * w, r * w * 0.55, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        return;
+    }
+
+    // Um pico de rocha: ombros quebrados de cada lado da crista.
+    const sl = [x - w * 0.55, y - h * 0.48];
+    const sr = [x + w * 0.5, y - h * 0.42];
+    poly(ctx, [left, sl, top, [x + w * 0.02, y - h * 0.45], foot], lit);
+    poly(ctx, [top, sr, right, foot, [x + w * 0.02, y - h * 0.45]], dark);
+    // Estrias de pedra na face ao sol.
+    ctx.strokeStyle = shade(kind.color, -0.08);
+    ctx.lineWidth = 0.9;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x - w * 0.5, y - h * 0.3); ctx.lineTo(x - w * 0.25, y - h * 0.55);
+    ctx.moveTo(x - w * 0.2, y - h * 0.12); ctx.lineTo(x - w * 0.05, y - h * 0.32);
+    ctx.stroke();
+
+    if (kind.snow) {
+        // A neve do cimo, com a orla aos bicos: metade ao sol, metade na sombra.
+        const crest = [x + w * 0.02, y - h * 0.45];
+        const at = (p, u) => [top[0] + (p[0] - top[0]) * u, top[1] + (p[1] - top[1]) * u];
+        const l = at(sl, 0.55);
+        const r = at(sr, 0.5);
+        const c = at(crest, 0.52);
+        const bumpL = at([(sl[0] + crest[0]) / 2, (sl[1] + crest[1]) / 2], 0.36);
+        const bumpR = at([(sr[0] + crest[0]) / 2, (sr[1] + crest[1]) / 2], 0.38);
+        poly(ctx, [top, l, bumpL, c], '#f4f6f8');
+        poly(ctx, [top, c, bumpR, r], '#c9d3dd');
+    }
+}
+
+function mountain(ctx, { variant = 0 }) {
+    const [back, front] = MOUNTAIN_PAIRS[variant % MOUNTAIN_PAIRS.length];
+    const flip = Math.floor(variant / MOUNTAIN_PAIRS.length) % 2 === 1;
+    const side = flip ? -1 : 1;
+    groundShadow(ctx, 30, 11, 0.16, 4, 3);
+    layered([
+        [-0.1 * side, -0.14, () => {
+            const [x, y] = P(-0.1 * side, -0.14);
+            mountainPeak(ctx, x, y, back, 1, flip);
+        }],
+        [0.12 * side, 0.1, () => {
+            const [x, y] = P(0.12 * side, 0.1);
+            mountainPeak(ctx, x, y, front, 0.82, !flip);
+        }]
+    ]);
+}
+
+/** Quantas variantes tem o desenho dos montes (ver `mountain`). */
+export const MOUNTAIN_VARIANTS = MOUNTAIN_PAIRS.length * 2;
 
 // ---------- Campo ----------
 
@@ -1310,6 +1422,7 @@ export const STATIC = {
     tree,
     rock,
     ore,
+    mountain,
     field,
     house,
     market,
