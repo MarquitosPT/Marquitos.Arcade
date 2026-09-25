@@ -345,7 +345,7 @@ const COBBLE_PLAYER = ['#d8cfbb', '#cdc1a6', '#c2b59a', '#b8aa8e', '#ddd3bf'];
 const COBBLE_TOWN = ['#c9bea8', '#bcb09a', '#b0a38a', '#a69a82', '#cfc5b2'];
 
 /**
- * As pedras da calçada de um troço: uma grelha de 3 ou 4 pedras por lado,
+ * As pedras da calçada de um troço: uma grelha de 4 ou 5 pedras por lado,
  * com algumas pedras a ocupar o lugar de duas, cada uma um polígono torto de
  * tamanho e cor ao acaso (mas sempre o mesmo na mesma casa). A sombra de cada
  * pedra é só uma linha de um píxel de ecrã por baixo dela.
@@ -353,8 +353,8 @@ const COBBLE_TOWN = ['#c9bea8', '#bcb09a', '#b0a38a', '#a69a82', '#cfc5b2'];
 function drawCobbles(x, y, x0, x1, y0, y1, town, p) {
     let n = 0;
     const rnd = () => hash2(x, y, 90 + n++);
-    const nx = rnd() < 0.5 ? 3 : 4;
-    const ny = rnd() < 0.5 ? 3 : 4;
+    const nx = rnd() < 0.5 ? 4 : 5;
+    const ny = rnd() < 0.5 ? 4 : 5;
     // Um píxel do ecrã, em unidades de mundo (o contexto tem a escala do bloco de chão).
     const px1 = 1 / ctx.getTransform().d;
     const cw = (x1 - x0) / nx;
@@ -372,9 +372,9 @@ function drawCobbles(x, y, x0, x1, y0, y1, town, p) {
             else if (r < 0.3 && j + 1 < ny) sy = 2;
             for (let dy = 0; dy < sy; dy++) for (let dx = 0; dx < sx; dx++) taken[(j + dy) * nx + i + dx] = 1;
 
-            const cx = x0 + (i + sx / 2) * cw + (rnd() - 0.5) * cw * 0.12;
-            const cy = y0 + (j + sy / 2) * ch + (rnd() - 0.5) * ch * 0.12;
-            const size = 0.84 + rnd() * 0.14;
+            const cx = x0 + (i + sx / 2) * cw + (rnd() - 0.5) * cw * 0.06;
+            const cy = y0 + (j + sy / 2) * ch + (rnd() - 0.5) * ch * 0.06;
+            const size = 0.94 + rnd() * 0.08;
             const rx = (sx * cw) / 2 * size;
             const ry = (sy * ch) / 2 * size;
             const sides = 5 + Math.floor(rnd() * 3);
@@ -382,11 +382,11 @@ function drawCobbles(x, y, x0, x1, y0, y1, town, p) {
             const pts = [];
             for (let k = 0; k < sides; k++) {
                 const ang = turn + (k / sides) * Math.PI * 2 + (rnd() - 0.5) * 0.5;
-                const f = 0.8 + rnd() * 0.25;
-                // Um polígono torto dentro do retângulo da pedra (o "quadrado" que o círculo arredonda).
+                const f = 0.88 + rnd() * 0.16;
+                // Um polígono torto que enche quase todo o retângulo da pedra, para as pedras ficarem encaixadas.
                 const c = Math.cos(ang);
                 const s2 = Math.sin(ang);
-                const m = Math.max(Math.abs(c), Math.abs(s2)) ** 0.5;
+                const m = Math.max(Math.abs(c), Math.abs(s2)) ** 0.8;
                 pts.push(p(cx + (c / m) * rx * f, cy + (s2 / m) * ry * f));
             }
             // Um píxel de sombra por baixo da pedra, depois a pedra, depois o brilho de cima.
