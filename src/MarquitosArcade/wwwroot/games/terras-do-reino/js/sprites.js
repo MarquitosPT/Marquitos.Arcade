@@ -2338,74 +2338,176 @@ function castleGate(ctx, wall, u, hw, jamb, rise, boards) {
 }
 
 
-function castle(ctx, { level = 1 }) {
-    const wallH = 14 + level * 3;
-    const towerH = 26 + level * 5;
-    const keepH = 34 + level * 9;
-    const span = 1.62;
-    const c = span / 2 - 0.02;
+/**
+ * As medidas do castelo em cada nível: a muralha, as torres dos cantos e os
+ * pisos do edifício central (lado, altura), que é o que cresce com o nível —
+ * um piso no 1, dois no 2, três do 3 em diante. `top` é a altura do cimo do
+ * telhado, onde `castleLive` põe a bandeira.
+ */
+function castleSpec(level) {
+    const floors = [[0.82, 26], [0.6, 22], [0.4, 18]].slice(0, Math.min(3, level));
+    const rises = [14, 11];
+    const tiers = [];
+    let z = 0;
+    floors.forEach(([a, h], i) => {
+        const last = i === floors.length - 1;
+        // O telhado de cada piso de baixo é uma saia de quatro águas; o piso de
+        // cima assenta nela, à altura a que a saia passa pela parede dele.
+        const rise = last ? 24 + level : rises[i];
+        tiers.push({ a, h, z, rise, last });
+        if (!last) z += h + rise * (1 - floors[i + 1][0] / a);
+    });
+    const top = tiers[tiers.length - 1];
+    return {
+        span: 1.62,
+        wallH: 13 + level,
+        towerH: 22 + level * 1.5,
+        tiers,
+        top: top.z + top.h + top.rise
+    };
+}
 
-    // As torres dos cantos (e, no nível 4, as do meio das muralhas). As que
-    // ficam atrás do centro, na vista, pintam-se antes da muralha.
-    const corner = (ox, oy, rise) => [ox, oy, () => {
-        const t = stoneTower(ctx, 11, towerH, STONE, { ox, oy });
-        tiledCone(ctx, t.x, t.y, 13, rise, CASTLE_ROOF);
-    }];
-    const towers = [corner(-c, c, 22 + level), corner(c, c, 22 + level)];
-    if (level >= 2) towers.push(corner(c, -c, 22 + level), corner(-c, -c, 22));
-    if (level >= 4) {
-        for (const [ox, oy] of [[0, c], [c, 0]]) {
-            towers.push([ox, oy, () => {
-                const t = stoneTower(ctx, 8, towerH - 4, STONE, { ox, oy });
-                tiledCone(ctx, t.x, t.y, 10, 16, CASTLE_ROOF);
-                // A torre do meio da muralha +y é a torre de entrada: o portão
-                // fica na face dela virada para fora, como se a torre fosse
-                // uma caixa do tamanho dela (0,354 casas: o raio de 8 píxeis).
-                if (ox === 0) {
-                    const face = houseFace(0, 1, 0.354, 0.354, ox, oy);
-                    if (face) castleGate(ctx, face, 0.5, 0.26, 10, 5, 6);
-                }
-            }]);
-        }
+/** Um estandarte azul com a coroa dourada, pendurado numa face (ver `houseFace`). */
+function banner(ctx, f, u, z1, w = 0.07) {
+    if (!f) return;
+    const hw = w / f.w / 2;
+    const z0 = z1 - 9;
+    poly(ctx, [f.at(u - hw, z1), f.at(u + hw, z1), f.at(u + hw, z0 + 1.5), f.at(u, z0), f.at(u - hw, z0 + 1.5)], shade('#2f4f9a', f.tone));
+    faceLine(ctx, f, u - hw * 1.2, z1, u + hw * 1.2, z1, '#c9a13a', 1);
+    const [x, y] = f.at(u, z1 - 4.2);
+    ctx.fillStyle = shade('#e8c252', f.tone);
+    ctx.beginPath();
+    ctx.moveTo(x - 1.6, y + 1.2);
+    ctx.lineTo(x - 1.6, y - 1);
+    ctx.lineTo(x - 0.8, y);
+    ctx.lineTo(x, y - 1.4);
+    ctx.lineTo(x + 0.8, y);
+    ctx.lineTo(x + 1.6, y - 1);
+    ctx.lineTo(x + 1.6, y + 1.2);
+    ctx.closePath();
+    ctx.fill();
+}
+
+/** Ameias ao longo de uma aresta, de (ax, ay) a (bx, by) na grelha da peça, à altura z. */
+function merlons(ctx, ax, ay, bx, by, z, color, n) {
+    const along = Math.abs(bx - ax) > Math.abs(by - ay);
+    for (let i = 0; i < n; i++) {
+        const t = (i + 0.5) / n;
+        const ox = ax + (bx - ax) * t;
+        const oy = ay + (by - ay) * t;
+        box(ctx, along ? 0.06 : 0.07, along ? 0.07 : 0.06, 3.2, color, { ox, oy, z });
     }
-    // Pátio: a torre de menagem ao meio e, a partir do nível 3, uma torre alta
-    // no canto +x/-y dela, com o eixo na aresta desse canto. Quando o canto
-    // não fica à frente na vista, a torre pinta-se antes de tudo o que está à frente
-    // dela (logo a seguir às torres dos cantos de trás), e a torre de menagem
-    // tapa-lhe metade; quando fica à frente, pinta-se por cima, no fim.
-    const keepA = 0.62 + level * 0.04;
-    const k = -0.08;
-    const sx = k + keepA / 2;
-    const sy = k - keepA / 2;
-    // Nas vistas em que o canto fica ao lado (à mesma profundidade do centro),
-    // conta como atrás: a torre de menagem tapa-lhe metade.
-    const sideBehind = depth(sx, sy) <= depth(k, k) + 1e-9;
-    const sideTower = () => {
-        const t = stoneTower(ctx, 8, keepH + 10, '#ddd4c2', { ox: sx, oy: sy });
-        tiledCone(ctx, t.x, t.y, 10, 20, CASTLE_ROOF);
+}
+
+/** Um pináculo dourado: a haste e a bola, no ponto de ecrã (x, y). */
+function finial(ctx, x, y, h = 7, gold = '#d9a63a') {
+    ctx.strokeStyle = shade(gold, -0.25);
+    ctx.lineWidth = 1.1;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x, y - h);
+    ctx.stroke();
+    ctx.fillStyle = gold;
+    ctx.beginPath();
+    ctx.arc(x, y - h * 0.55, 1.3, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+function castle(ctx, { level = 1 }) {
+    const { span, wallH, towerH, tiers } = castleSpec(level);
+    const c = span / 2 - 0.02;
+    const t = 0.1;
+    const inner = c - t / 2;
+    const gold = level >= 5;
+
+    // O pátio, por dentro da muralha.
+    diamond(ctx, span - 0.1, span - 0.1, 0, '#b9ae98');
+    diamond(ctx, span - 0.3, span - 0.3, 0.2, '#c4b9a2');
+
+    /** Um lano da muralha: a parede grossa com o adarve, as ameias do lado de fora, os estandartes e (na +y) o portão. */
+    const wallSide = (nx, ny) => () => {
+        const along = ny !== 0;
+        const len = span - 0.2;
+        const [ox, oy] = [nx * inner, ny * inner];
+        const [a, b] = along ? [len, t] : [t, len];
+        walls(ctx, a, b, wallH, STONE, { ox, oy, tex: 'bigstone', top: '#a89d88', seed: 80 + nx * 3 + ny });
+        const [ex, ey] = along ? [len / 2, 0] : [0, len / 2];
+        const out = 0.03;
+        merlons(ctx, ox - ex + nx * out, oy - ey + ny * out, ox + ex + nx * out, oy + ey + ny * out, wallH, STONE, 8);
+        const face = houseFace(nx, ny, a, b, ox, oy);
+        if (!face) return;
+        for (const u of ny === 1 ? [0.18, 0.82] : [0.3, 0.7]) banner(ctx, face, u, wallH - 2);
+        if (nx === 0 && ny === 1) {
+            // A casa da guarda: um corpo mais alto a meio da muralha, com o portão.
+            const gw = 0.34;
+            walls(ctx, gw, t + 0.08, wallH + 5, STONE, { ox: 0, oy: oy + 0.02, tex: 'bigstone', top: '#a89d88', seed: 97 });
+            merlons(ctx, -gw / 2, oy + 0.09, gw / 2, oy + 0.09, wallH + 5, STONE, 4);
+            const gf = houseFace(0, 1, gw, t + 0.08, 0, oy + 0.02);
+            if (gf) {
+                castleGate(ctx, gf, 0.5, 0.26, 11, 6, 8);
+                windows(ctx, 'left', gw, t + 0.08, 0.5, 0.05, wallH - 1, wallH + 3, { ox: 0, oy: oy + 0.02, both: false });
+            }
+        }
     };
 
-    const behind = towers.filter(([ox, oy]) => depth(ox, oy) < 0);
-    layered(behind);
-    if (level >= 3 && sideBehind) sideTower();
+    /** Uma torre redonda do canto, com o telhado cónico e o pináculo. */
+    const corner = (sx, sy) => () => {
+        stoneTower(ctx, 11, towerH, STONE, { ox: sx * c, oy: sy * c });
+        // O parapeito, mais largo, por baixo do telhado.
+        const top = cylinder(ctx, 12.5, 3, '#cfc6b3', { ox: sx * c, oy: sy * c, z: towerH - 3 });
+        tiledCone(ctx, top.x, top.y, 13, 20, CASTLE_ROOF);
+        finial(ctx, top.x, top.y - 20, 6, gold ? '#e9b94a' : '#c9a13a');
+    };
 
-    walls(ctx, span, span, wallH, STONE, { top: '#bdb3a0', tex: 'bigstone' });
-    crenels(ctx, span, span, wallH, STONE, { n: 6 });
+    /** O edifício central: os pisos de baixo para cima, cada um com a saia de telhado. */
+    const keepBody = () => {
+        tiers.forEach((tier, i) => {
+            const { a, h, z, rise, last } = tier;
+            walls(ctx, a, a, h, '#ddd4c2', { z, tex: 'stone', seed: 60 + i });
+            // Uma cornija de pedra mais clara no cimo de cada piso.
+            walls(ctx, a + 0.03, a + 0.03, 1.4, '#e8e0cf', { z: z + h - 1.4, tex: 'plaster', seed: 64 + i });
+            const n = i === 0 ? [0.25, 0.75] : [0.5];
+            for (const u of n) {
+                for (const side of ['left', 'right']) {
+                    windows(ctx, side, a, a, u, 0.05, z + h * 0.35, z + h * 0.72, { lintel: '#e8e0cf', frame: '#e8e0cf' });
+                }
+            }
+            if (i === 0) door(ctx, 'left', a, a, 0.5, 0.11, 11, '#5d4028', { arch: true, frame: '#e8e0cf' });
+            const roof = last && gold ? '#d9a63a' : CASTLE_ROOF;
+            tiledPyramid(ctx, a, a, z + h, rise, roof, { over: 0.035, seed: 7 + i });
+            if (last) {
+                const [x, y] = P(0, 0, z + h + rise);
+                finial(ctx, x, y, 10, gold ? '#f0c64e' : '#c9a13a');
+            }
+        });
+    };
 
-    walls(ctx, keepA, keepA, keepH, '#ddd4c2', { oy: k, ox: k, tex: 'stone' });
-    wallPatch(ctx, 'left', keepA, keepA, 0.5, 0.1, keepH - 16, keepH - 8, WINDOW, { ox: k, oy: k });
-    wallPatch(ctx, 'right', keepA, keepA, 0.35, 0.1, keepH - 16, keepH - 8, shade(WINDOW, -0.2), { ox: k, oy: k });
-    // No nível 5 o telhado da torre de menagem é dourado.
-    tiledPyramid(ctx, keepA, keepA, keepH, 22 + level * 2, level >= 5 ? '#d9a63a' : KEEP_ROOF, { ox: k, oy: k });
-    if (level >= 3 && !sideBehind) sideTower();
+    /** A partir do nível 4, torreões nos cantos do piso de baixo, a subir acima da saia. */
+    const turret = (sx, sy) => () => {
+        const a0 = tiers[0].a / 2;
+        const h = tiers[0].h + 12;
+        const top = stoneTower(ctx, 4.5, h, '#ddd4c2', { ox: sx * a0, oy: sy * a0 });
+        tiledCone(ctx, top.x, top.y, 5.5, 12, gold ? '#d9a63a' : CASTLE_ROOF);
+        finial(ctx, top.x, top.y - 12, 4, '#c9a13a');
+    };
 
-    // Portão na muralha +y (a da frente-esquerda na vista sem rodar), na face
-    // dela. A partir do nível 4 há uma torre a meio dessa muralha: aí o portão
-    // passa para a torre (ver as torres do meio, acima).
-    const wall = level < 4 && houseFace(0, 1, span, span);
-    if (wall) castleGate(ctx, wall, 0.5 + 0.1 / span, 0.2 / span, 12, 7, 10);
-
-    layered(towers.filter((t) => !behind.includes(t)));
+    // Tudo de trás para a frente na vista: as peças da muralha e das torres por
+    // profundidade, o edifício central com os torreões à volta dele.
+    const parts = [
+        [-c, -c, corner(-1, -1)], [c, -c, corner(1, -1)], [c, c, corner(1, 1)], [-c, c, corner(-1, 1)],
+        [0, -inner, wallSide(0, -1)], [inner, 0, wallSide(1, 0)], [0, inner, wallSide(0, 1)], [-inner, 0, wallSide(-1, 0)]
+    ];
+    const keepParts = [[0, 0, keepBody]];
+    if (level >= 4) {
+        const a0 = tiers[0].a / 2;
+        for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) keepParts.push([sx * a0 * 1.02, sy * a0 * 1.02, turret(sx, sy)]);
+    }
+    // As torres dos cantos dos lados (à mesma profundidade que o centro) ficam
+    // atrás do edifício; as muralhas da frente, à frente dele.
+    const order = parts.map((p) => ({ d: depth(p[0], p[1]) + (p[0] && p[1] ? 0 : 0.001), draw: p[2] }));
+    order.push(...keepParts.map((p) => ({ d: depth(p[0], p[1]) * 0.25 + 0.0005, draw: p[2] })));
+    order.sort((p, q) => p.d - q.d);
+    for (const p of order) p.draw();
 }
 
 function keep(ctx, { roof = '#d8587b' }) {
@@ -2814,10 +2916,18 @@ function flag(ctx, x, y, t, color, h = 16) {
 }
 
 function castleLive(ctx, b, t, { level = 1 }) {
-    const keepH = 34 + level * 9;
-    const rise = 22 + level * 2;
-    const [x, y] = P(-0.08, -0.08, keepH + rise - 2);
-    flag(ctx, x, y, t, level >= 4 ? '#f2c14e' : '#c8553d', 18);
+    // A bandeira no pináculo do edifício central, e flâmulas nas duas torres
+    // dos cantos dos lados da vista (as da frente e de trás ficam alinhadas
+    // com o pináculo, e as flâmulas amontoavam-se lá).
+    const { span, towerH, top } = castleSpec(level);
+    const [x, y] = P(0, 0, top + 9);
+    flag(ctx, x, y, t, level >= 4 ? '#f2c14e' : '#c8553d', 16);
+    const c = span / 2 - 0.02;
+    for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+        if (Math.abs(depth(sx, sy)) > 0.5) continue;
+        const [fx, fy] = P(sx * c, sy * c, towerH + 25);
+        flag(ctx, fx, fy, t + sx * 0.7 + sy * 0.3, '#2f4f9a', 7);
+    }
 }
 
 function keepLive(ctx, b, t) {
