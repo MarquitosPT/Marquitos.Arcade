@@ -720,11 +720,13 @@ function stoneCourses(ctx, f, z0, z1, color = STONE_WALL) {
  * as águas levarem fiadas: primeiro a água de trás, depois a empena que se vê,
  * por fim a água da frente, que cobre o beiral da empena.
  *
- * O telhado sai `over` para lá das empenas, mas nas fachadas só `eave`, quase
- * rente: um beiral largo, a descer com a inclinação, tapava o cimo das portas
- * e janelas e descia, nos cantos, abaixo da base da empena.
+ * O telhado é um pouco mais largo do que a casa: sai `over` para lá das
+ * empenas e `eave` nas fachadas, quase rente (um beiral largo, a descer com a
+ * inclinação, tapava o cimo das portas e janelas). A empena vai até ao
+ * contorno do telhado e pinta-se depois das águas: o triângulo acaba certo
+ * nos cantos do beiral, sem se ver o corte da água de trás.
  */
-function tiledRoof(ctx, a, b, z, rise, color, wall, { ox = 0, oy = 0, alongX = true, over = 0.045, eave = 0.012, tiles = true, round = false } = {}) {
+function tiledRoof(ctx, a, b, z, rise, color, wall, { ox = 0, oy = 0, alongX = true, over = 0.02, eave = 0.012, tiles = true, round = false } = {}) {
     const L = (alongX ? a : b) / 2 + over;
     const half = (alongX ? b : a) / 2;
     const W = half + eave;
@@ -779,10 +781,17 @@ function tiledRoof(ctx, a, b, z, rise, color, wall, { ox = 0, oy = 0, alongX = t
         const nrm = alongX ? [e, 0] : [0, e];
         const side = faceOf(...nrm);
         if (!side) return;
-        const hx = alongX ? a / 2 : b / 2;
-        const hy = alongX ? b / 2 : a / 2;
-        const q = (u, zz) => (alongX ? P(ox + e * hx, oy + u, zz) : P(ox + u, oy + e * hx, zz));
-        poly(ctx, [q(-hy, z), q(hy, z), q(0, z + rise)], shade(wall, side === 'right' ? -0.3 : -0.08));
+        const q = (u, zz) => (alongX ? P(ox + e * L, oy + u, zz) : P(ox + u, oy + e * L, zz));
+        const corners = [q(-W, zAt(0)), q(W, zAt(0)), q(0, z + rise)];
+        poly(ctx, corners, shade(wall, side === 'right' ? -0.3 : -0.08));
+        // A borda do telhado ao longo da empena.
+        ctx.strokeStyle = shade(color, -0.3);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(...corners[0]);
+        ctx.lineTo(...corners[2]);
+        ctx.lineTo(...corners[1]);
+        ctx.stroke();
         if (round) {
             // Um óculo redondo na empena.
             const [x, y] = q(0, z + rise * 0.36);
@@ -796,10 +805,14 @@ function tiledRoof(ctx, a, b, z, rise, color, wall, { ox = 0, oy = 0, alongX = t
             ctx.fill();
         }
     };
+    ctx.save();
+    ctx.lineCap = 'butt';
+    ctx.lineJoin = 'miter';
     plane(planes[0]);
+    plane(planes[1]);
     gableEnd(-1);
     gableEnd(1);
-    plane(planes[1]);
+    ctx.restore();
     ctx.strokeStyle = shade(color, -0.35);
     ctx.lineWidth = 1.2;
     ctx.beginPath();
@@ -891,7 +904,7 @@ function house(ctx, { roof = PLAYER_ROOF, variant = 0 }) {
         for (const u of [0.2, 0.8]) houseWindow(ctx, f.front, u, 7, 12, 0.07, { shutter: '#5d7a45' });
         houseWindow(ctx, f.back, 0.5, 7, 12, 0.07, { shutter: '#5d7a45' });
         for (const e of f.ends) houseWindow(ctx, e, 0.5, 7, 12, 0.06);
-        tiledRoof(ctx, a, b, 16, 13, roof, STONE_WALL, { alongX: F.along, over: 0.04 });
+        tiledRoof(ctx, a, b, 16, 13, roof, STONE_WALL, { alongX: F.along });
         if (!behind) putChimney();
     } else if (style === 2) {
         // Casa de dois pisos: rés-do-chão de pedra, andar de enxaimel a sair para fora.
@@ -911,7 +924,7 @@ function house(ctx, { roof = PLAYER_ROOF, variant = 0 }) {
             houseWindow(ctx, g.back, u, 16, 22, 0.08);
         }
         for (const e of g.ends) houseWindow(ctx, e, 0.5, 16, 22, 0.08);
-        roofAndChimney(() => tiledRoof(ctx, a2, b2, 25, 17, roof, PLASTER, { alongX: F.along, over: 0.035 }));
+        roofAndChimney(() => tiledRoof(ctx, a2, b2, 25, 17, roof, PLASTER, { alongX: F.along }));
     } else if (style === 3) {
         // Casa comprida e ocre, com portadas azuis, vasos de flores e um alpendre na porta.
         const wall = '#e8c98f';
@@ -923,7 +936,7 @@ function house(ctx, { roof = PLAYER_ROOF, variant = 0 }) {
         for (const u of [0.18, 0.82]) houseWindow(ctx, f.front, u, 8, 14, 0.08, { shutter: '#4f86c6', box: '#d9577a' });
         for (const u of [0.25, 0.5, 0.75]) houseWindow(ctx, f.back, u, 8, 14, 0.08, { shutter: '#4f86c6' });
         for (const e of f.ends) houseWindow(ctx, e, 0.5, 8, 14, 0.08, { shutter: '#4f86c6' });
-        tiledRoof(ctx, a, b, 18, 12, roof, wall, { alongX: F.along, over: 0.04 });
+        tiledRoof(ctx, a, b, 18, 12, roof, wall, { alongX: F.along });
         // O alpendre: um telhadinho por cima da porta, sobre duas mãos-francesas.
         if (f.front) {
             const [px, py] = F.off(0, 0);
@@ -956,7 +969,7 @@ function house(ctx, { roof = PLAYER_ROOF, variant = 0 }) {
                 for (let k = 1; k < 5; k++) faceLine(ctx, face, k / 5, 0.5, k / 5, 10.5, shade(WOOD, -0.3), 0.5);
             }
             houseDoor(ctx, sf.front, 0.5, 0.1, 8, '#6b4a2b', { frame: '#4a3020' });
-            tiledRoof(ctx, sa, sb, 11, 6, shade(roof, -0.1), WOOD, { ox: sx, oy: sy, alongX: F.along, over: 0.03 });
+            tiledRoof(ctx, sa, sb, 11, 6, shade(roof, -0.1), WOOD, { ox: sx, oy: sy, alongX: F.along });
         };
         const [lx, ly] = F.off(-0.3, 0.2);
         layered([
