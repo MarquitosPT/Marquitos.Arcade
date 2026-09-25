@@ -2345,7 +2345,7 @@ function jewelry(ctx, { roof = '#4a3f8a' }) {
             // Uma cinta dourada por baixo do beiral.
             walls(ctx, a, b, 1.2, gold, { ...o, z: 18 });
             door(ctx, 'left', a, b, 0.22, 0.1, 11, color, { ...o, arch: true, frame: gold });
-            // A montra, com as jóias à mostra.
+            // A montra, com as joias à mostra.
             windows(ctx, 'left', a, b, 0.64, 0.24, 4, 12.5, { ...o, glass: '#bfe0ec', frame: gold, both: false });
             windows(ctx, 'right', a, b, 0.5, 0.09, 8, 14, { ...o, shutter: color, frame: gold });
             tiledPyramid(ctx, a, b, 19.2, 13, color, o);

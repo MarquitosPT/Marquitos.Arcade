@@ -12,7 +12,7 @@ Blazor Web App (.NET 10, render mode Interactive Server) com ASP.NET Core Identi
 - `src/MarquitosArcade/wwwroot/theme.js`: escolha do tema claro/escuro (ver [Tema](#tema-glass-claro-e-escuro)).
 - `src/MarquitosArcade/wwwroot/covers/`: capas 16:9 dos jogos (WebP) usadas no catálogo — são screenshots reais de cada jogo, gerados por `tools/covers/` (ver [Capas dos jogos](#capas-dos-jogos)).
 - `src/MarquitosArcade/Components/Pages/Pontuacoes.razor`: página dedicada às pontuações em `/pontuacoes`, com um painel por jogo (array `Games` no `@code`). Lê os tops diretamente da base de dados no servidor, via `ScoresEndpoints.GetTopScoresAsync` — o mesmo método que serve o endpoint `GET /api/scores/:gameId`, mas sem passar por HTTP.
-- `src/MarquitosArcade/Components/Pages/Privacidade.razor` e `Suporte.razor`: as duas páginas de texto — política de privacidade em `/privacidade` e suporte em `/suporte`. São os URLs apontados pela app na App Store (política de privacidade e suporte), por isso são para manter estáveis. Chega-se lá pela nota no fim da home, a seguir ao catálogo (`.home-meta` em `Home.razor`) — e não pelo rodapé, que é uma barra de uma linha onde os links partiam a linha em ecrãs estreitos. O texto vive no próprio `.razor` (não há CMS nem markdown por trás), no painel de vidro das páginas simples (`.page-shell`), com a tipografia longa na secção `.longform` do `styles.css`. Duas notas ao mexer nelas: a política tem duas datas a actualizar (a do topo e a da linha de versão no fim), e o suporte diz que a arcada não envia emails — se algum dia houver servidor de email configurado, a resposta sobre a palavra-passe esquecida deixa de ser verdade.
+- `src/MarquitosArcade/Components/Pages/Privacidade.razor` e `Suporte.razor`: as duas páginas de texto — política de privacidade em `/privacidade` e suporte em `/suporte`. São os URLs apontados pela app na App Store (política de privacidade e suporte), por isso são para manter estáveis. Chega-se lá pela nota no fim da home, a seguir ao catálogo (`.home-meta` em `Home.razor`) — e não pelo rodapé, que é uma barra de uma linha onde os links partiam a linha em ecrãs estreitos. O texto vive no próprio `.razor` (não há CMS nem markdown por trás), no painel de vidro das páginas simples (`.page-shell`), com a tipografia longa na secção `.longform` do `styles.css`. Duas notas ao mexer nelas: a política tem duas datas a atualizar (a do topo e a da linha de versão no fim), e o suporte diz que a arcada não envia emails — se algum dia houver servidor de email configurado, a resposta sobre a palavra-passe esquecida deixa de ser verdade.
 - `src/MarquitosArcade/wwwroot/games/<slug>/`: um jogo por pasta, cada um com o seu `index.html` (só markup), `css/`, `js/` (módulos ES) e `assets/`. Ver [Estrutura de um jogo](#estrutura-de-um-jogo) e, para o porquê desta organização em vez de um projeto .NET por jogo, [docs/estrutura-dos-jogos.md](docs/estrutura-dos-jogos.md).
   - `tasca-do-ze/`: mini-jogo "Tasca do Zé" (gestão de pedidos), com leaderboard persistido via `/api/scores/tasca-do-ze`.
   - `pong/`: Pong Retro, com modo 1 jogador (vs. CPU, pontuação submetida via `/api/scores/pong`) e 2 jogadores.
@@ -618,7 +618,7 @@ economia, não de conquista: ninguém ataca ninguém.
    No **nível 5**, o **canavial** (cultura) → **engenho de açúcar** (cana →
    açúcar), o **arrozal** (cultura que tem de ficar à beira de água; o arroz é
    comida), a **pastelaria** (ovos + farinha + açúcar + leite → bolos, a
-   comida mais cara) e a **joalharia** (ouro → jóias, que valem uma fortuna nas
+   comida mais cara) e a **joalharia** (ouro → joias, que valem uma fortuna nas
    feiras e que a joalharia vende ao povo, ver abaixo). As culturas são as
    entradas com `crop` em `BUILDINGS`.
 4. **O povo come ao fim de cada dia** (bolos, queijo, pão, carne, arroz, peixe, ovos ou leite). Bem alimentado, e
@@ -627,7 +627,7 @@ economia, não de conquista: ninguém ataca ninguém.
    contentamento até 90%; os últimos 10% são o **convívio e o luxo**
    (`HAPPY_LEISURE`): ao fim do dia cada **taberna** serve 40 moradores (1
    vinho por cada 10, até +4%), cada **teatro** 80 (até +3%) e cada
-   **joalharia** vende jóias a 80 (1 jóia por cada 40, até +3%), e cada um dá a
+   **joalharia** vende joias a 80 (1 joia por cada 40, até +3%), e cada um dá a
    sua parte na proporção do povo servido (`serves` em `BUILDINGS`, com o bem
    que gasta em `uses`).
 5. **O castelo** sobe de nível: alarga o território onde se pode construir,

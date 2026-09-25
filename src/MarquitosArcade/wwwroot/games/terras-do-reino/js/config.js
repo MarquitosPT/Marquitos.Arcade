@@ -94,7 +94,7 @@ export const RESOURCES = [
     { id: 'sugar', name: 'Açúcar', emoji: '🍬', price: 14, tradable: true },
     { id: 'rice', name: 'Arroz', emoji: '🍚', price: 7, tradable: true, meals: 2 },
     { id: 'cakes', name: 'Bolos', emoji: '🎂', price: 45, tradable: true, meals: 3 },
-    { id: 'jewels', name: 'Jóias', emoji: '💍', price: 100, tradable: true }
+    { id: 'jewels', name: 'Joias', emoji: '💍', price: 100, tradable: true }
 ];
 
 export const RESOURCE = Object.fromEntries(RESOURCES.map((r) => [r.id, r]));
@@ -118,7 +118,7 @@ export const TAX_PER_RESIDENT = 4;
 export const IDLE_TAX_SHARE = 0.25;
 /**
  * O contentamento vai de `HAPPY_BASE` (ninguém come nada de jeito) a 1 (todos
- * bem alimentados, com variedade, com taberna e teatro para todos e jóias ao
+ * bem alimentados, com variedade, com taberna e teatro para todos e joias ao
  * pescoço). Nunca chega a zero: um reino sem pão é pobre, não é um reino em
  * revolta — isto não é um jogo de guerra.
  *
@@ -185,7 +185,7 @@ export const CASTLE_MAX_LEVEL = CASTLE_LEVELS.length - 1;
  * `serves` é convívio e luxo (taberna, teatro, joalharia): ao fim de cada dia
  * serve até `residents` moradores e deixa-os mais contentes (`HAPPY_LEISURE`).
  * Com `uses`, gasta 1 desse bem por cada `per` moradores servidos (o vinho da
- * taberna, as jóias que a joalharia vende ao povo).
+ * taberna, as joias que a joalharia vende ao povo).
  *
  * `lodges` é a hospedaria: ao fim de cada dia recebe até `guests` visitantes
  * (mais quanto mais contente estiver o povo — um reino feliz tem fama), que
@@ -376,7 +376,7 @@ export const BUILDINGS = [
         cost: { coins: 1200, planks: 60, stone: 90, gold: 30 }, workers: 3,
         recipe: { in: { gold: 2 }, out: { jewels: 1 }, time: 30 },
         serves: { residents: 80, uses: 'jewels', per: 40 },
-        desc: 'Os ourives transformam o ouro das minas em anéis e colares. As jóias valem uma fortuna nas feiras, e o povo que as usa anda mais contente.'
+        desc: 'Os ourives transformam o ouro das minas em anéis e colares. As joias valem uma fortuna nas feiras, e o povo que as usa anda mais contente.'
     }
 ];
 

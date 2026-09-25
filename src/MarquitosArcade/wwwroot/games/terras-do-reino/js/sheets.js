@@ -250,7 +250,7 @@ function leisureHtml() {
     });
     const food = 1 - Object.values(HAPPY_LEISURE).reduce((a, b) => a + b, 0);
     return `<p class="sheetText" style="margin-top:6px">A comida leva o contentamento até ${pct(food)}; o resto é convívio,
-        na 🍺 taberna (com vinho) e no 🎭 teatro, e o luxo das 💍 jóias da joalharia.</p>
+        na 🍺 taberna (com vinho) e no 🎭 teatro, e o luxo das 💍 joias da joalharia.</p>
         ${rows.map(([tone, text]) => `<div class="statusLine ${tone}" style="margin-top:6px">${text}</div>`).join('')}`;
 }
 

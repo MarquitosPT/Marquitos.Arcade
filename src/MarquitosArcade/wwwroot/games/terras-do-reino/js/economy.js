@@ -4,7 +4,7 @@
 // edifícios (por ordem de construção — o primeiro a ser feito é o primeiro a
 // ter gente), cada edifício avança o seu ciclo, os campos crescem e cobram-se
 // os impostos. Ao fim de cada dia o povo come (e vai à taberna e ao teatro,
-// e compra jóias), o contentamento acompanha o que houve na mesa e o convívio,
+// e compra joias), o contentamento acompanha o que houve na mesa e o convívio,
 // e a hospedaria recebe os visitantes, que comem do que sobrou.
 
 import {

@@ -93,7 +93,7 @@ function rules() {
         ${list([
             `Mesmo sem comer nada de jeito, o povo nunca fica abaixo de <b>${pct(HAPPY_BASE)}</b> contente — isto não é um jogo de revoltas.`,
             `Com todos bem alimentados sobe mais <b>${pct(HAPPY_FED)}</b>, e com <b>dois ou mais tipos de comida</b> na mesa mais <b>${pct(HAPPY_VARIETY)}</b>. A comida leva o contentamento até ${pct(fullFood)}.`,
-            `O resto é convívio e luxo: ${joinPt(leisure)}, na proporção do povo que conseguem servir. A joalharia vende as jóias ao povo: gasta as que houver no armazém.`,
+            `O resto é convívio e luxo: ${joinPt(leisure)}, na proporção do povo que conseguem servir. A joalharia vende as joias ao povo: gasta as que houver no armazém.`,
             'O contentamento não salta de um dia para o outro: anda metade do caminho por dia.',
             'Mais contentamento é mais impostos — e os últimos níveis do castelo pedem um povo contente.'
         ])}

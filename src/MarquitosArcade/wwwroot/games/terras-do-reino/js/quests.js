@@ -39,14 +39,14 @@ export const QUESTS = [
     { text: 'Ultrapassa as três vilas vizinhas', hint: 'Toca em 👑 Reinos para ver a tabela.', done: () => game.derived.prosperity > Math.max(...game.towns.map((_, k) => townProsperity(k))), reward: { coins: 400 } },
     { text: 'Sobe o castelo ao nível 4', hint: 'Ouro das minas, queijo da leitaria e um reino grande e feliz.', done: () => game.castleLevel >= 4, reward: { coins: 1000 } },
     { text: 'Lavra um campo de algodão e abre uma alfaiataria', hint: 'Algodão e rolos de tecido de lã → fatos e vestidos, os mais caros das feiras.', done: () => countOf('cottonfield') >= 1 && countOf('tailor') >= 1, reward: { coins: 800 } },
-    { text: 'Constrói um teatro', hint: 'A cultura do reino: com taberna e teatro para todos, o povo fica quase 100% contente — as jóias da joalharia, no nível 5, fazem o resto.', done: built('theatre'), reward: { coins: 1500 } },
+    { text: 'Constrói um teatro', hint: 'A cultura do reino: com taberna e teatro para todos, o povo fica quase 100% contente — as joias da joalharia, no nível 5, fazem o resto.', done: built('theatre'), reward: { coins: 1500 } },
     { text: `Sobe o castelo ao nível ${CASTLE_MAX_LEVEL}`, hint: 'Vinho, tecido, ouro e um reino de 120 moradores, 85% contente — taberna e teatro ajudam.', done: () => game.castleLevel >= CASTLE_MAX_LEVEL, reward: { coins: 3000 } },
     { text: 'Planta um canavial e constrói um engenho de açúcar', hint: 'Cana → açúcar.', done: () => countOf('canefield') >= 1 && countOf('sugarmill') >= 1, reward: { coins: 1500 } },
     { text: 'Planta um arrozal à beira de água', hint: 'O arroz é comida: mais variedade na mesa.', done: built('paddy'), reward: { coins: 1500 } },
     { text: 'Abre uma pastelaria', hint: 'Ovos, farinha, açúcar e leite → bolos, o doce do reino.', done: built('patisserie'), reward: { coins: 2500 } },
     // Os novos objetivos entram sempre no fim da lista: a gravação guarda o índice (ver save.js).
     { text: 'Abre uma hospedaria', hint: 'Os visitantes pagam a estadia e jantam do que sobra na despensa. Povo contente traz mais visitas.', done: built('inn'), reward: { coins: 2000 } },
-    { text: 'Abre uma joalharia', hint: 'Ouro → jóias. Valem uma fortuna nas feiras, e o povo que as usa fica mais contente.', done: built('jewelry'), reward: { gold: 20 } }
+    { text: 'Abre uma joalharia', hint: 'Ouro → joias. Valem uma fortuna nas feiras, e o povo que as usa fica mais contente.', done: built('jewelry'), reward: { gold: 20 } }
 ];
 
 /** Depois da lista: marcos de prosperidade, cada um o dobro do anterior. `index` conta a partir do início da lista. */

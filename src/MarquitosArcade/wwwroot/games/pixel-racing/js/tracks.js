@@ -1,14 +1,14 @@
 // Construção das pistas.
 //
 // Uma pista é uma superelipse deformada por harmónicos de seno. A superelipse
-// (o expoente `edge`) estica os lados em rectas e junta a viragem nos cantos; os
+// (o expoente `edge`) estica os lados em retas e junta a viragem nos cantos; os
 // harmónicos põem curvas pelo meio para o traçado não ser um oval. Com dois ou
-// três termos saem pistas com carácter — uma chicane, uma curva dupla, uma recta
+// três termos saem pistas com carácter — uma chicane, uma curva dupla, uma reta
 // grande — sem ninguém ter de desenhar pontos à mão.
 //
 // A curva é amostrada em fino e só depois cortada em pontos igualmente
 // espaçados (STEP). Assim cada índice vale sempre a mesma distância, esteja numa
-// recta ou numa curva, e uma pista maior fica simplesmente com mais pontos: é
+// reta ou numa curva, e uma pista maior fica simplesmente com mais pontos: é
 // disso que dependem o avanço na volta, os postos de turbo, a antecipação dos
 // CPU e o espaçamento das guias.
 //
@@ -37,7 +37,7 @@ const CURVE_WINDOW = 6;
 
 /**
  * Ponto do traçado no ângulo `t`. Com `edge` a 2 é uma elipse; acima disso os
- * lados achatam-se em recta e a viragem concentra-se nos cantos.
+ * lados achatam-se em reta e a viragem concentra-se nos cantos.
  */
 function shapePoint(def, t) {
     let r = 1;
