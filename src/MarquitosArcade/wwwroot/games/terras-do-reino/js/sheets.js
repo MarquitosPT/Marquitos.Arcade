@@ -254,7 +254,7 @@ function leisureHtml() {
         ${rows.map(([tone, text]) => `<div class="statusLine ${tone}" style="margin-top:6px">${text}</div>`).join('')}`;
 }
 
-/** Os visitantes que as hospedarias receberam no último fim de dia. */
+/** Os visitantes que os hotéis receberam no último fim de dia. */
 function guestsHtml() {
     const inn = BUILDING.inn;
     if (inn.tier > castleInfo().tier) return `<div class="statusLine warn" style="margin-top:6px">🔒 ${inn.emoji} ${inn.name}: castelo nível ${inn.tier} (visitantes pagam a estadia)</div>`;
@@ -315,9 +315,9 @@ const STATUS_TEXT = {
 
 /** Taberna e teatro abertos: a barra é o dia a passar, e ao fim dele servem o povo. */
 const VENUE_OK = ['ok', '✅ Aberto — ao fim do dia recebe o povo'];
-/** A hospedaria aberta: ao fim do dia chegam os visitantes. */
-const INN_OK = ['ok', '✅ Aberta — ao fim do dia chegam os visitantes'];
-/** A hospedaria sem nada na despensa: os visitantes não ficam. */
+/** O hotel aberto: ao fim do dia chegam os visitantes. */
+const INN_OK = ['ok', '✅ Aberto — ao fim do dia chegam os visitantes'];
+/** O hotel sem nada na despensa: os visitantes não ficam. */
 const INN_HUNGRY = ['warn', '🍽️ Sem comida na despensa — os visitantes não ficam'];
 
 function tileView(arg) {

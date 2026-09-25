@@ -100,7 +100,7 @@ function rules() {
 
         <h3>🧳 Visitantes</h3>
         ${list([
-            `A partir do castelo nível ${BUILDING.inn.tier}, a ${building(BUILDING.inn)} recebe quem vem visitar o reino: até <b>${BUILDING.inn.lodges.guests}</b> visitantes por dia, cada um a pagar <b>${BUILDING.inn.lodges.fee} moedas</b>.`,
+            `A partir do castelo nível ${BUILDING.inn.tier}, o ${building(BUILDING.inn)} recebe quem vem visitar o reino: até <b>${BUILDING.inn.lodges.guests}</b> visitantes por dia, cada um a pagar <b>${BUILDING.inn.lodges.fee} moedas</b>.`,
             'Chegam tantos mais quanto mais contente estiver o povo: um reino feliz tem fama.',
             'Os visitantes jantam ao fim do dia, depois do povo, do que sobrar na despensa. Sem comida, não ficam — e não pagam.'
         ])}

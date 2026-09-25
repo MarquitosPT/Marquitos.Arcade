@@ -8,8 +8,8 @@
 // As "portas" de um edifício são as casas de estrada encostadas ao bloco dele.
 // Cada um anda só pela sua rede: o povo do reino pelas estradas do jogador, o
 // de cada vila pelas ruas dela. Quanto mais moradores, mais gente na rua.
-// Com uma hospedaria aberta, parte de quem anda pelas estradas do reino são
-// visitantes, de chapéu e mala na mão, a chegar à hospedaria ou a sair dela.
+// Com um hotel aberto, parte de quem anda pelas estradas do reino são
+// visitantes, de chapéu e mala na mão, a chegar ao hotel ou a sair dele.
 
 import { MAX_WALKERS, RESIDENTS_PER_WALKER, TOWNS, WALK_SPEED } from './config.js';
 import { fx, game } from './state.js';
@@ -21,7 +21,7 @@ const FADE = 0.4;
 /** De quanto em quanto tempo sai mais alguém, se ainda houver lugar na rua. */
 const SPAWN_EVERY = 0.35;
 const TOWN_MAX_WALKERS = 7;
-/** Parte de quem sai à rua que é visitante, quando há hospedaria aberta. */
+/** Parte de quem sai à rua que é visitante, quando há hotel aberto. */
 const VISITOR_SHARE = 0.3;
 
 const SHIRTS = ['#3f6fb5', '#b8483a', '#5d8c3a', '#8a5aa8', '#c98a2c', '#2f8a8a', '#d9d2c0'];
@@ -113,7 +113,7 @@ function spawn(group) {
     const road = group === 'player' ? ROAD_PLAYER : ROAD_TOWN;
     const inns = group === 'player' ? list.filter((d) => d.b.kind === 'inn' && d.b.status === 'ok') : [];
     const visitor = inns.length > 0 && Math.random() < VISITOR_SHARE;
-    // Um visitante vai para a hospedaria ou sai dela, para um sítio qualquer.
+    // Um visitante vai para o hotel ou sai dele, para um sítio qualquer.
     const arriving = Math.random() < 0.5;
     let from = visitor && !arriving ? pick(inns) : pick(list);
     // Umas quantas tentativas de destino: pode calhar uma porta do mesmo

@@ -187,7 +187,7 @@ export const CASTLE_MAX_LEVEL = CASTLE_LEVELS.length - 1;
  * Com `uses`, gasta 1 desse bem por cada `per` moradores servidos (o vinho da
  * taberna, as joias que a joalharia vende ao povo).
  *
- * `lodges` é a hospedaria: ao fim de cada dia recebe até `guests` visitantes
+ * `lodges` é o hotel: ao fim de cada dia recebe até `guests` visitantes
  * (mais quanto mais contente estiver o povo — um reino feliz tem fama), que
  * comem uma refeição do que sobrar na despensa e pagam `fee` moedas cada um.
  */
@@ -366,7 +366,7 @@ export const BUILDINGS = [
         desc: 'Bolos com ovos, farinha, açúcar e leite: o povo adora-os e as feiras pagam-nos a peso de ouro.'
     },
     {
-        id: 'inn', name: 'Hospedaria', emoji: '🛎️', tier: 4,
+        id: 'inn', name: 'Hotel', emoji: '🛎️', tier: 4,
         cost: { coins: 700, planks: 70, stone: 80 }, workers: 3,
         lodges: { guests: 12, fee: 12 },
         desc: 'Quartos para quem vem visitar o reino. Os visitantes comem do que sobra na despensa e pagam a estadia: quanto mais contente o povo, mais fama tem o reino e mais visitas chegam.'

@@ -45,7 +45,7 @@ export const QUESTS = [
     { text: 'Planta um arrozal à beira de água', hint: 'O arroz é comida: mais variedade na mesa.', done: built('paddy'), reward: { coins: 1500 } },
     { text: 'Abre uma pastelaria', hint: 'Ovos, farinha, açúcar e leite → bolos, o doce do reino.', done: built('patisserie'), reward: { coins: 2500 } },
     // Os novos objetivos entram sempre no fim da lista: a gravação guarda o índice (ver save.js).
-    { text: 'Abre uma hospedaria', hint: 'Os visitantes pagam a estadia e jantam do que sobra na despensa. Povo contente traz mais visitas.', done: built('inn'), reward: { coins: 2000 } },
+    { text: 'Abre um hotel', hint: 'Os visitantes pagam a estadia e jantam do que sobra na despensa. Povo contente traz mais visitas.', done: built('inn'), reward: { coins: 2000 } },
     { text: 'Abre uma joalharia', hint: 'Ouro → joias. Valem uma fortuna nas feiras, e o povo que as usa fica mais contente.', done: built('jewelry'), reward: { gold: 20 } }
 ];
 

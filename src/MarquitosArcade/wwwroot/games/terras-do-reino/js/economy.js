@@ -5,7 +5,7 @@
 // ter gente), cada edifício avança o seu ciclo, os campos crescem e cobram-se
 // os impostos. Ao fim de cada dia o povo come (e vai à taberna e ao teatro,
 // e compra joias), o contentamento acompanha o que houve na mesa e o convívio,
-// e a hospedaria recebe os visitantes, que comem do que sobrou.
+// e o hotel recebe os visitantes, que comem do que sobrou.
 
 import {
     BUILDING, CASTLE_LEVELS, DAY_SECONDS, FOODS, HAPPY_BASE, HAPPY_FED, HAPPY_LEISURE, HAPPY_VARIETY, IDLE_TAX_SHARE,
@@ -237,7 +237,7 @@ function stepBarn(b, def, dt, quiet) {
 }
 
 /**
- * Taberna, teatro e hospedaria: ao longo do dia só mostram se podem abrir (e a
+ * Taberna, teatro e hotel: ao longo do dia só mostram se podem abrir (e a
  * barra anda com o relógio); é ao fim do dia que servem o povo (ver `leisure`)
  * e recebem os visitantes (ver `lodge`).
  */
@@ -295,7 +295,7 @@ function serveMeals(people) {
 }
 
 /**
- * Os visitantes do fim do dia: cada hospedaria aberta recebe até `guests`,
+ * Os visitantes do fim do dia: cada hotel aberto recebe até `guests`,
  * tantos quanto a fama do reino (o contentamento do povo) atrair. Comem do que
  * o povo deixou na despensa — sem comida não ficam — e pagam a estadia.
  */
