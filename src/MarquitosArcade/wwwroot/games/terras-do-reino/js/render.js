@@ -331,24 +331,81 @@ function drawRoad(x, y, detail) {
     ctx.moveTo(pts[0][0], pts[0][1]);
     for (let k = 1; k < 4; k++) ctx.lineTo(pts[k][0], pts[k][1]);
     ctx.closePath();
-    ctx.fillStyle = town ? '#b3a58c' : '#c2b69c';
+    // De perto, o fundo é a argamassa entre as pedras; de longe, a cor da calçada toda.
+    ctx.fillStyle = detail ? (town ? '#9d8f75' : '#a99b80') : (town ? '#b3a58c' : '#c2b69c');
     ctx.fill();
     ctx.strokeStyle = 'rgba(92, 78, 52, 0.28)';
     ctx.lineWidth = 0.8;
     ctx.stroke();
 
-    if (!detail) return;
-    // As pedras da calçada: quatro por casa, com um pouco de acaso na cor.
-    for (let k = 0; k < 4; k++) {
-        const gx = x + 0.28 + (k % 2) * 0.44 + (hash2(x, y, 90 + k) - 0.5) * 0.1;
-        const gy = y + 0.28 + Math.floor(k / 2) * 0.44 + (hash2(x, y, 94 + k) - 0.5) * 0.1;
-        if (gx < x0 + 0.08 || gx > x1 - 0.08 || gy < y0 + 0.08 || gy > y1 - 0.08) continue;
-        const [px, py] = p(gx, gy);
-        const shade = hash2(x, y, 98 + k);
-        ctx.fillStyle = shade < 0.33 ? '#d8cfbb' : shade < 0.66 ? '#aa9c80' : '#b9ac92';
-        ctx.beginPath();
-        ctx.ellipse(px, py, 3.4, 1.7, 0, 0, Math.PI * 2);
-        ctx.fill();
+    if (detail) drawCobbles(x, y, x0, x1, y0, y1, town, p);
+}
+
+const COBBLE_PLAYER = ['#d8cfbb', '#cdc1a6', '#c2b59a', '#b8aa8e', '#ddd3bf'];
+const COBBLE_TOWN = ['#c9bea8', '#bcb09a', '#b0a38a', '#a69a82', '#cfc5b2'];
+
+/**
+ * As pedras da calçada de um troço: uma grelha de 2 ou 3 pedras por lado,
+ * com algumas pedras a ocupar o lugar de duas, cada uma um polígono torto de
+ * tamanho e cor ao acaso (mas sempre o mesmo na mesma casa).
+ */
+function drawCobbles(x, y, x0, x1, y0, y1, town, p) {
+    let n = 0;
+    const rnd = () => hash2(x, y, 90 + n++);
+    const nx = rnd() < 0.5 ? 2 : 3;
+    const ny = rnd() < 0.5 ? 2 : 3;
+    const cw = (x1 - x0) / nx;
+    const ch = (y1 - y0) / ny;
+    const palette = town ? COBBLE_TOWN : COBBLE_PLAYER;
+    const taken = new Uint8Array(nx * ny);
+    for (let j = 0; j < ny; j++) {
+        for (let i = 0; i < nx; i++) {
+            if (taken[j * nx + i]) continue;
+            // Às vezes uma pedra comprida, ao longo de x ou de y.
+            let sx = 1;
+            let sy = 1;
+            const r = rnd();
+            if (r < 0.2 && i + 1 < nx && !taken[j * nx + i + 1]) sx = 2;
+            else if (r < 0.4 && j + 1 < ny) sy = 2;
+            for (let dy = 0; dy < sy; dy++) for (let dx = 0; dx < sx; dx++) taken[(j + dy) * nx + i + dx] = 1;
+
+            const cx = x0 + (i + sx / 2) * cw + (rnd() - 0.5) * cw * 0.12;
+            const cy = y0 + (j + sy / 2) * ch + (rnd() - 0.5) * ch * 0.12;
+            const size = 0.84 + rnd() * 0.14;
+            const rx = (sx * cw) / 2 * size;
+            const ry = (sy * ch) / 2 * size;
+            const sides = 5 + Math.floor(rnd() * 3);
+            const turn = rnd() * Math.PI;
+            const pts = [];
+            for (let k = 0; k < sides; k++) {
+                const ang = turn + (k / sides) * Math.PI * 2 + (rnd() - 0.5) * 0.5;
+                const f = 0.8 + rnd() * 0.25;
+                // Um polígono torto dentro do retângulo da pedra (o "quadrado" que o círculo arredonda).
+                const c = Math.cos(ang);
+                const s2 = Math.sin(ang);
+                const m = Math.max(Math.abs(c), Math.abs(s2)) ** 0.5;
+                pts.push(p(cx + (c / m) * rx * f, cy + (s2 / m) * ry * f));
+            }
+            // A sombra por baixo da pedra, depois a pedra, depois o brilho de cima.
+            const color = palette[Math.floor(rnd() * palette.length)];
+            ctx.beginPath();
+            ctx.moveTo(pts[0][0], pts[0][1] + 0.9);
+            for (let k = 1; k < sides; k++) ctx.lineTo(pts[k][0], pts[k][1] + 0.9);
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(70, 56, 36, 0.4)';
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(pts[0][0], pts[0][1]);
+            for (let k = 1; k < sides; k++) ctx.lineTo(pts[k][0], pts[k][1]);
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+            const [hx, hy] = p(cx - rx * 0.2, cy - ry * 0.2);
+            ctx.fillStyle = 'rgba(255, 250, 235, 0.35)';
+            ctx.beginPath();
+            ctx.ellipse(hx, hy - 0.4, Math.max(0.8, (rx + ry) * 7), Math.max(0.5, (rx + ry) * 3.2), 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
     }
 }
 
