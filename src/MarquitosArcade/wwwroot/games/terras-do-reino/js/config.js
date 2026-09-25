@@ -8,8 +8,8 @@
 // propósito: um campo de trigo leva mais de dois dias a amadurecer, e cada
 // oficina faz uma peça a cada quarto de minuto, mais ou menos — um reino
 // constrói-se devagar. O relógio do jogo anda à velocidade escolhida
-// (1x, 2x, 3x) e só anda com o jogo aberto — o que se passa fora dele é
-// recuperado ao voltar, com o teto de `OFFLINE_MAX_SECONDS`.
+// (1x, 2x, 3x) e só anda com o jogo aberto: fora dele o reino fica em pausa,
+// e ao voltar continua exatamente de onde ficou.
 
 export const GAME_ID = 'terras-do-reino';
 export const NAME_STORAGE_KEY = 'terrasDoReinoPlayerName_v1';
@@ -55,9 +55,6 @@ export const ZOOM_START = 1.25;
 
 /** Um dia do reino, em segundos de jogo. É ao fim do dia que o povo come. */
 export const DAY_SECONDS = 45;
-
-/** Teto do tempo recuperado ao voltar ao jogo: três horas. */
-export const OFFLINE_MAX_SECONDS = 3 * 60 * 60;
 
 /** Velocidades do relógio que o botão ⏩ percorre. */
 export const SPEEDS = [1, 2, 3];

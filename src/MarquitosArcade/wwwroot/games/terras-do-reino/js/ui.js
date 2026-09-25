@@ -1,10 +1,10 @@
-// Elementos do ecrã e os ecrãs sobrepostos (menu, confirmação, boas-vindas, pausa).
+// Elementos do ecrã e os ecrãs sobrepostos (menu, confirmação, pausa).
 
 import { byId, createOverlays, createTopBar } from '/lib/arcade/index.js';
 
 export const els = byId(
-    'game', 'startScreen', 'confirmScreen', 'welcomeScreen', 'pauseScreen',
-    'playBtn', 'newBtn', 'confirmNewBtn', 'cancelNewBtn', 'welcomeBtn', 'welcomeSub', 'welcomeList',
+    'game', 'startScreen', 'confirmScreen', 'pauseScreen',
+    'playBtn', 'newBtn', 'confirmNewBtn', 'cancelNewBtn',
     'resumeBtn', 'quitBtn', 'pauseBtn', 'endBtn', 'arcadeLink', 'scoresLink',
     'nameSlot', 'nameRow', 'accountRow', 'accountName', 'accountInitial', 'playerNameInput',
     'saveCard', 'saveLine', 'saveSub', 'progressNote',
@@ -19,7 +19,6 @@ export const topBarEl = document.querySelector('.topBar');
 export const overlays = createOverlays({
     start: els.startScreen,
     confirm: els.confirmScreen,
-    welcome: els.welcomeScreen,
     pause: els.pauseScreen
 }, 'flex');
 

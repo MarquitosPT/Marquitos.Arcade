@@ -5,8 +5,10 @@
 // desenha o reino por trás do vidro.
 //
 // O jogo é contínuo — não há níveis nem fim de partida. "Sair" grava o reino
-// e envia a prosperidade ao quadro; ao voltar, recupera-se o tempo em que o
-// jogo esteve fechado (até três horas), e o reino continua de onde ficou.
+// e envia a prosperidade ao quadro. Fora do jogo o reino fica em pausa: ao
+// esconder a página (outro separador, outra aplicação), o jogo pára e espera
+// pelo "Continuar"; ao voltar ao reino depois de sair, continua do ponto exato
+// onde ficou — com a mesma vista e a mesma velocidade.
 
 import { createLoop, createViewport } from '/lib/arcade/index.js';
 import { bindPlayerNameInput, createScoreClient } from '/lib/arcade/scores.js';
@@ -21,7 +23,7 @@ import {
     roadPath, upgradeCastle
 } from './buildings.js';
 import { addResource, harvestField, plantField, refreshDerived, stepEconomy, togglePaused } from './economy.js';
-import { fmt, fmtDuration } from './format.js';
+import { fmt } from './format.js';
 import { flashQuest, resetHud, updateHud } from './hud.js';
 import { attachControls, setInputHandlers } from './input.js';
 import { anchorFor, camera, gridToWorld, lookAt, panBy, rotateView, worldToScreen } from './iso.js';
@@ -29,7 +31,7 @@ import { buy, sell, townFor } from './market.js';
 import { createMenu } from './menu.js';
 import { checkQuest } from './quests.js';
 import { initRenderer, render } from './render.js';
-import { hasSave, loadSave, newGame, progress, resumeOffline, saveNow } from './save.js';
+import { hasSave, loadSave, newGame, progress, restoreView, saveNow } from './save.js';
 import { closeSheet, initSheets, openSheet, refreshSheet, sheetOpen } from './sheets.js';
 import { fx, game, ui } from './state.js';
 import { sendPlayerCaravan } from './towns.js';
@@ -97,7 +99,7 @@ const loop = createLoop(
         render(dt);
     },
     // dt em segundos. O teto de 100ms evita que um separador em segundo plano
-    // devolva um salto enorme — o tempo fora do jogo é recuperado à parte.
+    // devolva um salto enorme — o tempo fora do jogo não conta.
     { scale: 1000, maxDelta: 0.1, stepWhilePaused: true }
 );
 
@@ -538,8 +540,11 @@ function enterKingdom() {
     overlays.hideAll();
     topBar.setInGame(true);
     document.body.classList.add('in-game');
-    camera.zoom = ZOOM_START;
-    lookAt(CASTLE_CENTER.x, CASTLE_CENTER.y + 2);
+    if (!restoreView()) {
+        camera.rot = 0;
+        camera.zoom = ZOOM_START;
+        lookAt(CASTLE_CENTER.x, CASTLE_CENTER.y + 2);
+    }
     resetHud();
     refreshDerived();
     updateHud();
@@ -549,26 +554,11 @@ function play() {
     resumeAudio();
     playerName.remember();
 
-    let away = null;
-    if (hasSave()) {
-        loadSave();
-        away = resumeOffline();
-    }
+    if (hasSave()) loadSave();
     enterKingdom();
     saveNow();
 
-    if (away) showWelcome(away);
-    else if (game.played < 1) toast('👑 Bem-vindo ao teu reino! Começa pelo objetivo, aqui em cima à esquerda.', 'gold');
-}
-
-function showWelcome(away) {
-    game.paused = true;
-    els.welcomeSub.textContent = `Estiveste fora ${fmtDuration(away.seconds)}${away.days ? ` (${away.days} dia${away.days > 1 ? 's' : ''} no reino)` : ''}. Entretanto:`;
-    const items = Object.entries(away.delta)
-        .filter(([, n]) => n !== 0)
-        .map(([res, n]) => `<span class="delta ${n > 0 ? 'up' : 'down'}">${n > 0 ? '+' : ''}${fmt(n)} ${RESOURCE[res].emoji}</span>`);
-    els.welcomeList.innerHTML = items.length ? items.join('') : '<span class="delta">O reino descansou.</span>';
-    overlays.show('welcome');
+    if (game.played < 1) toast('👑 Bem-vindo ao teu reino! Começa pelo objetivo, aqui em cima à esquerda.', 'gold');
 }
 
 function submitScore() {
@@ -596,15 +586,21 @@ function leaveKingdom() {
     menu.show();
 }
 
+function pauseGame() {
+    if (game.phase !== 'playing' || game.paused) return;
+    game.paused = true;
+    saveNow();
+    overlays.show('pause');
+}
+
 function togglePause() {
     if (game.phase !== 'playing') return;
-    game.paused = !game.paused;
-    if (game.paused) {
-        saveNow();
-        overlays.show('pause');
-    } else {
-        overlays.hideAll();
+    if (!game.paused) {
+        pauseGame();
+        return;
     }
+    game.paused = false;
+    overlays.hideAll();
 }
 
 // ---------- Ligações ----------
@@ -630,10 +626,6 @@ els.confirmNewBtn.addEventListener('click', () => {
     progress.reset();
     newGame();
     play();
-});
-els.welcomeBtn.addEventListener('click', () => {
-    game.paused = false;
-    overlays.hideAll();
 });
 
 els.pauseBtn.addEventListener('click', togglePause);
@@ -688,9 +680,12 @@ els.placeCancelBtn.addEventListener('click', stopPlacing);
 els.placeNoBtn.addEventListener('click', dropPending);
 els.placeYesBtn.addEventListener('click', confirmPending);
 
-// Fechar ou esconder a página a meio do jogo não pode custar o que se fez.
+// Fechar ou esconder a página a meio do jogo não pode custar o que se fez. E o
+// reino não anda sem o jogador: fica em pausa até ele voltar e carregar em
+// "Continuar".
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden' && game.phase === 'playing') {
+        pauseGame();
         saveNow();
         progress.flush();
     }
