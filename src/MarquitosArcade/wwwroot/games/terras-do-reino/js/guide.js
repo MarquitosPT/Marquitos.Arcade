@@ -9,7 +9,7 @@
 import {
     AUTOSAVE_SECONDS, BUILDING, BUILDINGS, BUY_MARKUP, CASTLE_LEVELS, CASTLE_MAX_LEVEL, CASTLE_RESIDENTS, CLEAR_COST, DAY_SECONDS,
     DEMOLISH_REFUND, FAIR_DAYS, FAIR_EVERY_DAYS, FLATTEN_COST, FLATTEN_STONE, FOODS, HAPPY_BASE, HAPPY_FED, HAPPY_LEISURE,
-    HAPPY_VARIETY, IDLE_TAX_SHARE, NEAR_FEATURES, PRICE_MAX, PRICE_MIN, RESOURCE, RESOURCES, ROAD_COST, SPEEDS, START_RESOURCES,
+    HAPPY_VARIETY, IDLE_TAX_SHARE, NEAR_FEATURES, PRICE_MAX, PRICE_MIN, RESOURCE, RESOURCES, ROAD_COST, SERVICE_EFFECTS, SPEEDS, START_RESOURCES,
     TAX_PER_RESIDENT, TOWN_MAX_BUILDINGS, TOWNS
 } from './config.js';
 import { skipSplashOnNextVisit } from '/lib/arcade/splash.js';
@@ -105,6 +105,15 @@ function rules() {
             'Os visitantes jantam ao fim do dia, depois do povo, do que sobrar na despensa. Sem comida, não ficam — e não pagam.'
         ])}
 
+        <h3>🏛️ Serviços do reino</h3>
+        <p>A partir do castelo nível ${BUILDING.school.tier} há serviços para o povo. Cada um serve até ${BUILDING.school.service.residents} moradores
+            enquanto tiver gente a trabalhar, e o efeito é tanto maior quanto maior a parte do povo servida:</p>
+        ${list(BUILDINGS.filter((def) => def.service).map((def) => {
+        const effects = Object.entries(SERVICE_EFFECTS).filter(([k]) => def.service[k]).map(([k, e]) => `até <b>+${pct(def.service[k])}</b> ${e.text}`);
+        return `${building(def)}: ${joinPt(effects)}.`;
+    }))}
+        <p>Nas estradas veem-se as crianças a caminho da escola e os carteiros a distribuir as cartas.</p>
+
         <h3>🔨 Construir</h3>
         ${list([
             'Só se constrói dentro do <b>território</b> do castelo, que cresce a cada nível.',
@@ -188,6 +197,7 @@ function whatItDoes(def) {
     if (def.crop) return `${def.crop.yield} ${RESOURCE[def.crop.res].emoji} por colheita · ${def.crop.grow} s a crescer`;
     if (def.serves) return serves();
     if (def.lodges) return `Até ${def.lodges.guests} visitantes por dia, a ${def.lodges.fee} 💰 cada · uma refeição por visitante`;
+    if (def.service) return `Serve até ${def.service.residents} moradores, todos os dias`;
     if (def.residents) return `+${def.residents} moradores`;
     if (def.plants) return `Planta uma árvore a cada ${def.plants.time} s, até ${def.plants.radius.toLocaleString('pt-PT')} casas à volta`;
     if (def.farms) return `Semeia e colhe sozinho as culturas até ${def.farms.radius} casas à volta`;
@@ -206,6 +216,11 @@ function tags(def) {
     }
     if (def.serves) t.push(`😊 Até +${pct(HAPPY_LEISURE[def.id] || 0)} de contentamento`);
     if (def.lodges) t.push('🧳 Mais visitantes quanto mais contente estiver o povo');
+    if (def.service) {
+        for (const [k, e] of Object.entries(SERVICE_EFFECTS)) {
+            if (def.service[k]) t.push(`${e.icon} Até +${pct(def.service[k])} ${e.text}, na proporção do povo servido`);
+        }
+    }
     return t.map((x) => `<li>${x}</li>`).join('');
 }
 

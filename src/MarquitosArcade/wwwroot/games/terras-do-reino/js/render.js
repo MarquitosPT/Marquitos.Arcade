@@ -471,6 +471,8 @@ function drawWalker(w, t) {
     ctx.globalAlpha = alpha;
     ctx.translate(x, y);
     ctx.scale(facing, 1);
+    // As crianças da escola são mais pequenas.
+    if (w.role === 'child') ctx.scale(0.72, 0.72);
     ctx.fillStyle = 'rgba(20, 40, 10, 0.25)';
     ctx.beginPath();
     ctx.ellipse(0, 0, 3, 1.2, 0, 0, Math.PI * 2);
@@ -506,6 +508,21 @@ function drawWalker(w, t) {
         ctx.fillRect(1.6, -4.4 - bob, 2.8, 2.4);
         ctx.fillStyle = '#2f2622';
         ctx.fillRect(2.5, -5 - bob, 1, 0.7);
+    }
+    if (w.role === 'child') {
+        // A mochila da escola.
+        ctx.fillStyle = '#e0a030';
+        ctx.fillRect(-3.4, -8 - bob, 1.8, 3.4);
+    }
+    if (w.role === 'postman') {
+        // O boné da farda e a sacola das cartas, com uma carta a espreitar.
+        ctx.fillStyle = '#7a1f1a';
+        ctx.fillRect(-1.7, -11.8 - bob, 3.4, 1.3);
+        ctx.fillRect(0.6, -10.9 - bob, 1.8, 0.6);
+        ctx.fillStyle = '#6b4a2b';
+        ctx.fillRect(-2.9, -6 - bob, 2.6, 2.6);
+        ctx.fillStyle = '#f7f2e6';
+        ctx.fillRect(-2.5, -6.8 - bob, 1.8, 1);
     }
     if (w.load) {
         // Um saco às costas.

@@ -46,6 +46,9 @@ export const QUESTS = [
     { text: 'Abre uma pastelaria', hint: 'Ovos, farinha, açúcar e leite → bolos, o doce do reino.', done: built('patisserie'), reward: { coins: 2500 } },
     // Os novos objetivos entram sempre no fim da lista: a gravação guarda o índice (ver save.js).
     { text: 'Abre um hotel', hint: 'Os visitantes pagam a estadia e jantam do que sobra na despensa. Povo contente traz mais visitas.', done: built('inn'), reward: { coins: 2000 } },
+    { text: 'Abre uma escola', hint: 'Povo instruído ganha melhor: a escola sobe os impostos da parte do povo que ensina.', done: built('school'), reward: { coins: 1500 } },
+    { text: 'Abre um centro de saúde', hint: 'Gente saudável falta menos ao trabalho: as oficinas produzem mais depressa.', done: built('clinic'), reward: { coins: 1500 } },
+    { text: 'Abre um posto de correios', hint: 'Com cartas a correr entre o reino e as vilas vizinhas, vende-se mais caro e compra-se mais barato no mercado.', done: built('post'), reward: { coins: 1500 } },
     { text: 'Abre uma joalharia', hint: 'Ouro → joias. Valem uma fortuna nas feiras, e o povo que as usa fica mais contente.', done: built('jewelry'), reward: { gold: 20 } }
 ];
 

@@ -35,13 +35,16 @@ function multiplierFor(stock) {
     return Math.min(PRICE_MAX, Math.max(PRICE_MIN, 1 / (0.35 + 0.65 * r)));
 }
 
+/** O que os correios fazem aos preços: com cartas a correr, vende-se mais caro e compra-se mais barato. */
+const tradeBoost = () => game.derived.boost?.trade || 0;
+
 /** Preço de venda de uma unidade, com o stock atual. */
 export function sellPrice(good, stock = game.market.stock[good]) {
-    return RESOURCE[good].price * multiplierFor(stock);
+    return RESOURCE[good].price * multiplierFor(stock) * (1 + tradeBoost());
 }
 
 export function buyPrice(good, stock = game.market.stock[good]) {
-    return sellPrice(good, stock) * BUY_MARKUP;
+    return RESOURCE[good].price * multiplierFor(stock) * BUY_MARKUP * (1 - tradeBoost());
 }
 
 /** Tendência do preço face ao de referência: -1 barato, 0 normal, 1 caro. */

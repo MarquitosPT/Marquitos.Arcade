@@ -45,11 +45,40 @@ export function refreshDerived() {
     updateTax();
 }
 
-/** Impostos por dia: quem trabalha paga por inteiro, quem está parado paga uma parte. */
+/**
+ * Impostos por dia: quem trabalha paga por inteiro, quem está parado paga uma
+ * parte. A escola sobe-os, na parte do povo que ensina.
+ */
 function updateTax() {
     const d = game.derived;
     const idle = Math.max(0, d.residents - d.workersUsed);
-    d.taxPerDay = (d.workersUsed + idle * IDLE_TAX_SHARE) * TAX_PER_RESIDENT * game.happy;
+    d.taxPerDay = (d.workersUsed + idle * IDLE_TAX_SHARE) * TAX_PER_RESIDENT * game.happy * (1 + (d.boost?.tax || 0));
+}
+
+/**
+ * Os serviços do reino (escola, centro de saúde, correios): cada um, com gente
+ * a trabalhar, serve até `residents` moradores. O efeito de cada tipo vai na
+ * proporção do povo servido e guarda-se em `derived.boost`; a parte servida de
+ * cada serviço, para as fichas e o painel do castelo, em `derived.cared`.
+ */
+function updateServices() {
+    const d = game.derived;
+    const capacity = {};
+    for (const b of game.buildings) {
+        const def = BUILDING[b.kind];
+        if (!def.service || !b.staffed || b.paused) continue;
+        capacity[b.kind] = (capacity[b.kind] || 0) + def.service.residents;
+    }
+    const boost = { tax: 0, work: 0, trade: 0 };
+    const cared = {};
+    for (const def of Object.values(BUILDING)) {
+        if (!def.service) continue;
+        const ratio = d.residents ? Math.min(1, (capacity[def.id] || 0) / d.residents) : 0;
+        cared[def.id] = ratio;
+        for (const effect of Object.keys(boost)) boost[effect] += (def.service[effect] || 0) * ratio;
+    }
+    d.boost = boost;
+    d.cared = cared;
 }
 
 /** A pontuação: moedas, bens ao preço de referência, edifícios e o castelo. */
@@ -81,6 +110,7 @@ function assignWorkers() {
         if (b.staffed) free -= need;
     }
     game.derived.workersUsed = game.derived.residents - free;
+    updateServices();
     updateTax();
 }
 
@@ -147,6 +177,8 @@ function stepProducer(b, def, dt, quiet) {
         }
         efficiency = Math.min(1, found / def.near.full);
     }
+    // O centro de saúde: gente saudável trabalha mais depressa.
+    efficiency *= 1 + (game.derived.boost?.work || 0);
 
     const full = Object.keys(recipe.out).every((res) => game.res[res] >= game.derived.storage);
     if (full) {
@@ -234,6 +266,12 @@ function stepBarn(b, def, dt, quiet) {
         plantField(empty);
         b.pulse = 0;
     }
+}
+
+/** Escola, centro de saúde e correios: a barra é a parte do povo que o serviço chega a servir. */
+function stepService(b) {
+    b.progress = game.derived.cared?.[b.kind] || 0;
+    b.status = b.staffed ? 'ok' : 'noWorkers';
 }
 
 /**
@@ -352,6 +390,7 @@ export function stepEconomy(dt, { quiet = false } = {}) {
         if (def.crop) stepField(b, dt);
         else if (def.recipe) stepProducer(b, def, dt, quiet);
         else if (def.serves || def.lodges) stepVenue(b, def);
+        else if (def.service) stepService(b);
         else if (def.plants) stepForester(b, def, dt);
         else if (def.farms) stepBarn(b, def, dt, quiet);
     }

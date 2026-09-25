@@ -190,6 +190,11 @@ export const CASTLE_MAX_LEVEL = CASTLE_LEVELS.length - 1;
  * `lodges` é o hotel: ao fim de cada dia recebe até `guests` visitantes
  * (mais quanto mais contente estiver o povo — um reino feliz tem fama), que
  * comem uma refeição do que sobrar na despensa e pagam `fee` moedas cada um.
+ *
+ * `service` é um serviço do reino (escola, centro de saúde, correios): serve
+ * até `residents` moradores, sempre que tem gente a trabalhar, e dá o seu
+ * efeito na proporção do povo servido — `tax` sobe os impostos, `work` põe as
+ * oficinas a trabalhar mais depressa, `trade` melhora os preços no mercado.
  */
 export const BUILDINGS = [
     {
@@ -377,8 +382,33 @@ export const BUILDINGS = [
         recipe: { in: { gold: 2 }, out: { jewels: 1 }, time: 30 },
         serves: { residents: 80, uses: 'jewels', per: 40 },
         desc: 'Os ourives transformam o ouro das minas em anéis e colares. As joias valem uma fortuna nas feiras, e o povo que as usa anda mais contente.'
+    },
+    {
+        id: 'school', name: 'Escola', emoji: '🏫', tier: 4,
+        cost: { coins: 600, planks: 60, stone: 50 }, workers: 3,
+        service: { residents: 80, tax: 0.2 },
+        desc: 'Os mestres ensinam o povo a ler, a escrever e a fazer contas. Povo instruído ganha melhor e paga mais impostos.'
+    },
+    {
+        id: 'clinic', name: 'Centro de saúde', emoji: '🏥', tier: 4,
+        cost: { coins: 800, planks: 50, stone: 80, cloth: 10 }, workers: 3,
+        service: { residents: 80, work: 0.15 },
+        desc: 'Médicos e enfermeiros tratam das maleitas do povo. Gente saudável falta menos ao trabalho: as oficinas produzem mais depressa.'
+    },
+    {
+        id: 'post', name: 'Posto de correios', emoji: '📮', tier: 4,
+        cost: { coins: 500, planks: 40, stone: 40 }, workers: 2,
+        service: { residents: 80, trade: 0.1 },
+        desc: 'Os carteiros levam e trazem a correspondência do reino. Com cartas a correr entre o reino e as vilas vizinhas, fazem-se melhores negócios no mercado.'
     }
 ];
+
+/** Como se fala do efeito de cada serviço (`service`): no guia, na ficha e no painel do castelo. */
+export const SERVICE_EFFECTS = {
+    tax: { icon: '💰', text: 'de impostos' },
+    work: { icon: '⚙️', text: 'de rapidez nas oficinas' },
+    trade: { icon: '⚖️', text: 'nos preços do mercado' }
+};
 
 export const BUILDING = Object.fromEntries(BUILDINGS.map((b) => [b.id, b]));
 

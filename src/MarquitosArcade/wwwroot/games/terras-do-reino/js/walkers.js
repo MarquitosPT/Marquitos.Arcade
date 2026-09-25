@@ -8,8 +8,10 @@
 // As "portas" de um edifício são as casas de estrada encostadas ao bloco dele.
 // Cada um anda só pela sua rede: o povo do reino pelas estradas do jogador, o
 // de cada vila pelas ruas dela. Quanto mais moradores, mais gente na rua.
-// Com um hotel aberto, parte de quem anda pelas estradas do reino são
-// visitantes, de chapéu e mala na mão, a chegar ao hotel ou a sair dele.
+// Alguns edifícios põem gente sua na rua (`ROLES`): com um hotel aberto há
+// visitantes de chapéu e mala na mão, com uma escola crianças a caminho das
+// aulas, com um posto de correios carteiros a distribuir as cartas — cada um
+// a chegar ao seu edifício ou a sair dele.
 
 import { MAX_WALKERS, RESIDENTS_PER_WALKER, TOWNS, WALK_SPEED } from './config.js';
 import { fx, game } from './state.js';
@@ -21,8 +23,15 @@ const FADE = 0.4;
 /** De quanto em quanto tempo sai mais alguém, se ainda houver lugar na rua. */
 const SPAWN_EVERY = 0.35;
 const TOWN_MAX_WALKERS = 7;
-/** Parte de quem sai à rua que é visitante, quando há hotel aberto. */
-const VISITOR_SHARE = 0.3;
+/**
+ * Quem sai à rua por causa de um edifício: com esse edifício a funcionar,
+ * `share` de quem sai é desta gente, e vai para lá ou vem de lá.
+ */
+const ROLES = [
+    { kind: 'inn', role: 'visitor', share: 0.3 },
+    { kind: 'school', role: 'child', share: 0.2 },
+    { kind: 'post', role: 'postman', share: 0.12 }
+];
 
 const SHIRTS = ['#3f6fb5', '#b8483a', '#5d8c3a', '#8a5aa8', '#c98a2c', '#2f8a8a', '#d9d2c0'];
 const HAIR = ['#3b2a1c', '#6b4a2b', '#1f1a16', '#b0823f', '#8c8c8c'];
@@ -30,6 +39,8 @@ const SKIN = ['#f1c9a0', '#dca47a', '#b97d52', '#8a5a3a'];
 /** Os casacos de viagem dos visitantes, e as malas. */
 const COATS = ['#6a4a8a', '#2f5f5a', '#7a3a3a', '#4a5a7a', '#8a6a3a'];
 const BAGS = ['#7a4a2a', '#3f5f8a', '#8a3f3f', '#5a4a3a'];
+/** A farda dos carteiros. */
+const POSTMAN = '#b8322a';
 
 /** Portas por grupo: 'player' e o índice de cada vila. Refeitas quando as estradas ou os edifícios mudam. */
 let doors = { key: '', groups: new Map() };
@@ -111,17 +122,28 @@ function spawn(group) {
     const list = doorsFor(group);
     if (list.length < 2) return;
     const road = group === 'player' ? ROAD_PLAYER : ROAD_TOWN;
-    const inns = group === 'player' ? list.filter((d) => d.b.kind === 'inn' && d.b.status === 'ok') : [];
-    const visitor = inns.length > 0 && Math.random() < VISITOR_SHARE;
-    // Um visitante vai para o hotel ou sai dele, para um sítio qualquer.
+    // Um dos papéis, se calhar: a gente de um edifício vai para ele ou sai
+    // dele, para um sítio qualquer.
+    let role = null;
+    let anchors = [];
+    if (group === 'player') {
+        let roll = Math.random();
+        for (const r of ROLES) {
+            roll -= r.share;
+            if (roll >= 0) continue;
+            anchors = list.filter((d) => d.b.kind === r.kind && d.b.status === 'ok');
+            if (anchors.length) role = r.role;
+            break;
+        }
+    }
     const arriving = Math.random() < 0.5;
-    let from = visitor && !arriving ? pick(inns) : pick(list);
+    let from = role && !arriving ? pick(anchors) : pick(list);
     // Umas quantas tentativas de destino: pode calhar uma porta do mesmo
     // edifício ou uma estrada que não liga.
     for (let tries = 0; tries < 4; tries++) {
-        const to = visitor && arriving ? pick(inns) : pick(list);
+        const to = role && arriving ? pick(anchors) : pick(list);
         if (to.b === from.b) {
-            if (visitor && arriving) from = pick(list);
+            if (role && arriving) from = pick(list);
             continue;
         }
         const path = pathBetween(from, to, road);
@@ -134,12 +156,14 @@ function spawn(group) {
             pos: 0,
             age: 0,
             leaving: 0,
-            speed: WALK_SPEED * (0.8 + Math.random() * 0.4),
-            shirt: visitor ? pick(COATS) : town && Math.random() < 0.6 ? town.roof : pick(SHIRTS),
+            // As crianças vão a correr para a escola; os carteiros andam depressa.
+            speed: WALK_SPEED * (0.8 + Math.random() * 0.4) * (role === 'child' ? 1.25 : role === 'postman' ? 1.1 : 1),
+            role,
+            shirt: role === 'visitor' ? pick(COATS) : role === 'postman' ? POSTMAN : town && Math.random() < 0.6 ? town.roof : pick(SHIRTS),
             hair: pick(HAIR),
             skin: pick(SKIN),
-            load: !visitor && Math.random() < 0.3,
-            bag: visitor ? pick(BAGS) : null,
+            load: !role && Math.random() < 0.3,
+            bag: role === 'visitor' ? pick(BAGS) : null,
             side: Math.random() < 0.5 ? 1 : -1,
             seed: Math.random() * 10
         });
