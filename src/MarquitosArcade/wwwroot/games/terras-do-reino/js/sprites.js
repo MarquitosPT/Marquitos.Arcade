@@ -582,20 +582,408 @@ function paddy(ctx, { stage = 'empty', growth = 0 }) {
 
 // ---------- Casas e oficinas ----------
 
+// ---------- Casas ----------
+//
+// Seis estilos de casa, cada um em duas orientações (a fachada comprida ao
+// longo de x ou de y): 12 variantes. Os pormenores — janelas com caixilho e
+// portadas, portas de tábuas, enxaimel, fiadas de pedra, telhas — pintam-se
+// nas quatro faces, porque ao rodar a vista qualquer uma pode ficar à frente;
+// `houseFace` diz se a face se vê e dá os pontos dela.
+
+/** Quantas variantes tem o desenho das casas (ver `house`). */
+export const HOUSE_VARIANTS = 12;
+
+const PLASTER = '#efe2c4';
+const STONE_WALL = '#c9bfae';
+const PLINTH = '#a39a8a';
+const FRAME = '#f3ead6';
+const GLASS = '#3a4a5c';
+
+/**
+ * Uma face da casa: a de normal (nx, ny) de uma caixa a x b centrada em
+ * (ox, oy). Devolve null se estiver de costas; senão, `at(u, z)` dá o ponto
+ * à fração u da largura e à altura z, e `tone` o sombreado dessa face.
+ */
+function houseFace(nx, ny, a, b, ox = 0, oy = 0) {
+    const side = faceOf(nx, ny);
+    if (!side) return null;
+    const w = ny ? a : b;
+    const at = ny
+        ? (u, z) => P(ox + (u - 0.5) * a * ny, oy + ny * (b / 2 + 0.006), z)
+        : (u, z) => P(ox + nx * (a / 2 + 0.006), oy - (u - 0.5) * b * nx, z);
+    return { side, w, at, tone: side === 'right' ? -0.28 : -0.06 };
+}
+
+function faceQuad(ctx, f, u0, u1, z0, z1, color, raw = false) {
+    poly(ctx, [f.at(u0, z0), f.at(u1, z0), f.at(u1, z1), f.at(u0, z1)], raw ? color : shade(color, f.tone));
+}
+
+function faceLine(ctx, f, u0, z0, u1, z1, color, width = 1) {
+    ctx.strokeStyle = shade(color, f.tone);
+    ctx.lineWidth = width;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(...f.at(u0, z0));
+    ctx.lineTo(...f.at(u1, z1));
+    ctx.stroke();
+}
+
+/** Janela com caixilho, cruzeta, parapeito e (se `shutter`) portadas abertas. w em frações do bloco. */
+function houseWindow(ctx, f, u, z0, z1, w, { shutter = null, frame = FRAME, box: flowers = null } = {}) {
+    if (!f) return;
+    const hw = w / f.w / 2;
+    const e = 0.012 / f.w;
+    if (shutter) {
+        faceQuad(ctx, f, u - hw - e - hw * 1.1, u - hw - e, z0, z1, shutter);
+        faceQuad(ctx, f, u + hw + e, u + hw + e + hw * 1.1, z0, z1, shutter);
+    }
+    faceQuad(ctx, f, u - hw - e, u + hw + e, z0 - 0.8, z1 + 0.8, frame);
+    faceQuad(ctx, f, u - hw, u + hw, z0, z1, GLASS);
+    faceLine(ctx, f, u, z0, u, z1, frame, 0.8);
+    faceLine(ctx, f, u - hw, (z0 + z1) / 2, u + hw, (z0 + z1) / 2, frame, 0.8);
+    faceQuad(ctx, f, u - hw - e * 2, u + hw + e * 2, z0 - 1.6, z0 - 0.6, '#8a7a66');
+    if (flowers) {
+        // Um vaso de flores no parapeito.
+        faceQuad(ctx, f, u - hw, u + hw, z0 - 3, z0 - 1.4, '#7a5234');
+        for (let k = 0; k < 3; k++) {
+            const [x, y] = f.at(u - hw * 0.7 + k * hw * 0.7, z0 - 0.6);
+            ctx.fillStyle = k === 1 ? '#f2c94c' : flowers;
+            ctx.beginPath();
+            ctx.arc(x, y, 1.1, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+}
+
+/** Porta de tábuas com aro, puxador e um degrau; `arch` arredonda-lhe o cimo. */
+function houseDoor(ctx, f, u, w, h, color = DOOR, { arch = false, frame = '#5a3d26' } = {}) {
+    if (!f) return;
+    const hw = w / f.w / 2;
+    const e = 0.012 / f.w;
+    faceQuad(ctx, f, u - hw - e, u + hw + e, 0, h + 1, frame);
+    faceQuad(ctx, f, u - hw, u + hw, 0, h, color);
+    if (arch) {
+        // O arco: um meio círculo achatado por cima da porta.
+        const [x0, y0] = f.at(u - hw - e, h + 1);
+        const [x1, y1] = f.at(u + hw + e, h + 1);
+        ctx.fillStyle = shade(frame, f.tone);
+        ctx.beginPath();
+        ctx.moveTo(x0, y0);
+        ctx.quadraticCurveTo((x0 + x1) / 2, (y0 + y1) / 2 - 4.5, x1, y1);
+        ctx.closePath();
+        ctx.fill();
+    }
+    for (const k of [-1 / 3, 1 / 3]) faceLine(ctx, f, u + hw * k, 0.5, u + hw * k, h - 0.5, shade(color, -0.35), 0.5);
+    const [kx, ky] = f.at(u + hw * 0.6, h * 0.45);
+    ctx.fillStyle = '#e0b43c';
+    ctx.beginPath();
+    ctx.arc(kx, ky, 0.7, 0, Math.PI * 2);
+    ctx.fill();
+    faceQuad(ctx, f, u - hw - e * 2, u + hw + e * 2, -1.2, 0, '#9a917f');
+}
+
+/** Enxaimel numa face: esteios nos cantos, frechal, travessa a meio e escoras em diagonal. */
+function halfTimber(ctx, f, z0, z1, { color = TIMBER, braces = true } = {}) {
+    if (!f) return;
+    const mid = (z0 + z1) / 2;
+    faceLine(ctx, f, 0.015, z0, 0.015, z1, color, 1.6);
+    faceLine(ctx, f, 0.985, z0, 0.985, z1, color, 1.6);
+    faceLine(ctx, f, 0, z1 - 0.6, 1, z1 - 0.6, color, 1.4);
+    faceLine(ctx, f, 0, z0 + 0.6, 1, z0 + 0.6, color, 1.2);
+    faceLine(ctx, f, 0, mid, 1, mid, color, 1);
+    if (braces) {
+        faceLine(ctx, f, 0.015, z0 + 0.6, 0.16, mid, color, 1);
+        faceLine(ctx, f, 0.985, z0 + 0.6, 0.84, mid, color, 1);
+        faceLine(ctx, f, 0.5, mid, 0.36, z1 - 0.6, color, 1);
+        faceLine(ctx, f, 0.5, mid, 0.64, z1 - 0.6, color, 1);
+        faceLine(ctx, f, 0.5, z0 + 0.6, 0.5, z1 - 0.6, color, 1);
+    }
+}
+
+/** Fiadas de pedra numa face: juntas horizontais e juntas verticais desencontradas. */
+function stoneCourses(ctx, f, z0, z1, color = STONE_WALL) {
+    if (!f) return;
+    const line = shade(color, -0.2);
+    const step = 3;
+    const cols = Math.max(3, Math.round(f.w / 0.07));
+    for (let z = z0 + step, row = 0; z < z1 - 0.5; z += step, row++) {
+        faceLine(ctx, f, 0, z, 1, z, line, 0.5);
+        for (let k = 0; k < cols; k++) {
+            const u = (k + (row % 2) * 0.5) / cols;
+            if (u > 0.02 && u < 0.98) faceLine(ctx, f, u, z - step, u, z, line, 0.5);
+        }
+    }
+}
+
+/**
+ * Telhado de duas águas com telhas. É o `gable` de draw.js pintado à mão, para
+ * as águas levarem fiadas: primeiro a água de trás, depois a empena que se vê,
+ * por fim a água da frente, que cobre o beiral da empena.
+ */
+function tiledRoof(ctx, a, b, z, rise, color, wall, { ox = 0, oy = 0, alongX = true, over = 0.07, tiles = true, round = false } = {}) {
+    const L = (alongX ? a : b) / 2 + over;
+    const W = (alongX ? b : a) / 2 + over;
+    // Um ponto da água do lado s: u ao longo da cumeeira, t do beiral (0) à cumeeira (1).
+    const pt = (s, u, t) => alongX
+        ? P(ox + u, oy + s * W * (1 - t), z + rise * t)
+        : P(ox + s * W * (1 - t), oy + u, z + rise * t);
+    const n = (s) => (alongX ? [0, s] : [s, 0]);
+    const planes = [-1, 1].map((s) => ({ s, side: faceOf(...n(s)) }));
+    planes.sort((p, q) => (p.side ? 1 : 0) - (q.side ? 1 : 0));
+    const plane = ({ s, side }) => {
+        const c = side === null ? shade(color, 0.08) : side === 'left' ? color : shade(color, -0.22);
+        const pts = [pt(s, -L, 0), pt(s, L, 0), pt(s, L, 1), pt(s, -L, 1)];
+        poly(ctx, pts, c);
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(...pts[0]);
+        for (const q of pts.slice(1)) ctx.lineTo(...q);
+        ctx.closePath();
+        ctx.clip();
+        ctx.strokeStyle = shade(c, -0.2);
+        ctx.lineWidth = 0.6;
+        const rows = 5;
+        ctx.beginPath();
+        for (let r = 1; r < rows; r++) {
+            ctx.moveTo(...pt(s, -L, r / rows));
+            ctx.lineTo(...pt(s, L, r / rows));
+        }
+        if (tiles) {
+            const step = 0.065;
+            for (let r = 0; r < rows; r++) {
+                for (let u = -L + (r % 2) * step / 2; u < L; u += step) {
+                    ctx.moveTo(...pt(s, u, r / rows));
+                    ctx.lineTo(...pt(s, u, (r + 1) / rows));
+                }
+            }
+        }
+        ctx.stroke();
+        ctx.restore();
+        // O beiral: uma aresta mais escura.
+        ctx.strokeStyle = shade(c, -0.3);
+        ctx.lineWidth = 0.9;
+        ctx.beginPath();
+        ctx.moveTo(...pts[0]);
+        ctx.lineTo(...pts[1]);
+        ctx.stroke();
+    };
+    const gableEnd = (e) => {
+        const nrm = alongX ? [e, 0] : [0, e];
+        const side = faceOf(...nrm);
+        if (!side) return;
+        const hx = alongX ? a / 2 : b / 2;
+        const hy = alongX ? b / 2 : a / 2;
+        const q = (u, zz) => (alongX ? P(ox + e * hx, oy + u, zz) : P(ox + u, oy + e * hx, zz));
+        poly(ctx, [q(-hy, z), q(hy, z), q(0, z + rise)], shade(wall, side === 'right' ? -0.3 : -0.08));
+        if (round) {
+            // Um óculo redondo na empena.
+            const [x, y] = q(0, z + rise * 0.36);
+            ctx.fillStyle = shade(FRAME, side === 'right' ? -0.28 : -0.06);
+            ctx.beginPath();
+            ctx.ellipse(x, y, 2.4, 2.1, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = GLASS;
+            ctx.beginPath();
+            ctx.ellipse(x, y, 1.6, 1.4, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    };
+    plane(planes[0]);
+    gableEnd(-1);
+    gableEnd(1);
+    plane(planes[1]);
+    ctx.strokeStyle = shade(color, -0.35);
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(...pt(1, -L, 1));
+    ctx.lineTo(...pt(1, L, 1));
+    ctx.stroke();
+}
+
+/** Chaminé de pedra, com o capelo mais largo em cima. */
+function chimney(ctx, ox, oy, z, h) {
+    box(ctx, 0.07, 0.07, h, '#8f877a', { ox, oy, z });
+    box(ctx, 0.09, 0.09, 1.6, '#7d7568', { ox, oy, z: z + h });
+}
+
+/**
+ * A orientação de uma casa: `L` e `W` são o comprido e o largo, e `dims`,
+ * `at` e as faces trocam x por y quando a fachada comprida vai ao longo de y.
+ */
+function houseFrame(along) {
+    return {
+        along,
+        dims: (L, W) => (along ? [L, W] : [W, L]),
+        off: (u, v) => (along ? [u, v] : [v, u]),
+        front: along ? [0, 1] : [1, 0],
+        back: along ? [0, -1] : [-1, 0],
+        ends: along ? [[1, 0], [-1, 0]] : [[0, 1], [0, -1]]
+    };
+}
+
+/**
+ * A chaminé de cada estilo, no referencial da casa (u ao longo da fachada
+ * comprida): da base, à altura do telhado nesse ponto, ao topo. A da casa de
+ * pedra sobe do chão, encostada à empena. `houseLive` põe lá o fumo.
+ */
+const HOUSE_CHIMNEY = [
+    { u: 0.15, v: -0.1, base: 29, top: 41 },
+    { u: 0.31, v: 0, base: 0, top: 32 },
+    { u: -0.14, v: -0.08, base: 36.5, top: 45 },
+    null,
+    { u: 0.08, v: -0.08, base: 29, top: 40 },
+    { u: -0.16, v: 0.09, base: 30, top: 41 }
+];
+
 function house(ctx, { roof = PLAYER_ROOF, variant = 0 }) {
     groundShadow(ctx, 26, 10, 0.2, 6, 4);
-    const along = variant % 2 === 0;
-    const a = along ? 0.6 : 0.5;
-    const b = along ? 0.46 : 0.58;
-    box(ctx, a, b, 20, WALL);
-    // Enxaimel: vigas escuras nas faces.
-    for (const u of [0.02, 0.98]) wallPatch(ctx, 'left', a, b, u, 0.03, 0, 20, TIMBER);
-    wallPatch(ctx, 'left', a, b, 0.5, a, 18.5, 20, TIMBER);
-    wallPatch(ctx, 'left', a, b, 0.3, 0.1, 0, 11, DOOR);
-    wallPatch(ctx, 'left', a, b, 0.72, 0.1, 8, 14, WINDOW);
-    wallPatch(ctx, 'right', a, b, 0.5, 0.12, 8, 14, shade(WINDOW, -0.2));
-    gable(ctx, a, b, 20, 15, roof, WALL, { alongX: along });
-    if (variant % 3 === 0) box(ctx, 0.07, 0.07, 10, '#8f877a', { ox: a / 4, oy: -b / 6, z: 26 });
+    const style = variant % 6;
+    const F = houseFrame(Math.floor(variant / 6) % 2 === 0);
+    const faces = (a, b, ox = 0, oy = 0) => ({
+        front: houseFace(...F.front, a, b, ox, oy),
+        back: houseFace(...F.back, a, b, ox, oy),
+        ends: F.ends.map((n) => houseFace(...n, a, b, ox, oy))
+    });
+    const chim = HOUSE_CHIMNEY[style];
+    /**
+     * O telhado e a chaminé: a chaminé que fica atrás na vista pinta-se antes
+     * do telhado, que lhe tapa o pé; a da frente pinta-se depois, por cima.
+     */
+    const at = chim ? F.off(chim.u, chim.v) : null;
+    const behind = at && depth(...at) < 0;
+    const putChimney = () => chimney(ctx, at[0], at[1], chim.base, chim.top - chim.base);
+    const roofAndChimney = (drawRoof) => {
+        if (behind) putChimney();
+        drawRoof();
+        if (at && !behind) putChimney();
+    };
+
+    if (style === 0) {
+        // Casa de enxaimel: soco de pedra, paredes caiadas com vigas escuras.
+        const [a, b] = F.dims(0.6, 0.46);
+        const f = faces(a, b);
+        box(ctx, a, b, 3, PLINTH);
+        box(ctx, a, b, 17, PLASTER, { z: 3 });
+        for (const face of [f.front, f.back, ...f.ends]) halfTimber(ctx, face, 3, 20);
+        houseDoor(ctx, f.front, 0.3, 0.1, 11);
+        houseWindow(ctx, f.front, 0.72, 9, 15, 0.08, { shutter: '#7a5234' });
+        houseWindow(ctx, f.back, 0.3, 9, 15, 0.08, { shutter: '#7a5234' });
+        houseWindow(ctx, f.back, 0.72, 9, 15, 0.08, { shutter: '#7a5234' });
+        for (const e of f.ends) houseWindow(ctx, e, 0.5, 9, 15, 0.08);
+        roofAndChimney(() => tiledRoof(ctx, a, b, 20, 15, roof, PLASTER, { alongX: F.along }));
+    } else if (style === 1) {
+        // Casa de pedra, baixa, com portadas verdes e chaminé na empena.
+        const [a, b] = F.dims(0.58, 0.44);
+        const f = faces(a, b);
+        // A chaminé sobe do chão: se fica atrás, as paredes tapam-lhe o pé.
+        if (behind) putChimney();
+        box(ctx, a, b, 16, STONE_WALL);
+        for (const face of [f.front, f.back, ...f.ends]) stoneCourses(ctx, face, 0, 16);
+        houseDoor(ctx, f.front, 0.5, 0.1, 11, '#5d4028', { arch: true });
+        for (const u of [0.2, 0.8]) houseWindow(ctx, f.front, u, 7, 12, 0.07, { shutter: '#5d7a45' });
+        houseWindow(ctx, f.back, 0.5, 7, 12, 0.07, { shutter: '#5d7a45' });
+        for (const e of f.ends) houseWindow(ctx, e, 0.5, 7, 12, 0.06);
+        tiledRoof(ctx, a, b, 16, 13, roof, STONE_WALL, { alongX: F.along, over: 0.06 });
+        if (!behind) putChimney();
+    } else if (style === 2) {
+        // Casa de dois pisos: rés-do-chão de pedra, andar de enxaimel a sair para fora.
+        const [a, b] = F.dims(0.54, 0.44);
+        const [a2, b2] = F.dims(0.6, 0.5);
+        const f = faces(a, b);
+        const g = faces(a2, b2);
+        box(ctx, a, b, 12, STONE_WALL);
+        for (const face of [f.front, f.back, ...f.ends]) stoneCourses(ctx, face, 0, 12);
+        houseDoor(ctx, f.front, 0.3, 0.1, 10, '#5d4028');
+        houseWindow(ctx, f.front, 0.72, 5, 10, 0.08, { shutter: '#8a4a3a' });
+        houseWindow(ctx, f.back, 0.5, 5, 10, 0.08, { shutter: '#8a4a3a' });
+        box(ctx, a2, b2, 13, PLASTER, { z: 12 });
+        for (const face of [g.front, g.back, ...g.ends]) halfTimber(ctx, face, 12, 25, { braces: false });
+        for (const u of [0.28, 0.72]) {
+            houseWindow(ctx, g.front, u, 16, 22, 0.08, { box: '#e3572f' });
+            houseWindow(ctx, g.back, u, 16, 22, 0.08);
+        }
+        for (const e of g.ends) houseWindow(ctx, e, 0.5, 16, 22, 0.08);
+        roofAndChimney(() => tiledRoof(ctx, a2, b2, 25, 17, roof, PLASTER, { alongX: F.along, over: 0.05 }));
+    } else if (style === 3) {
+        // Casa comprida e ocre, com portadas azuis, vasos de flores e um alpendre na porta.
+        const wall = '#e8c98f';
+        const [a, b] = F.dims(0.7, 0.42);
+        const f = faces(a, b);
+        box(ctx, a, b, 2.5, PLINTH);
+        box(ctx, a, b, 15.5, wall, { z: 2.5 });
+        houseDoor(ctx, f.front, 0.5, 0.1, 11, '#4a6a8a');
+        for (const u of [0.18, 0.82]) houseWindow(ctx, f.front, u, 8, 14, 0.08, { shutter: '#4f86c6', box: '#d9577a' });
+        for (const u of [0.25, 0.5, 0.75]) houseWindow(ctx, f.back, u, 8, 14, 0.08, { shutter: '#4f86c6' });
+        for (const e of f.ends) houseWindow(ctx, e, 0.5, 8, 14, 0.08, { shutter: '#4f86c6' });
+        tiledRoof(ctx, a, b, 18, 12, roof, wall, { alongX: F.along, over: 0.06 });
+        // O alpendre: um telhadinho por cima da porta, sobre duas mãos-francesas.
+        if (f.front) {
+            const [px, py] = F.off(0, 0);
+            const [n0, n1] = F.front;
+            const d = (F.along ? b : a) / 2;
+            tiledRoof(ctx, F.along ? 0.18 : 0.08, F.along ? 0.08 : 0.18, 13, 3, roof, wall, {
+                ox: px + n0 * (d + 0.04), oy: py + n1 * (d + 0.04), alongX: F.along, over: 0.02, tiles: false
+            });
+        }
+    } else if (style === 4) {
+        // Casa com anexo: o corpo principal e um barracão encostado, com a lenha.
+        const [a, b] = F.dims(0.44, 0.44);
+        const [sa, sb] = F.dims(0.22, 0.34);
+        const [sx, sy] = F.off(0.33, 0.05);
+        const f = faces(a, b);
+        const main = () => {
+            box(ctx, a, b, 3, PLINTH);
+            box(ctx, a, b, 17, PLASTER, { z: 3 });
+            for (const face of [f.front, f.back, ...f.ends]) halfTimber(ctx, face, 3, 20);
+            houseDoor(ctx, f.front, 0.4, 0.1, 11);
+            houseWindow(ctx, f.back, 0.5, 9, 15, 0.08, { shutter: '#7a5234' });
+            for (const e of f.ends) houseWindow(ctx, e, 0.5, 9, 15, 0.08, { shutter: '#7a5234' });
+            roofAndChimney(() => tiledRoof(ctx, a, b, 20, 14, roof, PLASTER, { alongX: !F.along }));
+        };
+        const shed = () => {
+            const sf = faces(sa, sb, sx, sy);
+            box(ctx, sa, sb, 11, WOOD, { ox: sx, oy: sy });
+            for (const face of [sf.front, sf.back, ...sf.ends]) {
+                if (!face) continue;
+                for (let k = 1; k < 5; k++) faceLine(ctx, face, k / 5, 0.5, k / 5, 10.5, shade(WOOD, -0.3), 0.5);
+            }
+            houseDoor(ctx, sf.front, 0.5, 0.1, 8, '#6b4a2b', { frame: '#4a3020' });
+            tiledRoof(ctx, sa, sb, 11, 6, shade(roof, -0.1), WOOD, { ox: sx, oy: sy, alongX: F.along, over: 0.03 });
+        };
+        const [lx, ly] = F.off(-0.3, 0.2);
+        layered([
+            [0, 0, main],
+            [sx, sy, shed],
+            [lx, ly, () => logPile(ctx, lx, ly)]
+        ]);
+    } else {
+        // Casa rebocada a cor-de-rosa, com óculo na empena, candeeiro e um barril à porta.
+        const wall = '#ecd3c6';
+        const [a, b] = F.dims(0.56, 0.48);
+        const f = faces(a, b);
+        // O barril à porta: se a vista o deixou atrás da casa, pinta-se primeiro.
+        const [bx, by] = F.off(-0.34, 0.3);
+        const barrel = () => cylinder(ctx, 2.6, 5, '#8a5a30', { ox: bx, oy: by });
+        const barrelBehind = depth(bx, by) < 0;
+        if (barrelBehind) barrel();
+        box(ctx, a, b, 3, PLINTH);
+        box(ctx, a, b, 17, wall, { z: 3 });
+        if (f.front) faceLine(ctx, f.front, 0, 3.2, 1, 3.2, shade(wall, -0.2), 0.8);
+        houseDoor(ctx, f.front, 0.5, 0.11, 12, '#7a3b2e', { arch: true });
+        for (const u of [0.18, 0.82]) houseWindow(ctx, f.front, u, 9, 15, 0.07, { frame: '#fff6ea', box: '#e3572f' });
+        for (const u of [0.3, 0.7]) houseWindow(ctx, f.back, u, 9, 15, 0.07, { frame: '#fff6ea' });
+        for (const e of f.ends) houseWindow(ctx, e, 0.5, 9, 15, 0.07, { frame: '#fff6ea' });
+        if (f.front) {
+            // O candeeiro ao lado da porta.
+            const [lx, ly] = f.front.at(0.66, 12);
+            ctx.fillStyle = '#3a3a3a';
+            ctx.fillRect(lx - 1, ly - 2, 2, 3);
+            ctx.fillStyle = '#ffd36b';
+            ctx.fillRect(lx - 0.6, ly - 1.6, 1.2, 1.8);
+        }
+        roofAndChimney(() => tiledRoof(ctx, a, b, 20, 15, roof, wall, { alongX: F.along, round: true, tiles: false }));
+        if (!barrelBehind) barrel();
+    }
 }
 
 function market(ctx, { roof = PLAYER_ROOF }) {
@@ -1605,12 +1993,11 @@ function chimneyLive(ctx, b, t) {
 }
 
 function houseLive(ctx, b, t, { variant = 0 }) {
-    // Nem todas as casas têm chaminé (ver `house`): só as de variante múltipla de 3.
-    if (variant % 3 !== 0) return;
-    const along = variant % 2 === 0;
-    const bb = along ? 0.46 : 0.58;
-    const aa = along ? 0.6 : 0.5;
-    const [x, y] = P(aa / 4, -bb / 6, 38);
+    // O fumo sai da chaminé do estilo da casa (ver `house`); há estilos sem chaminé.
+    const chim = HOUSE_CHIMNEY[variant % 6];
+    if (!chim) return;
+    const [cx, cy] = houseFrame(Math.floor(variant / 6) % 2 === 0).off(chim.u, chim.v);
+    const [x, y] = P(cx, cy, chim.top + 3);
     smoke(ctx, x, y, t * 0.7, b.x * 0.21);
 }
 

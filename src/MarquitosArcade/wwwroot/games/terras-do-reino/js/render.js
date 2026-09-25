@@ -25,7 +25,7 @@ import {
 } from './iso.js';
 import { hash2 } from './rng.js';
 import { setSpriteScale, stamp } from './sprite-cache.js';
-import { LIVE, MOUNTAIN_VARIANTS, PLAYER_ROOF } from './sprites.js';
+import { HOUSE_VARIANTS, LIVE, MOUNTAIN_VARIANTS, PLAYER_ROOF } from './sprites.js';
 import { castleInfo, fx, game, ui } from './state.js';
 import { CATCH_SECONDS, boatAlpha, boatPlace } from './boats.js';
 import { walkerAlpha, walkerPlace } from './walkers.js';
@@ -753,7 +753,8 @@ function shoreVariant(x, y, size) {
 
 function drawBuilding(b, wx, wy, t) {
     const kind = b.kind;
-    const variant = variantOf(b.x, b.y);
+    // As casas têm mais variantes do que o resto (ver `house` em sprites.js).
+    const variant = kind === 'house' ? Math.floor(hash2(b.x, b.y, 78) * HOUSE_VARIANTS) : variantOf(b.x, b.y);
     const roof = roofOf(b);
     let key;
     let opts;
