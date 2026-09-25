@@ -594,6 +594,10 @@ function leaveKingdom() {
 function pauseGame() {
     if (game.phase !== 'playing' || game.paused) return;
     game.paused = true;
+    // A pausa tapa o reino: nada de construção a meio nem painéis abertos por
+    // cima dela (ficavam à frente do ecrã de pausa ao voltar à página).
+    stopPlacing();
+    closeSheet();
     saveNow();
     overlays.show('pause');
 }
