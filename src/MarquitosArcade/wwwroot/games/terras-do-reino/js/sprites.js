@@ -3225,43 +3225,141 @@ function houseLive(ctx, b, t, { variant = 0 }) {
     smoke(ctx, x, y, t * 0.7, b.x * 0.21);
 }
 
-function cow(ctx, x, y, flip, spots) {
+/**
+ * Uma vaca malhada, de perfil: o corpo comprido e direito, quatro patas com
+ * cascos, a cabeça com chifres e focinho cor-de-rosa, o úbere e a cauda com a
+ * borla. `spots` é a cor das malhas; `seed` muda-lhes o feitio; `graze` baixa
+ * a cabeça ao pasto (0 a 1).
+ */
+function cow(ctx, x, y, flip, spots, seed = 0, graze = 0) {
+    const WHITE = '#f6f2ea';
+    const SHADOW = '#d9d2c4';
     ctx.save();
     ctx.translate(x, y);
-    ctx.scale(flip ? -1 : 1, 1);
+    // Do tamanho da vaca de antes, que cabia no pasto com o abrigo.
+    ctx.scale(flip ? -0.85 : 0.85, 0.85);
     ctx.fillStyle = 'rgba(20, 40, 10, 0.2)';
     ctx.beginPath();
-    ctx.ellipse(1, 1, 8, 2.5, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 0.6, 9, 2.4, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#3a2a20';
-    ctx.fillRect(-5, -4, 1.6, 4);
-    ctx.fillRect(3, -4, 1.6, 4);
-    ctx.fillStyle = '#f6f2ea';
+
+    const leg = (lx, color) => {
+        ctx.fillStyle = color;
+        ctx.fillRect(lx, -6, 1.7, 5.2);
+        ctx.fillStyle = '#3a2a20';
+        ctx.fillRect(lx, -1, 1.7, 1);
+    };
+    // As patas do lado de lá, na sombra.
+    leg(-5, SHADOW);
+    leg(4.2, SHADOW);
+
+    // A cauda, a cair da anca, com a borla escura.
+    ctx.strokeStyle = SHADOW;
+    ctx.lineWidth = 0.8;
     ctx.beginPath();
-    ctx.ellipse(0, -7, 7, 4, 0, 0, Math.PI * 2);
+    ctx.moveTo(-7, -10);
+    ctx.quadraticCurveTo(-8.6, -8, -8.2, -4.2);
+    ctx.stroke();
+    ctx.fillStyle = spots;
+    ctx.beginPath();
+    ctx.ellipse(-8.2, -3.8, 0.9, 1.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // O corpo: um caixote de cantos redondos, mais escuro na barriga.
+    const body = new Path2D();
+    body.roundRect(-7.5, -12, 14, 7, 2.6);
+    const grad = ctx.createLinearGradient(0, -12, 0, -5);
+    grad.addColorStop(0, WHITE);
+    grad.addColorStop(1, SHADOW);
+    ctx.fillStyle = grad;
+    ctx.fill(body);
+    // As malhas, grandes e irregulares, recortadas pelo corpo.
+    ctx.save();
+    ctx.clip(body);
+    ctx.fillStyle = spots;
+    const rnd = (k) => hash2(seed, k, 57);
+    for (let i = 0; i < 3; i++) {
+        const sx = -6 + i * 4.6 + (rnd(i) - 0.5) * 2;
+        const sy = -11 + rnd(i + 5) * 4;
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, 2 + rnd(i + 9) * 1.6, 1.4 + rnd(i + 13) * 1.2, rnd(i + 17) * 1.5 - 0.75, 0, Math.PI * 2);
+        ctx.ellipse(sx + 1.2, sy + 1.2, 1.2, 1, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+    // O úbere, cor-de-rosa, debaixo da barriga.
+    ctx.fillStyle = '#eba5a0';
+    ctx.beginPath();
+    ctx.ellipse(-2.6, -5, 1.8, 1.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // As patas do lado de cá.
+    leg(-6.4, WHITE);
+    leg(2.8, WHITE);
+
+    // O pescoço e a cabeça, que baixa quando a vaca pasta.
+    const drop = graze * 5;
+    ctx.fillStyle = WHITE;
+    ctx.beginPath();
+    ctx.moveTo(4, -11.8);
+    ctx.lineTo(8, -12.4 + drop);
+    ctx.lineTo(9, -8 + drop);
+    ctx.lineTo(5, -6.5);
+    ctx.closePath();
+    ctx.fill();
+    const hx = 9.6;
+    const hy = -10.4 + drop;
+    ctx.save();
+    ctx.translate(hx, hy);
+    ctx.rotate(0.35 + graze * 0.5);
+    // Os chifres e as orelhas, atrás da cabeça.
+    ctx.strokeStyle = '#e9dfc4';
+    ctx.lineWidth = 0.9;
+    ctx.beginPath();
+    ctx.moveTo(-1.4, -2.2);
+    ctx.quadraticCurveTo(-1.8, -3.8, -0.6, -4.2);
+    ctx.stroke();
+    ctx.fillStyle = spots;
+    ctx.beginPath();
+    ctx.ellipse(-2.6, -1.6, 1.5, 0.7, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+    // A cabeça, comprida, com uma malha à volta do olho.
+    ctx.fillStyle = WHITE;
+    ctx.beginPath();
+    ctx.roundRect(-2, -2.4, 4.6, 4.2, 1.4);
     ctx.fill();
     ctx.fillStyle = spots;
     ctx.beginPath();
-    ctx.arc(-2, -8, 2.2, 0, Math.PI * 2);
-    ctx.arc(3, -6.5, 1.6, 0, Math.PI * 2);
+    ctx.ellipse(-0.6, -1, 1.3, 1.1, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#f6f2ea';
+    ctx.fillStyle = '#16100c';
+    ctx.fillRect(-0.4, -1.3, 0.9, 0.9);
+    // O focinho.
+    ctx.fillStyle = '#eba5a0';
     ctx.beginPath();
-    ctx.ellipse(7.5, -9, 3, 2.4, 0, 0, Math.PI * 2);
+    ctx.roundRect(1.8, -1.2, 2.2, 3, 1);
     ctx.fill();
-    ctx.fillStyle = '#e8a8a0';
-    ctx.fillRect(9, -9, 2, 2);
+    ctx.fillStyle = '#b86d68';
+    ctx.fillRect(3, -0.6, 0.6, 0.6);
+    ctx.fillRect(3, 0.8, 0.6, 0.6);
+    ctx.restore();
     ctx.restore();
 }
 
 function pastureLive(ctx, b, t) {
     const seed = b.x * 3.1 + b.y * 1.7;
-    for (let i = 0; i < 2; i++) {
+    const cows = [0, 1].map((i) => {
         const s = t * 0.25 + seed + i * 2.4;
         const gx = Math.sin(s) * 0.2 + (i ? 0.1 : -0.05);
         const gy = Math.cos(s * 0.8) * 0.15 + (i ? 0.18 : 0.02);
-        const [x, y] = P(gx, gy);
-        cow(ctx, x, y, Math.cos(s) > 0, i ? '#2d2520' : '#6b4a2b');
+        return { i, s, at: P(gx, gy) };
+    });
+    // A de trás primeiro, para a da frente lhe passar por cima quando se cruzam.
+    cows.sort((a, c) => a.at[1] - c.at[1]);
+    for (const { i, s, at: [x, y] } of cows) {
+        // Pasta quando anda devagar, e levanta a cabeça quando se põe a andar.
+        const graze = Math.max(0, Math.min(1, (0.55 - Math.abs(Math.cos(s))) * 3));
+        cow(ctx, x, y, Math.cos(s) > 0, i ? '#2d2520' : '#6b4a2b', i + Math.floor(seed * 7), graze);
     }
 }
 
