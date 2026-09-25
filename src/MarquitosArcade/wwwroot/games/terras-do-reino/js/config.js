@@ -79,6 +79,7 @@ export const RESOURCES = [
     { id: 'milk', name: 'Leite', emoji: '🥛', price: 5, tradable: true, meals: 1 },
     { id: 'cheese', name: 'Queijo', emoji: '🧀', price: 16, tradable: true, meals: 3 },
     { id: 'fish', name: 'Peixe', emoji: '🐟', price: 8, tradable: true, meals: 2 },
+    { id: 'meat', name: 'Carne', emoji: '🍖', price: 11, tradable: true, meals: 2 },
     { id: 'planks', name: 'Tábuas', emoji: '🪚', price: 9, tradable: true },
     { id: 'gold', name: 'Ouro', emoji: '✨', price: 30, tradable: true },
     { id: 'wool', name: 'Lã', emoji: '🧶', price: 6, tradable: true },
@@ -93,7 +94,7 @@ export const RESOURCES = [
 export const RESOURCE = Object.fromEntries(RESOURCES.map((r) => [r.id, r]));
 
 /** Por onde o povo come: primeiro o que mais alimenta. */
-export const FOODS = ['cheese', 'bread', 'fish', 'milk'];
+export const FOODS = ['cheese', 'bread', 'meat', 'fish', 'milk'];
 
 export const START_RESOURCES = { coins: 160, wood: 30, stone: 12 };
 
@@ -263,6 +264,12 @@ export const BUILDINGS = [
         desc: 'Os pescadores saem de barco para o lago e pescam à cana. Tem de ficar à beira de água: quanto mais lago perto, mais peixe.'
     },
     {
+        id: 'pigsty', name: 'Pocilga', emoji: '🐖', tier: 2,
+        cost: { coins: 75, wood: 25 }, workers: 1,
+        recipe: { in: { wheat: 1 }, out: { meat: 1 }, time: 22 },
+        desc: 'Porcos criados a trigo, no chiqueiro com lama: dão carne para a mesa do povo.'
+    },
+    {
         id: 'sheepfold', name: 'Curral de ovelhas', emoji: '🐑', tier: 3,
         cost: { coins: 160, planks: 20, wood: 20 }, workers: 2,
         recipe: { in: { wheat: 1 }, out: { wool: 2 }, time: 28 },
@@ -386,7 +393,7 @@ export const TOWNS = [
     },
     {
         id: 'pedralva', name: 'Pedralva', roof: '#5f7fca', emoji: '🪨',
-        supplies: ['stone', 'gold'], demands: ['bread', 'cheese', 'wheat', 'fish', 'suits'],
+        supplies: ['stone', 'gold'], demands: ['bread', 'cheese', 'wheat', 'fish', 'meat', 'suits'],
         kinds: ['house', 'quarry', 'house', 'carpentry', 'quarry']
     },
     {

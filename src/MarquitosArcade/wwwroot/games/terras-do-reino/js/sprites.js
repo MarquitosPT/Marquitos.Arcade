@@ -537,6 +537,25 @@ function pasture(ctx, { roof = '#8a3b2c' }) {
     fence(ctx, 0.88, 'front');
 }
 
+function pigsty(ctx, { roof = '#7a4a32' }) {
+    diamond(ctx, 0.92, 0.92, 0, '#8fae55');
+    // A lama onde os porcos se espojam.
+    diamond(ctx, 0.5, 0.42, 0.3, '#7a5a3a', null, 0.12, 0.14);
+    diamond(ctx, 0.34, 0.26, 0.5, '#6a4c30', null, 0.16, 0.18);
+    fence(ctx, 0.88, 'back');
+    layered([
+        // O curral coberto, baixo, ao fundo.
+        [-0.22, -0.26, () => {
+            box(ctx, 0.34, 0.24, 9, '#a57447', { ox: -0.22, oy: -0.26 });
+            wallPatch(ctx, 'left', 0.34, 0.24, 0.5, 0.14, 0, 6, DOOR, { ox: -0.22, oy: -0.26 });
+            gable(ctx, 0.34, 0.24, 9, 7, roof === PLAYER_ROOF ? '#7a4a32' : roof, '#a57447', { ox: -0.22, oy: -0.26 });
+        }],
+        // O comedouro.
+        [0.24, -0.28, () => box(ctx, 0.2, 0.08, 3.5, '#8a5a30', { ox: 0.24, oy: -0.28, top: '#d8b14a' })]
+    ]);
+    fence(ctx, 0.88, 'front');
+}
+
 function carpentry(ctx, { roof = '#6d5a4a' }) {
     groundShadow(ctx, 30, 11, 0.2, 6, 4);
     layered([
@@ -1118,6 +1137,7 @@ export const STATIC = {
     mill: millStatic,
     bakery,
     pasture,
+    pigsty,
     carpentry,
     barn,
     dairy,
@@ -1241,6 +1261,56 @@ function pastureLive(ctx, b, t) {
         const gy = Math.cos(s * 0.8) * 0.15 + (i ? 0.18 : 0.02);
         const [x, y] = P(gx, gy);
         cow(ctx, x, y, Math.cos(s) > 0, i ? '#2d2520' : '#6b4a2b');
+    }
+}
+
+/** Um porco cor-de-rosa, gordo, com o focinho e o rabo enrolado. */
+function pig(ctx, x, y, flip, muddy) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(flip ? -1 : 1, 1);
+    ctx.fillStyle = 'rgba(20, 40, 10, 0.2)';
+    ctx.beginPath();
+    ctx.ellipse(0, 1, 6.5, 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#c9848a';
+    ctx.fillRect(-4, -3, 1.5, 3);
+    ctx.fillRect(2.5, -3, 1.5, 3);
+    ctx.fillStyle = '#f0a8ae';
+    ctx.beginPath();
+    ctx.ellipse(0, -5.5, 6, 3.6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    if (muddy) {
+        ctx.fillStyle = 'rgba(106, 76, 48, 0.75)';
+        ctx.beginPath();
+        ctx.ellipse(-2, -4, 2.6, 1.6, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.fillStyle = '#f0a8ae';
+    ctx.beginPath();
+    ctx.arc(5.8, -6.4, 2.8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#d9848c';
+    ctx.beginPath();
+    ctx.ellipse(8.2, -6, 1.2, 1.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    poly(ctx, [[4.2, -8.6], [5.6, -11], [6.6, -8.4]], '#d9848c');
+    ctx.strokeStyle = '#d9848c';
+    ctx.lineWidth = 0.9;
+    ctx.beginPath();
+    ctx.arc(-6.6, -6.6, 1.3, 0, Math.PI * 1.5);
+    ctx.stroke();
+    ctx.restore();
+}
+
+function pigstyLive(ctx, b, t) {
+    const seed = b.x * 1.9 + b.y * 2.7;
+    for (let i = 0; i < 3; i++) {
+        const s = t * 0.2 + seed + i * 2.2;
+        const gx = Math.sin(s) * 0.14 + [0.12, -0.12, 0.2][i];
+        const gy = Math.cos(s * 0.8) * 0.1 + [0.14, 0.12, 0.3][i];
+        const [x, y] = P(gx, gy);
+        pig(ctx, x, y, Math.cos(s) > 0, i !== 1);
     }
 }
 
@@ -1384,6 +1454,7 @@ export const LIVE = {
     carpentry: chimneyLive,
     house: houseLive,
     pasture: pastureLive,
+    pigsty: pigstyLive,
     sheepfold: sheepfoldLive,
     weaving: weavingLive,
     distillery: distilleryLive,
