@@ -829,7 +829,19 @@ alto, 3 × 1 ao comprido, 3 × 2 no computador —, com o carrossel partilhado d
 SDK (`lib/arcade/carousel.js`) e a folha `css/carousel.css` gémea da do Maze
 Run (ver [O carrossel dos níveis](#o-carrossel-dos-níveis)). Onde o Maze Run
 desenha o labirinto, aqui vai o tabuleiro em miniatura: as cartas do nível na
-grelha que o `fitGrid` lhes dá num telemóvel ao alto.
+grelha que o `fitGrid` lhes dá num telemóvel ao alto, com a patinha das costas
+em cada uma (o símbolo `#paw` no `index.html`).
+
+**Cada nível tem a sua cor.** O `accent` de cada nível (`ACCENTS` em
+`js/levels.js`) condiz com o nome — a Colmeia é cor de mel, o Oceano é azul, a
+Arca é roxa — e passa a ser o acento do jogo inteiro enquanto o nível está
+apontado ou a ser jogado: o `applyLevelAccent` do `js/level.js` escreve-o em
+`--level-accent` no `<html>`, e o `--accent` e as cores das cartas do
+`css/theme.css` descem dele (com `color-mix` para os tons escuros). Botões,
+título, barra de progresso, costas e moldura das cartas mudam todos juntos. As
+cores são todas claras de propósito: o texto escuro dos botões e a patinha
+branca têm de se ler em cima de qualquer uma. Nos cartões do carrossel, cada
+um leva a cor do seu nível em `--card-accent`.
 
 **Estrelas pelos erros, pontos pelo resto.** Um erro é uma jogada de duas
 cartas sem par. ★ por concluir, ★★ com tantos erros como pares ou menos, ★★★

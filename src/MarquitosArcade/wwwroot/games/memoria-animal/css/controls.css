@@ -178,9 +178,10 @@ button { cursor: pointer; }
 
 .levelCard:hover { background: var(--glass-bg-hover); transform: translateY(-2px); }
 
+/* Cada cartão tem a cor do seu nível (`--card-accent`, escrita pelo js/menu.js). */
 .levelCard.active {
-    border-color: var(--accent);
-    background: linear-gradient(150deg, rgba(125, 220, 90, 0.2), rgba(76, 195, 255, 0.1));
+    border-color: var(--card-accent, var(--accent));
+    background: linear-gradient(150deg, color-mix(in srgb, var(--card-accent, var(--accent)) 24%, transparent), rgba(255, 255, 255, 0.03));
 }
 
 /*
@@ -223,19 +224,27 @@ button { cursor: pointer; }
     height: 100%;
 }
 
-/* As cartas da miniatura: as costas verdes, como no jogo. */
-.boardShape rect {
-    fill: var(--card-back-1);
-    stroke: rgba(255, 255, 255, 0.75);
+/*
+ * As cartas da miniatura: as costas na cor do nível, com a patinha branca,
+ * como no jogo. A patinha é o símbolo #paw do index.html.
+ */
+.boardShape .tile {
+    fill: var(--card-accent, var(--accent));
+    stroke: rgba(255, 255, 255, 0.8);
     stroke-width: 0.6;
 }
 
-.levelCard.is-done .boardShape rect { fill: var(--card-back-2); stroke: var(--card-matched); }
+.boardShape .paw { fill: rgba(255, 255, 255, 0.85); }
 
-.boardShape.is-locked rect {
-    fill: rgba(241, 247, 238, 0.16);
-    stroke: rgba(241, 247, 238, 0.25);
+/* Nível concluído: a moldura dourada dos pares encontrados. */
+.levelCard.is-done .boardShape .tile { stroke: var(--card-matched); stroke-width: 0.9; }
+
+.boardShape.is-locked .tile {
+    fill: rgba(241, 247, 238, 0.14);
+    stroke: rgba(241, 247, 238, 0.22);
 }
+
+.boardShape.is-locked .paw { fill: rgba(241, 247, 238, 0.18); }
 
 .levelLock {
     position: absolute;

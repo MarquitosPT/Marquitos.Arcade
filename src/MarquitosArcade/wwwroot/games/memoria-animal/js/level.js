@@ -44,6 +44,15 @@ function resetGame() {
 }
 
 /**
+ * A cor do nível passa a ser a do jogo todo: o `--accent` do css/theme.css
+ * desce do `--level-accent` do <html>. Chama-se sempre que o nível apontado
+ * muda — no menu e ao começar um nível.
+ */
+export function applyLevelAccent(level) {
+    document.documentElement.style.setProperty('--level-accent', level.accent);
+}
+
+/**
  * O tabuleiro que se vê por trás do vidro nos menus: as cartas do nível
  * apontado, viradas para cima. É só enfeite — ao jogar, baralha-se de novo.
  */
@@ -51,6 +60,7 @@ export function showMenuBoard(levelId) {
     const level = levelById(levelId);
     if (!level) return;
     game.level = level;
+    applyLevelAccent(level);
     game.cards = buildBoard(dealCards(level.pairs));
     for (const card of game.cards) setCardUp(card, true);
     updateHud();
@@ -67,6 +77,7 @@ export function startLevel(levelId) {
     resetGame();
     const mine = generation;
     game.level = level;
+    applyLevelAccent(level);
     game.phase = 'loading';
     game.cards = buildBoard(dealCards(level.pairs));
     els.playArea.classList.add('is-live');

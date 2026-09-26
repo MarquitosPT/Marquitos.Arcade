@@ -90,7 +90,7 @@
     font-size: 26px;
     border: 1px solid var(--glass-border-strong);
     border-radius: 18px;
-    background: linear-gradient(150deg, rgba(125, 220, 90, 0.3), rgba(76, 195, 255, 0.22));
+    background: linear-gradient(150deg, color-mix(in srgb, var(--accent) 32%, transparent), rgba(76, 195, 255, 0.2));
 }
 
 .title {

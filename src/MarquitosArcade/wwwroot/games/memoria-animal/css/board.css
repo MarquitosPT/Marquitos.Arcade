@@ -72,7 +72,7 @@
 }
 
 /*
- * As costas: verde do prado com uma pata ao centro. A pata é um SVG embutido
+ * As costas: a cor do nível com uma pata ao centro. A pata é um SVG embutido
  * (não um emoji) para ser igual em todos os aparelhos, e o risco de luz em cima
  * é o mesmo "vidro" dos painéis.
  */
@@ -94,14 +94,14 @@
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    background: rgba(47, 141, 63, 0.35);
+    background: color-mix(in srgb, var(--card-back-2) 40%, transparent);
     mix-blend-mode: multiply;
 }
 
 .card:hover .cardBack { filter: brightness(1.08); }
 .card:active .cardBack { filter: brightness(0.96); }
 
-/* A face: branca, com a moldura verde das cartas de papel. */
+/* A face: branca, com a moldura das cartas de papel, na cor do nível. */
 .cardFront {
     transform: rotateY(180deg);
     background: var(--card-face);
@@ -127,6 +127,30 @@
         inset 0 0 0 max(3px, calc(var(--card-w, 80px) * 0.05)) var(--card-matched),
         0 0 0 2px rgba(255, 207, 77, 0.35),
         0 10px 24px -10px rgba(255, 207, 77, 0.6);
+}
+
+/*
+ * E um visto no canto. A moldura dourada não chega sozinha: nos níveis cor de
+ * mel (a Colmeia, a Savana) a moldura normal já é quase dourada, e o visto é
+ * o que diz, em qualquer cor, que aquele par já está feito.
+ */
+.card.is-matched .cardFront::after {
+    content: "✓";
+    position: absolute;
+    top: 6%;
+    right: 6%;
+    display: grid;
+    place-items: center;
+    width: max(14px, calc(var(--card-w, 80px) * 0.24));
+    height: max(14px, calc(var(--card-w, 80px) * 0.24));
+    font-family: var(--font-display);
+    font-size: max(9px, calc(var(--card-w, 80px) * 0.15));
+    font-weight: 800;
+    line-height: 1;
+    color: #3b2a00;
+    border-radius: 50%;
+    background: var(--card-matched);
+    box-shadow: 0 2px 6px -2px rgba(0, 0, 0, 0.5);
 }
 
 .card.is-matched { animation: cardMatch 0.5s ease 0.2s both; }

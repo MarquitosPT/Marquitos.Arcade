@@ -101,7 +101,7 @@
 
 .hudChip i { font-style: normal; font-size: 12px; }
 .hudChip b { color: var(--text); font-weight: 700; font-variant-numeric: tabular-nums; }
-.hudChip--level { color: var(--text); }
+.hudChip--level { color: var(--text); border-color: color-mix(in srgb, var(--accent) 65%, transparent); }
 
 /*
  * A mensagem por cima do HUD: "Olha bem…" na pré-visualização e o nome do
@@ -144,6 +144,13 @@
     .hudChip { padding: 4px 10px; font-size: 12px; }
 }
 
-@media (max-width: 380px) {
+/* Telemóvel ao alto: as quatro pastilhas têm de caber numa linha — cada linha
+   a mais é altura que as cartas perdem. */
+@media (max-width: 440px) {
+    .hud { gap: 5px; }
     .hudChip { padding: 5px 9px; font-size: 12px; gap: 4px; }
+}
+
+@media (max-width: 360px) {
+    .hudChip { padding: 4px 7px; font-size: 11px; }
 }

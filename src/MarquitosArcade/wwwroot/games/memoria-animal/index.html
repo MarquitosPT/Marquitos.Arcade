@@ -45,6 +45,18 @@
 </head>
 
 <body>
+    <!-- A patinha das costas das cartas, para as miniaturas dos tabuleiros no
+         carrossel dos níveis (js/menu.js). É a mesma do css/board.css. -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+        <symbol id="paw" viewBox="0 0 64 64">
+            <ellipse cx="32" cy="42" rx="13" ry="11"/>
+            <ellipse cx="16" cy="28" rx="6" ry="7.5"/>
+            <ellipse cx="48" cy="28" rx="6" ry="7.5"/>
+            <ellipse cx="25" cy="16" rx="5.5" ry="7"/>
+            <ellipse cx="39" cy="16" rx="5.5" ry="7"/>
+        </symbol>
+    </svg>
+
     <!-- Ecrã de arranque: fica no ar pelo menos 2s (ver lib/arcade/splash.js). -->
     <div id="arcadeSplash" class="arcade-splash">
         <div class="arcade-splash-rays" aria-hidden="true"></div>

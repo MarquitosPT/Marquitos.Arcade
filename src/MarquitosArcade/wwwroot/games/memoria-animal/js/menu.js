@@ -60,7 +60,10 @@ function boardPreviewSvg(level, { locked }) {
         const shift = ((cols - inRow) * grid.cardW) / 2;
         const x = x0 + shift + (i % cols) * grid.cardW;
         const y = y0 + row * grid.cardH;
-        rects.push(`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="${(w * 0.18).toFixed(1)}"/>`);
+        rects.push(`<rect class="tile" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="${(w * 0.18).toFixed(1)}"/>`);
+        // A patinha ao centro da carta, com metade da largura dela.
+        const paw = w * 0.56;
+        rects.push(`<use class="paw" href="#paw" x="${(x + (w - paw) / 2).toFixed(1)}" y="${(y + (h - paw) / 2).toFixed(1)}" width="${paw.toFixed(1)}" height="${paw.toFixed(1)}"/>`);
     }
 
     return `<svg class="boardShape${locked ? ' is-locked' : ''}" viewBox="0 0 ${PREVIEW_W} ${PREVIEW_H}"
@@ -88,7 +91,7 @@ function levelCard(level) {
         : `Nível ${level.id}, ${level.name}, ${level.cards} cartas — bloqueado, conclui o nível ${level.id - 1}`;
 
     return `<button type="button" class="levelCard${unlocked ? '' : ' is-locked'}${best ? ' is-done' : ''}"
-        data-value="${level.id}" aria-label="${escapeHtml(label)}">
+        data-value="${level.id}" aria-label="${escapeHtml(label)}" style="--card-accent: ${level.accent}">
         <span class="levelShape">
             ${boardPreviewSvg(level, { locked: !unlocked })}
             ${unlocked ? '' : '<span class="levelLock" aria-hidden="true">🔒</span>'}
