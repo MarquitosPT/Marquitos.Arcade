@@ -7,7 +7,8 @@
 
 import { createAudio } from '/lib/arcade/audio.js';
 
-const audio = createAudio({ defaultType: 'square' });
+/** Partilhado com a música (js/music.js): um só AudioContext para o jogo todo. */
+export const audio = createAudio({ defaultType: 'square' });
 
 let engineOsc = null;
 let engineFilter = null;

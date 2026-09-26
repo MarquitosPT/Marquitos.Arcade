@@ -76,6 +76,19 @@
                     <span class="topLabel">Acerca</span>
                 </div>
             </button>
+            <!-- Música: fica à mão dentro e fora da corrida. O traço só aparece
+                 com a música desligada (aria-pressed="false", ver css/hud.css). -->
+            <button class="topBtn" id="musicBtn" type="button" aria-pressed="true" title="Desligar a música">
+                <div style="display:flex">
+                    <svg class="topIcon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
+                        <circle cx="4.5" cy="12" r="2.25"></circle>
+                        <circle cx="11.5" cy="10.5" r="2.25"></circle>
+                        <path d="M5.25 12V4.2l8.5-2v8.3h-1.5V4.1l-5.5 1.3V12Z"></path>
+                        <path class="musicSlash" d="M1.75 1.75l12.5 12.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"></path>
+                    </svg>
+                    <span class="topLabel">Música</span>
+                </div>
+            </button>
             <button class="topBtn" id="pauseBtn">
                 <div style="display:flex">
                     <svg class="topIcon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">

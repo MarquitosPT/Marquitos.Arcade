@@ -907,6 +907,38 @@ que seja. O botão **Música** da barra de topo liga-a e desliga-a, e a escolha
 fica no aparelho (`memoriaAnimalMusic_v1`); os efeitos sonoros continuam a
 tocar. Num telemóvel estreito o botão fica só com a nota, para caberem os três.
 
+## Música do Pixel Racing
+
+Um tema alegre em **allegro** (sol maior, 132 BPM) com **guitarra**, **piano**,
+baixo e **bateria** (`js/music.js`), sintetizado como o do Terras do Reino e o
+da Memória Animal, e a partilhar o `AudioContext` com o motor e os efeitos de
+`js/audio.js`.
+
+- **Guitarra:** as cordas são dedilhadas pelo algoritmo de Karplus-Strong (um
+  estalo de ruído a dar voltas numa linha de atraso de um período, perdendo os
+  agudos a cada volta), calculadas uma vez por nota e guardadas. A guitarra de
+  ritmo rasga os acordes corda a corda (a batida `STRUM`, `'B-BC-CBC'`: para
+  baixo, para cima, nada), com os desenhos de guitarra de cada acorde em
+  `CHORDS`; no B faz "chug" abafado. A guitarra solo usa cordas que soam mais
+  tempo, mais saturação e vibrato nas notas longas.
+- **Piano:** o da Memória Animal, mais brilhante. Leva o tema e, quando é a
+  guitarra a cantar, bate os acordes nos contratempos.
+- **Baixo** em colcheias com um salto à oitava; **bateria** com bombo, tarola,
+  pratos de choque (abertos no "e" do 4), prato de ataque a abrir as secções e
+  viradas no fim das frases.
+
+A forma são 28 compassos (pouco menos de um minuto) em loop: A com o piano, B
+com a guitarra solo, uma pausa de meio tempo que cresce num rufo de tarola, e o
+tema outra vez com piano e guitarra juntos e os pratos em semicolcheias. A
+partitura escreve-se como nos outros jogos (`'D5 1, G5 1, B5 1, D6 2, …'`) nas
+`SECTIONS`, onde cada secção diz também quem canta (`lead`), como toca a
+guitarra de ritmo (`rhythm`) e a bateria (`drums`).
+
+Toca nos menus, na contagem, na corrida e nos resultados; cala-se (com um fade)
+na pausa e com a página escondida; começa no primeiro toque ou tecla. O botão
+**Música** da barra de topo liga-a e desliga-a, e a escolha fica no aparelho
+(`pixelRacingMusic_v1`); o motor e os efeitos continuam a tocar.
+
 ## Cache do browser (e o site afixado ao ecrã principal)
 
 Quem afixa a arcada ao ecrã principal do telemóvel nunca faz Ctrl+F5 — se o
