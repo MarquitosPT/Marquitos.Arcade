@@ -3,7 +3,8 @@
 
 import { createAudio } from '/lib/arcade/audio.js';
 
-const audio = createAudio({ defaultType: 'triangle', defaultVolume: 0.12, attack: 0.01 });
+/** Partilhado com a música (js/music.js): um só AudioContext para o jogo todo. */
+export const audio = createAudio({ defaultType: 'triangle', defaultVolume: 0.12, attack: 0.01 });
 
 /** Tem de ser chamado a partir de um gesto do utilizador (o botão de arranque). */
 export const resumeAudio = audio.resume;

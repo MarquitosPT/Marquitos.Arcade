@@ -777,6 +777,27 @@ referência, edifícios e castelo), enviada ao sair e ao subir o castelo — só
 quando é melhor do que a última enviada, e limitada ao máximo que o servidor
 aceita (999 999).
 
+### Música
+
+Uma melodia calma em **flauta de pã** com uma **batida de bateria** suave e um
+baixo dedilhado (`js/music.js`), toda sintetizada com osciladores e ruído — sem
+ficheiros de áudio, como os efeitos de `js/audio.js`, com quem partilha o
+`AudioContext`. A flauta é um triângulo suavizado mais um seno na fundamental
+(um tubo fechado só tem harmónicos ímpares), com um "chiff" de ruído no ataque,
+um fio de sopro durante a nota e vibrato só depois de a nota assentar; a
+bateria é bombo, tarola abafada, shaker em semicolcheias e uma virada de
+timbalões no fim de cada frase; um reverb com uma resposta ao impulso gerada dá
+a sala. O tema está em ré dórico a 78 BPM, 20 compassos (pouco mais de um
+minuto) em loop: A, A', B, B' e uma secção calma de notas longas com a bateria
+a meio tempo. A partitura são as `SECTIONS`, um compasso por texto
+(`'D5 3, E5 1, F5 2, A5 2'`: nota e duração em colcheias, `-` para pausa).
+
+A música toca no menu e no reino e cala-se (com um fade) na pausa e com a
+página escondida. Como o browser só deixa soar depois de um gesto, começa no
+primeiro toque ou tecla, onde quer que seja. O botão **Música** da barra de topo
+liga-a e desliga-a, e a escolha fica no aparelho (`terrasDoReinoMusic_v1`); os
+efeitos sonoros continuam a tocar.
+
 ### Acrescentar um edifício
 
 1. Uma entrada em `BUILDINGS` (`js/config.js`): custo, escalão, trabalhadores,
