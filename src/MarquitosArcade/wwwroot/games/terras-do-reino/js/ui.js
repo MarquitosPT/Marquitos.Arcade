@@ -6,7 +6,7 @@ import { ABOUT } from './config.js';
 export const els = byId(
     'game', 'startScreen', 'confirmScreen', 'pauseScreen',
     'playBtn', 'newBtn', 'confirmNewBtn', 'cancelNewBtn',
-    'resumeBtn', 'quitBtn', 'pauseBtn', 'endBtn', 'arcadeLink', 'aboutBtn', 'scoresLink',
+    'resumeBtn', 'quitBtn', 'pauseBtn', 'endBtn', 'arcadeLink', 'aboutBtn',
     'nameSlot', 'nameRow', 'accountRow', 'accountName', 'accountInitial', 'playerNameInput',
     'saveCard', 'saveLine', 'saveSub', 'progressNote',
     'hud', 'dayPill', 'popPill', 'happyPill', 'speedBtn', 'rotateBtn', 'resRow', 'questCard', 'questText',
@@ -26,7 +26,6 @@ export const overlays = createOverlays({
 export const topBar = createTopBar({
     arcadeLink: els.arcadeLink,
     aboutBtn: els.aboutBtn,
-    scoresLink: els.scoresLink,
     pauseBtn: els.pauseBtn,
     endBtn: els.endBtn
 });

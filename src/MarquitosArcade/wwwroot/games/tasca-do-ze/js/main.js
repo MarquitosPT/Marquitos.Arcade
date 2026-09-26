@@ -75,7 +75,6 @@ document.getElementById('playBtn').addEventListener('click', () => {
     setTimeout(() => els.nameInput.focus(), 200);
 });
 
-document.getElementById('scoresBtn').addEventListener('click', openLeaderboard);
 document.getElementById('aboutBtn').addEventListener('click', openAbout);
 document.getElementById('closeAboutBtn').addEventListener('click', backToMainMenu);
 document.getElementById('overScoresBtn').addEventListener('click', openLeaderboard);

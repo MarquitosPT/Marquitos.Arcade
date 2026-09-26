@@ -166,7 +166,7 @@ import { createScoreClient } from '/lib/arcade/scores.js';
 | `viewport.js` | Canvas em ecrã inteiro, nítido em Retina e por baixo do notch     |
 | `loop.js`     | Ciclo `requestAnimationFrame` com delta-time limitado            |
 | `dom.js`      | Seletores, `escapeHtml`, grupos de ecrãs e de botões             |
-| `topbar.js`   | Barra de topo comum (arcada, acerca, pontuações, pausa, sair)    |
+| `topbar.js`   | Barra de topo comum (arcada, acerca, pausa, sair)                |
 | `about.js`    | Janela "Acerca": título, versão, autores, publicação e copyright (`about.css`) |
 | `splash.js`   | Ecrã de arranque: tempo mínimo, barra de progresso e saída       |
 | `math.js`     | `clamp`, `lerp`, ângulos, aleatórios, `shuffle`                  |
@@ -308,6 +308,10 @@ que o gerava) saíram do repositório.
 Não há dashboard na página principal — as pontuações vivem todas em
 `Components/Pages/Pontuacoes.razor`, que gera um painel por jogo a partir do
 array `Games` no `@code` da página.
+
+Também não há botão de pontuações nos jogos: o ecrã inicial de cada um só tem
+"Arcade" (voltar ao portal) e "Acerca". Quem quiser ver as pontuações vê-as na
+arcada. A Tasca do Zé continua a mostrar o seu quadro no fim do turno.
 
 A página é renderizada no servidor e lê os tops diretamente da base de dados com
 `ScoresEndpoints.GetTopScoresAsync`. É o mesmo método por trás de
@@ -572,9 +576,8 @@ sozinha — não há nada em cache para invalidar.
 
 > **Em testes.** No catálogo aparece como "Em breve" (`IsPlayable: false` em
 > `Home.razor`), mas joga-se indo direto a `/games/terras-do-reino/`. O painel
-> das pontuações está escondido (comentado em `Pontuacoes.razor`, e o botão 🏆
-> do jogo com `hidden`); as pontuações continuam a ser guardadas. Para lançar,
-> desfazem-se estes três pontos.
+> das pontuações está escondido (comentado em `Pontuacoes.razor`); as
+> pontuações continuam a ser guardadas. Para lançar, desfazem-se estes dois pontos.
 >
 > Para o testar numa app afixada, onde não há barra de endereço, o cartão
 > "Em breve" tem uma entrada secreta: **toque duplo com três dedos** (no

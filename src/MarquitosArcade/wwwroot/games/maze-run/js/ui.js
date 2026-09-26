@@ -9,7 +9,7 @@ export const els = byId(
     'levelsCarousel', 'levelViewport', 'levelGrid', 'levelDots', 'prevPageBtn', 'nextPageBtn',
     'levelsTitle', 'levelsSub', 'progressLine', 'progressBar', 'progressNote',
     'nameSlot', 'nameRow', 'accountRow', 'accountName', 'accountInitial', 'playerNameInput',
-    'arcadeLink', 'aboutBtn', 'scoresLink'
+    'arcadeLink', 'aboutBtn'
 );
 
 export const topBarEl = document.querySelector('.topBar');
@@ -24,7 +24,6 @@ export const overlays = createOverlays({
 export const topBar = createTopBar({
     arcadeLink: els.arcadeLink,
     aboutBtn: els.aboutBtn,
-    scoresLink: els.scoresLink,
     pauseBtn: els.pauseBtn,
     endBtn: els.endBtn
 });

@@ -1,5 +1,5 @@
 /*
- * Barra de topo: voltar à arcada, ver as pontuações, pausar e sair.
+ * Barra de topo: voltar à arcada, acerca, pausar e sair.
  *
  * O HUD do jogo (tempo, cristais, vidas) não está aqui: é desenhado no canvas,
  * onde não há `backdrop-filter` e o vidro tem de ser imitado à mão (`glassPanel`

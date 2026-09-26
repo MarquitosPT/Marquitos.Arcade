@@ -34,7 +34,6 @@ const overlays = createOverlays({
 const topBar = createTopBar({
     arcadeLink: document.getElementById('arcadeLink'),
     aboutBtn,
-    scoresLink: document.getElementById('scoresLink'),
     pauseBtn,
     endBtn
 });

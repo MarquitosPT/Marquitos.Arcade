@@ -173,12 +173,12 @@ const GAMES = [
         // outro ecrã — por isso a referência do menu não se compara aqui.
         stableMenu: false,
         async play(page) {
-            // Quadro de pontuações a partir do menu principal (sem servidor:
-            // tem de cair na cópia local e mostrar o aviso de offline).
-            await page.click('#scoresBtn');
-            await page.waitForSelector('#leaderboardOverlay:not(.hidden)');
-            await sleep(600);
-            await page.click('#closeLeaderboardBtn');
+            // Janela "Acerca" a partir do menu principal. As pontuações já não
+            // estão no menu (consultam-se na arcada); o quadro só abre no fim do turno.
+            await page.click('#aboutBtn');
+            await page.waitForSelector('#aboutOverlay:not(.hidden)');
+            await sleep(300);
+            await page.click('#closeAboutBtn');
             await page.waitForSelector('#mainMenuOverlay:not(.hidden)');
 
             // Turno: pausar, retomar e sair para o menu.
