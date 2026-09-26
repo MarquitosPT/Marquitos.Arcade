@@ -247,8 +247,12 @@ unlockAudioOnGesture(resumeAudio, syncMusic);   // começa no primeiro toque ou 
 
 O botão `#musicBtn` da barra de topo (a nota, com o traço `.musicSlash` quando
 está desligada) e as três regras de CSS que o acompanham são iguais no Terras do
-Reino, na Memória Animal, no Pixel Racing e no Maze Run. A Tasca do Zé tem ainda a música de
-antes do motor comum, que segue o mudo do jogo em vez de ter botão próprio.
+Reino, na Memória Animal, no Pixel Racing e no Maze Run; na Tasca do Zé o mesmo
+desenho vai num dos botões redondos do cabeçalho, ao lado do 🔊, que cala tudo,
+música incluída.
+
+O compasso não tem de ser de 4/4: o passo da grelha é sempre a semicolcheia, e
+`stepsPerBar: 12` dá compassos de três tempos (o vira da Tasca do Zé).
 
 Para **ouvir a música sem abrir o jogo** — depois de mexer na partitura ou na
 mistura, ou para a mostrar a alguém — `tools/games/render-music.mjs` grava cada
@@ -1003,6 +1007,31 @@ na pausa e com a página escondida. Começa no primeiro toque ou tecla, onde que
 que seja. O botão **Música** da barra de topo liga-a e desliga-a, e a escolha
 fica no aparelho (`memoriaAnimalMusic_v1`); os efeitos sonoros continuam a
 tocar. Num telemóvel estreito o botão fica só com a nota, para caberem os três.
+
+## Música da Tasca do Zé
+
+Um **vira**, como os dos ranchos folclóricos: três tempos a 168 BPM, com
+**acordeão**, **bandolim**, **cavaquinho**, baixo e a **bateria de rancho**
+(`js/music.js`, no [motor comum](#música-de-fundo)). A melodia parte do motivo
+da música antiga da tasca (ré, fá, sol, fá, lá, sol, fá, ré), agora a dançar: a
+primeira frase em ré menor, a segunda no fá maior ao lado, e o Lá maior a trazer
+tudo de volta. São 32 compassos (pouco mais de meio minuto) em loop: A e B com o
+acordeão, A com o bandolim a cantar, e B com os dois juntos.
+
+- **Acordeão:** três palhetas em dente de serra, uma afinada e duas ligeiramente
+  acima e abaixo (o "musette", o batimento que o faz tremer), mais uma uma
+  oitava abaixo, por um filtro que faz de caixa.
+- **Bandolim e cavaquinho:** cordas de Karplus-Strong, como a guitarra do Pixel
+  Racing. O bandolim faz trémulo nas notas longas (a mesma nota em
+  semicolcheias); o cavaquinho rasga o "pá-pá" do segundo e terceiro tempos,
+  por cima do baixo no primeiro — o "pum-pá-pá" do vira.
+- **Bateria de rancho:** bombo no primeiro tempo, caixa no segundo e no
+  terceiro, ferrinhos (um triângulo) em colcheias, e uma virada da caixa a
+  fechar cada volta.
+
+Toca nos menus e no turno; cala-se (com um fade) na pausa, com a página
+escondida e com o 🔊 do cabeçalho desligado. O botão da nota, ao lado, liga e
+desliga só a música (`tascaDoZeMusic_v1`).
 
 ## Música do Pixel Racing
 

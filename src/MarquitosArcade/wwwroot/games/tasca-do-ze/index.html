@@ -67,6 +67,15 @@
       <div class="brand-row">
         <div class="brand"><span>🍽️</span><span class="btxt">Tasca do Zé</span><small id="brandSub">COZINHA</small></div>
         <div class="ctrls">
+          <!-- A música liga e desliga-se à parte; o 🔊 cala tudo, música incluída. -->
+          <button class="icon-btn" id="musicBtn" type="button" aria-pressed="true" title="Desligar a música">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
+              <circle cx="4.5" cy="12" r="2.25"></circle>
+              <circle cx="11.5" cy="10.5" r="2.25"></circle>
+              <path d="M5.25 12V4.2l8.5-2v8.3h-1.5V4.1l-5.5 1.3V12Z"></path>
+              <path class="musicSlash" d="M1.75 1.75l12.5 12.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"></path>
+            </svg>
+          </button>
           <button class="icon-btn" id="muteBtn">🔊</button>
           <button class="icon-btn" id="pauseBtn">⏸️</button>
         </div>

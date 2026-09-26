@@ -1,4 +1,4 @@
-/* Cabeçalho: marca, botões de pausa/som, vidas e pontuação. */
+/* Cabeçalho: marca, botões de música, som e pausa, vidas e pontuação. */
 
 header {
     padding: max(14px, env(safe-area-inset-top)) 16px 12px;
@@ -29,9 +29,15 @@ header {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        /* O nome da casa tem prioridade: quem encolhe primeiro é o do cozinheiro. */
+        flex-shrink: 0;
+        max-width: 100%;
     }
 
 .brand small {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
         font-family: 'Nunito',sans-serif;
         font-weight: 700;
         font-size: 0.65rem;
@@ -63,6 +69,11 @@ header {
 .icon-btn:active {
         background: rgba(255,255,255,0.3);
     }
+
+/* Música desligada: a nota leva um traço por cima e o botão fica mais apagado. */
+#musicBtn .musicSlash { display: none; }
+#musicBtn[aria-pressed="false"] .musicSlash { display: inline; }
+#musicBtn[aria-pressed="false"] { opacity: 0.7; }
 
 .stat-row {
     display: flex;

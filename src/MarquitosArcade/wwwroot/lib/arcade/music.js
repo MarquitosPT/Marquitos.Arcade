@@ -159,13 +159,13 @@ function buildBus(ctx, { compressor, reverb: room }) {
  * @param {object} options
  * @param {{ context: AudioContext|null }} options.audio O motor de `createAudio` do jogo: a música usa o mesmo AudioContext.
  * @param {string} options.storageKey Onde fica lembrado se a música está ligada.
- * @param {number} options.bpm
  * @param {number} options.bars Compassos da partitura; depois do último volta ao primeiro.
  * @param {(barIndex: number, step: number, time: number, bus: MusicBus) => void} options.onStep
  *   O que toca na semicolcheia `step` (0 a stepsPerBar-1) do compasso `barIndex`, à hora `time`, no `bus`.
  * @param {(bus: MusicBus) => object|void} [options.setup] Chamado uma vez por bus montado (um por
  *   AudioContext): o que devolver junta-se ao bus — os nós fixos e os timbres dos instrumentos do jogo.
- * @param {number} [options.stepsPerBar=16] A grelha: semicolcheias num 4/4.
+ * @param {number} options.bpm Tempos (semínimas) por minuto.
+ * @param {number} [options.stepsPerBar=16] Semicolcheias por compasso: 16 num 4/4, 12 num 3/4.
  * @param {number} [options.volume=0.4] Volume mestre, por baixo dos efeitos sonoros.
  * @param {number} [options.fadeIn=1.8]
  * @param {number} [options.fadeOut=0.5]
@@ -190,7 +190,8 @@ export function createMusic({
     compressor = {},
     reverb = {}
 }) {
-    const secondsPerStep = (beatsPerMinute) => (60 / beatsPerMinute) * (4 / stepsPerBar);
+    // O passo é sempre a semicolcheia (quatro por tempo), seja o compasso de 4/4 ou de 3/4.
+    const secondsPerStep = (beatsPerMinute) => 60 / beatsPerMinute / 4;
     /** Duração de um passo da grelha, em segundos — muda com `setBpm`. */
     let stepSeconds = secondsPerStep(bpm);
     /** Um andamento pedido a meio de um compasso, à espera do compasso seguinte. */

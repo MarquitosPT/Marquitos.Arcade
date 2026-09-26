@@ -3,8 +3,8 @@
  * Grava a música de fundo dos jogos em WAV, sem abrir o jogo.
  *
  * Cada jogo com música tem um `js/music.js` que exporta `music` (feito com o
- * `createMusic` de /lib/arcade/music.js); os que não exportam (a Tasca do Zé,
- * com a música de antes do motor comum) ficam de fora. Este script serve o wwwroot com o
+ * `createMusic` de /lib/arcade/music.js); um que não exporte fica de fora,
+ * com um aviso. Este script serve o wwwroot com o
  * servidor estático do smoke-test, abre uma página em branco num Chromium
  * headless, importa esse módulo e marca a partitura num OfflineAudioContext
  * (`music.schedule`) — o mesmo código que toca no jogo, mas mais depressa do que
@@ -120,7 +120,7 @@ for (const id of games) {
     try {
         const result = await page.evaluate(async ({ url, loops, sampleRate, tail }) => {
             const { music } = await import(url);
-            // Músicas antigas, anteriores ao createMusic (a da Tasca do Zé), ficam de fora.
+            // Uma música que não seja do motor comum não se sabe gravar: fica de fora.
             if (!music?.schedule) return null;
             const at = 0.1;
             const seconds = at + music.loopSeconds * loops + tail;
