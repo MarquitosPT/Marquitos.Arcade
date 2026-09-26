@@ -162,6 +162,7 @@ import { createScoreClient } from '/lib/arcade/scores.js';
 | Módulo        | O que resolve                                                    |
 | ------------- | ---------------------------------------------------------------- |
 | `audio.js`    | Ciclo de vida do `AudioContext` e bips sintetizados              |
+| `music.js`    | Motor da música de fundo: partitura, reverb, agendador, botão Música (ver [Música de fundo](#música-de-fundo)) |
 | `scores.js`   | Cliente de `/api/scores/:gameId`, cache offline, nome do jogador e da conta |
 | `progress.js` | Cliente de `/api/progress/:gameId`: níveis desbloqueados e marcas, na conta e no aparelho |
 | `storage.js`  | `localStorage` que não rebenta em Safari privado                 |
@@ -198,6 +199,67 @@ Duas regras que não são óbvias e que já custaram um bug:
 
 O servidor guarda o nome que o jogo enviar, seja quem for o jogador: quem tem de
 garantir que uma pontuação de conta fica com o nome da conta é o cliente.
+
+### Música de fundo
+
+A música dos jogos é sintetizada nota a nota no browser, sem ficheiros de áudio.
+O motor é comum (`lib/arcade/music.js`); cada jogo traz, no seu `js/music.js`, só
+a partitura e os instrumentos. O motor dá:
+
+- **A escrita da partitura:** `bar('D5 3, E5 1, F5 2, - 2')` (nota e duração em
+  colcheias, `-` para pausa, `#` e `b` nas alterações) devolve as notas de um
+  compasso na grelha de semicolcheias; `midi('F#5')` e `freq(m)` para o resto.
+- **O bus:** mestre com os fades, compressor brando, reverb com uma resposta ao
+  impulso gerada e um buffer de ruído branco, mais `bus.route(node, time, { pan,
+  send })`, `bus.noise(time, stopAt)` e `bus.filter(type, f, q)`.
+- **O agendador** no padrão do Web Audio: um `setTimeout` acorda de 30 em 30 ms
+  e marca com precisão de amostra as notas dos 150 ms seguintes, pelo relógio do
+  `AudioContext`. O jogo só diz o que toca em cada semicolcheia.
+- **Ligar e desligar:** a escolha fica no aparelho, e a música só toca quando
+  está ligada, o jogo a quer (`setWanted`) e já há `AudioContext`.
+
+```js
+// js/music.js
+import { bar, createMusic } from '/lib/arcade/music.js';
+import { audio } from './audio.js';           // o mesmo AudioContext dos efeitos
+
+const BARS = ['C5 4, E5 4', 'G5 8'].map(bar);
+
+export const music = createMusic({
+    audio, storageKey: 'oMeuJogoMusic_v1', bpm: 90, bars: BARS.length,
+    // opcional: volume, fadeIn/fadeOut, compressor, reverb, e o
+    // setup(bus) para os nós fixos dos instrumentos (fica no bus)
+    onStep(barIndex, s, time, bus) {
+        for (const note of BARS[barIndex]) if (note.step === s) flauta(bus, time, note);
+    }
+});
+
+// js/main.js
+import { bindMusicButton, unlockAudioOnGesture } from '/lib/arcade/music.js';
+const syncMusic = () => music.setWanted(!game.paused && document.visibilityState === 'visible');
+bindMusicButton(els.musicBtn, music, { resume: resumeAudio, onToggle: syncMusic });
+unlockAudioOnGesture(resumeAudio, syncMusic);   // começa no primeiro toque ou tecla
+```
+
+O botão `#musicBtn` da barra de topo (a nota, com o traço `.musicSlash` quando
+está desligada) e as três regras de CSS que o acompanham são iguais no Terras do
+Reino, na Memória Animal e no Pixel Racing. A Tasca do Zé tem ainda a música de
+antes do motor comum, que segue o mudo do jogo em vez de ter botão próprio.
+
+Para **ouvir a música sem abrir o jogo** — depois de mexer na partitura ou na
+mistura, ou para a mostrar a alguém — `tools/games/render-music.mjs` grava cada
+uma em WAV (num `OfflineAudioContext`, com o mesmo código do jogo) e diz o pico
+e o RMS, para comparar volumes:
+
+```bash
+cd tools/games
+node render-music.mjs                          # todos → tools/games/music-out/
+node render-music.mjs --only pixel-racing --loops 2
+node render-music.mjs --seed 1 --out /tmp/depois
+```
+
+Com `--seed` o `Math.random` fica determinístico e duas gravações do mesmo
+código saem iguais: é assim que se confirma que um refactor não mudou o som.
 
 ## Testar os jogos
 
@@ -780,14 +842,14 @@ aceita (999 999).
 ### Música
 
 Uma melodia calma em **flauta de pã** com uma **batida de bateria** suave e um
-baixo dedilhado (`js/music.js`), toda sintetizada com osciladores e ruído — sem
-ficheiros de áudio, como os efeitos de `js/audio.js`, com quem partilha o
-`AudioContext`. A flauta é um triângulo suavizado mais um seno na fundamental
+baixo dedilhado (`js/music.js`, no [motor comum](#música-de-fundo)), toda
+sintetizada com osciladores e ruído — sem ficheiros de áudio, como os efeitos de
+`js/audio.js`, com quem partilha o `AudioContext`. A flauta é um triângulo suavizado mais um seno na fundamental
 (um tubo fechado só tem harmónicos ímpares), com um "chiff" de ruído no ataque,
 um fio de sopro durante a nota e vibrato só depois de a nota assentar; a
 bateria é bombo, tarola abafada, shaker em semicolcheias e uma virada de
 timbalões no fim de cada frase; um reverb com uma resposta ao impulso gerada dá
-a sala. O tema está em ré dórico a 78 BPM, 20 compassos (pouco mais de um
+a sala (o do motor). O tema está em ré dórico a 78 BPM, 20 compassos (pouco mais de um
 minuto) em loop: A, A', B, B' e uma secção calma de notas longas com a bateria
 a meio tempo. A partitura são as `SECTIONS`, um compasso por texto
 (`'D5 3, E5 1, F5 2, A5 2'`: nota e duração em colcheias, `-` para pausa).
@@ -888,8 +950,8 @@ smoke-test verifica que todas as ilustrações carregam.
 Uma melodia calma ao **piano**, com a mão esquerda em arpejos e uma **bateria**
 de vassouras a acompanhar (`js/music.js`), toda sintetizada — sem ficheiros de
 áudio, como os efeitos de `js/audio.js`, com quem partilha o `AudioContext`. O
-motor é o da [música do Terras do Reino](#música) (agendador, reverb,
-compressor); muda o instrumento e a partitura. O piano é uma onda periódica com
+motor é o [comum](#música-de-fundo) (agendador, reverb, compressor); aqui ficam
+o instrumento e a partitura. O piano é uma onda periódica com
 os harmónicos de uma corda, em duas "cordas" ligeiramente desafinadas, com um
 passa-baixo que fecha depois do martelo, um toque de ruído no ataque e um
 decaimento mais longo nas notas graves; a mão esquerda deixa as notas soar até
@@ -910,9 +972,9 @@ tocar. Num telemóvel estreito o botão fica só com a nota, para caberem os tr�
 ## Música do Pixel Racing
 
 Um tema alegre em **allegro** (sol maior, 132 BPM) com **guitarra**, **piano**,
-baixo e **bateria** (`js/music.js`), sintetizado como o do Terras do Reino e o
-da Memória Animal, e a partilhar o `AudioContext` com o motor e os efeitos de
-`js/audio.js`.
+baixo e **bateria** (`js/music.js`), sintetizado no [motor comum](#música-de-fundo)
+como o do Terras do Reino e o da Memória Animal, e a partilhar o `AudioContext`
+com o motor do carro e os efeitos de `js/audio.js`.
 
 - **Guitarra:** as cordas são dedilhadas pelo algoritmo de Karplus-Strong (um
   estalo de ruído a dar voltas numa linha de atraso de um período, perdendo os

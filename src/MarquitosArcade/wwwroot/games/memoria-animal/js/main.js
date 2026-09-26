@@ -6,6 +6,7 @@
 
 import { createLoop } from '/lib/arcade/index.js';
 import { bindPlayerNameInput } from '/lib/arcade/scores.js';
+import { bindMusicButton, unlockAudioOnGesture } from '/lib/arcade/music.js';
 
 import { resumeAudio } from './audio.js';
 import { cardFromEvent, layoutBoard } from './board.js';
@@ -13,7 +14,7 @@ import { NAME_STORAGE_KEY, PLAYER_FALLBACK } from './config.js';
 import { prepareHowto } from './howto.js';
 import { abortLevel, flipCard, isInLevel, startLevel, stepEnding, togglePause, updateLevel } from './level.js';
 import { createMenu } from './menu.js';
-import { musicEnabled, setMusicWanted, toggleMusic } from './music.js';
+import { music } from './music.js';
 import { loadProgress } from './progress.js';
 import { setResultHandler, showResultScreen } from './results.js';
 import { game, session } from './state.js';
@@ -126,36 +127,15 @@ document.addEventListener('visibilitychange', () => {
  * com a página escondida. Antes do primeiro toque não há AudioContext e ela espera.
  */
 function syncMusic() {
-    setMusicWanted(!game.paused && document.visibilityState === 'visible');
+    music.setWanted(!game.paused && document.visibilityState === 'visible');
 }
 
-function refreshMusicBtn() {
-    const on = musicEnabled();
-    els.musicBtn.setAttribute('aria-pressed', String(on));
-    const label = on ? 'Desligar a música' : 'Ligar a música';
-    els.musicBtn.title = label;
-    els.musicBtn.setAttribute('aria-label', label);
-}
-
-els.musicBtn.addEventListener('click', () => {
-    resumeAudio();
-    toggleMusic();
-    refreshMusicBtn();
-    syncMusic();
-});
-refreshMusicBtn();
+bindMusicButton(els.musicBtn, music, { resume: resumeAudio, onToggle: syncMusic });
 
 // O browser só deixa soar depois de um gesto. O primeiro toque ou tecla, onde
 // quer que seja (até a escrever o nome), destranca o áudio e a música começa
 // logo no menu, sem esperar pelo "Jogar".
-function unlockAudio() {
-    if (!resumeAudio()) return;
-    document.removeEventListener('pointerup', unlockAudio, true);
-    document.removeEventListener('keydown', unlockAudio, true);
-    syncMusic();
-}
-document.addEventListener('pointerup', unlockAudio, true);
-document.addEventListener('keydown', unlockAudio, true);
+unlockAudioOnGesture(resumeAudio, syncMusic);
 
 // ---------- Arranque ----------
 

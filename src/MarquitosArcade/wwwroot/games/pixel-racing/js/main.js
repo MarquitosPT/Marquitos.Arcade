@@ -6,6 +6,7 @@
 
 import { createButtonGroup, createLoop, createViewport } from '/lib/arcade/index.js';
 import { bindPlayerNameInput } from '/lib/arcade/scores.js';
+import { bindMusicButton, unlockAudioOnGesture } from '/lib/arcade/music.js';
 
 import { MODE_TOURNAMENT, NAME_STORAGE_KEY, TOURNAMENT_CUPS } from './config.js';
 import { resumeAudio, sfx } from './audio.js';
@@ -16,7 +17,7 @@ import { drawCountdown, drawFinishOverlay, initRenderer, render } from './render
 import { setReturnToMenuHandler, showResultScreen } from './results.js';
 import { setupParticipants } from './cars.js';
 import { createMenu } from './menu.js';
-import { musicEnabled, setMusicWanted, toggleMusic } from './music.js';
+import { music } from './music.js';
 import { race, session } from './state.js';
 import { els, topBar, topBarEl } from './ui.js';
 
@@ -165,36 +166,15 @@ els.endBtn.addEventListener('click', () => {
  * AudioContext e ela espera.
  */
 function syncMusic() {
-    setMusicWanted(!race.paused && document.visibilityState === 'visible');
+    music.setWanted(!race.paused && document.visibilityState === 'visible');
 }
 
-function refreshMusicBtn() {
-    const on = musicEnabled();
-    els.musicBtn.setAttribute('aria-pressed', String(on));
-    const label = on ? 'Desligar a música' : 'Ligar a música';
-    els.musicBtn.title = label;
-    els.musicBtn.setAttribute('aria-label', label);
-}
-
-els.musicBtn.addEventListener('click', () => {
-    resumeAudio();
-    toggleMusic();
-    refreshMusicBtn();
-    syncMusic();
-});
-refreshMusicBtn();
+bindMusicButton(els.musicBtn, music, { resume: resumeAudio, onToggle: syncMusic });
 
 // O browser só deixa soar depois de um gesto. O primeiro toque ou tecla, onde
 // quer que seja (até a escrever o nome), destranca o áudio e a música começa
 // logo no menu, sem esperar pelo "Arrancar".
-function unlockAudio() {
-    if (!resumeAudio()) return;
-    document.removeEventListener('pointerup', unlockAudio, true);
-    document.removeEventListener('keydown', unlockAudio, true);
-    syncMusic();
-}
-document.addEventListener('pointerup', unlockAudio, true);
-document.addEventListener('keydown', unlockAudio, true);
+unlockAudioOnGesture(resumeAudio, syncMusic);
 document.addEventListener('visibilitychange', syncMusic);
 
 loop.start();

@@ -21,55 +21,17 @@
 // B, B' e uma secção calma de notas longas com a bateria a meio tempo — num
 // jogo da memória está-se a pensar, e a música não pode puxar pela atenção.
 //
-// O agendamento é o padrão do Web Audio (o mesmo do Terras do Reino): um
-// setTimeout grosseiro acorda de 30 em 30 ms e marca com precisão de amostra as
-// notas dos próximos 150 ms, pelo relógio do AudioContext.
+// O motor — o bus com o reverb e o compressor, o agendador, ligar e desligar —
+// é o da arcada (/lib/arcade/music.js); aqui ficam a partitura e os instrumentos.
 
-import { readText, writeText } from '/lib/arcade/storage.js';
+import { bar, createMusic, freq, midi } from '/lib/arcade/music.js';
 import { audio } from './audio.js';
-
-const STORAGE_KEY = 'memoriaAnimalMusic_v1';
 
 const BPM = 76;
 /** Duração de uma semicolcheia (o passo da grelha), em segundos. */
 const STEP = 60 / BPM / 4;
-const STEPS_PER_BAR = 16;
-
-/** Volume mestre da música, por baixo dos efeitos sonoros. */
-const VOLUME = 0.4;
-const FADE_IN = 1.8;
-const FADE_OUT = 0.5;
-
-const SCHEDULE_AHEAD = 0.15;
-const LOOKAHEAD_MS = 30;
 
 // ---------- Partitura ----------
-
-const NOTE_INDEX = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
-
-/** "Bb5" → MIDI 82. Aceita sustenidos (#) e bemóis (b). */
-function midi(name) {
-    const accidental = name[1] === '#' ? 1 : name[1] === 'b' ? -1 : 0;
-    return 12 * (Number(name.slice(-1)) + 1) + NOTE_INDEX[name[0]] + accidental;
-}
-
-const freq = (m) => 440 * 2 ** ((m - 69) / 12);
-
-/**
- * Um compasso de melodia: "nota colcheias" separadas por vírgulas, com "-" para
- * pausa. Cada compasso soma 8 colcheias.
- */
-function bar(text) {
-    const notes = [];
-    let at = 0;
-    for (const token of text.split(',')) {
-        const [name, len] = token.trim().split(/\s+/);
-        const eighths = Number(len);
-        if (name !== '-') notes.push({ step: at * 2, midi: midi(name), steps: eighths * 2 });
-        at += eighths;
-    }
-    return notes;
-}
 
 /**
  * Um acorde para a mão esquerda: "F", "Dm", "Bb"… A fundamental fica entre o
@@ -136,108 +98,13 @@ const BARS = SECTIONS.flatMap((section, si) =>
     })
 );
 
-// ---------- Estado ----------
+// ---------- Bus ----------
 
-let enabled = readText(STORAGE_KEY) !== '0';
-/** O jogo quer música agora (não está em pausa nem escondido)? */
-let wanted = false;
-let playing = false;
-let timerId = null;
-let step = 0;
-let nextTime = 0;
-
-/** Os nós fixos: mestre, compressor, reverb, ruído e o timbre do piano. Criados uma vez por contexto. */
+/** O bus onde se está a tocar (o do jogo, ou um OfflineAudioContext a gravar): chega em cada passo. */
 let bus = null;
 
-function buildBus(ctx) {
-    const master = ctx.createGain();
-    master.gain.value = 0;
-
-    // Um compressor brando segura os picos quando os acordes se juntam ao bombo.
-    const comp = ctx.createDynamicsCompressor();
-    comp.threshold.value = -18;
-    comp.knee.value = 12;
-    comp.ratio.value = 3;
-    comp.attack.value = 0.01;
-    comp.release.value = 0.25;
-
-    const reverb = ctx.createConvolver();
-    reverb.buffer = impulseResponse(ctx, 2.8, 2.4);
-    const wet = ctx.createGain();
-    wet.gain.value = 0.85;
-
-    reverb.connect(wet);
-    wet.connect(master);
-    master.connect(comp);
-    comp.connect(ctx.destination);
-
-    // Ruído branco, reutilizado pelo martelo do piano e pela bateria.
-    const noise = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
-    const data = noise.getChannelData(0);
-    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-
-    // O timbre da corda: a fundamental forte e os harmónicos a enfraquecer.
-    // O passa-baixo de cada nota decide quantos deles se ouvem a cada instante.
-    const partials = [0, 1, 0.6, 0.32, 0.22, 0.13, 0.08, 0.05, 0.035, 0.02];
-    const pianoWave = ctx.createPeriodicWave(new Float32Array(partials.length), new Float32Array(partials));
-
-    return { ctx, master, reverb, noise, pianoWave };
-}
-
-/** Uma sala: ruído estéreo a decair exponencialmente. */
-function impulseResponse(ctx, seconds, decay) {
-    const length = Math.floor(ctx.sampleRate * seconds);
-    const ir = ctx.createBuffer(2, length, ctx.sampleRate);
-    for (let ch = 0; ch < 2; ch++) {
-        const data = ir.getChannelData(ch);
-        for (let i = 0; i < length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / length) ** decay;
-    }
-    return ir;
-}
-
-function ensureBus() {
-    const ctx = audio.context;
-    if (!ctx) return null;
-    if (!bus || bus.ctx !== ctx) bus = buildBus(ctx);
-    return bus;
-}
-
-/** Liga `node` ao mestre (seco) e ao reverb (molhado), com o pan e o envio pedidos. */
-function route(node, time, { pan = 0, send = 0.2 } = {}) {
-    const { ctx, master, reverb } = bus;
-    let out = node;
-    if (pan && ctx.createStereoPanner) {
-        const p = ctx.createStereoPanner();
-        p.pan.setValueAtTime(pan, time);
-        node.connect(p);
-        out = p;
-    }
-    out.connect(master);
-    if (send > 0) {
-        const s = ctx.createGain();
-        s.gain.value = send;
-        out.connect(s);
-        s.connect(reverb);
-    }
-}
-
-function noiseSource(time, stopAt) {
-    const src = bus.ctx.createBufferSource();
-    src.buffer = bus.noise;
-    src.loop = true;
-    // Cada som apanha o ruído num sítio diferente, para não soarem iguais.
-    src.start(time, Math.random() * 1.5);
-    src.stop(stopAt);
-    return src;
-}
-
-function filter(type, frequency, q = 1) {
-    const f = bus.ctx.createBiquadFilter();
-    f.type = type;
-    f.frequency.value = frequency;
-    f.Q.value = q;
-    return f;
-}
+/** O timbre da corda: a fundamental forte e os harmónicos a enfraquecer. */
+const PIANO_PARTIALS = [0, 1, 0.6, 0.32, 0.22, 0.13, 0.08, 0.05, 0.035, 0.02];
 
 // ---------- Instrumentos ----------
 
@@ -264,7 +131,7 @@ function piano(time, m, duration, velocity, pan = 0) {
 
     // O brilho do martelo apaga-se primeiro: o filtro vai fechando.
     const bright = Math.min(f * (5 + velocity * 12), 9000);
-    const tone = filter('lowpass', bright, 0.4);
+    const tone = bus.filter('lowpass', bright, 0.4);
     tone.frequency.setValueAtTime(bright, time);
     tone.frequency.exponentialRampToValueAtTime(Math.max(f * 1.6, 220), time + 1.4);
     tone.connect(out);
@@ -281,8 +148,8 @@ function piano(time, m, duration, velocity, pan = 0) {
     }
 
     // O martelo: um toque curto de ruído à volta do tom.
-    const hammer = noiseSource(time, time + 0.05);
-    const hammerBand = filter('bandpass', Math.min(f * 3, 4000), 1.5);
+    const hammer = bus.noise(time, time + 0.05);
+    const hammerBand = bus.filter('bandpass', Math.min(f * 3, 4000), 1.5);
     const hammerGain = ctx.createGain();
     hammerGain.gain.setValueAtTime(velocity * 0.18, time);
     hammerGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.035);
@@ -290,7 +157,7 @@ function piano(time, m, duration, velocity, pan = 0) {
     hammerBand.connect(hammerGain);
     hammerGain.connect(out);
 
-    route(out, time, { pan, send: 0.38 });
+    bus.route(out, time, { pan, send: 0.38 });
 }
 
 function kick(time, velocity) {
@@ -306,14 +173,14 @@ function kick(time, velocity) {
     osc.connect(g);
     osc.start(time);
     osc.stop(time + 0.42);
-    route(g, time, { send: 0.06 });
+    bus.route(g, time, { send: 0.06 });
 }
 
 /** Vassoura na tarola: o ruído entra devagar e varre, em vez de estalar. */
 function brush(time, velocity) {
     const { ctx } = bus;
-    const n = noiseSource(time, time + 0.32);
-    const band = filter('bandpass', 2800, 0.6);
+    const n = bus.noise(time, time + 0.32);
+    const band = bus.filter('bandpass', 2800, 0.6);
     const g = ctx.createGain();
     g.gain.setValueAtTime(0, time);
     g.gain.linearRampToValueAtTime(velocity, time + 0.018);
@@ -337,20 +204,20 @@ function brush(time, velocity) {
     const out = ctx.createGain();
     g.connect(out);
     og.connect(out);
-    route(out, time, { pan: -0.12, send: 0.25 });
+    bus.route(out, time, { pan: -0.12, send: 0.25 });
 }
 
 function hat(time, velocity) {
     const { ctx } = bus;
-    const n = noiseSource(time, time + 0.08);
-    const hp = filter('highpass', 7800, 0.7);
+    const n = bus.noise(time, time + 0.08);
+    const hp = bus.filter('highpass', 7800, 0.7);
     const g = ctx.createGain();
     g.gain.setValueAtTime(0, time);
     g.gain.linearRampToValueAtTime(velocity, time + 0.004);
     g.gain.exponentialRampToValueAtTime(0.0001, time + 0.055);
     n.connect(hp);
     hp.connect(g);
-    route(g, time, { pan: 0.25, send: 0.1 });
+    bus.route(g, time, { pan: 0.25, send: 0.1 });
 }
 
 function tom(time, pitch, velocity) {
@@ -366,7 +233,7 @@ function tom(time, pitch, velocity) {
     osc.connect(g);
     osc.start(time);
     osc.stop(time + 0.38);
-    route(g, time, { pan: pitch > 140 ? 0.2 : -0.2, send: 0.22 });
+    bus.route(g, time, { pan: pitch > 140 ? 0.2 : -0.2, send: 0.22 });
 }
 
 // ---------- Mão esquerda ----------
@@ -428,10 +295,7 @@ function playDrums(b, s, time) {
 
 // ---------- Agendador ----------
 
-function scheduleStep(n, time) {
-    const b = BARS[Math.floor(n / STEPS_PER_BAR) % BARS.length];
-    const s = n % STEPS_PER_BAR;
-
+function scheduleStep(b, s, time) {
     for (const note of b.melody) {
         if (note.step !== s) continue;
         // A primeira nota de cada compasso vai um nadinha mais forte.
@@ -443,65 +307,19 @@ function scheduleStep(n, time) {
     playDrums(b, s, time);
 }
 
-function scheduler() {
-    const ctx = audio.context;
-    while (nextTime < ctx.currentTime + SCHEDULE_AHEAD) {
-        scheduleStep(step, nextTime);
-        nextTime += STEP;
-        step = (step + 1) % (BARS.length * STEPS_PER_BAR);
+export const music = createMusic({
+    audio,
+    storageKey: 'memoriaAnimalMusic_v1',
+    bpm: BPM,
+    bars: BARS.length,
+    volume: 0.4,
+    reverb: { seconds: 2.8, decay: 2.4, wet: 0.85 },
+    // O passa-baixo de cada nota decide quantos harmónicos se ouvem a cada instante.
+    setup: ({ ctx }) => ({
+        pianoWave: ctx.createPeriodicWave(new Float32Array(PIANO_PARTIALS.length), new Float32Array(PIANO_PARTIALS))
+    }),
+    onStep(barIndex, s, time, b) {
+        bus = b;
+        scheduleStep(BARS[barIndex], s, time);
     }
-    timerId = setTimeout(scheduler, LOOKAHEAD_MS);
-}
-
-function start() {
-    if (playing || !ensureBus()) return;
-    const { ctx, master } = bus;
-    playing = true;
-    const now = ctx.currentTime;
-    master.gain.cancelScheduledValues(now);
-    master.gain.setValueAtTime(master.gain.value, now);
-    master.gain.linearRampToValueAtTime(VOLUME, now + FADE_IN);
-    // Retoma do compasso onde ficou, mas sempre do início dele: uma frase
-    // cortada a meio soa a erro.
-    step -= step % STEPS_PER_BAR;
-    nextTime = now + 0.08;
-    scheduler();
-}
-
-function stop() {
-    if (!playing) return;
-    playing = false;
-    clearTimeout(timerId);
-    timerId = null;
-    const { ctx, master } = bus;
-    const now = ctx.currentTime;
-    master.gain.cancelScheduledValues(now);
-    master.gain.setValueAtTime(master.gain.value, now);
-    master.gain.linearRampToValueAtTime(0, now + FADE_OUT);
-}
-
-function update() {
-    if (enabled && wanted && audio.context) start();
-    else stop();
-}
-
-/**
- * Diz à música se o jogo a quer agora. Só toca se, além disso, estiver ligada e
- * já houver AudioContext (ver `resumeAudio`).
- */
-export function setMusicWanted(value) {
-    wanted = !!value;
-    update();
-}
-
-export function musicEnabled() {
-    return enabled;
-}
-
-/** O botão da música: liga ou desliga, e fica lembrado neste aparelho. */
-export function toggleMusic() {
-    enabled = !enabled;
-    writeText(STORAGE_KEY, enabled ? '1' : '0');
-    update();
-    return enabled;
-}
+});

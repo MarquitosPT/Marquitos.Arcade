@@ -22,55 +22,17 @@
 // B com a guitarra solo, uma pausa de meio tempo que cresce num rufo, e o tema
 // outra vez com piano e guitarra juntos, a toda a força.
 //
-// O agendamento é o padrão do Web Audio (o mesmo do Terras do Reino e da
-// Memória Animal): um setTimeout grosseiro acorda de 25 em 25 ms e marca com
-// precisão de amostra as notas dos próximos 150 ms, pelo relógio do AudioContext.
+// O motor — o bus com o reverb e o compressor, o agendador, ligar e desligar —
+// é o da arcada (/lib/arcade/music.js); aqui ficam a partitura e os instrumentos.
 
-import { readText, writeText } from '/lib/arcade/storage.js';
+import { bar, createMusic, freq, midi } from '/lib/arcade/music.js';
 import { audio } from './audio.js';
-
-const STORAGE_KEY = 'pixelRacingMusic_v1';
 
 const BPM = 132;
 /** Duração de uma semicolcheia (o passo da grelha), em segundos. */
 const STEP = 60 / BPM / 4;
-const STEPS_PER_BAR = 16;
-
-/** Volume mestre da música: por baixo do motor e dos efeitos. */
-const VOLUME = 0.3;
-const FADE_IN = 1.2;
-const FADE_OUT = 0.4;
-
-const SCHEDULE_AHEAD = 0.15;
-const LOOKAHEAD_MS = 25;
 
 // ---------- Partitura ----------
-
-const NOTE_INDEX = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
-
-/** "F#5" → MIDI 78. Aceita sustenidos (#) e bemóis (b). */
-function midi(name) {
-    const accidental = name[1] === '#' ? 1 : name[1] === 'b' ? -1 : 0;
-    return 12 * (Number(name.slice(-1)) + 1) + NOTE_INDEX[name[0]] + accidental;
-}
-
-const freq = (m) => 440 * 2 ** ((m - 69) / 12);
-
-/**
- * Um compasso de melodia: "nota colcheias" separadas por vírgulas, com "-" para
- * pausa. Cada compasso soma 8 colcheias (0.5 é uma semicolcheia).
- */
-function bar(text) {
-    const notes = [];
-    let at = 0;
-    for (const token of text.split(',')) {
-        const [name, len] = token.trim().split(/\s+/);
-        const eighths = Number(len);
-        if (name !== '-') notes.push({ step: at * 2, midi: midi(name), steps: eighths * 2 });
-        at += eighths;
-    }
-    return notes;
-}
 
 /**
  * Os acordes como se tocam numa guitarra, da corda mais grave para a mais
@@ -162,59 +124,16 @@ const BARS = SECTIONS.flatMap((section) =>
 /** A batida da guitarra de ritmo, em colcheias: B (baixo→cima), C (cima→baixo), - nada. */
 const STRUM = 'B-BC-CBC';
 
-// ---------- Estado ----------
+// ---------- Bus ----------
 
-let enabled = readText(STORAGE_KEY) !== '0';
-/** O jogo quer música agora (não está em pausa nem escondido)? */
-let wanted = false;
-let playing = false;
-let timerId = null;
-let step = 0;
-let nextTime = 0;
-
-/** Os nós fixos: mestre, compressor, reverb, as cadeias das guitarras, ruído, timbres. */
+/** O bus onde se está a tocar (o do jogo, ou um OfflineAudioContext a gravar): chega em cada passo. */
 let bus = null;
 
-function buildBus(ctx) {
-    const master = ctx.createGain();
-    master.gain.value = 0;
+const PIANO_PARTIALS = [0, 1, 0.7, 0.4, 0.28, 0.18, 0.12, 0.08, 0.05, 0.03];
 
-    // Um compressor a segurar os picos: há muita coisa a bater ao mesmo tempo.
-    const comp = ctx.createDynamicsCompressor();
-    comp.threshold.value = -16;
-    comp.knee.value = 10;
-    comp.ratio.value = 3.5;
-    comp.attack.value = 0.006;
-    comp.release.value = 0.2;
-
-    const reverb = ctx.createConvolver();
-    reverb.buffer = impulseResponse(ctx, 1.6, 3);
-    const wet = ctx.createGain();
-    wet.gain.value = 0.7;
-
-    reverb.connect(wet);
-    wet.connect(master);
-    master.connect(comp);
-    comp.connect(ctx.destination);
-
-    const noise = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
-    const data = noise.getChannelData(0);
-    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-
-    const partials = [0, 1, 0.7, 0.4, 0.28, 0.18, 0.12, 0.08, 0.05, 0.03];
-    const pianoWave = ctx.createPeriodicWave(new Float32Array(partials.length), new Float32Array(partials));
-
-    return {
-        ctx, master, reverb, noise, pianoWave,
-        plucks: new Map(),
-        // A guitarra de ritmo à esquerda, pouco saturada; a solo à direita, mais.
-        rhythmIn: guitarChain(ctx, master, reverb, { drive: 2.2, tone: 3600, pan: -0.4, send: 0.15, level: 0.4 }),
-        leadIn: guitarChain(ctx, master, reverb, { drive: 5, tone: 3000, pan: 0.25, send: 0.35, level: 0.5 })
-    };
-}
 
 /** Saturação (tanh), um passa-baixo que faz de coluna, e daí para a sala. */
-function guitarChain(ctx, master, reverb, { drive, tone, pan, send, level }) {
+function guitarChain({ ctx, master, reverb }, { drive, tone, pan, send, level }) {
     const input = ctx.createGain();
     const shaper = ctx.createWaveShaper();
     const curve = new Float32Array(1024);
@@ -249,59 +168,6 @@ function guitarChain(ctx, master, reverb, { drive, tone, pan, send, level }) {
     return input;
 }
 
-/** Uma sala: ruído estéreo a decair exponencialmente. */
-function impulseResponse(ctx, seconds, decay) {
-    const length = Math.floor(ctx.sampleRate * seconds);
-    const ir = ctx.createBuffer(2, length, ctx.sampleRate);
-    for (let ch = 0; ch < 2; ch++) {
-        const d = ir.getChannelData(ch);
-        for (let i = 0; i < length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / length) ** decay;
-    }
-    return ir;
-}
-
-function ensureBus() {
-    const ctx = audio.context;
-    if (!ctx) return null;
-    if (!bus || bus.ctx !== ctx) bus = buildBus(ctx);
-    return bus;
-}
-
-/** Liga `node` ao mestre (seco) e ao reverb (molhado), com o pan e o envio pedidos. */
-function route(node, time, { pan = 0, send = 0.2 } = {}) {
-    const { ctx, master, reverb } = bus;
-    let out = node;
-    if (pan && ctx.createStereoPanner) {
-        const p = ctx.createStereoPanner();
-        p.pan.setValueAtTime(pan, time);
-        node.connect(p);
-        out = p;
-    }
-    out.connect(master);
-    if (send > 0) {
-        const s = ctx.createGain();
-        s.gain.value = send;
-        out.connect(s);
-        s.connect(reverb);
-    }
-}
-
-function noiseSource(time, stopAt) {
-    const src = bus.ctx.createBufferSource();
-    src.buffer = bus.noise;
-    src.loop = true;
-    src.start(time, Math.random() * 1.5);
-    src.stop(stopAt);
-    return src;
-}
-
-function filter(type, frequency, q = 1) {
-    const f = bus.ctx.createBiquadFilter();
-    f.type = type;
-    f.frequency.value = frequency;
-    f.Q.value = q;
-    return f;
-}
 
 // ---------- Guitarra (Karplus-Strong) ----------
 
@@ -423,7 +289,7 @@ function piano(time, m, duration, velocity, pan = 0) {
     out.gain.setTargetAtTime(0, end, 0.06);
 
     const bright = Math.min(f * (6 + velocity * 14), 10000);
-    const tone = filter('lowpass', bright, 0.4);
+    const tone = bus.filter('lowpass', bright, 0.4);
     tone.frequency.setValueAtTime(bright, time);
     tone.frequency.exponentialRampToValueAtTime(Math.max(f * 2, 300), time + 1);
     tone.connect(out);
@@ -438,8 +304,8 @@ function piano(time, m, duration, velocity, pan = 0) {
         osc.stop(stopAt);
     }
 
-    const hammer = noiseSource(time, time + 0.04);
-    const hammerBand = filter('bandpass', Math.min(f * 3, 4500), 1.5);
+    const hammer = bus.noise(time, time + 0.04);
+    const hammerBand = bus.filter('bandpass', Math.min(f * 3, 4500), 1.5);
     const hammerGain = ctx.createGain();
     hammerGain.gain.setValueAtTime(velocity * 0.2, time);
     hammerGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.03);
@@ -447,13 +313,13 @@ function piano(time, m, duration, velocity, pan = 0) {
     hammerBand.connect(hammerGain);
     hammerGain.connect(out);
 
-    route(out, time, { pan, send: 0.3 });
+    bus.route(out, time, { pan, send: 0.3 });
 }
 
 function bass(time, m, duration, velocity) {
     const { ctx } = bus;
     const f = freq(m);
-    const lp = filter('lowpass', 900, 1.2);
+    const lp = bus.filter('lowpass', 900, 1.2);
     lp.frequency.setValueAtTime(1600, time);
     lp.frequency.exponentialRampToValueAtTime(500, time + 0.12);
     const g = ctx.createGain();
@@ -470,7 +336,7 @@ function bass(time, m, duration, velocity) {
         osc.stop(time + duration + 0.15);
     }
     lp.connect(g);
-    route(g, time, { send: 0.04 });
+    bus.route(g, time, { send: 0.04 });
 }
 
 function kick(time, velocity) {
@@ -488,8 +354,8 @@ function kick(time, velocity) {
     osc.stop(time + 0.33);
 
     // O batente: um clique curto por cima, para o bombo se ouvir no meio da guitarra.
-    const click = noiseSource(time, time + 0.02);
-    const band = filter('bandpass', 3000, 1);
+    const click = bus.noise(time, time + 0.02);
+    const band = bus.filter('bandpass', 3000, 1);
     const cg = ctx.createGain();
     cg.gain.setValueAtTime(velocity * 0.25, time);
     cg.gain.exponentialRampToValueAtTime(0.0001, time + 0.015);
@@ -499,7 +365,7 @@ function kick(time, velocity) {
     const out = ctx.createGain();
     g.connect(out);
     cg.connect(out);
-    route(out, time, { send: 0.04 });
+    bus.route(out, time, { send: 0.04 });
 }
 
 function snare(time, velocity) {
@@ -515,8 +381,8 @@ function snare(time, velocity) {
     osc.start(time);
     osc.stop(time + 0.12);
 
-    const n = noiseSource(time, time + 0.22);
-    const band = filter('highpass', 1400, 0.7);
+    const n = bus.noise(time, time + 0.22);
+    const band = bus.filter('highpass', 1400, 0.7);
     const ng = ctx.createGain();
     ng.gain.setValueAtTime(0, time);
     ng.gain.linearRampToValueAtTime(velocity, time + 0.002);
@@ -527,34 +393,34 @@ function snare(time, velocity) {
     const out = ctx.createGain();
     og.connect(out);
     ng.connect(out);
-    route(out, time, { pan: -0.08, send: 0.22 });
+    bus.route(out, time, { pan: -0.08, send: 0.22 });
 }
 
 function hat(time, velocity, open = false) {
     const { ctx } = bus;
     const length = open ? 0.32 : 0.045;
-    const n = noiseSource(time, time + length + 0.02);
-    const hp = filter('highpass', 7500, 0.7);
+    const n = bus.noise(time, time + length + 0.02);
+    const hp = bus.filter('highpass', 7500, 0.7);
     const g = ctx.createGain();
     g.gain.setValueAtTime(0, time);
     g.gain.linearRampToValueAtTime(velocity, time + 0.002);
     g.gain.exponentialRampToValueAtTime(0.0001, time + length);
     n.connect(hp);
     hp.connect(g);
-    route(g, time, { pan: 0.3, send: 0.06 });
+    bus.route(g, time, { pan: 0.3, send: 0.06 });
 }
 
 function crash(time, velocity) {
     const { ctx } = bus;
-    const n = noiseSource(time, time + 1.6);
-    const hp = filter('highpass', 4500, 0.5);
+    const n = bus.noise(time, time + 1.6);
+    const hp = bus.filter('highpass', 4500, 0.5);
     const g = ctx.createGain();
     g.gain.setValueAtTime(0, time);
     g.gain.linearRampToValueAtTime(velocity, time + 0.004);
     g.gain.setTargetAtTime(0.0001, time + 0.004, 0.45);
     n.connect(hp);
     hp.connect(g);
-    route(g, time, { pan: -0.3, send: 0.3 });
+    bus.route(g, time, { pan: -0.3, send: 0.3 });
 }
 
 function tom(time, pitch, velocity) {
@@ -570,7 +436,7 @@ function tom(time, pitch, velocity) {
     osc.connect(g);
     osc.start(time);
     osc.stop(time + 0.3);
-    route(g, time, { pan: pitch > 150 ? 0.25 : -0.25, send: 0.15 });
+    bus.route(g, time, { pan: pitch > 150 ? 0.25 : -0.25, send: 0.15 });
 }
 
 // ---------- Partes ----------
@@ -670,9 +536,7 @@ function playDrums(b, s, time) {
 
 // ---------- Agendador ----------
 
-function scheduleStep(n, time) {
-    const b = BARS[Math.floor(n / STEPS_PER_BAR) % BARS.length];
-    const s = n % STEPS_PER_BAR;
+function scheduleStep(b, s, time) {
     playMelody(b, s, time);
     playRhythm(b, s, time);
     playPianoComp(b, s, time);
@@ -680,65 +544,28 @@ function scheduleStep(n, time) {
     playDrums(b, s, time);
 }
 
-function scheduler() {
-    const ctx = audio.context;
-    while (nextTime < ctx.currentTime + SCHEDULE_AHEAD) {
-        scheduleStep(step, nextTime);
-        nextTime += STEP;
-        step = (step + 1) % (BARS.length * STEPS_PER_BAR);
+export const music = createMusic({
+    audio,
+    storageKey: 'pixelRacingMusic_v1',
+    bpm: BPM,
+    bars: BARS.length,
+    // Por baixo do motor e dos efeitos.
+    volume: 0.3,
+    fadeIn: 1.2,
+    fadeOut: 0.4,
+    lookaheadMs: 25,
+    // Um compressor a segurar os picos (há muita coisa a bater ao mesmo tempo) e uma sala pequena.
+    compressor: { threshold: -16, knee: 10, ratio: 3.5, attack: 0.006, release: 0.2 },
+    reverb: { seconds: 1.6, decay: 3, wet: 0.7 },
+    setup: (b) => ({
+        pianoWave: b.ctx.createPeriodicWave(new Float32Array(PIANO_PARTIALS.length), new Float32Array(PIANO_PARTIALS)),
+        plucks: new Map(),
+        // A guitarra de ritmo à esquerda, pouco saturada; a solo à direita, mais.
+        rhythmIn: guitarChain(b, { drive: 2.2, tone: 3600, pan: -0.4, send: 0.15, level: 0.4 }),
+        leadIn: guitarChain(b, { drive: 5, tone: 3000, pan: 0.25, send: 0.35, level: 0.5 })
+    }),
+    onStep(barIndex, s, time, b) {
+        bus = b;
+        scheduleStep(BARS[barIndex], s, time);
     }
-    timerId = setTimeout(scheduler, LOOKAHEAD_MS);
-}
-
-function start() {
-    if (playing || !ensureBus()) return;
-    const { ctx, master } = bus;
-    playing = true;
-    const now = ctx.currentTime;
-    master.gain.cancelScheduledValues(now);
-    master.gain.setValueAtTime(master.gain.value, now);
-    master.gain.linearRampToValueAtTime(VOLUME, now + FADE_IN);
-    // Retoma do compasso onde ficou, mas sempre do início dele: uma frase
-    // cortada a meio soa a erro.
-    step -= step % STEPS_PER_BAR;
-    nextTime = now + 0.08;
-    scheduler();
-}
-
-function stop() {
-    if (!playing) return;
-    playing = false;
-    clearTimeout(timerId);
-    timerId = null;
-    const { ctx, master } = bus;
-    const now = ctx.currentTime;
-    master.gain.cancelScheduledValues(now);
-    master.gain.setValueAtTime(master.gain.value, now);
-    master.gain.linearRampToValueAtTime(0, now + FADE_OUT);
-}
-
-function update() {
-    if (enabled && wanted && audio.context) start();
-    else stop();
-}
-
-/**
- * Diz à música se o jogo a quer agora. Só toca se, além disso, estiver ligada e
- * já houver AudioContext (ver `resumeAudio`).
- */
-export function setMusicWanted(value) {
-    wanted = !!value;
-    update();
-}
-
-export function musicEnabled() {
-    return enabled;
-}
-
-/** O botão da música: liga ou desliga, e fica lembrado neste aparelho. */
-export function toggleMusic() {
-    enabled = !enabled;
-    writeText(STORAGE_KEY, enabled ? '1' : '0');
-    update();
-    return enabled;
-}
+});
