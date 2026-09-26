@@ -128,32 +128,20 @@
         public string PlayUrl => $"/games/{Slug}/";
     }
 
+    // Mais recentes primeiro: um jogo novo entra no topo do array e os mais
+    // antigos vão descendo para o fim do catálogo.
     private static readonly ArcadeGame[] Catalog =
     [
-        new("tasca-do-ze",
-            "Tasca do Zé",
-            "o teu turno na cozinha",
-            "Gere os pedidos, prepara os pratos certos e serve os clientes antes que percam a paciência.",
-            "🍽️",
-            "theme-tasca",
-            "/covers/tasca-do-ze.webp"),
-
-        new("pong",
-            "Pong Retro",
-            "retro • arcade",
-            "Releitura neon do clássico Pong, com modo 1 jogador (vs. CPU) ou 2 jogadores no mesmo ecrã.",
-            "🏓",
-            "theme-pong",
-            "/covers/pong.webp"),
-
-        new("pixel-racing",
-            "Pixel Racing",
-            "boost • drift • torneios",
-            "Corridas arcade em pistas curtas, com boost, drift e torneios. Tu e três adversários CPU.",
-            "🏎️",
-            "theme-racing",
-            "/covers/pixel-racing.webp",
-            Badge: "Novo"),
+        new("terras-do-reino",
+            "Terras do Reino",
+            "campos • minas • mercados",
+            "Semeia, colhe, abre minas e oficinas e faz do teu o reino mais próspero, sem guerras.",
+            "🏰",
+            "theme-reino",
+            "/covers/terras-do-reino.webp",
+            // Em testes: fica "Em breve" no catálogo, mas joga-se em
+            // /games/terras-do-reino/ para quem lá for direto.
+            IsPlayable: false),
 
         new("maze-run",
             "Maze Run",
@@ -164,15 +152,29 @@
             "/covers/maze-run.webp",
             Badge: "Novo"),
 
-        new("terras-do-reino",
-            "Terras do Reino",
-            "campos • minas • mercados",
-            "Semeia, colhe, abre minas e oficinas e faz do teu o reino mais próspero, sem guerras.",
-            "🏰",
-            "theme-reino",
-            "/covers/terras-do-reino.webp",
-            // Em testes: fica "Em breve" no catálogo, mas joga-se em
-            // /games/terras-do-reino/ para quem lá for direto.
-            IsPlayable: false)
+        new("pixel-racing",
+            "Pixel Racing",
+            "boost • drift • torneios",
+            "Corridas arcade em pistas curtas, com boost, drift e torneios. Tu e três adversários CPU.",
+            "🏎️",
+            "theme-racing",
+            "/covers/pixel-racing.webp",
+            Badge: "Novo"),
+
+        new("pong",
+            "Pong Retro",
+            "retro • arcade",
+            "Releitura neon do clássico Pong, com modo 1 jogador (vs. CPU) ou 2 jogadores no mesmo ecrã.",
+            "🏓",
+            "theme-pong",
+            "/covers/pong.webp"),
+
+        new("tasca-do-ze",
+            "Tasca do Zé",
+            "o teu turno na cozinha",
+            "Gere os pedidos, prepara os pratos certos e serve os clientes antes que percam a paciência.",
+            "🍽️",
+            "theme-tasca",
+            "/covers/tasca-do-ze.webp")
     ];
 }
