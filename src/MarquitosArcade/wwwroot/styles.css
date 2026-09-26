@@ -1369,8 +1369,15 @@ main {
 }
 
 @media (max-width: 400px) {
+  /* Empilhados, cada link ganha folga em cima e em baixo: afasta-os uns dos
+     outros e dá ao dedo um alvo maior do que a altura da linha. */
+  .home-meta-links {
+    margin-top: 0.6rem;
+  }
+
   .home-meta-links a {
     display: block;
+    padding: 0.45rem 0;
   }
 
   .home-meta-links a + a::before {
