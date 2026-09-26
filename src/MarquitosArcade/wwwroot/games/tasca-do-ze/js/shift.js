@@ -2,7 +2,7 @@
 
 import { DEFAULT_PLAYER_NAME } from './config.js';
 import { resumeAudio, sfxClick, sfxGameOver } from './audio.js';
-import { startMusic, stopMusic } from './music.js';
+import { syncMusic } from './music.js';
 import { loseLife, renderQueue, spawnOrder, updatePatienceBar } from './orders.js';
 import { scores } from './scores.js';
 import { resetShift, state } from './state.js';
@@ -70,14 +70,14 @@ export function startShift() {
     spawnOrder();
     spawnOrder();
 
-    startMusic();
+    syncMusic();
     frameId = requestAnimationFrame(tick);
 }
 
 function stopShift() {
     state.running = false;
     state.paused = false;
-    stopMusic();
+    syncMusic();
     if (frameId) cancelAnimationFrame(frameId);
     frameId = 0;
 }
@@ -126,4 +126,5 @@ export function togglePause() {
     sfxClick();
     state.paused = !state.paused;
     els.pauseOverlay.classList.toggle('hidden', !state.paused);
+    syncMusic();
 }

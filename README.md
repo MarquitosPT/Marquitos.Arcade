@@ -162,6 +162,7 @@ import { createScoreClient } from '/lib/arcade/scores.js';
 | Módulo        | O que resolve                                                    |
 | ------------- | ---------------------------------------------------------------- |
 | `audio.js`    | Ciclo de vida do `AudioContext` e bips sintetizados              |
+| `music.js`    | Motor da música de fundo: partitura, reverb, agendador, botão Música (ver [Música de fundo](#música-de-fundo)) |
 | `scores.js`   | Cliente de `/api/scores/:gameId`, cache offline, nome do jogador e da conta |
 | `progress.js` | Cliente de `/api/progress/:gameId`: níveis desbloqueados e marcas, na conta e no aparelho |
 | `storage.js`  | `localStorage` que não rebenta em Safari privado                 |
@@ -198,6 +199,80 @@ Duas regras que não são óbvias e que já custaram um bug:
 
 O servidor guarda o nome que o jogo enviar, seja quem for o jogador: quem tem de
 garantir que uma pontuação de conta fica com o nome da conta é o cliente.
+
+### Música de fundo
+
+A música dos jogos é sintetizada nota a nota no browser, sem ficheiros de áudio.
+O motor é comum (`lib/arcade/music.js`); cada jogo traz, no seu `js/music.js`, só
+a partitura e os instrumentos. O motor dá:
+
+- **A escrita da partitura:** `bar('D5 3, E5 1, F5 2, - 2')` (nota e duração em
+  colcheias, `-` para pausa, `#` e `b` nas alterações) devolve as notas de um
+  compasso na grelha de semicolcheias; `midi('F#5')` e `freq(m)` para o resto.
+- **O bus:** mestre com os fades, compressor brando, reverb com uma resposta ao
+  impulso gerada e um buffer de ruído branco, mais `bus.route(node, time, { pan,
+  send })`, `bus.noise(time, stopAt)` e `bus.filter(type, f, q)`.
+- **O agendador** no padrão do Web Audio: um `setTimeout` acorda de 30 em 30 ms
+  e marca com precisão de amostra as notas dos 150 ms seguintes, pelo relógio do
+  `AudioContext`. O jogo só diz o que toca em cada semicolcheia.
+- **Ligar e desligar:** a escolha fica no aparelho, e a música só toca quando
+  está ligada, o jogo a quer (`setWanted`) e já há `AudioContext`.
+- **Andamento que muda:** `setBpm(bpm)` acelera ou abranda a música; a tocar,
+  muda no início do compasso seguinte (a meio soa a tropeção). Para o resto do
+  que o jogo quer ouvir — mais ou menos instrumentos — o `music.js` do jogo lê o
+  seu próprio estado em cada passo (ver o Maze Run).
+
+```js
+// js/music.js
+import { bar, createMusic } from '/lib/arcade/music.js';
+import { audio } from './audio.js';           // o mesmo AudioContext dos efeitos
+
+const BARS = ['C5 4, E5 4', 'G5 8'].map(bar);
+
+export const music = createMusic({
+    audio, storageKey: 'oMeuJogoMusic_v1', bpm: 90, bars: BARS.length,
+    // opcional: volume, fadeIn/fadeOut, compressor, reverb, e o
+    // setup(bus) para os nós fixos dos instrumentos (fica no bus)
+    onStep(barIndex, s, time, bus) {
+        for (const note of BARS[barIndex]) if (note.step === s) flauta(bus, time, note);
+    }
+});
+
+// js/main.js
+import { bindMusicButton, unlockAudioOnGesture } from '/lib/arcade/music.js';
+const syncMusic = () => music.setWanted(!game.paused && document.visibilityState === 'visible');
+bindMusicButton(els.musicBtn, music, { resume: resumeAudio, onToggle: syncMusic });
+unlockAudioOnGesture(resumeAudio, syncMusic);   // começa no primeiro toque ou tecla
+```
+
+O botão `#musicBtn` da barra de topo (a nota, com o traço `.musicSlash` quando
+está desligada) e as três regras de CSS que o acompanham são iguais no Terras do
+Reino, na Memória Animal, no Pixel Racing e no Maze Run; na Tasca do Zé o mesmo
+desenho vai num dos botões redondos do cabeçalho, ao lado do 🔊, que cala tudo,
+música incluída.
+
+O compasso não tem de ser de 4/4: o passo da grelha é sempre a semicolcheia, e
+`stepsPerBar: 12` dá compassos de três tempos (o vira da Tasca do Zé).
+
+Para **ouvir a música sem abrir o jogo** — depois de mexer na partitura ou na
+mistura, ou para a mostrar a alguém — `tools/games/render-music.mjs` grava cada
+uma em WAV (num `OfflineAudioContext`, com o mesmo código do jogo) e diz o pico
+e o RMS, para comparar volumes:
+
+```bash
+cd tools/games
+node render-music.mjs                          # todos → tools/games/music-out/
+node render-music.mjs --only pixel-racing --loops 2
+node render-music.mjs --seed 1 --out /tmp/depois
+```
+
+A gravação é de uma volta tal como soa no menu. `music.schedule(ctx, { at,
+fromBar, bars })` grava só alguns compassos, e dá para gravar em pedaços,
+mudando entre eles o que o jogo pede (foi assim que se ouviram os humores do
+Maze Run).
+
+Com `--seed` o `Math.random` fica determinístico e duas gravações do mesmo
+código saem iguais: é assim que se confirma que um refactor não mudou o som.
 
 ## Testar os jogos
 
@@ -574,6 +649,32 @@ bugs difíceis de ver:
 Como o mapa dos guardas se refaz a cada frame, uma porta que abre entra nele
 sozinha — não há nada em cache para invalidar.
 
+### Música do Maze Run
+
+Uma perseguição contra o relógio, ao **piano** com **bateria** (`js/music.js`,
+no [motor comum](#música-de-fundo)). Ré menor a 126 BPM, 20 compassos em loop
+(A, B e uma pausa de timbalões que acaba num rufo), com o Lá maior e o seu Dó
+sustenido a fechar cada frase, que é o acorde que deixa tudo em suspenso. A mão
+esquerda do piano é um **ostinato em semicolcheias** que nunca pára — o relógio
+a andar — e a direita uma melodia curta e sincopada. O bombo cai no 1, no "e"
+do 1 e no 3, como passos a correr.
+
+**A música segue o jogo.** A cada frame, o `main.js` diz-lhe o que se passa
+(`setMusicMood`), e ela muda na semicolcheia seguinte:
+
+| humor    | quando                                  | o que se ouve                                         |
+| -------- | --------------------------------------- | ----------------------------------------------------- |
+| `menu`   | menus, contagem, resultados             | ostinato, melodia, baixo longo e um prato por tempo   |
+| `run`    | a correr no labirinto                   | entra a bateria toda e o baixo em colcheias           |
+| `hurry`  | os últimos 10 s (`HURRY_FROM`)          | acelera para 142 BPM, pratos e baixo em semicolcheias, notas fantasma na tarola |
+| `frozen` | guardas congelados pelo cristal de gelo | bateria e baixo calam-se; um sino de vidro dobra a melodia duas oitavas acima |
+| `hold`   | apanhado por um guarda, fim do nível    | só o ostinato                                         |
+
+Cala-se (com um fade) na pausa e com a página escondida, e começa no primeiro
+toque ou tecla. O botão **Música** da barra de topo liga-a e desliga-a
+(`mazeRunMusic_v1`); os efeitos, incluindo o "tic" dos últimos segundos, ficam
+por cima dela.
+
 ## Terras do Reino
 
 > **Versão 1.0.0, lançada a 26 de setembro de 2026.** Esteve em testes desde 24
@@ -780,14 +881,14 @@ aceita (999 999).
 ### Música
 
 Uma melodia calma em **flauta de pã** com uma **batida de bateria** suave e um
-baixo dedilhado (`js/music.js`), toda sintetizada com osciladores e ruído — sem
-ficheiros de áudio, como os efeitos de `js/audio.js`, com quem partilha o
-`AudioContext`. A flauta é um triângulo suavizado mais um seno na fundamental
+baixo dedilhado (`js/music.js`, no [motor comum](#música-de-fundo)), toda
+sintetizada com osciladores e ruído — sem ficheiros de áudio, como os efeitos de
+`js/audio.js`, com quem partilha o `AudioContext`. A flauta é um triângulo suavizado mais um seno na fundamental
 (um tubo fechado só tem harmónicos ímpares), com um "chiff" de ruído no ataque,
 um fio de sopro durante a nota e vibrato só depois de a nota assentar; a
 bateria é bombo, tarola abafada, shaker em semicolcheias e uma virada de
 timbalões no fim de cada frase; um reverb com uma resposta ao impulso gerada dá
-a sala. O tema está em ré dórico a 78 BPM, 20 compassos (pouco mais de um
+a sala (o do motor). O tema está em ré dórico a 78 BPM, 20 compassos (pouco mais de um
 minuto) em loop: A, A', B, B' e uma secção calma de notas longas com a bateria
 a meio tempo. A partitura são as `SECTIONS`, um compasso por texto
 (`'D5 3, E5 1, F5 2, A5 2'`: nota e duração em colcheias, `-` para pausa).
@@ -882,6 +983,87 @@ faisão no Fluent Emoji, e o passarinho e o galo fazem as vezes deles.
 **Acrescentar um animal é pôr o SVG em `assets/animais/<id>.svg` e uma linha no
 `ANIMALS`** — a galeria do "Como jogar" monta-se a partir da mesma lista, e o
 smoke-test verifica que todas as ilustrações carregam.
+
+### Música
+
+Uma melodia calma ao **piano**, com a mão esquerda em arpejos e uma **bateria**
+de vassouras a acompanhar (`js/music.js`), toda sintetizada — sem ficheiros de
+áudio, como os efeitos de `js/audio.js`, com quem partilha o `AudioContext`. O
+motor é o [comum](#música-de-fundo) (agendador, reverb, compressor); aqui ficam
+o instrumento e a partitura. O piano é uma onda periódica com
+os harmónicos de uma corda, em duas "cordas" ligeiramente desafinadas, com um
+passa-baixo que fecha depois do martelo, um toque de ruído no ataque e um
+decaimento mais longo nas notas graves; a mão esquerda deixa as notas soar até
+ao fim do meio compasso, como com o pedal. A bateria é bombo, vassoura na
+tarola, pratos de choque fechados e dois timbalões a fechar as frases que voltam
+a casa. O tema está em fá maior a 76 BPM, 20 compassos (pouco mais de um minuto)
+em loop: A, A', B, B' e uma secção calma de acordes em bloco com a bateria a
+meio tempo. A partitura são as `SECTIONS`: a melodia um compasso por texto
+(`'C5 2, F5 2, A5 3, G5 1'`: nota e duração em colcheias, `-` para pausa, `b`
+e `#` nas alterações) e o acorde de cada compasso (`'Bb C'` muda a meio).
+
+A música toca nos menus, no tabuleiro e nos resultados, e cala-se (com um fade)
+na pausa e com a página escondida. Começa no primeiro toque ou tecla, onde quer
+que seja. O botão **Música** da barra de topo liga-a e desliga-a, e a escolha
+fica no aparelho (`memoriaAnimalMusic_v1`); os efeitos sonoros continuam a
+tocar. Num telemóvel estreito o botão fica só com a nota, para caberem os três.
+
+## Música da Tasca do Zé
+
+Um **vira**, como os dos ranchos folclóricos: três tempos a 168 BPM, com
+**acordeão**, **bandolim**, **cavaquinho**, baixo e a **bateria de rancho**
+(`js/music.js`, no [motor comum](#música-de-fundo)). A melodia parte do motivo
+da música antiga da tasca (ré, fá, sol, fá, lá, sol, fá, ré), agora a dançar: a
+primeira frase em ré menor, a segunda no fá maior ao lado, e o Lá maior a trazer
+tudo de volta. São 32 compassos (pouco mais de meio minuto) em loop: A e B com o
+acordeão, A com o bandolim a cantar, e B com os dois juntos.
+
+- **Acordeão:** três palhetas em dente de serra, uma afinada e duas ligeiramente
+  acima e abaixo (o "musette", o batimento que o faz tremer), mais uma uma
+  oitava abaixo, por um filtro que faz de caixa.
+- **Bandolim e cavaquinho:** cordas de Karplus-Strong, como a guitarra do Pixel
+  Racing. O bandolim faz trémulo nas notas longas (a mesma nota em
+  semicolcheias); o cavaquinho rasga o "pá-pá" do segundo e terceiro tempos,
+  por cima do baixo no primeiro — o "pum-pá-pá" do vira.
+- **Bateria de rancho:** bombo no primeiro tempo, caixa no segundo e no
+  terceiro, ferrinhos (um triângulo) em colcheias, e uma virada da caixa a
+  fechar cada volta.
+
+Toca nos menus e no turno; cala-se (com um fade) na pausa, com a página
+escondida e com o 🔊 do cabeçalho desligado. O botão da nota, ao lado, liga e
+desliga só a música (`tascaDoZeMusic_v1`).
+
+## Música do Pixel Racing
+
+Um tema alegre em **allegro** (sol maior, 132 BPM) com **guitarra**, **piano**,
+baixo e **bateria** (`js/music.js`), sintetizado no [motor comum](#música-de-fundo)
+como o do Terras do Reino e o da Memória Animal, e a partilhar o `AudioContext`
+com o motor do carro e os efeitos de `js/audio.js`.
+
+- **Guitarra:** as cordas são dedilhadas pelo algoritmo de Karplus-Strong (um
+  estalo de ruído a dar voltas numa linha de atraso de um período, perdendo os
+  agudos a cada volta), calculadas uma vez por nota e guardadas. A guitarra de
+  ritmo rasga os acordes corda a corda (a batida `STRUM`, `'B-BC-CBC'`: para
+  baixo, para cima, nada), com os desenhos de guitarra de cada acorde em
+  `CHORDS`; no B faz "chug" abafado. A guitarra solo usa cordas que soam mais
+  tempo, mais saturação e vibrato nas notas longas.
+- **Piano:** o da Memória Animal, mais brilhante. Leva o tema e, quando é a
+  guitarra a cantar, bate os acordes nos contratempos.
+- **Baixo** em colcheias com um salto à oitava; **bateria** com bombo, tarola,
+  pratos de choque (abertos no "e" do 4), prato de ataque a abrir as secções e
+  viradas no fim das frases.
+
+A forma são 28 compassos (pouco menos de um minuto) em loop: A com o piano, B
+com a guitarra solo, uma pausa de meio tempo que cresce num rufo de tarola, e o
+tema outra vez com piano e guitarra juntos e os pratos em semicolcheias. A
+partitura escreve-se como nos outros jogos (`'D5 1, G5 1, B5 1, D6 2, …'`) nas
+`SECTIONS`, onde cada secção diz também quem canta (`lead`), como toca a
+guitarra de ritmo (`rhythm`) e a bateria (`drums`).
+
+Toca nos menus, na contagem, na corrida e nos resultados; cala-se (com um fade)
+na pausa e com a página escondida; começa no primeiro toque ou tecla. O botão
+**Música** da barra de topo liga-a e desliga-a, e a escolha fica no aparelho
+(`pixelRacingMusic_v1`); o motor e os efeitos continuam a tocar.
 
 ## Cache do browser (e o site afixado ao ecrã principal)
 

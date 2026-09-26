@@ -9,7 +9,7 @@ export const els = byId(
     'levelsCarousel', 'levelViewport', 'levelGrid', 'levelDots', 'prevPageBtn', 'nextPageBtn',
     'levelsTitle', 'levelsSub', 'progressLine', 'progressBar', 'progressNote',
     'nameSlot', 'nameRow', 'accountRow', 'accountName', 'accountInitial', 'playerNameInput',
-    'arcadeLink', 'aboutBtn'
+    'arcadeLink', 'aboutBtn', 'musicBtn'
 );
 
 export const topBarEl = document.querySelector('.topBar');

@@ -12,7 +12,7 @@ export const els = byId(
     'mainMenuOverlay', 'setupOverlay', 'pauseOverlay', 'overOverlay', 'aboutOverlay',
     'aboutDetails', 'finalScore', 'overReason', 'overPlayerLine',
     'menuGrid', 'nameInput',
-    'muteBtn', 'pauseBtn'
+    'musicBtn', 'muteBtn', 'pauseBtn'
 );
 
 const OVERLAY_IDS = ['mainMenuOverlay', 'setupOverlay', 'pauseOverlay', 'overOverlay', 'aboutOverlay'];

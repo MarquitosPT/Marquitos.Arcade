@@ -6,14 +6,16 @@
 
 import { createLoop, createViewport } from '/lib/arcade/index.js';
 import { bindPlayerNameInput } from '/lib/arcade/scores.js';
+import { bindMusicButton, unlockAudioOnGesture } from '/lib/arcade/music.js';
 
 import { NAME_STORAGE_KEY, PLAYER_FALLBACK } from './config.js';
 import { resumeAudio } from './audio.js';
 import { attachControls, setInputHandlers } from './input.js';
 import {
-    abortLevel, respawn, startLevel, steer, stepCountdown, togglePause, updateLevel
+    HURRY_FROM, abortLevel, isFrozen, respawn, startLevel, steer, stepCountdown, togglePause, updateLevel
 } from './level.js';
 import { createMenu } from './menu.js';
+import { music, setMusicMood } from './music.js';
 import { loadProgress } from './progress.js';
 import { initRenderer, layoutMaze, render } from './render.js';
 import { setResultHandler, showResultScreen } from './results.js';
@@ -62,6 +64,7 @@ const loop = createLoop(
                 break;
         }
 
+        setMusicMood(musicMood());
         render();
     },
     // dt em segundos. O teto de 50ms evita que um separador em segundo plano
@@ -82,12 +85,14 @@ function play(levelId) {
     if (!startLevel(levelId)) return;
     overlays.hideAll();
     topBar.setInGame(true);
+    syncMusic();
 }
 
 function backToMenu() {
     abortLevel();
     topBar.setInGame(false);
     menu.showMenu();
+    syncMusic();
 }
 
 els.playBtn.addEventListener('click', () => play(game.menuLevelId));
@@ -114,6 +119,7 @@ function requestPause() {
     togglePause();
     if (game.paused) overlays.show('pause');
     else overlays.hideAll();
+    syncMusic();
 }
 
 els.pauseBtn.addEventListener('click', requestPause);
@@ -123,6 +129,39 @@ els.endBtn.addEventListener('click', () => {
     if (game.phase === 'menu' || game.phase === 'result') return;
     backToMenu();
 });
+
+// ---------- Música ----------
+
+/**
+ * O que a música deve estar a fazer: calma nos menus e na contagem, a correr no
+ * labirinto, a apertar nos últimos segundos, parada com os guardas congelados, e
+ * só o ostinato quando se é apanhado ou o nível acaba.
+ */
+function musicMood() {
+    switch (game.phase) {
+        case 'playing':
+            if (isFrozen()) return 'frozen';
+            return game.timeLeft <= HURRY_FROM ? 'hurry' : 'run';
+        case 'caught':
+        case 'ending':
+            return 'hold';
+        default:
+            return 'menu';
+    }
+}
+
+/** Toca em todo o lado menos na pausa e com a página escondida. */
+function syncMusic() {
+    music.setWanted(!game.paused && document.visibilityState === 'visible');
+}
+
+bindMusicButton(els.musicBtn, music, { resume: resumeAudio, onToggle: syncMusic });
+
+// O browser só deixa soar depois de um gesto. O primeiro toque ou tecla, onde
+// quer que seja (até a escrever o nome), destranca o áudio e a música começa
+// logo no menu, sem esperar pelo "Jogar".
+unlockAudioOnGesture(resumeAudio, syncMusic);
+document.addEventListener('visibilitychange', syncMusic);
 
 // ---------- Arranque ----------
 

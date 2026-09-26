@@ -20,8 +20,8 @@ import { game, resetGame, session } from './state.js';
 import { canGo, createWalker, isOppositeDir, reverseWalker, stepWalker, walkerDistance, walkerPos } from './walker.js';
 import { layoutMaze } from './render.js';
 
-/** Últimos segundos em que o relógio começa a apitar. */
-const HURRY_FROM = 10;
+/** Últimos segundos em que o relógio começa a apitar (e a música a apertar). */
+export const HURRY_FROM = 10;
 let lastHurrySecond = -1;
 
 /** Monta o nível e põe a contagem decrescente a andar. */

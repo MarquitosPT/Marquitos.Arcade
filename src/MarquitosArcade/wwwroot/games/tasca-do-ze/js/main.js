@@ -5,10 +5,11 @@
 
 import { ALL_DISHES } from './data.js';
 import { audio, resumeAudio, sfxClick, sfxTap } from './audio.js';
-import { applyMute } from './music.js';
+import { music, syncMusic } from './music.js';
 import { SAVORY, SWEET, buildBench, setBenchCategory } from './bench.js';
 import { ringBell, setShiftOverHandler } from './orders.js';
 import { renderAboutDetails } from '/lib/arcade/about.js';
+import { bindMusicButton, unlockAudioOnGesture } from '/lib/arcade/music.js';
 import { bindPlayerNameInput } from '/lib/arcade/scores.js';
 import { ABOUT, DEFAULT_PLAYER_NAME, NAME_STORAGE_KEY } from './config.js';
 import { state } from './state.js';
@@ -47,11 +48,11 @@ function backToMainMenu() {
 function toggleMute() {
     const muted = audio.toggleMuted();
     els.muteBtn.textContent = muted ? '🔇' : '🔊';
-    applyMute();
     if (!muted) {
         resumeAudio();
         sfxClick();
     }
+    syncMusic();
 }
 
 const startBtn = document.getElementById('startBtn');
@@ -104,6 +105,16 @@ els.tabSweet.addEventListener('click', () => {
 els.bellBtn.addEventListener('click', ringBell);
 els.pauseBtn.addEventListener('click', togglePause);
 els.muteBtn.addEventListener('click', toggleMute);
+
+// ---------- Música ----------
+
+bindMusicButton(els.musicBtn, music, { resume: resumeAudio, onToggle: syncMusic });
+
+// O browser só deixa soar depois de um gesto. O primeiro toque ou tecla, onde
+// quer que seja (até a escrever o nome), destranca o áudio e a música começa
+// logo no menu, sem esperar pelo turno.
+unlockAudioOnGesture(resumeAudio, syncMusic);
+document.addEventListener('visibilitychange', syncMusic);
 
 // ---------- Arranque ----------
 

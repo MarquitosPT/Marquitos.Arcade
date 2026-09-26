@@ -6,6 +6,7 @@
 
 import { createLoop } from '/lib/arcade/index.js';
 import { bindPlayerNameInput } from '/lib/arcade/scores.js';
+import { bindMusicButton, unlockAudioOnGesture } from '/lib/arcade/music.js';
 
 import { resumeAudio } from './audio.js';
 import { cardFromEvent, layoutBoard } from './board.js';
@@ -13,6 +14,7 @@ import { NAME_STORAGE_KEY, PLAYER_FALLBACK } from './config.js';
 import { prepareHowto } from './howto.js';
 import { abortLevel, flipCard, isInLevel, startLevel, stepEnding, togglePause, updateLevel } from './level.js';
 import { createMenu } from './menu.js';
+import { music } from './music.js';
 import { loadProgress } from './progress.js';
 import { setResultHandler, showResultScreen } from './results.js';
 import { game, session } from './state.js';
@@ -53,12 +55,14 @@ function play(levelId) {
     game.menuLevelId = levelId;
     overlays.hideAll();
     topBar.setInGame(true);
+    syncMusic();
 }
 
 function backToMenu() {
     abortLevel();
     topBar.setInGame(false);
     menu.showMenu();
+    syncMusic();
 }
 
 els.playBtn.addEventListener('click', () => play(game.menuLevelId));
@@ -94,6 +98,7 @@ function requestPause() {
         overlays.hideAll();
         loop.resetDelta();
     }
+    syncMusic();
 }
 
 els.pauseBtn.addEventListener('click', requestPause);
@@ -112,7 +117,25 @@ window.addEventListener('keydown', (event) => {
 // bloqueado) o nível fica em pausa até se carregar em "Continuar".
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden' && isInLevel() && !game.paused) requestPause();
+    syncMusic();
 });
+
+// ---------- Música ----------
+
+/**
+ * A música toca nos menus, no tabuleiro e nos resultados, e cala-se na pausa e
+ * com a página escondida. Antes do primeiro toque não há AudioContext e ela espera.
+ */
+function syncMusic() {
+    music.setWanted(!game.paused && document.visibilityState === 'visible');
+}
+
+bindMusicButton(els.musicBtn, music, { resume: resumeAudio, onToggle: syncMusic });
+
+// O browser só deixa soar depois de um gesto. O primeiro toque ou tecla, onde
+// quer que seja (até a escrever o nome), destranca o áudio e a música começa
+// logo no menu, sem esperar pelo "Jogar".
+unlockAudioOnGesture(resumeAudio, syncMusic);
 
 // ---------- Arranque ----------
 

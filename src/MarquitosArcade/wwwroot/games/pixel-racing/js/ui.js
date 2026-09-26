@@ -8,7 +8,7 @@ export const els = byId(
     'startBtn', 'backBtn', 'resumeBtn', 'quitBtn', 'pauseBtn', 'endBtn',
     'modeRow', 'cupField', 'cupRow', 'trackRow', 'colorRow', 'diffRow', 'setupTitle', 'setupSub',
     'nameSlot', 'nameRow', 'accountRow', 'accountName', 'accountInitial', 'playerNameInput',
-    'arcadeLink', 'aboutBtn'
+    'arcadeLink', 'aboutBtn', 'musicBtn'
 );
 
 export const topBarEl = document.querySelector('.topBar');

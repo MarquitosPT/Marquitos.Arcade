@@ -6,9 +6,10 @@
 
 import { createButtonGroup, createLoop, createViewport } from '/lib/arcade/index.js';
 import { bindPlayerNameInput } from '/lib/arcade/scores.js';
+import { bindMusicButton, unlockAudioOnGesture } from '/lib/arcade/music.js';
 
 import { MODE_TOURNAMENT, NAME_STORAGE_KEY, TOURNAMENT_CUPS } from './config.js';
-import { sfx } from './audio.js';
+import { resumeAudio, sfx } from './audio.js';
 import { attachControls, setPauseHandler } from './input.js';
 import { resetParticles, updateConfetti, updateParticles } from './particles.js';
 import { menuZoom, returnToMenuAbort, startRace, togglePause, updateCamera, updateRace } from './race.js';
@@ -16,6 +17,7 @@ import { drawCountdown, drawFinishOverlay, initRenderer, render } from './render
 import { setReturnToMenuHandler, showResultScreen } from './results.js';
 import { setupParticipants } from './cars.js';
 import { createMenu } from './menu.js';
+import { music } from './music.js';
 import { race, session } from './state.js';
 import { els, topBar, topBarEl } from './ui.js';
 
@@ -136,15 +138,44 @@ setReturnToMenuHandler((action) => {
 
 // ---------- Barra de topo e pausa ----------
 
-setPauseHandler(togglePause);
+function pauseOrResume() {
+    togglePause();
+    syncMusic();
+}
+
+function quitRace() {
+    returnToMenuAbort();
+    syncMusic();
+}
+
+setPauseHandler(pauseOrResume);
 attachControls(els.game);
 
-els.pauseBtn.addEventListener('click', togglePause);
-els.resumeBtn.addEventListener('click', togglePause);
-els.quitBtn.addEventListener('click', returnToMenuAbort);
+els.pauseBtn.addEventListener('click', pauseOrResume);
+els.resumeBtn.addEventListener('click', pauseOrResume);
+els.quitBtn.addEventListener('click', quitRace);
 els.endBtn.addEventListener('click', () => {
-    if (race.phase === 'racing' || race.paused) returnToMenuAbort();
+    if (race.phase === 'racing' || race.paused) quitRace();
 });
+
+// ---------- Música ----------
+
+/**
+ * A música toca nos menus, na contagem, na corrida e nos resultados, e cala-se
+ * na pausa e com a página escondida. Antes do primeiro toque não há
+ * AudioContext e ela espera.
+ */
+function syncMusic() {
+    music.setWanted(!race.paused && document.visibilityState === 'visible');
+}
+
+bindMusicButton(els.musicBtn, music, { resume: resumeAudio, onToggle: syncMusic });
+
+// O browser só deixa soar depois de um gesto. O primeiro toque ou tecla, onde
+// quer que seja (até a escrever o nome), destranca o áudio e a música começa
+// logo no menu, sem esperar pelo "Arrancar".
+unlockAudioOnGesture(resumeAudio, syncMusic);
+document.addEventListener('visibilitychange', syncMusic);
 
 loop.start();
 
