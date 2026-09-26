@@ -83,8 +83,7 @@ public static class ArcadeCatalog
             "theme-racing",
             "/covers/pixel-racing.webp",
             "1.0.0",
-            new(2026, 9, 12),
-            Badge: "Novo"),
+            new(2026, 9, 12)),
 
         new("pong",
             "Pong Retro",

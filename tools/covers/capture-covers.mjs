@@ -120,11 +120,13 @@ const GAMES = [
             await page.click('#playBtn');
             await page.addStyleTag({ content: HIDE_ARCADE_CHROME });
             await sleep(5200); // contagem decrescente
-            // Umas curvas para os guardas saírem do sítio e a foto não sair
-            // com toda a gente parada no arranque.
-            for (const key of ['ArrowRight', 'ArrowRight', 'ArrowDown', 'ArrowRight']) {
+            // Uns passos para os guardas saírem do sítio e a foto não sair com
+            // toda a gente parada no arranque. Curto de propósito: um percurso
+            // mais longo cruzava-se com o guarda laranja e a capa saía com o
+            // "APANHADO!" por cima do labirinto.
+            for (const key of ['ArrowRight', 'ArrowDown']) {
                 await page.keyboard.press(key);
-                await sleep(900);
+                await sleep(700);
             }
         },
         // O labirinto é quadrado e a capa é 16:9, por isso sobra fundo dos dois
@@ -149,7 +151,8 @@ const GAMES = [
                 const { game } = await import(G + 'state.js');
                 const { checkPlacement, place } = await import(G + 'buildings.js');
                 const { plantField, stepEconomy } = await import(G + 'economy.js');
-                const { castleDistance } = await import(G + 'world.js');
+                const { castleDistance, CASTLE_CENTER } = await import(G + 'world.js');
+                const { MAP_SIZE } = await import(G + 'config.js');
                 const { camera, lookAt } = await import(G + 'iso.js');
                 Object.assign(game.res, { coins: 9000, wood: 900, stone: 900, planks: 300 });
                 // O nível 3 pede um reino grande (moradores, contentamento): na capa salta-se direto para ele.
@@ -158,7 +161,9 @@ const GAMES = [
                     'woodcutter', 'quarry', 'field', 'house', 'carpentry', 'field', 'barn', 'field', 'house', 'dairy', 'field'];
                 for (const [n, kind] of plan.entries()) {
                     let best = null;
-                    for (let y = 0; y < 44; y++) for (let x = 0; x < 44; x++) {
+                    // O mapa cresceu (MAP_SIZE) e o castelo está sempre ao centro: nada
+                    // de tamanhos fixos aqui, ou a capa enquadrava um canto vazio.
+                    for (let y = 0; y < MAP_SIZE; y++) for (let x = 0; x < MAP_SIZE; x++) {
                         if (!checkPlacement(kind, x, y).ok) continue;
                         const d = castleDistance(x, y);
                         if (!best || d < best.d) best = { x, y, d };
@@ -171,7 +176,7 @@ const GAMES = [
                 }
                 for (let i = 0; i < 12; i++) stepEconomy(1);
                 camera.zoom = 1.15;
-                lookAt(22.6, 22.6);
+                lookAt(CASTLE_CENTER.x + 0.6, CASTLE_CENTER.y + 0.6);
             });
             await sleep(2500);
         },
