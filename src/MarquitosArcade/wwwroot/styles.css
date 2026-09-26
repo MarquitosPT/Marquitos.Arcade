@@ -2371,9 +2371,9 @@ tbody tr:last-child td {
   font-size: 0.82rem;
 }
 
-/* Ficha da arcada em /acerca: termo à esquerda, valor à direita, uma régua
-   entre linhas — a mesma leitura da janela "Acerca" dos jogos. */
-.about-facts {
+/* Cartões de /acerca: a ficha da arcada e a lista de jogos. Uma régua entre
+   linhas — a mesma leitura da janela "Acerca" dos jogos. */
+.about-card {
   margin: 0 0 1rem;
   padding: 0.2rem 1.15rem;
   border: 1px solid var(--glass-border);
@@ -2381,16 +2381,20 @@ tbody tr:last-child td {
   background: var(--glass-bg-soft);
 }
 
+.about-card > * {
+  border-top: 1px solid var(--divider);
+}
+
+.about-card > :first-child {
+  border-top: 0;
+}
+
+/* Ficha: termo à esquerda, valor à direita. */
 .about-facts > div {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
   padding: 0.65rem 0;
-  border-top: 1px solid var(--divider);
-}
-
-.about-facts > div:first-child {
-  border-top: 0;
 }
 
 .about-facts dt {
@@ -2404,13 +2408,99 @@ tbody tr:last-child td {
   text-align: right;
 }
 
+/* Jogos: ícone, nome e tagline à esquerda; versão e data à direita. Os que
+   ainda estão em testes vêm no fim, sem link e com o selo "A caminho". */
+.longform .about-games {
+  list-style: none;
+  padding: 0.2rem 1.15rem;
+}
+
+.longform .about-games li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.8rem;
+  margin: 0;
+  padding: 0.7rem 0;
+  line-height: 1.4;
+}
+
 .about-game-emoji {
-  margin-right: 0.35rem;
+  flex: 0 0 auto;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.about-game-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.about-game-title {
+  color: var(--text-strong);
+  font-weight: 700;
 }
 
 .about-game-tagline {
-  display: block;
   font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.about-game-meta {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: right;
+}
+
+.about-game-version {
+  color: var(--text-strong);
+  font-weight: 700;
+}
+
+.about-game-badge {
+  margin-top: 0.15rem;
+  padding: 0.05rem 0.5rem;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.about-games .is-upcoming .about-game-emoji,
+.about-games .is-upcoming .about-game-title {
+  opacity: 0.7;
+}
+
+/* Num telemóvel a versão e a data apertavam o nome do jogo: descem para uma
+   linha própria, alinhadas com o nome. */
+@media (max-width: 520px) {
+  .longform .about-games li {
+    row-gap: 0.25rem;
+  }
+
+  .about-game-emoji {
+    grid-row: span 2;
+  }
+
+  .about-game-meta {
+    grid-column: 2 / -1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.1rem 0.5rem;
+    text-align: left;
+  }
+
+  .about-game-badge {
+    margin-top: 0;
+  }
 }
 
 /* ---------- Login / registo: cartão centrado ---------- */
