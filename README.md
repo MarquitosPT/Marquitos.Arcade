@@ -252,7 +252,7 @@ vezes.
    Se tiver níveis a desbloquear, usar também `createProgressClient('<slug>')`, que fala com `GET/PUT /api/progress/<slug>` — ver [Progresso e níveis](#progresso-e-níveis).
 3. Acrescentar o jogo ao array `GAMES` em `tools/games/smoke-test.mjs`, com um guião que o jogue durante alguns segundos.
 4. Gerar a capa do jogo: acrescentar uma receita ao array `GAMES` em `tools/covers/capture-covers.mjs` e correr o script (ver [Capas dos jogos](#capas-dos-jogos)).
-5. Adicionar uma entrada ao array `Catalog` em `Components/Pages/Home.razor` (slug, título, tagline, descrição, emoji, tema e capa) e, se o tema for novo, uma classe `.theme-<jogo>` em `styles.css` com a cor (`--game-accent`) e o fundo da capa (`--cover-bg`). Só isso: a tipografia dos cartões é do catálogo e é igual para todos (ver [Cartões do catálogo](#cartões-do-catálogo)).
+5. Adicionar uma entrada **no topo** do array `Catalog` em `Components/Pages/Home.razor` — o catálogo mostra as novidades primeiro e os jogos mais antigos vão descendo para o fim — (slug, título, tagline, descrição, emoji, tema e capa) e, se o tema for novo, uma classe `.theme-<jogo>` em `styles.css` com a cor (`--game-accent`) e o fundo da capa (`--cover-bg`). Só isso: a tipografia dos cartões é do catálogo e é igual para todos (ver [Cartões do catálogo](#cartões-do-catálogo)).
 6. Adicionar o jogo ao array `Games` em `Components/Pages/Pontuacoes.razor` para aparecer na página de pontuações.
 
 ## Cartões do catálogo
