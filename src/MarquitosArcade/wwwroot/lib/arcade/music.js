@@ -190,8 +190,11 @@ export function createMusic({
     compressor = {},
     reverb = {}
 }) {
-    /** Duração de um passo da grelha, em segundos. */
-    const stepSeconds = (60 / bpm) * (4 / stepsPerBar);
+    const secondsPerStep = (beatsPerMinute) => (60 / beatsPerMinute) * (4 / stepsPerBar);
+    /** Duração de um passo da grelha, em segundos — muda com `setBpm`. */
+    let stepSeconds = secondsPerStep(bpm);
+    /** Um andamento pedido a meio de um compasso, à espera do compasso seguinte. */
+    let pendingStepSeconds = null;
     const loopSteps = bars * stepsPerBar;
     const busOptions = {
         compressor: { threshold: -18, knee: 12, ratio: 3, attack: 0.01, release: 0.25, ...compressor },
@@ -226,6 +229,11 @@ export function createMusic({
     function scheduler() {
         const ctx = audio.context;
         while (nextTime < ctx.currentTime + scheduleAhead) {
+            // O andamento só muda no início de um compasso: a meio, soa a tropeção.
+            if (pendingStepSeconds !== null && step % stepsPerBar === 0) {
+                stepSeconds = pendingStepSeconds;
+                pendingStepSeconds = null;
+            }
             scheduleStep(step, nextTime, bus);
             nextTime += stepSeconds;
             step = (step + 1) % loopSteps;
@@ -266,10 +274,25 @@ export function createMusic({
     }
 
     return {
-        /** Duração de um passo da grelha, em segundos. */
-        stepSeconds,
-        /** Duração de uma volta inteira da partitura, em segundos. */
-        loopSeconds: loopSteps * stepSeconds,
+        /** Duração de um passo da grelha, em segundos, ao andamento atual. */
+        get stepSeconds() {
+            return stepSeconds;
+        },
+        /** Duração de uma volta inteira da partitura, em segundos, ao andamento de partida. */
+        loopSeconds: loopSteps * secondsPerStep(bpm),
+
+        /**
+         * Muda o andamento — para a música apertar quando o jogo aperta. A tocar,
+         * muda no início do compasso seguinte; parada, muda já.
+         */
+        setBpm(value) {
+            const seconds = secondsPerStep(value);
+            if (playing) pendingStepSeconds = seconds;
+            else {
+                stepSeconds = seconds;
+                pendingStepSeconds = null;
+            }
+        },
 
         /**
          * Diz à música se o jogo a quer agora. Só toca se, além disso, estiver
@@ -293,15 +316,19 @@ export function createMusic({
         },
 
         /**
-         * Marca `loops` voltas inteiras da partitura noutro contexto, a partir de
-         * `at` segundos — para gravar a música num OfflineAudioContext. Devolve a
-         * hora a que acaba. Não mexe no que está a tocar no jogo.
+         * Marca a partitura noutro contexto, a partir de `at` segundos, ao
+         * andamento atual — para gravar a música num OfflineAudioContext. Por
+         * omissão, `loops` voltas inteiras; com `bars`, só esses compassos a
+         * partir de `fromBar` (para gravar em pedaços, a mudar o que o jogo
+         * pede entre eles). Devolve a hora a que acaba. Não mexe no que está a
+         * tocar no jogo.
          */
-        schedule(ctx, { loops = 1, at = 0.1 } = {}) {
+        schedule(ctx, { loops = 1, at = 0.1, fromBar = 0, bars: count = null } = {}) {
             const offline = makeBus(ctx);
             offline.master.gain.value = volume;
-            const total = loopSteps * loops;
-            for (let n = 0; n < total; n++) scheduleStep(n, at + n * stepSeconds, offline);
+            const first = fromBar * stepsPerBar;
+            const total = count === null ? loopSteps * loops : count * stepsPerBar;
+            for (let n = 0; n < total; n++) scheduleStep(first + n, at + n * stepSeconds, offline);
             return at + total * stepSeconds;
         }
     };

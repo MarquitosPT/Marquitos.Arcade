@@ -1,5 +1,5 @@
 /*
- * Barra de topo: voltar à arcada, acerca, pausar e sair.
+ * Barra de topo: voltar à arcada, acerca, música, pausar e sair.
  *
  * O HUD do jogo (tempo, cristais, vidas) não está aqui: é desenhado no canvas,
  * onde não há `backdrop-filter` e o vidro tem de ser imitado à mão (`glassPanel`
@@ -50,3 +50,14 @@
 
 .topIcon { font-size: 13px; }
 .topIcon + .topLabel { margin-left: 7px; }
+
+/* Música desligada: a nota leva um traço por cima e o botão fica mais apagado. */
+#musicBtn .musicSlash { display: none; }
+#musicBtn[aria-pressed="false"] .musicSlash { display: inline; }
+#musicBtn[aria-pressed="false"] { opacity: 0.7; }
+
+/* Telemóvel estreito: três botões com rótulo não cabem, e a nota diz-se sozinha. */
+@media (max-width: 400px) {
+    #musicBtn .topLabel { display: none; }
+    #musicBtn .topIcon + .topLabel { margin-left: 0; }
+}

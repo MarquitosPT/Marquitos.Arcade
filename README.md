@@ -217,6 +217,10 @@ a partitura e os instrumentos. O motor dá:
   `AudioContext`. O jogo só diz o que toca em cada semicolcheia.
 - **Ligar e desligar:** a escolha fica no aparelho, e a música só toca quando
   está ligada, o jogo a quer (`setWanted`) e já há `AudioContext`.
+- **Andamento que muda:** `setBpm(bpm)` acelera ou abranda a música; a tocar,
+  muda no início do compasso seguinte (a meio soa a tropeção). Para o resto do
+  que o jogo quer ouvir — mais ou menos instrumentos — o `music.js` do jogo lê o
+  seu próprio estado em cada passo (ver o Maze Run).
 
 ```js
 // js/music.js
@@ -243,7 +247,7 @@ unlockAudioOnGesture(resumeAudio, syncMusic);   // começa no primeiro toque ou 
 
 O botão `#musicBtn` da barra de topo (a nota, com o traço `.musicSlash` quando
 está desligada) e as três regras de CSS que o acompanham são iguais no Terras do
-Reino, na Memória Animal e no Pixel Racing. A Tasca do Zé tem ainda a música de
+Reino, na Memória Animal, no Pixel Racing e no Maze Run. A Tasca do Zé tem ainda a música de
 antes do motor comum, que segue o mudo do jogo em vez de ter botão próprio.
 
 Para **ouvir a música sem abrir o jogo** — depois de mexer na partitura ou na
@@ -257,6 +261,11 @@ node render-music.mjs                          # todos → tools/games/music-out
 node render-music.mjs --only pixel-racing --loops 2
 node render-music.mjs --seed 1 --out /tmp/depois
 ```
+
+A gravação é de uma volta tal como soa no menu. `music.schedule(ctx, { at,
+fromBar, bars })` grava só alguns compassos, e dá para gravar em pedaços,
+mudando entre eles o que o jogo pede (foi assim que se ouviram os humores do
+Maze Run).
 
 Com `--seed` o `Math.random` fica determinístico e duas gravações do mesmo
 código saem iguais: é assim que se confirma que um refactor não mudou o som.
@@ -635,6 +644,32 @@ bugs difíceis de ver:
 
 Como o mapa dos guardas se refaz a cada frame, uma porta que abre entra nele
 sozinha — não há nada em cache para invalidar.
+
+### Música do Maze Run
+
+Uma perseguição contra o relógio, ao **piano** com **bateria** (`js/music.js`,
+no [motor comum](#música-de-fundo)). Ré menor a 126 BPM, 20 compassos em loop
+(A, B e uma pausa de timbalões que acaba num rufo), com o Lá maior e o seu Dó
+sustenido a fechar cada frase, que é o acorde que deixa tudo em suspenso. A mão
+esquerda do piano é um **ostinato em semicolcheias** que nunca pára — o relógio
+a andar — e a direita uma melodia curta e sincopada. O bombo cai no 1, no "e"
+do 1 e no 3, como passos a correr.
+
+**A música segue o jogo.** A cada frame, o `main.js` diz-lhe o que se passa
+(`setMusicMood`), e ela muda na semicolcheia seguinte:
+
+| humor    | quando                                  | o que se ouve                                         |
+| -------- | --------------------------------------- | ----------------------------------------------------- |
+| `menu`   | menus, contagem, resultados             | ostinato, melodia, baixo longo e um prato por tempo   |
+| `run`    | a correr no labirinto                   | entra a bateria toda e o baixo em colcheias           |
+| `hurry`  | os últimos 10 s (`HURRY_FROM`)          | acelera para 142 BPM, pratos e baixo em semicolcheias, notas fantasma na tarola |
+| `frozen` | guardas congelados pelo cristal de gelo | bateria e baixo calam-se; um sino de vidro dobra a melodia duas oitavas acima |
+| `hold`   | apanhado por um guarda, fim do nível    | só o ostinato                                         |
+
+Cala-se (com um fade) na pausa e com a página escondida, e começa no primeiro
+toque ou tecla. O botão **Música** da barra de topo liga-a e desliga-a
+(`mazeRunMusic_v1`); os efeitos, incluindo o "tic" dos últimos segundos, ficam
+por cima dela.
 
 ## Terras do Reino
 
