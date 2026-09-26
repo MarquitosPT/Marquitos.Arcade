@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Memória Animal | Marquitos Arcade</title>
+    <link rel="icon" type="image/png" sizes="64x64" href="/favicon3_64x64.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon3_32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon3_16x16.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon3.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#0b1a2c" />
+    <meta name="msapplication-TileColor" content="#123a5e" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Marquitos Arcade" />
+
+    <!-- Ecrã de arranque partilhado pela arcada (lib/arcade/splash.*). Vem antes
+         das folhas do jogo porque é o primeiro que se vê, e o logótipo é
+         pré-carregado para não aparecer a meio da animação. -->
+    <link rel="preload" as="image" href="/logo3.png" />
+    <link rel="stylesheet" href="/lib/arcade/splash.css" />
+    <!-- Mede o viewport curto das apps afixadas em iOS (ver o ficheiro). -->
+    <script src="/lib/arcade/standalone-fit.js"></script>
+    <script src="/lib/arcade/no-context-menu.js"></script>
+    <script type="module" src="/lib/arcade/splash-boot.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" />
+
+    <link rel="stylesheet" href="/lib/arcade/about.css" />
+    <link rel="stylesheet" href="css/theme.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/hud.css" />
+    <link rel="stylesheet" href="css/board.css" />
+    <link rel="stylesheet" href="css/screens.css" />
+    <link rel="stylesheet" href="css/controls.css" />
+    <link rel="stylesheet" href="css/carousel.css" />
+    <link rel="stylesheet" href="css/howto.css" />
+    <link rel="stylesheet" href="css/results.css" />
+</head>
+
+<body>
+    <!-- A patinha das costas das cartas, para as miniaturas dos tabuleiros no
+         carrossel dos níveis (js/menu.js). É a mesma do css/board.css. -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+        <symbol id="paw" viewBox="0 0 64 64">
+            <ellipse cx="32" cy="42" rx="13" ry="11"/>
+            <ellipse cx="16" cy="28" rx="6" ry="7.5"/>
+            <ellipse cx="48" cy="28" rx="6" ry="7.5"/>
+            <ellipse cx="25" cy="16" rx="5.5" ry="7"/>
+            <ellipse cx="39" cy="16" rx="5.5" ry="7"/>
+        </symbol>
+    </svg>
+
+    <!-- Ecrã de arranque: fica no ar pelo menos 2s (ver lib/arcade/splash.js). -->
+    <div id="arcadeSplash" class="arcade-splash">
+        <div class="arcade-splash-rays" aria-hidden="true"></div>
+        <div class="arcade-splash-pixels" aria-hidden="true"></div>
+        <div class="arcade-splash-stage">
+            <img class="arcade-splash-logo" src="/logo3.png" width="512" height="366"
+                 alt="MarquitosPT Game Arcade" fetchpriority="high" decoding="async" />
+            <p class="arcade-splash-caption">Memória Animal</p>
+            <p class="arcade-splash-status" role="status">A carregar&hellip;</p>
+            <div class="arcade-splash-track" role="progressbar" aria-label="Progresso do carregamento"
+                 aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <div class="arcade-splash-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="wrap">
+        <div class="topBar">
+            <a class="topBtn" id="arcadeLink" href="/">
+                <div style="display:flex">
+                    <svg class="topIcon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
+                        <path d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z"></path>
+                    </svg>
+                    <span class="topLabel">Arcade</span>
+                </div>
+            </a>
+            <button class="topBtn" id="aboutBtn" type="button" aria-haspopup="dialog">
+                <div style="display:flex">
+                    <svg class="topIcon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
+                        <path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path>
+                    </svg>
+                    <span class="topLabel">Acerca</span>
+                </div>
+            </button>
+            <button class="topBtn" id="pauseBtn" type="button">
+                <div style="display:flex">
+                    <svg class="topIcon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
+                        <path d="M5 2h1a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Zm5 0h1a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Z"></path>
+                    </svg>
+                    <span class="topLabel">Pausa</span>
+                </div>
+            </button>
+            <button class="topBtn topBtn--quit" id="endBtn" type="button">
+                <div style="display:flex">
+                    <svg class="topIcon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
+                        <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path>
+                    </svg>
+                    <span class="topLabel">Sair</span>
+                </div>
+            </button>
+        </div>
+
+        <!-- O tabuleiro: o HUD por cima e as cartas na área que sobra. O tamanho
+             e o número de colunas das cartas decide-o o js/layout.js. -->
+        <main id="playArea">
+            <div class="hud" id="hud" aria-live="off">
+                <span class="hudChip hudChip--level" id="hudLevel">Nível 1</span>
+                <span class="hudChip" title="Tempo"><i aria-hidden="true">⏱</i><b id="hudTime">0:00</b></span>
+                <span class="hudChip" title="Pares encontrados"><i aria-hidden="true">🐾</i><b id="hudPairs">0/2</b></span>
+                <span class="hudChip" title="Erros"><i aria-hidden="true">✖</i><b id="hudErrors">0</b></span>
+                <!-- "Olha bem…" e o nome de cada par: por cima do HUD e nunca das cartas. -->
+                <p class="banner" id="banner" aria-live="polite"></p>
+            </div>
+            <div class="stage" id="stage">
+                <div class="board" id="board"></div>
+            </div>
+        </main>
+
+        <!-- Ecrã 1: quem és e continuar de onde ficaste. -->
+        <div id="startScreen" class="screen">
+            <div class="panel">
+                <div class="brand">
+                    <span class="brandBadge" aria-hidden="true"><img src="assets/animais/vaca.svg" alt="" width="40" height="40"></span>
+                    <h1 class="title">Memória Animal</h1>
+                    <p class="sub">Pares · Memória · Bicharada</p>
+                </div>
+
+                <!-- O nome só se pede a visitantes: com sessão iniciada vem da conta. -->
+                <div class="nameSlot is-pending" id="nameSlot">
+                    <label class="field" id="nameRow" for="playerNameInput">
+                        <span class="fieldLabel">O teu nome</span>
+                        <input type="text" id="playerNameInput" class="nameInput" placeholder="Como queres aparecer no quadro"
+                               maxlength="20" autocomplete="nickname" spellcheck="false">
+                    </label>
+                    <div class="playerChip" id="accountRow" hidden>
+                        <span class="chipAvatar" id="accountInitial"></span>
+                        <span class="chipText">A jogar como <b id="accountName"></b></span>
+                    </div>
+                </div>
+
+                <div class="progress">
+                    <span class="progressLine" id="progressLine"></span>
+                    <span class="progressBar" id="progressBar"></span>
+                </div>
+
+                <button class="btn" id="playBtn" type="button">Jogar</button>
+                <button class="btnOutline" id="chooseBtn" type="button">Escolher nível</button>
+                <button class="btnOutline" id="howtoBtn" type="button">📖 Como jogar</button>
+
+                <p id="hint">Vira duas cartas de cada vez e encontra os pares de animais ·
+                    começa com 4 cartas e cada nível traz mais 2, até às 50</p>
+            </div>
+        </div>
+
+        <!-- Ecrã 2: os níveis, abertos e por abrir. -->
+        <div id="levelsScreen" class="screen">
+            <div class="panel panel--wide">
+                <div class="panelHead">
+                    <button class="iconBtn" id="backBtn" type="button" aria-label="Voltar ao menu">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
+                            <path d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z"></path>
+                        </svg>
+                    </button>
+                    <div class="panelHeadText">
+                        <h2 class="panelTitle">Níveis</h2>
+                        <p class="panelSub" id="levelsSub"></p>
+                    </div>
+                </div>
+
+                <!-- Os níveis vão em páginas, como no Maze Run: quantos cabem em cada
+                     uma é decidido no css/carousel.css e lido pelo carrossel do SDK
+                     (/lib/arcade/carousel.js). -->
+                <div class="levelsCarousel" id="levelsCarousel">
+                    <button class="carouselArrow carouselArrow--prev" id="prevPageBtn" type="button"
+                            aria-label="Níveis anteriores" aria-controls="levelGrid">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
+                            <path d="M9.78 12.78a.75.75 0 0 1-1.06 0L4.47 8.53a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L6.06 8l3.72 3.72a.75.75 0 0 1 0 1.06Z"></path>
+                        </svg>
+                    </button>
+                    <div class="carouselViewport" id="levelViewport">
+                        <div class="carouselTrack" id="levelGrid"></div>
+                    </div>
+                    <button class="carouselArrow carouselArrow--next" id="nextPageBtn" type="button"
+                            aria-label="Níveis seguintes" aria-controls="levelGrid">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
+                            <path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"></path>
+                        </svg>
+                    </button>
+                    <div class="carouselDots" id="levelDots" role="tablist" aria-label="Páginas de níveis"></div>
+                </div>
+
+                <p class="progressNote" id="progressNote" hidden>
+                    <span aria-hidden="true">💾</span>
+                    <span>O teu progresso fica só neste aparelho.
+                        <a href="/Account/Login">Inicia sessão</a> para o levares contigo e recomeçares
+                        em qualquer nível já desbloqueado.</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- Ecrã 3: como se joga, e os animais todos com o nome. -->
+        <div id="howtoScreen" class="screen">
+            <div class="panel panel--wide">
+                <div class="panelHead">
+                    <button class="iconBtn" id="howtoBackBtn" type="button" aria-label="Voltar ao menu">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
+                            <path d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z"></path>
+                        </svg>
+                    </button>
+                    <div class="panelHeadText">
+                        <h2 class="panelTitle">Como jogar</h2>
+                        <p class="panelSub">Regras, níveis, estrelas e os animais</p>
+                    </div>
+                </div>
+
+                <section class="howto">
+                    <h3 class="howtoTitle">Objetivo</h3>
+                    <p>Encontrar os pares de animais iguais, com o menor número de erros e no menor tempo.</p>
+
+                    <h3 class="howtoTitle">Como se joga</h3>
+                    <ol class="howtoSteps">
+                        <li><b>Olha bem.</b> No início, as cartas ficam à vista uns instantes — depois viram-se para baixo.</li>
+                        <li><b>Vira duas cartas.</b> Toca numa carta e depois noutra.</li>
+                        <li><b>São iguais?</b> O par fica à vista e aparece o nome do animal.</li>
+                        <li><b>São diferentes?</b> Voltam a virar-se sozinhas. Conta como um erro — tenta lembrar-te onde estavam!</li>
+                        <li><b>Encontra todos os pares</b> para concluir o nível e desbloquear o seguinte.</li>
+                    </ol>
+
+                    <h3 class="howtoTitle">Níveis</h3>
+                    <p>O primeiro nível tem <b>4 cartas</b> (2 pares) e cada nível traz <b>mais 2</b>, até às
+                        <b>50 cartas</b> (25 pares) do nível <span id="howtoLastLevel">24</span>. Quanto mais cartas, mais
+                        pequenas ficam — para caberem todas no ecrã do telemóvel. Os animais saem à sorte em cada jogo.</p>
+
+                    <h3 class="howtoTitle">Estrelas</h3>
+                    <ul class="howtoStars">
+                        <li><span class="stars" aria-label="1 estrela">★<i>★★</i></span> Concluir o nível.</li>
+                        <li><span class="stars" aria-label="2 estrelas">★★<i>★</i></span> Com tantos erros como pares, ou menos.</li>
+                        <li><span class="stars" aria-label="3 estrelas">★★★</span> Com metade disso, ou menos.</li>
+                    </ul>
+
+                    <h3 class="howtoTitle">Pontos</h3>
+                    <p><b>100</b> por cada par, mais <b>5</b> por cada segundo abaixo do tempo-alvo do nível
+                        (5 segundos por par), menos <b>20</b> por cada erro. O quadro de pontuações da arcada
+                        guarda a soma da melhor marca de cada nível.</p>
+
+                    <h3 class="howtoTitle">Os animais</h3>
+                    <ul class="animalGallery" id="animalGallery"></ul>
+
+                    <p class="howtoCredits">Ilustrações dos animais: Fluent Emoji, da Microsoft (licença MIT).</p>
+                </section>
+            </div>
+        </div>
+
+        <div id="pauseScreen" class="screen">
+            <div class="panel panel--narrow">
+                <h2 class="title">Pausa</h2>
+                <p class="sub">As cartas estão à tua espera</p>
+                <button class="btn" id="resumeBtn" type="button">Continuar</button>
+                <button class="btnOutline" id="quitBtn" type="button">Sair para o menu</button>
+            </div>
+        </div>
+
+        <div id="resultScreen" class="screen">
+            <div class="panel panel--wide">
+                <div id="resultBody"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+
+</html>

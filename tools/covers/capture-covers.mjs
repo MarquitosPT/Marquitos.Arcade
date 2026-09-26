@@ -135,6 +135,46 @@ const GAMES = [
         clip: () => ({ x: 0, y: 0, width: 800, height: 450 })
     },
     {
+        slug: 'memoria-animal',
+        viewport: { width: 800, height: 450 },
+        scale: 2,
+        async play(page) {
+            // Um tabuleiro a meio: o nível 7 (16 cartas, cor de maçã), com uns pares já
+            // encontrados (moldura dourada) e duas cartas acabadas de virar.
+            // O nível abre-se pelo progresso guardado, como faria quem lá chegou.
+            await page.evaluate(() => localStorage.setItem('memoriaAnimalProgress_v1',
+                JSON.stringify({ v: 1, unlocked: 7, levels: {} })));
+            await page.reload({ waitUntil: 'load' });
+            await waitForSplash(page);
+            await page.click('#chooseBtn');
+            await sleep(500);
+            await page.click('.levelCard[data-value="7"]');
+            await page.addStyleTag({ content: HIDE_ARCADE_CHROME });
+            await page.evaluate(async () => {
+                const { game } = await import('/games/memoria-animal/js/state.js');
+                window.__arcadeMemo = game;
+            });
+            await page.waitForFunction(() => window.__arcadeMemo.phase === 'playing', undefined, { timeout: 20000 });
+
+            const cards = await page.$$('.card');
+            const order = await page.evaluate(() => window.__arcadeMemo.cards.map((card) => card.animal));
+            const spots = {};
+            order.forEach((animal, i) => (spots[animal] ||= []).push(i));
+            const pairs = Object.values(spots);
+            // Três pares feitos e, no fim, uma carta de um par por fazer e a
+            // primeira do seguinte — à vista, como a meio de uma jogada.
+            for (const [a, b] of pairs.slice(0, 3)) {
+                await cards[a].click();
+                await cards[b].click();
+                await sleep(250);
+            }
+            await sleep(1200); // o nome do último par sai do ecrã
+            await cards[pairs[3][0]].click();
+            await sleep(700);
+        },
+        clip: () => ({ x: 0, y: 0, width: 800, height: 450 })
+    },
+    {
         slug: 'terras-do-reino',
         viewport: { width: 800, height: 450 },
         scale: 2,

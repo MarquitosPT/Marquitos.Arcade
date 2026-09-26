@@ -1,0 +1,78 @@
+/*
+ * Tokens da Memória Animal — a variante "glass" dos outros jogos da arcada, com
+ * os mesmos nomes de token.
+ *
+ * O acento não é fixo: cada nível tem a sua cor (`accent` em js/levels.js), e
+ * o JS escreve-a em `--level-accent` no <html> sempre que o nível apontado
+ * muda — no menu e ao jogar. Daí descem o `--accent` e as cores das cartas, e o
+ * jogo todo (botões, título, costas e moldura das cartas, carrossel) muda de
+ * cor com o nível: a Colmeia é cor de mel, o Oceano é azul, a Arca é roxa. O
+ * verde do prado é só a cor de partida, antes de o JS correr.
+ *
+ * Só existe a variante escura, pela mesma razão do Maze Run: os ecrãs estão
+ * sempre por cima do tabuleiro, e vidro claro por cima de cartas brancas não
+ * teria contraste. Se um dia houver variante clara, entra aqui.
+ */
+
+:root {
+    /* acentos */
+    --accent: var(--level-accent, #7ddc5a);
+    --accent-2: #4cc3ff;
+    --accent-3: #ff7a8a;
+    --gold: #ffcf4d;
+    --on-accent: #0b1f10;
+
+    /* texto */
+    --text: #f1f7ee;
+    --muted: rgba(241, 247, 238, 0.7);
+    --faint: rgba(241, 247, 238, 0.46);
+
+    /* vidro */
+    --glass-bg: linear-gradient(155deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.04) 60%);
+    --glass-bg-soft: rgba(255, 255, 255, 0.07);
+    --glass-bg-hover: rgba(255, 255, 255, 0.12);
+    --glass-border: rgba(255, 255, 255, 0.17);
+    --glass-border-strong: rgba(255, 255, 255, 0.3);
+    --glass-shadow: 0 34px 70px -30px rgba(0, 0, 0, 0.85);
+    --glass-shadow-sm: 0 14px 30px -18px rgba(0, 0, 0, 0.8);
+    --blur: 24px;
+    --blur-soft: 10px;
+
+    /* o véu que separa o vidro do tabuleiro por trás */
+    --scrim: radial-gradient(ellipse at 50% 18%, color-mix(in srgb, var(--accent) 22%, rgba(8, 20, 24, 0.6)), rgba(5, 12, 20, 0.84) 68%);
+
+    --ring: color-mix(in srgb, var(--accent) 45%, transparent);
+    --glow: color-mix(in srgb, var(--accent) 35%, transparent);
+
+    /* cartas */
+    --card-face: #fdfcf5;
+    /* As cartas vão buscar a cor do nível: a moldura e as costas, do tom
+       claro em cima para o escuro em baixo. */
+    --card-frame: color-mix(in srgb, var(--accent) 88%, #000);
+    --card-back-1: var(--accent);
+    --card-back-2: color-mix(in srgb, var(--accent) 55%, #0b1410);
+    --card-matched: #ffcf4d;
+
+    /* geometria */
+    --radius-sm: 12px;
+    --radius: 18px;
+    --radius-lg: 26px;
+    --radius-pill: 999px;
+
+    /* tipografia */
+    --font-display: "Outfit", "Segoe UI", system-ui, sans-serif;
+    --font-body: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+}
+
+/* Janela "Acerca" (lib/arcade/about.css), com o vidro e o acento deste jogo. */
+:root {
+    --about-panel: rgba(12, 30, 26, 0.94);
+    --about-border: var(--glass-border);
+    --about-ink: var(--text);
+    --about-muted: var(--muted);
+    --about-accent: var(--accent);
+    --about-on-accent: var(--on-accent);
+    --about-radius: var(--radius-lg);
+    --about-font-display: var(--font-display);
+    --about-font-body: var(--font-body);
+}

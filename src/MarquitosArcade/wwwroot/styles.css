@@ -1285,6 +1285,12 @@ main {
   --cover-bg: #3f7a2e;
 }
 
+/* O verde das molduras das cartas; o fundo é o do céu do jogo. */
+.theme-memoria {
+  --game-accent: #7ddc5a;
+  --cover-bg: #10293f;
+}
+
 /* ---------- Ficha do jogo ---------- */
 
 .game-card-body {
