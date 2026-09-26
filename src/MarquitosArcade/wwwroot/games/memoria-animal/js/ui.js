@@ -10,7 +10,7 @@ export const els = byId(
     'levelsCarousel', 'levelViewport', 'levelGrid', 'levelDots', 'prevPageBtn', 'nextPageBtn', 'levelsSub', 'progressLine', 'progressBar', 'progressNote',
     'animalGallery', 'howtoLastLevel',
     'nameSlot', 'nameRow', 'accountRow', 'accountName', 'accountInitial', 'playerNameInput',
-    'arcadeLink', 'aboutBtn'
+    'arcadeLink', 'aboutBtn', 'musicBtn'
 );
 
 export const overlays = createOverlays({

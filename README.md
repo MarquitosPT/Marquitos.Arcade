@@ -883,6 +883,30 @@ faisão no Fluent Emoji, e o passarinho e o galo fazem as vezes deles.
 `ANIMALS`** — a galeria do "Como jogar" monta-se a partir da mesma lista, e o
 smoke-test verifica que todas as ilustrações carregam.
 
+### Música
+
+Uma melodia calma ao **piano**, com a mão esquerda em arpejos e uma **bateria**
+de vassouras a acompanhar (`js/music.js`), toda sintetizada — sem ficheiros de
+áudio, como os efeitos de `js/audio.js`, com quem partilha o `AudioContext`. O
+motor é o da [música do Terras do Reino](#música) (agendador, reverb,
+compressor); muda o instrumento e a partitura. O piano é uma onda periódica com
+os harmónicos de uma corda, em duas "cordas" ligeiramente desafinadas, com um
+passa-baixo que fecha depois do martelo, um toque de ruído no ataque e um
+decaimento mais longo nas notas graves; a mão esquerda deixa as notas soar até
+ao fim do meio compasso, como com o pedal. A bateria é bombo, vassoura na
+tarola, pratos de choque fechados e dois timbalões a fechar as frases que voltam
+a casa. O tema está em fá maior a 76 BPM, 20 compassos (pouco mais de um minuto)
+em loop: A, A', B, B' e uma secção calma de acordes em bloco com a bateria a
+meio tempo. A partitura são as `SECTIONS`: a melodia um compasso por texto
+(`'C5 2, F5 2, A5 3, G5 1'`: nota e duração em colcheias, `-` para pausa, `b`
+e `#` nas alterações) e o acorde de cada compasso (`'Bb C'` muda a meio).
+
+A música toca nos menus, no tabuleiro e nos resultados, e cala-se (com um fade)
+na pausa e com a página escondida. Começa no primeiro toque ou tecla, onde quer
+que seja. O botão **Música** da barra de topo liga-a e desliga-a, e a escolha
+fica no aparelho (`memoriaAnimalMusic_v1`); os efeitos sonoros continuam a
+tocar. Num telemóvel estreito o botão fica só com a nota, para caberem os três.
+
 ## Cache do browser (e o site afixado ao ecrã principal)
 
 Quem afixa a arcada ao ecrã principal do telemóvel nunca faz Ctrl+F5 — se o
