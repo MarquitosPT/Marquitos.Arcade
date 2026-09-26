@@ -2287,7 +2287,7 @@ tbody tr:last-child td {
   font-size: 0.88rem;
 }
 
-/* ---------- Páginas de texto corrido (/privacidade, /suporte) ---------- */
+/* ---------- Páginas de texto corrido (/privacidade, /suporte, /acerca) ---------- */
 /* Texto longo dentro de um .page-shell: os títulos ganham uma régua a
    separá-los, e o resto herda a tipografia das páginas simples acima
    (.page-shell p, strong, code). */
@@ -2369,6 +2369,48 @@ tbody tr:last-child td {
   padding-top: 1.1rem;
   border-top: 1px solid var(--divider);
   font-size: 0.82rem;
+}
+
+/* Ficha da arcada em /acerca: termo à esquerda, valor à direita, uma régua
+   entre linhas — a mesma leitura da janela "Acerca" dos jogos. */
+.about-facts {
+  margin: 0 0 1rem;
+  padding: 0.2rem 1.15rem;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  background: var(--glass-bg-soft);
+}
+
+.about-facts > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem 0;
+  border-top: 1px solid var(--divider);
+}
+
+.about-facts > div:first-child {
+  border-top: 0;
+}
+
+.about-facts dt {
+  color: var(--muted);
+}
+
+.about-facts dd {
+  margin: 0;
+  color: var(--text-strong);
+  font-weight: 700;
+  text-align: right;
+}
+
+.about-game-emoji {
+  margin-right: 0.35rem;
+}
+
+.about-game-tagline {
+  display: block;
+  font-size: 0.8rem;
 }
 
 /* ---------- Login / registo: cartão centrado ---------- */
