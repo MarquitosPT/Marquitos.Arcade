@@ -233,3 +233,13 @@
     gap: 10px;
     margin-top: 6px;
 }
+
+/* Janela "Acerca": a ficha vem do SDK (lib/arcade/about.css), aqui só com as
+ * cores do papel da tasca em vez do vidro escuro dos outros jogos. */
+#aboutOverlay {
+    --about-ink: var(--tinta);
+    --about-muted: #8a8071;
+    --about-border: rgba(35, 33, 29, 0.12);
+}
+
+#aboutOverlay .arcade-about-row dd { color: var(--tinta); }

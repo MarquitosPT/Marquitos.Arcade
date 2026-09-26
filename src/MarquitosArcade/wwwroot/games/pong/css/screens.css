@@ -76,3 +76,20 @@
     #hint { margin-top: 12px; }
     #rotateWarning { margin: 12px 0; }
 }
+
+/* Janela "Acerca" (lib/arcade/about.css) em preto e branco, como o resto do Pong. */
+:root {
+    --about-backdrop: rgba(0, 0, 0, 0.78);
+    --about-panel: #000;
+    --about-border: #666;
+    --about-ink: #fff;
+    --about-muted: #aaa;
+    --about-accent: #fff;
+    --about-on-accent: #000;
+    --about-radius: 0;
+    --about-font-display: 'Courier New', monospace;
+    --about-font-body: 'Courier New', monospace;
+}
+
+.arcade-about-title { letter-spacing: 0.12em; text-transform: uppercase; }
+.arcade-about-close { border-radius: 0; letter-spacing: 0.2em; }

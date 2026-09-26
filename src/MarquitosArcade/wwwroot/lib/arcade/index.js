@@ -6,6 +6,7 @@
 // ou, para carregar só o que se usa, direto do módulo:
 //     import { createAudio } from '/lib/arcade/audio.js';
 
+export { ARCADE_AUTHORS, ARCADE_COPYRIGHT_HOLDER, aboutCopyright, createAboutDialog, formatAboutDate, renderAboutDetails } from './about.js';
 export { createAudio } from './audio.js';
 export { createCarousel } from './carousel.js';
 export { $, $$, byId, escapeHtml, createOverlays, createButtonGroup } from './dom.js';

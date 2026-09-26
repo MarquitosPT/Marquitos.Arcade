@@ -39,6 +39,7 @@
     <link rel="stylesheet" href="css/order.css" />
     <link rel="stylesheet" href="css/bench.css" />
     <link rel="stylesheet" href="css/overlays.css" />
+    <link rel="stylesheet" href="/lib/arcade/about.css" />
 </head>
 
 <body>
@@ -115,7 +116,18 @@
       <button class="cta" id="playBtn">🎮 Jogar</button>
       <button class="cta secondary" id="scoresBtn">🏆 Pontuações</button>
       <a class="cta ghost" href="/" style="text-decoration:none; display:block;">← Voltar à arcade</a>
+      <button class="cta ghost" id="aboutBtn">ℹ️ Acerca</button>
     </div>
+  </div>
+</div>
+
+<!-- ABOUT OVERLAY (título, versão, autores, publicação e copyright) -->
+<div class="overlay hidden" id="aboutOverlay" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
+  <div class="panel">
+    <h1 id="aboutTitle">🍽️ Tasca do Zé</h1>
+    <div class="sub">acerca do jogo</div>
+    <div id="aboutDetails"></div>
+    <button class="cta ghost" id="closeAboutBtn" style="margin-top:16px;">Fechar</button>
   </div>
 </div>
 

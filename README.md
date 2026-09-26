@@ -63,13 +63,14 @@ barra a crescer, sobre um fundo de raios e pixel art (`wwwroot/lib/arcade/splash
 `Components/App.razor` no portal, no `index.html` de cada jogo —, porque tem de
 estar pintado no primeiro frame, antes de correr JavaScript nenhum.
 
-**Fica no ar 2 segundos, mesmo quando já está tudo pronto.** É de propósito: dá à
+**Fica no ar 2 segundos, mesmo quando já está tudo pronto** — contando já com a
+pausa na barra cheia e o fade de saída. É de propósito: dá à
 arcada um arranque de consola em vez de um salto seco para o menu. O `splash.js`
 gere três relógios para isso não se virar contra o jogador:
 
 | Relógio       | O que faz                                                        |
 | ------------- | ---------------------------------------------------------------- |
-| `minDuration` | O chão. 2s por omissão; muda-se com `data-splash-min` no markup. |
+| `minDuration` | O chão, do arranque até sair. 2s por omissão; muda-se com `data-splash-min`. |
 | `ready()`     | O conteúdo por baixo está montado. Sem ele a barra pára nos 92%. |
 | `maxDuration` | O teto. Aos 12s desiste de esperar e sai na mesma.               |
 
@@ -165,7 +166,8 @@ import { createScoreClient } from '/lib/arcade/scores.js';
 | `viewport.js` | Canvas em ecrã inteiro, nítido em Retina e por baixo do notch     |
 | `loop.js`     | Ciclo `requestAnimationFrame` com delta-time limitado            |
 | `dom.js`      | Seletores, `escapeHtml`, grupos de ecrãs e de botões             |
-| `topbar.js`   | Barra de topo comum (arcada, pontuações, pausa, sair)            |
+| `topbar.js`   | Barra de topo comum (arcada, acerca, pontuações, pausa, sair)    |
+| `about.js`    | Janela "Acerca": título, versão, autores, publicação e copyright (`about.css`) |
 | `splash.js`   | Ecrã de arranque: tempo mínimo, barra de progresso e saída       |
 | `math.js`     | `clamp`, `lerp`, ângulos, aleatórios, `shuffle`                  |
 
@@ -250,10 +252,11 @@ vezes.
    Copiar de lá também o bloco `#arcadeSplash` do `index.html` (trocando o nome do jogo em `.arcade-splash-caption`), os dois `<link>` e o `<script>` do `splash-boot.js` no `<head>`, e o `window.__arcadeSplash?.ready()` no fim do `main.js` — ver [Ecrã de arranque](#ecrã-de-arranque).
 2. Se precisar de leaderboard persistente, usar `createScoreClient('<slug>')` do SDK, que fala com `GET/POST /api/scores/<slug>`.
    Se tiver níveis a desbloquear, usar também `createProgressClient('<slug>')`, que fala com `GET/PUT /api/progress/<slug>` — ver [Progresso e níveis](#progresso-e-níveis).
-3. Acrescentar o jogo ao array `GAMES` em `tools/games/smoke-test.mjs`, com um guião que o jogue durante alguns segundos.
-4. Gerar a capa do jogo: acrescentar uma receita ao array `GAMES` em `tools/covers/capture-covers.mjs` e correr o script (ver [Capas dos jogos](#capas-dos-jogos)).
-5. Adicionar uma entrada **no topo** do array `Catalog` em `Components/Pages/Home.razor` — o catálogo mostra as novidades primeiro e os jogos mais antigos vão descendo para o fim — (slug, título, tagline, descrição, emoji, tema e capa) e, se o tema for novo, uma classe `.theme-<jogo>` em `styles.css` com a cor (`--game-accent`) e o fundo da capa (`--cover-bg`). Só isso: a tipografia dos cartões é do catálogo e é igual para todos (ver [Cartões do catálogo](#cartões-do-catálogo)).
-6. Adicionar o jogo **no topo** do array `Games` em `Components/Pages/Pontuacoes.razor` para aparecer na página de pontuações, pela mesma ordem do catálogo.
+3. Preencher o `ABOUT` no `config.js` (título, versão, data de publicação) e pôr o botão `#aboutBtn` a seguir ao `#arcadeLink`, com o `<link>` do `/lib/arcade/about.css` — o `createAboutDialog(ABOUT, { opener })` do SDK trata da janela. Um jogo com ecrãs sobrepostos próprios pode, em vez disso, pôr a ficha num deles com `renderAboutDetails(ABOUT)` (como a Tasca do Zé).
+4. Acrescentar o jogo ao array `GAMES` em `tools/games/smoke-test.mjs`, com um guião que o jogue durante alguns segundos.
+5. Gerar a capa do jogo: acrescentar uma receita ao array `GAMES` em `tools/covers/capture-covers.mjs` e correr o script (ver [Capas dos jogos](#capas-dos-jogos)).
+6. Adicionar uma entrada **no topo** do array `Catalog` em `Components/Pages/Home.razor` — o catálogo mostra as novidades primeiro e os jogos mais antigos vão descendo para o fim — (slug, título, tagline, descrição, emoji, tema e capa) e, se o tema for novo, uma classe `.theme-<jogo>` em `styles.css` com a cor (`--game-accent`) e o fundo da capa (`--cover-bg`). Só isso: a tipografia dos cartões é do catálogo e é igual para todos (ver [Cartões do catálogo](#cartões-do-catálogo)).
+7. Adicionar o jogo **no topo** do array `Games` em `Components/Pages/Pontuacoes.razor` para aparecer na página de pontuações, pela mesma ordem do catálogo.
 
 ## Cartões do catálogo
 

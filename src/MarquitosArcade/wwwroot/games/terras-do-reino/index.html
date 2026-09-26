@@ -35,6 +35,7 @@
     <link rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" />
 
+    <link rel="stylesheet" href="/lib/arcade/about.css" />
     <link rel="stylesheet" href="css/theme.css" />
     <link rel="stylesheet" href="css/base.css" />
     <link rel="stylesheet" href="css/hud.css" />
@@ -70,6 +71,14 @@
                     <span class="topLabel">Arcade</span>
                 </div>
             </a>
+            <button class="topBtn" id="aboutBtn" type="button" aria-haspopup="dialog">
+                <div style="display:flex">
+                    <svg class="topIcon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
+                        <path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path>
+                    </svg>
+                    <span class="topLabel">Acerca</span>
+                </div>
+            </button>
             <!-- Escondido enquanto o jogo está em testes: a página de pontuações ainda
                  não tem o painel dele (ver Pontuacoes.razor). O `[hidden]` do
                  base.css ganha ao `display` que o topbar.js escreve. -->

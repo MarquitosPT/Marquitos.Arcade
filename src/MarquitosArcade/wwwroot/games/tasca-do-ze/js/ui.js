@@ -9,13 +9,13 @@ export const els = byId(
     'orderCard', 'orderEmoji', 'orderName', 'orderFor', 'reqList', 'bellBtn',
     'benchWrap', 'tabSavory', 'tabSweet',
     'toast', 'brandSub',
-    'mainMenuOverlay', 'setupOverlay', 'leaderboardOverlay', 'pauseOverlay', 'overOverlay',
-    'finalScore', 'overReason', 'overPlayerLine',
+    'mainMenuOverlay', 'setupOverlay', 'leaderboardOverlay', 'pauseOverlay', 'overOverlay', 'aboutOverlay',
+    'aboutDetails', 'finalScore', 'overReason', 'overPlayerLine',
     'menuGrid', 'nameInput', 'leaderboardList',
     'muteBtn', 'pauseBtn'
 );
 
-const OVERLAY_IDS = ['mainMenuOverlay', 'setupOverlay', 'leaderboardOverlay', 'pauseOverlay', 'overOverlay'];
+const OVERLAY_IDS = ['mainMenuOverlay', 'setupOverlay', 'leaderboardOverlay', 'pauseOverlay', 'overOverlay', 'aboutOverlay'];
 
 export function hideAllOverlays() {
     for (const id of OVERLAY_IDS) els[id].classList.add('hidden');

@@ -1,0 +1,159 @@
+/*
+ * Janela "Acerca" dos jogos (ver about.js).
+ *
+ * Os valores por omissão são o vidro escuro da arcada. Cada jogo afina a
+ * janela à sua cara redefinindo as variáveis `--about-*` no seu tema, sem ter
+ * de repetir as regras:
+ *
+ *   --about-backdrop       véu por trás da janela
+ *   --about-panel          fundo do painel
+ *   --about-border         contorno do painel e separadores
+ *   --about-ink            texto
+ *   --about-muted          texto secundário
+ *   --about-accent         botão e destaques
+ *   --about-on-accent      texto sobre o acento
+ *   --about-radius         cantos do painel
+ *   --about-font-display   título e botão
+ *   --about-font-body      o resto
+ */
+
+.arcade-about {
+    /* Os jogos fazem `* { margin: 0 }`, que tira ao <dialog> o `margin: auto`
+       com que o browser o centra. */
+    margin: auto;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--about-ink, #eef2ff);
+    max-width: min(380px, calc(100vw - 32px));
+    width: 100%;
+    max-height: calc(100dvh - 32px);
+    overflow: visible;
+}
+
+.arcade-about::backdrop {
+    background: var(--about-backdrop, rgba(4, 6, 20, 0.72));
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+}
+
+.arcade-about-panel {
+    box-sizing: border-box;
+    max-height: calc(100dvh - 32px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 26px 22px 22px;
+    text-align: center;
+    font-family: var(--about-font-body, system-ui, sans-serif);
+    background: var(--about-panel, rgba(20, 24, 48, 0.94));
+    border: 1px solid var(--about-border, rgba(255, 255, 255, 0.14));
+    border-radius: var(--about-radius, 22px);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+
+.arcade-about[open] .arcade-about-panel {
+    animation: arcade-about-in 0.22s ease-out;
+}
+
+.arcade-about-badge {
+    display: block;
+    font-size: 40px;
+    line-height: 1;
+    margin-bottom: 10px;
+}
+
+.arcade-about-kicker {
+    margin: 0 0 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--about-muted, rgba(238, 242, 255, 0.66));
+}
+
+.arcade-about-title {
+    margin: 0;
+    font-family: var(--about-font-display, inherit);
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1.15;
+}
+
+.arcade-about-tagline {
+    margin: 6px 0 0;
+    font-size: 13px;
+    color: var(--about-muted, rgba(238, 242, 255, 0.66));
+}
+
+.arcade-about-list {
+    margin: 18px 0 0;
+    padding: 0;
+    text-align: left;
+}
+
+.arcade-about-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 9px 2px;
+    border-top: 1px solid var(--about-border, rgba(255, 255, 255, 0.14));
+    font-size: 14px;
+}
+
+.arcade-about-row dt {
+    color: var(--about-muted, rgba(238, 242, 255, 0.66));
+}
+
+.arcade-about-row dd {
+    margin: 0;
+    font-weight: 700;
+    text-align: right;
+}
+
+.arcade-about-copyright {
+    margin: 0;
+    padding-top: 12px;
+    border-top: 1px solid var(--about-border, rgba(255, 255, 255, 0.14));
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--about-muted, rgba(238, 242, 255, 0.66));
+}
+
+.arcade-about-close {
+    margin-top: 18px;
+    width: 100%;
+    padding: 12px 18px;
+    font-family: var(--about-font-display, inherit);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--about-on-accent, #04131c);
+    background: var(--about-accent, #35e0ff);
+    border: 0;
+    border-radius: 999px;
+    cursor: pointer;
+}
+
+.arcade-about-close:focus-visible {
+    outline: 2px solid var(--about-ink, #eef2ff);
+    outline-offset: 3px;
+}
+
+@keyframes arcade-about-in {
+    from { opacity: 0; transform: translateY(8px) scale(0.98); }
+    to   { opacity: 1; transform: none; }
+}
+
+/* Telemóvel deitado: a altura é o que falta, por isso sai o ícone e aperta-se o resto. */
+@media (max-height: 480px) {
+    .arcade-about-panel { padding: 16px 20px 16px; }
+    .arcade-about-badge { display: none; }
+    .arcade-about-title { font-size: 21px; }
+    .arcade-about-list { margin-top: 10px; }
+    .arcade-about-row { padding: 6px 2px; font-size: 13px; }
+    .arcade-about-copyright { padding-top: 8px; }
+    .arcade-about-close { margin-top: 10px; padding: 9px 18px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .arcade-about[open] .arcade-about-panel { animation: none; }
+}
