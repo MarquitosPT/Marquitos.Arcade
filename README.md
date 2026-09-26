@@ -19,6 +19,7 @@ Blazor Web App (.NET 10, render mode Interactive Server) com ASP.NET Core Identi
   - `pong/`: Pong Retro, com modo 1 jogador (vs. CPU, pontuação submetida via `/api/scores/pong`) e 2 jogadores.
   - `maze-run/`: Maze Run, labirintos por níveis — apanhar os cristais abre a saída, e há guardas a impedi-lo. Pelo caminho há cristais de gelo que os congelam, portais que ligam duas pontas do labirinto e portas trancadas com a sua chave (ver [As peças do Maze Run](#as-peças-do-maze-run)). Os níveis vão-se desbloqueando à medida que se concluem, e o progresso fica guardado na conta de quem tem sessão iniciada (ver [Progresso e níveis](#progresso-e-níveis)). Os labirintos não estão desenhados à mão: saem de uma semente por nível (`buildMaze` em `js/maze.js`), como as pistas do Pixel Racing saem do `buildTrack` — **acrescentar um nível é acrescentar uma entrada ao array `LEVELS` do `js/levels.js`**, e mais nada.
   - `terras-do-reino/`: Terras do Reino, economia medieval contínua num tabuleiro isométrico com relevo — semear e colher trigo, cortar madeira, tirar pedra, pescar nos lagos, abrir minas de ouro, moinhos, padarias, vacarias, pocilgas e oficinas, lã e tecelagem, vinhas, destilaria e taberna, algodão, alfaiataria, teatro, hotel para os visitantes, escola, centro de saúde e posto de correios, galinheiro, cana-de-açúcar, arroz, pastelaria e joalharia, e comerciar com três vilas vizinhas geridas pelo CPU, que crescem sozinhas e são as rivais na tabela da prosperidade. Não há guerra nem fim de partida: o reino fica gravado (na conta, para quem tem sessão iniciada) e, fora do jogo, fica em pausa: ao voltar, continua do ponto exato onde ficou. Ver [Terras do Reino](#terras-do-reino).
+  - `memoria-animal/`: Memória Animal, jogo da memória com cartas de animais — virar duas de cada vez e encontrar os pares. Quinze níveis, de 4 cartas (2 pares) a 32 (16 pares), mais 2 por nível; as cartas encolhem à medida que o tabuleiro cresce, para caberem todas no ecrã do telemóvel. Níveis desbloqueados e estrelas pelo mesmo cliente de progresso do Maze Run. Ver [Memória Animal](#memória-animal).
   - `pixel-racing/`: Pixel Racing, corrida simples em qualquer uma das seis pistas ou campeonato de três, com pontuação via `/api/scores/pixel-racing`. O menu tem dois passos: o primeiro ecrã pergunta só o nome (a quem não tem sessão iniciada) e o modo; a pista (ou a taça, no campeonato), a cor do carro e a dificuldade ficam no ecrã seguinte, já a saber o que se vai correr. As pistas são geradas por `buildTrack` a partir de uma superelipse com harmónicos, e o grau de perícia que o cartão mostra é medido no traçado (`corneringProfile`) em vez de escrito à mão: as três primeiras fazem-se sem levantar o pé, as três da taça Pro são mais compridas, mais estreitas e têm curvas que obrigam a travar ou a entrar a derrapar. A cor sai da paleta única de `CAR_COLORS` e os adversários ficam com três das restantes, por isso nunca há dois carros da mesma cor na pista.
 - `src/MarquitosArcade/wwwroot/lib/arcade/`: SDK partilhado pelos jogos (áudio, leaderboard, armazenamento, viewport do canvas, ciclo de jogo, barra de topo, ecrã de arranque). Módulos ES sem dependências externas. O `splash.css`/`splash.js`/`splash-boot.js` são a exceção que também serve o portal — ver [Ecrã de arranque](#ecrã-de-arranque).
 - `tools/games/smoke-test.mjs`: smoke-test dos jogos em Chromium headless, corrido em cada pull request por `.github/workflows/jogos-smoke-test.yml`. Ver [Testar os jogos](#testar-os-jogos).
@@ -786,6 +787,58 @@ aceita (999 999).
 
 A gravação guarda o tipo pelo índice em `BUILDINGS`: **acrescenta-se sempre no
 fim da lista**, senão as gravações antigas trocam os edifícios uns pelos outros.
+
+## Memória Animal
+
+> **Em testes.** No catálogo aparece como "Em breve" (`IsPlayable: false` em
+> `ArcadeCatalog.cs`), mas joga-se indo direto a `/games/memoria-animal/` (ou
+> com o toque duplo de três dedos no cartão, ver `secret-play.js`). O painel
+> das pontuações está comentado em `Pontuacoes.razor`; as pontuações já são
+> guardadas. Para lançar: `IsPlayable` fora, o painel de volta e o `ABOUT` do
+> `js/config.js` (e a versão no catálogo) a `1.0.0`, sem o `status`.
+
+O jogo da memória de sempre, com animais: as cartas estão viradas para baixo,
+viram-se duas de cada vez e, se forem iguais, o par fica à vista. É o primeiro
+jogo da arcada todo em DOM — as cartas são `<button>`, viradas com uma rotação
+3D de CSS (`css/board.css`) — e sem canvas nenhum.
+
+**Os níveis são só um número de cartas.** O primeiro tem 4 e cada nível traz
+mais 2, até às 32 do nível 15 (`FIRST_LEVEL_CARDS`, `CARDS_STEP` e `MAX_CARDS`
+no `js/config.js`; o `LEVELS` do `js/levels.js` sai daí). Os animais saem à
+sorte de cada vez que se começa um nível (`dealCards` em `js/board.js`), por
+isso repetir um nível nunca é decorar onde estavam as cartas. No início as
+cartas ficam uns instantes à vista ("Olha bem…"), mais tempo quanto maior o
+tabuleiro, com teto de 3,5 s.
+
+**O tamanho das cartas não é fixo — é o maior que cabe.** A cada mudança de
+tamanho do palco (um `ResizeObserver`: rodar o telemóvel, a barra do browser a
+esconder-se), o `fitGrid` do `js/layout.js` experimenta todas as contagens de
+colunas e fica com a que dá os maiores cartões na área livre. As 32 cartas do
+último nível ficam num 4 × 8 ao alto (cartões de uns 70px num telemóvel de
+390px) e num 11 × 3 ao comprido, sem nenhuma das grelhas estar escrita em lado
+nenhum. A última fila, quando não está cheia, fica centrada: o tabuleiro é um
+flex com quebra de linha, não uma grelha. O smoke-test confirma, nos quinze
+níveis e em três tamanhos de ecrã, que nenhuma carta sai do ecrã, fica por
+baixo do HUD ou por cima de outra.
+
+**Estrelas pelos erros, pontos pelo resto.** Um erro é uma jogada de duas
+cartas sem par. ★ por concluir, ★★ com tantos erros como pares ou menos, ★★★
+com metade disso. É de propósito que o tempo não conta para as estrelas — é um
+jogo de memória, e devagar mas certo também é jogar bem. O tempo conta nos
+pontos: 100 por par, 5 por segundo abaixo do tempo-alvo (5 s por par), menos 20
+por erro, com um chão de 25 por par. Ao quadro vai a soma da melhor marca de
+cada nível, como no Maze Run.
+
+**As ilustrações são ficheiros, não emoji.** Cada aparelho desenha os emoji à
+sua maneira (e há os que ainda não têm o burro), e num jogo de pares a mesma
+carta tem de ter a mesma cara em todo o lado. São os SVG do
+[Fluent Emoji](https://github.com/microsoft/fluentui-emoji) da Microsoft, estilo
+"Color", licença MIT (`assets/animais/LICENSE.txt`), passados pelo `svgo`. Há
+46 animais em `js/animals.js`, os da quinta primeiro; não há andorinha nem
+faisão no Fluent Emoji, e o passarinho e o galo fazem as vezes deles.
+**Acrescentar um animal é pôr o SVG em `assets/animais/<id>.svg` e uma linha no
+`ANIMALS`** — a galeria do "Como jogar" monta-se a partir da mesma lista, e o
+smoke-test verifica que todas as ilustrações carregam.
 
 ## Cache do browser (e o site afixado ao ecrã principal)
 

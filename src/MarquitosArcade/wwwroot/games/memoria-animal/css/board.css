@@ -1,0 +1,170 @@
+/*
+ * O tabuleiro e as cartas.
+ *
+ * O tamanho das cartas e o número de colunas não estão aqui: o js/board.js
+ * escreve-os no `.board` (`--cols`, `--card-w`, `--card-h`, `--gap`,
+ * `--card-radius`) a cada remedição do ecrã. A folha só diz como uma carta é.
+ *
+ * As cartas imitam as de papel: a face branca com a moldura verde e o animal
+ * ao centro, as costas verdes com uma pata. O virar é uma rotação 3D — as duas
+ * faces estão costas com costas e o `backface-visibility` esconde a de trás.
+ */
+
+.stage {
+    position: relative;
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 0;
+    display: grid;
+    place-items: center;
+}
+
+/*
+ * Flex com quebra de linha e não grelha: a última fila, quando não está cheia,
+ * fica centrada sozinha (10 cartas em 4 colunas dão 4 + 4 + 2 ao meio).
+ */
+.board {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-content: center;
+    gap: var(--gap, 10px);
+    width: calc(var(--cols, 4) * var(--card-w, 80px) + (var(--cols, 4) - 1) * var(--gap, 10px));
+    perspective: 900px;
+}
+
+.card {
+    position: relative;
+    flex: none;
+    width: var(--card-w, 80px);
+    height: var(--card-h, 92px);
+    padding: 0;
+    border: none;
+    background: none;
+    border-radius: var(--card-radius, 12px);
+    cursor: pointer;
+    /* Toques rápidos seguidos são jogadas, não um zoom. */
+    touch-action: manipulation;
+}
+
+.card:focus-visible { outline-offset: 2px; }
+
+.cardInner {
+    position: absolute;
+    inset: 0;
+    display: block;
+    transform-style: preserve-3d;
+    -webkit-transform-style: preserve-3d;
+    transition: transform 0.38s cubic-bezier(0.3, 1.25, 0.5, 1);
+}
+
+.card.is-up .cardInner { transform: rotateY(180deg); }
+
+.cardFace {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    border-radius: var(--card-radius, 12px);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    overflow: hidden;
+}
+
+/*
+ * As costas: verde do prado com uma pata ao centro. A pata é um SVG embutido
+ * (não um emoji) para ser igual em todos os aparelhos, e o risco de luz em cima
+ * é o mesmo "vidro" dos painéis.
+ */
+.cardBack {
+    background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64' fill='%23ffffff'%3E%3Cellipse cx='32' cy='42' rx='13' ry='11'/%3E%3Cellipse cx='16' cy='28' rx='6' ry='7.5'/%3E%3Cellipse cx='48' cy='28' rx='6' ry='7.5'/%3E%3Cellipse cx='25' cy='16' rx='5.5' ry='7'/%3E%3Cellipse cx='39' cy='16' rx='5.5' ry='7'/%3E%3C/svg%3E") center / 44% no-repeat,
+        linear-gradient(160deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0) 45%),
+        linear-gradient(150deg, var(--card-back-1), var(--card-back-2));
+    box-shadow:
+        inset 0 0 0 max(2px, calc(var(--card-w, 80px) * 0.035)) rgba(255, 255, 255, 0.85),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5),
+        0 8px 18px -10px rgba(0, 0, 0, 0.7);
+    opacity: 1;
+}
+
+/* A pata fica meio apagada: é um desenho de fundo, não um sinal. */
+.cardBack::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: rgba(47, 141, 63, 0.35);
+    mix-blend-mode: multiply;
+}
+
+.card:hover .cardBack { filter: brightness(1.08); }
+.card:active .cardBack { filter: brightness(0.96); }
+
+/* A face: branca, com a moldura verde das cartas de papel. */
+.cardFront {
+    transform: rotateY(180deg);
+    background: var(--card-face);
+    box-shadow:
+        inset 0 0 0 max(3px, calc(var(--card-w, 80px) * 0.05)) var(--card-frame),
+        0 8px 18px -10px rgba(0, 0, 0, 0.7);
+}
+
+.cardFront img {
+    display: block;
+    width: 76%;
+    height: 76%;
+    object-fit: contain;
+    pointer-events: none;
+    -webkit-user-drag: none;
+}
+
+/* Par encontrado: a moldura passa a dourada e a carta dá um pulo. */
+.card.is-matched { cursor: default; }
+
+.card.is-matched .cardFront {
+    box-shadow:
+        inset 0 0 0 max(3px, calc(var(--card-w, 80px) * 0.05)) var(--card-matched),
+        0 0 0 2px rgba(255, 207, 77, 0.35),
+        0 10px 24px -10px rgba(255, 207, 77, 0.6);
+}
+
+.card.is-matched { animation: cardMatch 0.5s ease 0.2s both; }
+
+@keyframes cardMatch {
+    0%, 100% { transform: scale(1); }
+    45% { transform: scale(1.08); }
+}
+
+/* Sem par: as duas cartas abanam antes de se virarem. */
+.card.is-wrong { animation: cardWrong 0.4s ease 0.3s both; }
+
+.card.is-wrong .cardFront {
+    box-shadow:
+        inset 0 0 0 max(3px, calc(var(--card-w, 80px) * 0.05)) var(--accent-3),
+        0 8px 18px -10px rgba(0, 0, 0, 0.7);
+}
+
+@keyframes cardWrong {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-5px) rotate(-2deg); }
+    60% { transform: translateX(5px) rotate(2deg); }
+}
+
+/* Tabuleiro completo: uma onda pelas cartas todas. */
+.board.is-cleared .card { animation: cardCheer 0.6s ease both; }
+.board.is-cleared .card:nth-child(3n + 1) { animation-delay: 0.05s; }
+.board.is-cleared .card:nth-child(3n + 2) { animation-delay: 0.12s; }
+.board.is-cleared .card:nth-child(3n) { animation-delay: 0.19s; }
+
+@keyframes cardCheer {
+    0%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-8px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cardInner { transition-duration: 0.01s; }
+    .card.is-matched,
+    .card.is-wrong,
+    .board.is-cleared .card { animation: none; }
+}

@@ -1,0 +1,93 @@
+/*
+ * Ecrã "Como jogar": texto corrido no painel de vidro e a galeria dos animais
+ * com o nome de cada um — há quem jogue isto para aprender os nomes.
+ */
+
+.howto {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    text-align: left;
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--muted);
+    -webkit-user-select: text;
+    user-select: text;
+}
+
+.howto b { color: var(--text); font-weight: 700; }
+
+.howtoTitle {
+    margin-top: 10px;
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.howtoTitle:first-child { margin-top: 0; }
+
+.howtoSteps {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-left: 22px;
+}
+
+.howtoStars {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    list-style: none;
+}
+
+.howtoStars li {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.stars {
+    flex: none;
+    width: 3.6em;
+    letter-spacing: 1px;
+    color: var(--gold);
+}
+
+.stars i { font-style: normal; color: rgba(241, 247, 238, 0.22); }
+
+.animalGallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+    gap: 8px;
+    list-style: none;
+}
+
+.animalItem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 4px 7px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+    color: var(--text);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    background: var(--glass-bg-soft);
+}
+
+.animalItem img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+}
+
+.howtoCredits {
+    margin-top: 6px;
+    font-size: 11px;
+    color: var(--faint);
+}

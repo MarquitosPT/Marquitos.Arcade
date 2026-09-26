@@ -1,0 +1,149 @@
+/*
+ * Barra de topo (voltar à arcada, acerca, pausar e sair), a área de jogo e o
+ * HUD por cima das cartas.
+ *
+ * Os botões são `inline-block` (e não `flex`) de propósito: quem os mostra e
+ * esconde é o `topbar.js` do SDK, que escreve `display: inline-block` no estilo
+ * do elemento. Daí o espaçamento entre o ícone e a etiqueta vir de uma margem e
+ * não de um `gap`.
+ */
+
+.topBar {
+    position: absolute;
+    top: max(12px, env(safe-area-inset-top));
+    right: max(12px, env(safe-area-inset-right));
+    display: flex;
+    gap: 8px;
+    z-index: 20;
+}
+
+.topBtn {
+    display: inline-block;
+    padding: 9px 14px;
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--text);
+    text-decoration: none;
+    white-space: nowrap;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-pill);
+    background: var(--glass-bg-soft);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    backdrop-filter: blur(14px) saturate(140%);
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.topBtn:hover {
+    background: var(--glass-bg-hover);
+    border-color: var(--glass-border-strong);
+}
+
+.topBtn--quit:hover {
+    border-color: var(--accent-3);
+    color: #fff;
+}
+
+.topIcon { font-size: 13px; }
+.topIcon + .topLabel { margin-left: 7px; }
+
+/*
+ * A área de jogo: o HUD em cima e o palco das cartas no resto. Começa por baixo
+ * da barra de topo — as cartas nunca ficam debaixo dos botões.
+ */
+#playArea {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding:
+        calc(max(12px, env(safe-area-inset-top)) + 46px)
+        max(12px, env(safe-area-inset-right))
+        max(12px, env(safe-area-inset-bottom))
+        max(12px, env(safe-area-inset-left));
+}
+
+/*
+ * O HUD: nível, tempo, pares e erros, em pastilhas de vidro. Nos menus fica
+ * escondido — lá o tabuleiro é só o fundo.
+ */
+.hud {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    margin-bottom: 10px;
+    visibility: hidden;
+    position: relative;
+}
+
+#playArea.is-live .hud { visibility: visible; }
+
+.hudChip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--muted);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-pill);
+    background: var(--glass-bg-soft);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    backdrop-filter: blur(14px) saturate(140%);
+}
+
+.hudChip i { font-style: normal; font-size: 12px; }
+.hudChip b { color: var(--text); font-weight: 700; font-variant-numeric: tabular-nums; }
+.hudChip--level { color: var(--text); }
+
+/*
+ * A mensagem por cima do HUD: "Olha bem…" na pré-visualização e o nome do
+ * animal a cada par. Tapa as pastilhas durante um instante, e nunca as cartas —
+ * na pré-visualização é para as ver que se está a olhar.
+ */
+.banner {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 5;
+    padding: 6px 20px;
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    color: var(--text);
+    border: 1px solid var(--glass-border-strong);
+    border-radius: var(--radius-pill);
+    background: rgba(12, 34, 26, 0.94);
+    box-shadow: var(--glass-shadow-sm);
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+    transition: opacity 0.2s ease, transform 0.25s cubic-bezier(0.2, 0.9, 0.25, 1.2);
+}
+
+.banner.is-visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.banner--match { color: var(--gold); }
+
+/* Ao comprido num telemóvel a altura é o que falta: o HUD encolhe. */
+@media (orientation: landscape) and (max-height: 500px) {
+    #playArea { padding-top: calc(max(8px, env(safe-area-inset-top)) + 42px); }
+    .hud { margin-bottom: 6px; }
+    .hudChip { padding: 4px 10px; font-size: 12px; }
+}
+
+@media (max-width: 380px) {
+    .hudChip { padding: 5px 9px; font-size: 12px; gap: 4px; }
+}

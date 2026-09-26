@@ -53,6 +53,19 @@ public static class ArcadeCatalog
     // antigos vão descendo para o fim do catálogo.
     public static readonly ArcadeGame[] Games =
     [
+        new("memoria-animal",
+            "Memória Animal",
+            "pares • memória • bicharada",
+            "Vira as cartas e encontra os pares de animais: começa com 4 cartas e cada nível traz mais 2.",
+            "🐮",
+            "theme-memoria",
+            "/covers/memoria-animal.webp",
+            "0.9.0",
+            new(2026, 9, 26),
+            // Em testes: fica "Em breve" no catálogo, mas joga-se em
+            // /games/memoria-animal/ para quem lá for direto.
+            IsPlayable: false),
+
         new("terras-do-reino",
             "Terras do Reino",
             "campos • minas • mercados",
