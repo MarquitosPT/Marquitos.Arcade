@@ -1797,7 +1797,7 @@ tbody tr:last-child td {
   flex-shrink: 0;
   z-index: 20;
   /* Mesma lógica da .topnav: margem habitual + recuo de segurança. */
-  padding: 0.6rem calc(1.25rem + env(safe-area-inset-right, 0px)) 0.6rem calc(1.25rem + env(safe-area-inset-left, 0px));
+  padding: 0.35rem calc(1.25rem + env(safe-area-inset-right, 0px)) 0.35rem calc(1.25rem + env(safe-area-inset-left, 0px));
   border-width: 1px 0 0;
   border-color: var(--bar-border);
   background: var(--bar-bg);
