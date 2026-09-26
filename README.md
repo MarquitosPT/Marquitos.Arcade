@@ -575,15 +575,17 @@ sozinha — não há nada em cache para invalidar.
 
 ## Terras do Reino
 
-> **Em testes.** No catálogo aparece como "Em breve" (`IsPlayable: false` em
-> `Home.razor`), mas joga-se indo direto a `/games/terras-do-reino/`. O painel
-> das pontuações está escondido (comentado em `Pontuacoes.razor`); as
-> pontuações continuam a ser guardadas. Para lançar, desfazem-se estes dois pontos.
+> **Versão 1.0.0, lançada a 26 de setembro de 2026.** Esteve em testes desde 24
+> de setembro, fora do catálogo. As pontuações desse período já estavam a ser
+> guardadas e aparecem no quadro desde o lançamento.
 >
-> Para o testar numa app afixada, onde não há barra de endereço, o cartão
-> "Em breve" tem uma entrada secreta: **toque duplo com três dedos** (no
-> computador, Alt + duplo clique) abre o jogo (`wwwroot/secret-play.js`). Vale
-> para qualquer jogo com `IsPlayable: false` e some sozinha quando é lançado.
+> Um jogo novo pode passar pela mesma fase: com `IsPlayable: false` em
+> `Components/ArcadeCatalog.cs`, aparece no catálogo como "Em breve", sem link,
+> mas joga-se indo direto a `/games/<slug>/`. Numa app afixada, onde não há barra
+> de endereço, o cartão tem uma entrada secreta: **toque duplo com três dedos**
+> (no computador, Alt + duplo clique) abre o jogo (`wwwroot/secret-play.js`). Para
+> esconder também o painel das pontuações, comenta-se a linha do jogo em
+> `Pontuacoes.razor`. Para lançar, desfazem-se esses pontos.
 
 O primeiro jogo da arcada sem partidas: um reino que cresce enquanto se joga e
 continua de onde ficou. Inspirado no tabuleiro de peças do Carcassonne — o mapa

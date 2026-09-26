@@ -21,9 +21,8 @@ export const ABOUT = {
     title: 'Terras do Reino',
     emoji: '🏰',
     tagline: 'Campos · Minas · Mercados',
-    version: '0.9.0',
-    status: 'Em testes',
-    published: '2026-09-24'
+    version: '1.0.0',
+    published: '2026-09-26'
 };
 export const NAME_STORAGE_KEY = 'terrasDoReinoPlayerName_v1';
 export const PROGRESS_STORAGE_KEY = 'terrasDoReinoSave_v1';

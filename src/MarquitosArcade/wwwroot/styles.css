@@ -1809,7 +1809,9 @@ tbody tr:last-child td {
   border-color: var(--bar-border);
   background: var(--bar-bg);
   color: var(--bar-text-muted);
-  font-size: 0.78rem;
+  /* Pequeno de propósito: é uma linha de assinatura, não conteúdo. */
+  font-size: 0.68rem;
+  letter-spacing: 0.02em;
   text-align: center;
 }
 

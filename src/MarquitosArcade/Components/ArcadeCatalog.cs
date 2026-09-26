@@ -60,11 +60,9 @@ public static class ArcadeCatalog
             "🏰",
             "theme-reino",
             "/covers/terras-do-reino.webp",
-            "0.9.0",
-            new(2026, 9, 24),
-            // Em testes: fica "Em breve" no catálogo, mas joga-se em
-            // /games/terras-do-reino/ para quem lá for direto.
-            IsPlayable: false),
+            "1.0.0",
+            new(2026, 9, 26),
+            Badge: "Novo"),
 
         new("maze-run",
             "Maze Run",
