@@ -6,6 +6,18 @@
 
 export const GAME_ID = 'tasca-do-ze';
 
+/**
+ * O que a janela "Acerca" mostra (ver /lib/arcade/about.js). Os autores e o
+ * titular do copyright são os da arcada; o ano do © é o da publicação.
+ */
+export const ABOUT = {
+    title: 'Tasca do Zé',
+    emoji: '🍽️',
+    tagline: 'O teu turno na cozinha',
+    version: '1.0.0',
+    published: '2026-09-06'
+};
+
 /** Cache local do leaderboard. Só cópia de reserva: a verdade está no servidor. */
 export const BOARD_CACHE_KEY = 'tascaDoZeLeaderboardCache_v1';
 export const NAME_STORAGE_KEY = 'tascaDoZePlayerName_v1';

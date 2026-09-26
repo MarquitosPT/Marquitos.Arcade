@@ -1,5 +1,5 @@
 /*
- * Barra de topo: voltar à arcada, ver as pontuações, pausar e sair.
+ * Barra de topo: voltar à arcada, acerca, pausar e sair.
  *
  * Os botões são `inline-block` (e não `flex`) de propósito: quem os mostra e
  * esconde é o `topbar.js` do SDK, que escreve `display: inline-block` no estilo

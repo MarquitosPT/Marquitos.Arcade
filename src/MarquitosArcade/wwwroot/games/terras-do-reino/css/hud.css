@@ -1,5 +1,5 @@
 /*
- * Barra de topo (voltar à arcada, pontuações, pausar e sair) e o HUD do reino.
+ * Barra de topo (voltar à arcada, acerca, pausar e sair) e o HUD do reino.
  *
  * Ao contrário do Maze Run, o HUD aqui é HTML e não canvas: são números que
  * mudam devagar e uma dúzia de bens, e em HTML ganham o vidro verdadeiro e a

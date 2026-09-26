@@ -6,6 +6,18 @@
 // da mesma maneira num telemóvel e num monitor.
 
 export const GAME_ID = 'maze-run';
+
+/**
+ * O que a janela "Acerca" mostra (ver /lib/arcade/about.js). Os autores e o
+ * titular do copyright são os da arcada; o ano do © é o da publicação.
+ */
+export const ABOUT = {
+    title: 'Maze Run',
+    emoji: '🧩',
+    tagline: 'Labirintos · Cristais · Fuga',
+    version: '1.0.0',
+    published: '2026-09-19'
+};
 export const NAME_STORAGE_KEY = 'mazeRunPlayerName_v1';
 export const PROGRESS_STORAGE_KEY = 'mazeRunProgress_v1';
 

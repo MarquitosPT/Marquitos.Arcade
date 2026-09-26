@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <!-- Versão do site, mostrada em /acerca (ver Components/ArcadeCatalog.cs). -->
+    <Version>1.0.0</Version>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>aspnet-MarquitosArcade-10eb987d-a6bb-4613-9d47-603479e78ca4</UserSecretsId>

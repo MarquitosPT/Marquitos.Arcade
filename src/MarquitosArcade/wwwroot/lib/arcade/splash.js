@@ -3,8 +3,9 @@
 // A parte visível é toda do splash.css — este módulo só trata do tempo.
 // O que ele resolve é a tensão entre duas coisas que se querem ao mesmo tempo:
 //
-//   - o ecrã tem de estar no ar um mínimo de tempo (por omissão 2s), mesmo
-//     quando o jogo já está pronto em 200ms. É de propósito: dá à arcada o
+//   - o ecrã tem de estar no ar um mínimo de tempo (por omissão 2s, contando
+//     já com a pausa na barra cheia e o fade de saída), mesmo quando o jogo
+//     já está pronto em 200ms. É de propósito: dá à arcada o
 //     arranque de uma consola em vez de um salto seco para o menu;
 //   - e não pode ficar preso quando alguma coisa demora ou rebenta.
 //
@@ -19,7 +20,10 @@
 import { readSessionText, writeSessionText } from './storage.js';
 
 const DEFAULTS = {
-    /** Quanto tempo o ecrã fica no ar, no mínimo. */
+    /**
+     * Quanto tempo o ecrã fica no ar, no mínimo — do arranque até ter
+     * desaparecido. A barra enche no que sobra depois da pausa e do fade.
+     */
     minDuration: 2000,
     /** Teto absoluto: passado isto sai, com ou sem `ready()`. */
     maxDuration: 12000,
@@ -76,6 +80,9 @@ export function createSplash(root, options = {}) {
     let progress = 0;
     let frame = 0;
     const startedAt = performance.now();
+    // A pausa com a barra cheia e o fade também contam para o `minDuration`:
+    // antes somavam-se a ele e os "2s" ficavam perto dos 3s no ecrã.
+    const fillDuration = Math.max(1, config.minDuration - config.holdAtFull - config.fadeDuration);
 
     // Já se viu o arranque neste separador: some sem sequer pintar um frame.
     // É o que separa o portal (arranca uma vez) dos jogos (arrancam sempre).
@@ -104,7 +111,7 @@ export function createSplash(root, options = {}) {
         const elapsed = now - startedAt;
         if (elapsed >= config.maxDuration) isReady = true;
 
-        const byTime = elapsed / config.minDuration;
+        const byTime = elapsed / fillDuration;
         const target = isReady ? byTime : Math.min(byTime, config.stallAt);
         // Monotónica: a barra nunca anda para trás, nem quando o `ready()` chega
         // depois de o tempo já ter passado o chão.

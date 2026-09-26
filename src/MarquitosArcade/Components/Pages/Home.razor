@@ -102,79 +102,12 @@
         <span class="home-meta-links">
             <a href="/suporte">Ajuda e contactos</a>
             <a href="/privacidade">Política de Privacidade</a>
+            <a href="/acerca">Acerca</a>
         </span>
     </p>
 </main>
 
 @code {
-    /// <summary>Um jogo do catálogo da arcada.</summary>
-    /// <param name="Slug">Pasta do jogo em <c>wwwroot/games/</c> e id usado nas pontuações.</param>
-    /// <param name="Theme">Classe CSS com a cor e o lettering do jogo.</param>
-    /// <param name="Cover">Capa 16:9 gerada por <c>tools/covers/</c>.</param>
-    /// <param name="Badge">Etiqueta opcional no canto da capa (ex.: "Novo").</param>
-    /// <param name="IsPlayable">Jogos por lançar não têm link e levam o carimbo "Em breve".</param>
-    private sealed record ArcadeGame(
-        string Slug,
-        string Title,
-        string Tagline,
-        string Description,
-        string Emoji,
-        string Theme,
-        string Cover,
-        string? Badge = null,
-        bool IsPlayable = true,
-        string PlayLabel = "Jogar")
-    {
-        public string PlayUrl => $"/games/{Slug}/";
-    }
-
-    // Mais recentes primeiro: um jogo novo entra no topo do array e os mais
-    // antigos vão descendo para o fim do catálogo.
-    private static readonly ArcadeGame[] Catalog =
-    [
-        new("terras-do-reino",
-            "Terras do Reino",
-            "campos • minas • mercados",
-            "Semeia, colhe, abre minas e oficinas e faz do teu o reino mais próspero, sem guerras.",
-            "🏰",
-            "theme-reino",
-            "/covers/terras-do-reino.webp",
-            // Em testes: fica "Em breve" no catálogo, mas joga-se em
-            // /games/terras-do-reino/ para quem lá for direto.
-            IsPlayable: false),
-
-        new("maze-run",
-            "Maze Run",
-            "labirintos & fugas",
-            "Foge aos guardas por labirintos com portais e portas trancadas, e desbloqueia o nível seguinte.",
-            "🧩",
-            "theme-maze",
-            "/covers/maze-run.webp",
-            Badge: "Novo"),
-
-        new("pixel-racing",
-            "Pixel Racing",
-            "boost • drift • torneios",
-            "Corridas arcade em pistas curtas, com boost, drift e torneios. Tu e três adversários CPU.",
-            "🏎️",
-            "theme-racing",
-            "/covers/pixel-racing.webp",
-            Badge: "Novo"),
-
-        new("pong",
-            "Pong Retro",
-            "retro • arcade",
-            "Releitura neon do clássico Pong, com modo 1 jogador (vs. CPU) ou 2 jogadores no mesmo ecrã.",
-            "🏓",
-            "theme-pong",
-            "/covers/pong.webp"),
-
-        new("tasca-do-ze",
-            "Tasca do Zé",
-            "o teu turno na cozinha",
-            "Gere os pedidos, prepara os pratos certos e serve os clientes antes que percam a paciência.",
-            "🍽️",
-            "theme-tasca",
-            "/covers/tasca-do-ze.webp")
-    ];
+    // O catálogo vive em Components/ArcadeCatalog.cs: a página /acerca também o lê.
+    private static ArcadeGame[] Catalog => ArcadeCatalog.Games;
 }

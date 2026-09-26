@@ -5,6 +5,18 @@
 // da mesma maneira num telemóvel e num monitor.
 
 export const GAME_ID = 'pixel-racing';
+
+/**
+ * O que a janela "Acerca" mostra (ver /lib/arcade/about.js). Os autores e o
+ * titular do copyright são os da arcada; o ano do © é o da publicação.
+ */
+export const ABOUT = {
+    title: 'Pixel Racing',
+    emoji: '🏎️',
+    tagline: 'Boost · Drift · Campeonato',
+    version: '1.0.0',
+    published: '2026-09-12'
+};
 export const NAME_STORAGE_KEY = 'pixelRacingPlayerName_v1';
 export const COLOR_STORAGE_KEY = 'pixelRacingPlayerColor_v1';
 

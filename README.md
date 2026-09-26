@@ -8,10 +8,11 @@ Blazor Web App (.NET 10, render mode Interactive Server) com ASP.NET Core Identi
 
 ## Estrutura
 
-- `src/MarquitosArcade/Components/Pages/Home.razor`, `wwwroot/styles.css`: portal principal com branding e catálogo de jogos. O catálogo é gerado a partir do array `Catalog` no `@code` da página — cada jogo é um cartão com a sua capa, o título em overlay e a sua cor (classes `.theme-*`). `styles.css` é a folha de estilos global do site — cobre o portal, a página de pontuações e as páginas de conta (`/Account/...`); cada jogo tem as suas próprias folhas de estilo, em `games/<slug>/css/`. Ver [Tema](#tema-glass-claro-e-escuro).
+- `src/MarquitosArcade/Components/Pages/Home.razor`, `wwwroot/styles.css`: portal principal com branding e catálogo de jogos. O catálogo é gerado a partir do array `ArcadeCatalog.Games` (`Components/ArcadeCatalog.cs`, partilhado com a página `/acerca`) — cada jogo é um cartão com a sua capa, o título em overlay e a sua cor (classes `.theme-*`). `styles.css` é a folha de estilos global do site — cobre o portal, a página de pontuações e as páginas de conta (`/Account/...`); cada jogo tem as suas próprias folhas de estilo, em `games/<slug>/css/`. Ver [Tema](#tema-glass-claro-e-escuro).
 - `src/MarquitosArcade/wwwroot/theme.js`: escolha do tema claro/escuro (ver [Tema](#tema-glass-claro-e-escuro)).
 - `src/MarquitosArcade/wwwroot/covers/`: capas 16:9 dos jogos (WebP) usadas no catálogo — são screenshots reais de cada jogo, gerados por `tools/covers/` (ver [Capas dos jogos](#capas-dos-jogos)).
 - `src/MarquitosArcade/Components/Pages/Pontuacoes.razor`: página dedicada às pontuações em `/pontuacoes`, com um painel por jogo (array `Games` no `@code`). Lê os tops diretamente da base de dados no servidor, via `ScoresEndpoints.GetTopScoresAsync` — o mesmo método que serve o endpoint `GET /api/scores/:gameId`, mas sem passar por HTTP.
+- `src/MarquitosArcade/Components/Pages/Acerca.razor`: página `/acerca` com a ficha da arcada (título, versão, autor, data de publicação e copyright) e a lista dos jogos com a versão e a data de cada um. Os dados vêm do `Components/ArcadeCatalog.cs`; a versão do site é o `<Version>` do `.csproj`. Tem o link na nota do fim da home, a seguir ao da privacidade.
 - `src/MarquitosArcade/Components/Pages/Privacidade.razor` e `Suporte.razor`: as duas páginas de texto — política de privacidade em `/privacidade` e suporte em `/suporte`. São os URLs apontados pela app na App Store (política de privacidade e suporte), por isso são para manter estáveis. Chega-se lá pela nota no fim da home, a seguir ao catálogo (`.home-meta` em `Home.razor`) — e não pelo rodapé, que é uma barra de uma linha onde os links partiam a linha em ecrãs estreitos. O texto vive no próprio `.razor` (não há CMS nem markdown por trás), no painel de vidro das páginas simples (`.page-shell`), com a tipografia longa na secção `.longform` do `styles.css`. Duas notas ao mexer nelas: a política tem duas datas a atualizar (a do topo e a da linha de versão no fim), e o suporte diz que a arcada não envia emails — se algum dia houver servidor de email configurado, a resposta sobre a palavra-passe esquecida deixa de ser verdade.
 - `src/MarquitosArcade/wwwroot/games/<slug>/`: um jogo por pasta, cada um com o seu `index.html` (só markup), `css/`, `js/` (módulos ES) e `assets/`. Ver [Estrutura de um jogo](#estrutura-de-um-jogo) e, para o porquê desta organização em vez de um projeto .NET por jogo, [docs/estrutura-dos-jogos.md](docs/estrutura-dos-jogos.md).
   - `tasca-do-ze/`: mini-jogo "Tasca do Zé" (gestão de pedidos), com leaderboard persistido via `/api/scores/tasca-do-ze`.
@@ -63,13 +64,14 @@ barra a crescer, sobre um fundo de raios e pixel art (`wwwroot/lib/arcade/splash
 `Components/App.razor` no portal, no `index.html` de cada jogo —, porque tem de
 estar pintado no primeiro frame, antes de correr JavaScript nenhum.
 
-**Fica no ar 2 segundos, mesmo quando já está tudo pronto.** É de propósito: dá à
+**Fica no ar 2 segundos, mesmo quando já está tudo pronto** — contando já com a
+pausa na barra cheia e o fade de saída. É de propósito: dá à
 arcada um arranque de consola em vez de um salto seco para o menu. O `splash.js`
 gere três relógios para isso não se virar contra o jogador:
 
 | Relógio       | O que faz                                                        |
 | ------------- | ---------------------------------------------------------------- |
-| `minDuration` | O chão. 2s por omissão; muda-se com `data-splash-min` no markup. |
+| `minDuration` | O chão, do arranque até sair. 2s por omissão; muda-se com `data-splash-min`. |
 | `ready()`     | O conteúdo por baixo está montado. Sem ele a barra pára nos 92%. |
 | `maxDuration` | O teto. Aos 12s desiste de esperar e sai na mesma.               |
 
@@ -165,7 +167,8 @@ import { createScoreClient } from '/lib/arcade/scores.js';
 | `viewport.js` | Canvas em ecrã inteiro, nítido em Retina e por baixo do notch     |
 | `loop.js`     | Ciclo `requestAnimationFrame` com delta-time limitado            |
 | `dom.js`      | Seletores, `escapeHtml`, grupos de ecrãs e de botões             |
-| `topbar.js`   | Barra de topo comum (arcada, pontuações, pausa, sair)            |
+| `topbar.js`   | Barra de topo comum (arcada, acerca, pausa, sair)                |
+| `about.js`    | Janela "Acerca": título, versão, autores, publicação e copyright (`about.css`) |
 | `splash.js`   | Ecrã de arranque: tempo mínimo, barra de progresso e saída       |
 | `math.js`     | `clamp`, `lerp`, ângulos, aleatórios, `shuffle`                  |
 
@@ -250,10 +253,11 @@ vezes.
    Copiar de lá também o bloco `#arcadeSplash` do `index.html` (trocando o nome do jogo em `.arcade-splash-caption`), os dois `<link>` e o `<script>` do `splash-boot.js` no `<head>`, e o `window.__arcadeSplash?.ready()` no fim do `main.js` — ver [Ecrã de arranque](#ecrã-de-arranque).
 2. Se precisar de leaderboard persistente, usar `createScoreClient('<slug>')` do SDK, que fala com `GET/POST /api/scores/<slug>`.
    Se tiver níveis a desbloquear, usar também `createProgressClient('<slug>')`, que fala com `GET/PUT /api/progress/<slug>` — ver [Progresso e níveis](#progresso-e-níveis).
-3. Acrescentar o jogo ao array `GAMES` em `tools/games/smoke-test.mjs`, com um guião que o jogue durante alguns segundos.
-4. Gerar a capa do jogo: acrescentar uma receita ao array `GAMES` em `tools/covers/capture-covers.mjs` e correr o script (ver [Capas dos jogos](#capas-dos-jogos)).
-5. Adicionar uma entrada **no topo** do array `Catalog` em `Components/Pages/Home.razor` — o catálogo mostra as novidades primeiro e os jogos mais antigos vão descendo para o fim — (slug, título, tagline, descrição, emoji, tema e capa) e, se o tema for novo, uma classe `.theme-<jogo>` em `styles.css` com a cor (`--game-accent`) e o fundo da capa (`--cover-bg`). Só isso: a tipografia dos cartões é do catálogo e é igual para todos (ver [Cartões do catálogo](#cartões-do-catálogo)).
-6. Adicionar o jogo **no topo** do array `Games` em `Components/Pages/Pontuacoes.razor` para aparecer na página de pontuações, pela mesma ordem do catálogo.
+3. Preencher o `ABOUT` no `config.js` (título, versão, data de publicação) e pôr o botão `#aboutBtn` a seguir ao `#arcadeLink`, com o `<link>` do `/lib/arcade/about.css` — o `createAboutDialog(ABOUT, { opener })` do SDK trata da janela. Um jogo com ecrãs sobrepostos próprios pode, em vez disso, pôr a ficha num deles com `renderAboutDetails(ABOUT)` (como a Tasca do Zé).
+4. Acrescentar o jogo ao array `GAMES` em `tools/games/smoke-test.mjs`, com um guião que o jogue durante alguns segundos.
+5. Gerar a capa do jogo: acrescentar uma receita ao array `GAMES` em `tools/covers/capture-covers.mjs` e correr o script (ver [Capas dos jogos](#capas-dos-jogos)).
+6. Adicionar uma entrada **no topo** do array `Games` em `Components/ArcadeCatalog.cs` — o catálogo mostra as novidades primeiro e os jogos mais antigos vão descendo para o fim — (slug, título, tagline, descrição, emoji, tema, capa, e a versão e a data de publicação iguais às do `ABOUT` do jogo) e, se o tema for novo, uma classe `.theme-<jogo>` em `styles.css` com a cor (`--game-accent`) e o fundo da capa (`--cover-bg`). Só isso: a tipografia dos cartões é do catálogo e é igual para todos (ver [Cartões do catálogo](#cartões-do-catálogo)).
+7. Adicionar o jogo **no topo** do array `Games` em `Components/Pages/Pontuacoes.razor` para aparecer na página de pontuações, pela mesma ordem do catálogo.
 
 ## Cartões do catálogo
 
@@ -305,6 +309,10 @@ que o gerava) saíram do repositório.
 Não há dashboard na página principal — as pontuações vivem todas em
 `Components/Pages/Pontuacoes.razor`, que gera um painel por jogo a partir do
 array `Games` no `@code` da página.
+
+Também não há botão de pontuações nos jogos: o ecrã inicial de cada um só tem
+"Arcade" (voltar ao portal) e "Acerca". Quem quiser ver as pontuações vê-as na
+arcada. Os jogos continuam a enviar as pontuações no fim de cada partida.
 
 A página é renderizada no servidor e lê os tops diretamente da base de dados com
 `ScoresEndpoints.GetTopScoresAsync`. É o mesmo método por trás de
@@ -569,9 +577,8 @@ sozinha — não há nada em cache para invalidar.
 
 > **Em testes.** No catálogo aparece como "Em breve" (`IsPlayable: false` em
 > `Home.razor`), mas joga-se indo direto a `/games/terras-do-reino/`. O painel
-> das pontuações está escondido (comentado em `Pontuacoes.razor`, e o botão 🏆
-> do jogo com `hidden`); as pontuações continuam a ser guardadas. Para lançar,
-> desfazem-se estes três pontos.
+> das pontuações está escondido (comentado em `Pontuacoes.razor`); as
+> pontuações continuam a ser guardadas. Para lançar, desfazem-se estes dois pontos.
 >
 > Para o testar numa app afixada, onde não há barra de endereço, o cartão
 > "Em breve" tem uma entrada secreta: **toque duplo com três dedos** (no

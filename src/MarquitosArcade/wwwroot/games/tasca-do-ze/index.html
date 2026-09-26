@@ -39,6 +39,7 @@
     <link rel="stylesheet" href="css/order.css" />
     <link rel="stylesheet" href="css/bench.css" />
     <link rel="stylesheet" href="css/overlays.css" />
+    <link rel="stylesheet" href="/lib/arcade/about.css" />
 </head>
 
 <body>
@@ -113,9 +114,19 @@
     <div class="sub">o teu turno na cozinha</div>
     <div class="menu-actions">
       <button class="cta" id="playBtn">🎮 Jogar</button>
-      <button class="cta secondary" id="scoresBtn">🏆 Pontuações</button>
       <a class="cta ghost" href="/" style="text-decoration:none; display:block;">← Voltar à arcade</a>
+      <button class="cta ghost" id="aboutBtn">ℹ️ Acerca</button>
     </div>
+  </div>
+</div>
+
+<!-- ABOUT OVERLAY (título, versão, autores, publicação e copyright) -->
+<div class="overlay hidden" id="aboutOverlay" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
+  <div class="panel">
+    <h1 id="aboutTitle">🍽️ Tasca do Zé</h1>
+    <div class="sub">acerca do jogo</div>
+    <div id="aboutDetails"></div>
+    <button class="cta ghost" id="closeAboutBtn" style="margin-top:16px;">Fechar</button>
   </div>
 </div>
 
@@ -132,16 +143,6 @@
     </p>
     <button class="cta" id="startBtn">Começar o turno</button>
     <button class="cta ghost" id="backToMenuBtn">Voltar atrás</button>
-  </div>
-</div>
-
-<!-- LEADERBOARD OVERLAY -->
-<div class="overlay hidden" id="leaderboardOverlay">
-  <div class="panel">
-    <h1>🏆 Pontuações</h1>
-    <div class="sub">os melhores cozinheiros da tasca</div>
-    <div class="lb-list" id="leaderboardList"></div>
-    <button class="cta ghost" id="closeLeaderboardBtn" style="margin-top:0;">Fechar</button>
   </div>
 </div>
 
@@ -164,7 +165,6 @@
     <div class="final-score" id="finalScore">0</div>
     <div class="sub" id="overPlayerLine">pontos no turno de hoje</div>
     <button class="cta" id="againBtn" style="margin-top:14px;">Jogar outra vez</button>
-    <button class="cta secondary" id="overScoresBtn">Ver pontuações</button>
     <button class="cta ghost" id="menuBtn">Menu principal</button>
   </div>
 </div>

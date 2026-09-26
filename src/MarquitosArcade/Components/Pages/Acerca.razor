@@ -1,0 +1,101 @@
+@page "/acerca"
+
+<PageTitle>Acerca | Marquitos Arcade</PageTitle>
+
+<main class="page-shell longform">
+    <h1>Acerca</h1>
+    <p class="longform-updated">@ArcadeCatalog.Title &middot; versão @ArcadeCatalog.Version</p>
+
+    <p class="longform-lead">
+        O <strong>@ArcadeCatalog.Title</strong> é uma arcada de jogos casuais. É um projeto de
+        uma pessoa só, feito nos tempos livres: clássicos revistos, projetos originais e
+        desafios para bater recordes.
+    </p>
+
+    <h2 id="arcada">A arcada</h2>
+    <dl class="about-facts">
+        <div>
+            <dt>Título</dt>
+            <dd>@ArcadeCatalog.Title</dd>
+        </div>
+        <div>
+            <dt>Versão</dt>
+            <dd>@ArcadeCatalog.Version</dd>
+        </div>
+        <div>
+            <dt>Autor</dt>
+            <dd>@ArcadeCatalog.Author</dd>
+        </div>
+        <div>
+            <dt>Publicado</dt>
+            <dd>@FormatDate(ArcadeCatalog.Published)</dd>
+        </div>
+        <div>
+            <dt>Copyright</dt>
+            <dd>@Copyright(ArcadeCatalog.Published)</dd>
+        </div>
+    </dl>
+
+    <h2 id="jogos">Jogos disponíveis</h2>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Jogo</th>
+                    <th>Versão</th>
+                    <th>Publicado</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var game in Playable)
+                {
+                    <tr>
+                        <td data-label="Jogo">
+                            <span class="about-game-emoji" aria-hidden="true">@game.Emoji</span>
+                            <a href="@game.PlayUrl">@game.Title</a>
+                            <span class="about-game-tagline">@game.Tagline</span>
+                        </td>
+                        <td data-label="Versão">@game.Version</td>
+                        <td data-label="Publicado">@FormatDate(game.Published)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Upcoming.Length > 0)
+    {
+        <h3>A caminho</h3>
+        <ul>
+            @foreach (var game in Upcoming)
+            {
+                <li><strong>@game.Emoji @game.Title</strong> — @game.Tagline &middot; em testes, versão @game.Version</li>
+            }
+        </ul>
+    }
+
+    <p class="longform-version">
+        @Copyright(ArcadeCatalog.Published) As pontuações de cada jogo estão em
+        <a href="/pontuacoes">Pontuações</a>.
+    </p>
+</main>
+
+@code {
+    private static readonly ArcadeGame[] Playable = ArcadeCatalog.Games.Where(g => g.IsPlayable).ToArray();
+    private static readonly ArcadeGame[] Upcoming = ArcadeCatalog.Games.Where(g => !g.IsPlayable).ToArray();
+
+    // Os meses à mão em vez de CultureInfo("pt-PT"): assim a data sai igual num
+    // servidor sem ICU (globalization invariant), onde a cultura cairia no inglês.
+    private static readonly string[] Months =
+    [
+        "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+        "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"
+    ];
+
+    /// <summary>6 de setembro de 2026 — o mesmo formato da janela "Acerca" dos jogos.</summary>
+    private static string FormatDate(DateOnly date) => $"{date.Day} de {Months[date.Month - 1]} de {date.Year}";
+
+    /// <summary>O ano do © é o da publicação, como nos jogos (lib/arcade/about.js).</summary>
+    private static string Copyright(DateOnly published) =>
+        $"© {published.Year} {ArcadeCatalog.CopyrightHolder}. Todos os direitos reservados.";
+}

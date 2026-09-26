@@ -7,10 +7,10 @@ import { ALL_DISHES } from './data.js';
 import { audio, resumeAudio, sfxClick, sfxTap } from './audio.js';
 import { applyMute } from './music.js';
 import { SAVORY, SWEET, buildBench, setBenchCategory } from './bench.js';
-import { renderLeaderboard } from './leaderboard.js';
 import { ringBell, setShiftOverHandler } from './orders.js';
+import { renderAboutDetails } from '/lib/arcade/about.js';
 import { bindPlayerNameInput } from '/lib/arcade/scores.js';
-import { DEFAULT_PLAYER_NAME, NAME_STORAGE_KEY } from './config.js';
+import { ABOUT, DEFAULT_PLAYER_NAME, NAME_STORAGE_KEY } from './config.js';
 import { state } from './state.js';
 import { endShift, quitToMenu, startShift, togglePause } from './shift.js';
 import { els, renderHearts, showOverlay } from './ui.js';
@@ -34,10 +34,9 @@ function buildMenuGrid() {
     }
 }
 
-function openLeaderboard() {
+function openAbout() {
     sfxClick();
-    renderLeaderboard();
-    showOverlay('leaderboardOverlay');
+    showOverlay('aboutOverlay');
 }
 
 function backToMainMenu() {
@@ -69,9 +68,8 @@ document.getElementById('playBtn').addEventListener('click', () => {
     setTimeout(() => els.nameInput.focus(), 200);
 });
 
-document.getElementById('scoresBtn').addEventListener('click', openLeaderboard);
-document.getElementById('overScoresBtn').addEventListener('click', openLeaderboard);
-document.getElementById('closeLeaderboardBtn').addEventListener('click', backToMainMenu);
+document.getElementById('aboutBtn').addEventListener('click', openAbout);
+document.getElementById('closeAboutBtn').addEventListener('click', backToMainMenu);
 document.getElementById('backToMenuBtn').addEventListener('click', backToMainMenu);
 document.getElementById('menuBtn').addEventListener('click', backToMainMenu);
 
@@ -111,6 +109,7 @@ els.muteBtn.addEventListener('click', toggleMute);
 
 buildMenuGrid();
 buildBench();
+els.aboutDetails.appendChild(renderAboutDetails(ABOUT));
 renderHearts();
 showOverlay('mainMenuOverlay');
 

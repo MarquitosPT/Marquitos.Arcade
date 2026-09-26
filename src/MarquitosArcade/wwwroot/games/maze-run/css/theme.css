@@ -54,3 +54,16 @@
     --font-display: "Outfit", "Segoe UI", system-ui, sans-serif;
     --font-body: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
 }
+
+/* Janela "Acerca" (lib/arcade/about.css), com o vidro e o acento deste jogo. */
+:root {
+    --about-panel: rgba(18, 16, 42, 0.94);
+    --about-border: var(--glass-border);
+    --about-ink: var(--text);
+    --about-muted: var(--muted);
+    --about-accent: var(--accent);
+    --about-on-accent: var(--on-accent);
+    --about-radius: var(--radius-lg);
+    --about-font-display: var(--font-display);
+    --about-font-body: var(--font-body);
+}

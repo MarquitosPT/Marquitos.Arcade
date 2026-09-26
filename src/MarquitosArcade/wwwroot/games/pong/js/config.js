@@ -6,6 +6,18 @@
 
 export const GAME_ID = 'pong';
 
+/**
+ * O que a janela "Acerca" mostra (ver /lib/arcade/about.js). Os autores e o
+ * titular do copyright são os da arcada; o ano do © é o da publicação.
+ */
+export const ABOUT = {
+    title: 'Pong Retro',
+    emoji: '🏓',
+    tagline: 'Retro · Arcade',
+    version: '1.0.0',
+    published: '2026-09-06'
+};
+
 /** Chave de localStorage com o nome do jogador. O sufixo _v1 permite mudar o formato. */
 export const NAME_STORAGE_KEY = 'pongPlayerName_v1';
 

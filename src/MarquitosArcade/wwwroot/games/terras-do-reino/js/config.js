@@ -12,6 +12,19 @@
 // e ao voltar continua exatamente de onde ficou.
 
 export const GAME_ID = 'terras-do-reino';
+
+/**
+ * O que a janela "Acerca" mostra (ver /lib/arcade/about.js). Os autores e o
+ * titular do copyright são os da arcada; o ano do © é o da publicação.
+ */
+export const ABOUT = {
+    title: 'Terras do Reino',
+    emoji: '🏰',
+    tagline: 'Campos · Minas · Mercados',
+    version: '0.9.0',
+    status: 'Em testes',
+    published: '2026-09-24'
+};
 export const NAME_STORAGE_KEY = 'terrasDoReinoPlayerName_v1';
 export const PROGRESS_STORAGE_KEY = 'terrasDoReinoSave_v1';
 

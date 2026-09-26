@@ -3,10 +3,10 @@
 // Junta as peças (campo, física, desenho, controlos) e trata do ciclo de vida:
 // menu, partida a decorrer, pausa e regresso ao menu.
 
-import { createButtonGroup, createLoop, createOverlays, createTopBar, createViewport } from '/lib/arcade/index.js';
+import { createAboutDialog, createButtonGroup, createLoop, createOverlays, createTopBar, createViewport } from '/lib/arcade/index.js';
 import { bindPlayerNameInput, createScoreClient } from '/lib/arcade/scores.js';
 
-import { GAME_ID, MODE_SINGLE, NAME_STORAGE_KEY } from './config.js';
+import { ABOUT, GAME_ID, MODE_SINGLE, NAME_STORAGE_KEY } from './config.js';
 import { isSinglePlayer, resetScores, state } from './state.js';
 import { layout } from './field.js';
 import { resumeAudio } from './audio.js';
@@ -23,6 +23,7 @@ const diffRow = document.getElementById('diffRow');
 const nameRow = document.getElementById('nameRow');
 const modeRow = document.getElementById('modeRow');
 const rotateWarning = document.getElementById('rotateWarning');
+const aboutBtn = document.getElementById('aboutBtn');
 const topBarEl = document.querySelector('.topBar');
 
 const overlays = createOverlays({
@@ -32,10 +33,12 @@ const overlays = createOverlays({
 
 const topBar = createTopBar({
     arcadeLink: document.getElementById('arcadeLink'),
-    scoresLink: document.getElementById('scoresLink'),
+    aboutBtn,
     pauseBtn,
     endBtn
 });
+
+createAboutDialog(ABOUT, { opener: aboutBtn });
 
 const scores = createScoreClient(GAME_ID);
 const playerName = bindPlayerNameInput(document.getElementById('playerNameInput'), NAME_STORAGE_KEY);

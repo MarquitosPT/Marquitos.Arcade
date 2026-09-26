@@ -103,7 +103,8 @@ Módulos ES sem dependências externas, importáveis por caminho absoluto
 | `viewport.js`  | Canvas em ecrã inteiro, nítido em Retina e por baixo do notch         |
 | `loop.js`      | Ciclo `requestAnimationFrame` com delta-time limitado                |
 | `dom.js`       | Seletores, `escapeHtml`, grupos de ecrãs e de botões                 |
-| `topbar.js`    | Barra de topo comum (arcada, pontuações, pausa, sair)                |
+| `topbar.js`    | Barra de topo comum (arcada, acerca, pausa, sair)                    |
+| `about.js`     | Janela "Acerca" (título, versão, autores, publicação, copyright)     |
 | `splash.js`    | Ecrã de arranque da arcada: tempo mínimo, barra e saída              |
 | `splash-skip.js` | Script clássico no `<head>`: sem arranque ao voltar de uma página do jogo (o guia) |
 | `math.js`      | `clamp`, `lerp`, ângulos, aleatórios, `shuffle`                      |
