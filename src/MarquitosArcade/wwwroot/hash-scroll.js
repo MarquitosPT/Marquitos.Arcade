@@ -13,8 +13,20 @@
 // o clique num link de fragmento é intercetado, o URL é atualizado com
 // history.pushState (que, ao contrário de location.hash, não dispara o
 // scroll nativo) e o scroll é feito por nós na .page-scroll.
+//
+// Pela mesma razão, a mudança de página também é connosco: a enhanced
+// navigation do Blazor só repõe o scroll da janela, e a .page-scroll
+// ficava onde estava — abria-se a privacidade a meio, à altura a que se
+// tinha deixado a home. Uma página nova abre no topo; recuar ou avançar
+// no histórico volta à posição em que se deixou essa página.
 (() => {
   const SCROLLER = ".page-scroll";
+
+  // Posição da .page-scroll por página (caminho + query, sem fragmento).
+  const pageKey = () => window.location.pathname + window.location.search;
+  const positions = new Map();
+  let currentPage = pageKey();
+  let fromHistory = false;
 
   const reducedMotion = () =>
     window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
@@ -99,9 +111,27 @@
     focusTarget(el);
   });
 
+  // Vai-se guardando onde está cada página. O `scroll` não borbulha, daí a
+  // captura no documento — a .page-scroll pode ser trocada pelo Blazor. A
+  // chave é a página que está à vista (`currentPage`), não a do URL: durante
+  // a troca o URL já é o novo e um scroll dessa altura estragava a posição
+  // guardada da página de destino.
+  document.addEventListener(
+    "scroll",
+    (event) => {
+      if (event.target instanceof Element && event.target.matches(SCROLLER)) {
+        positions.set(currentPage, event.target.scrollTop);
+      }
+    },
+    { capture: true, passive: true }
+  );
+
   // Recuar/avançar no histórico entre fragmentos, e qualquer código que
   // escreva em location.hash diretamente.
-  window.addEventListener("popstate", () => applyHash("auto"));
+  window.addEventListener("popstate", () => {
+    fromHistory = true;
+    applyHash("auto");
+  });
   window.addEventListener("hashchange", () => applyHash("auto"));
 
   // Entrada direta num URL com fragmento (ex.: o "Pontuações" de um
@@ -113,6 +143,27 @@
   window.addEventListener("load", () => applyHash("auto"), { once: true });
 
   // A enhanced navigation do Blazor troca o conteúdo sem recarregar a
-  // página: o alvo do fragmento no URL novo só existe depois disso.
-  window.__arcadeHashScroll = { reapply: () => applyHash("auto") };
+  // página: o alvo do fragmento no URL novo só existe depois disso. Sem
+  // fragmento, uma página nova começa no topo (ou onde ficou, se se chegou
+  // lá pelo histórico). Um formulário que volta ao mesmo URL fica onde está.
+  function afterNavigation() {
+    const page = pageKey();
+    const changedPage = page !== currentPage;
+    currentPage = page;
+
+    const el = targetFor(window.location.hash);
+    if (el) {
+      scrollToTarget(el, "auto");
+    } else if (changedPage) {
+      const box = scroller();
+      // `instant` porque a .page-scroll tem `scroll-behavior: smooth` no CSS:
+      // uma página nova a deslizar desde a posição da anterior é pior do que
+      // não mexer nada.
+      box?.scrollTo({ top: fromHistory ? positions.get(page) ?? 0 : 0, behavior: "instant" });
+      resetViewportSoon();
+    }
+    fromHistory = false;
+  }
+
+  window.__arcadeHashScroll = { reapply: afterNavigation };
 })();
