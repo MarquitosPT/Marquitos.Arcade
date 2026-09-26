@@ -7,7 +7,6 @@ import { ALL_DISHES } from './data.js';
 import { audio, resumeAudio, sfxClick, sfxTap } from './audio.js';
 import { applyMute } from './music.js';
 import { SAVORY, SWEET, buildBench, setBenchCategory } from './bench.js';
-import { renderLeaderboard } from './leaderboard.js';
 import { ringBell, setShiftOverHandler } from './orders.js';
 import { renderAboutDetails } from '/lib/arcade/about.js';
 import { bindPlayerNameInput } from '/lib/arcade/scores.js';
@@ -33,12 +32,6 @@ function buildMenuGrid() {
         cell.innerHTML = `${dish.emoji}<span>${dish.name}</span>`;
         els.menuGrid.appendChild(cell);
     }
-}
-
-function openLeaderboard() {
-    sfxClick();
-    renderLeaderboard();
-    showOverlay('leaderboardOverlay');
 }
 
 function openAbout() {
@@ -77,8 +70,6 @@ document.getElementById('playBtn').addEventListener('click', () => {
 
 document.getElementById('aboutBtn').addEventListener('click', openAbout);
 document.getElementById('closeAboutBtn').addEventListener('click', backToMainMenu);
-document.getElementById('overScoresBtn').addEventListener('click', openLeaderboard);
-document.getElementById('closeLeaderboardBtn').addEventListener('click', backToMainMenu);
 document.getElementById('backToMenuBtn').addEventListener('click', backToMainMenu);
 document.getElementById('menuBtn').addEventListener('click', backToMainMenu);
 

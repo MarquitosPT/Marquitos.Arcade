@@ -1,4 +1,4 @@
-/* Ecrãs sobrepostos: menu, pausa, fim de jogo, leaderboard e toast. */
+/* Ecrãs sobrepostos: menu, acerca, pausa, fim de jogo e toast. */
 
 #toast {
     position: fixed;
@@ -26,9 +26,9 @@
 
 /* O véu não tem nada para rolar, por isso não aceita gesto nenhum: o
  * `touch-action` não se herda, e sem isto um arrasto sobre a janela ia direito
- * ao documento e levava tudo de lado. As grelhas lá dentro (`.menu-grid`,
- * `.lb-list`) têm o seu próprio `pan-y` e continuam a rolar — o que manda é o
- * `touch-action` da caixa que apanha o gesto, não o dos pais dela. */
+ * ao documento e levava tudo de lado. A grelha lá dentro (`.menu-grid`) tem
+ * o seu próprio `pan-y` e continua a rolar — o que manda é o `touch-action`
+ * da caixa que apanha o gesto, não o dos pais dela. */
 .overlay {
     position: absolute;
     top: 0;
@@ -168,63 +168,6 @@
     letter-spacing: 0.4px;
     margin: 0 2px 8px;
     text-align: left;
-}
-
-.lb-list {
-    max-height: 320px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-y;
-    margin-bottom: 16px;
-    text-align: left;
-}
-
-.lb-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 9px 6px;
-    border-bottom: 1px solid #ece0c4;
-}
-
-.lb-row:last-child {
-        border-bottom: none;
-    }
-
-.lb-rank {
-    width: 28px;
-    text-align: center;
-    font-weight: 800;
-    font-size: 0.95rem;
-    color: #8a8071;
-    flex: 0 0 auto;
-}
-
-.lb-name {
-    flex: 1;
-    font-weight: 800;
-    font-size: 0.9rem;
-    color: var(--tinta);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.lb-score {
-    font-weight: 900;
-    color: var(--tijolo);
-    font-size: 0.95rem;
-    flex: 0 0 auto;
-}
-
-.empty-board {
-    font-size: 0.85rem;
-    color: #8a8071;
-    font-weight: 700;
-    text-align: center;
-    padding: 20px 0;
 }
 
 .menu-actions {

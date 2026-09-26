@@ -311,7 +311,7 @@ array `Games` no `@code` da página.
 
 Também não há botão de pontuações nos jogos: o ecrã inicial de cada um só tem
 "Arcade" (voltar ao portal) e "Acerca". Quem quiser ver as pontuações vê-as na
-arcada. A Tasca do Zé continua a mostrar o seu quadro no fim do turno.
+arcada. Os jogos continuam a enviar as pontuações no fim de cada partida.
 
 A página é renderizada no servidor e lê os tops diretamente da base de dados com
 `ScoresEndpoints.GetTopScoresAsync`. É o mesmo método por trás de
