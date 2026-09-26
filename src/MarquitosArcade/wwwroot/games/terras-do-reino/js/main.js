@@ -30,6 +30,7 @@ import { attachControls, setInputHandlers } from './input.js';
 import { anchorFor, camera, gridToWorld, lookAt, panBy, rotateView, worldToScreen } from './iso.js';
 import { buy, sell, townFor } from './market.js';
 import { createMenu } from './menu.js';
+import { musicEnabled, setMusicWanted, toggleMusic } from './music.js';
 import { checkQuest } from './quests.js';
 import { initRenderer, render } from './render.js';
 import { hasSave, loadSave, newGame, progress, restoreView, saveNow } from './save.js';
@@ -573,6 +574,7 @@ function play() {
     if (hasSave()) loadSave();
     enterKingdom();
     saveNow();
+    syncMusic();
 
     if (game.played < 1) toast('👑 Bem-vindo ao teu reino! Começa pelo objetivo, aqui em cima à esquerda.', 'gold');
 }
@@ -600,6 +602,7 @@ function leaveKingdom() {
     topBar.setInGame(false);
     camera.zoom = 1.1;
     menu.show();
+    syncMusic();
 }
 
 function pauseGame() {
@@ -611,6 +614,7 @@ function pauseGame() {
     closeSheet();
     saveNow();
     overlays.show('pause');
+    syncMusic();
 }
 
 function togglePause() {
@@ -621,7 +625,47 @@ function togglePause() {
     }
     game.paused = false;
     overlays.hideAll();
+    syncMusic();
 }
+
+// ---------- Música ----------
+
+/**
+ * A música toca no menu e no reino, e cala-se na pausa e com a página
+ * escondida. Antes do primeiro toque não há AudioContext e ela espera.
+ */
+function syncMusic() {
+    const paused = game.phase === 'playing' && game.paused;
+    setMusicWanted(!paused && document.visibilityState === 'visible');
+}
+
+function refreshMusicBtn() {
+    const on = musicEnabled();
+    els.musicBtn.setAttribute('aria-pressed', String(on));
+    const label = on ? 'Desligar a música' : 'Ligar a música';
+    els.musicBtn.title = label;
+    els.musicBtn.setAttribute('aria-label', label);
+}
+
+els.musicBtn.addEventListener('click', () => {
+    resumeAudio();
+    toggleMusic();
+    refreshMusicBtn();
+    syncMusic();
+});
+refreshMusicBtn();
+
+// O browser só deixa soar depois de um gesto. O primeiro toque ou tecla, onde
+// quer que seja (até a escrever o nome), destranca o áudio e a música começa
+// logo no menu, sem esperar pelo "Fundar o reino".
+function unlockAudio() {
+    if (!resumeAudio()) return;
+    document.removeEventListener('pointerup', unlockAudio, true);
+    document.removeEventListener('keydown', unlockAudio, true);
+    syncMusic();
+}
+document.addEventListener('pointerup', unlockAudio, true);
+document.addEventListener('keydown', unlockAudio, true);
 
 // ---------- Ligações ----------
 
@@ -709,6 +753,7 @@ document.addEventListener('visibilitychange', () => {
         saveNow();
         progress.flush();
     }
+    syncMusic();
 });
 window.addEventListener('pagehide', () => {
     if (game.phase === 'playing') {

@@ -6,7 +6,7 @@ import { ABOUT } from './config.js';
 export const els = byId(
     'game', 'startScreen', 'confirmScreen', 'pauseScreen',
     'playBtn', 'newBtn', 'confirmNewBtn', 'cancelNewBtn',
-    'resumeBtn', 'quitBtn', 'pauseBtn', 'endBtn', 'arcadeLink', 'aboutBtn',
+    'resumeBtn', 'quitBtn', 'pauseBtn', 'endBtn', 'arcadeLink', 'aboutBtn', 'musicBtn',
     'nameSlot', 'nameRow', 'accountRow', 'accountName', 'accountInitial', 'playerNameInput',
     'saveCard', 'saveLine', 'saveSub', 'progressNote',
     'hud', 'dayPill', 'popPill', 'happyPill', 'speedBtn', 'rotateBtn', 'resRow', 'questCard', 'questText',

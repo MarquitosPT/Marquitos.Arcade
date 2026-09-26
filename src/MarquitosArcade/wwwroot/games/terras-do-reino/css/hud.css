@@ -52,6 +52,11 @@
 .topIcon { font-size: 13px; }
 .topIcon + .topLabel { margin-left: 7px; }
 
+/* Música desligada: a nota leva um traço por cima e o botão fica mais apagado. */
+#musicBtn .musicSlash { display: none; }
+#musicBtn[aria-pressed="false"] .musicSlash { display: inline; }
+#musicBtn[aria-pressed="false"] { opacity: 0.7; }
+
 /* ---------- HUD ---------- */
 
 /*
@@ -80,8 +85,8 @@ body.in-game .hud { display: flex; }
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    /* deixa espaço à direita para a pausa e o sair da barra de topo */
-    max-width: calc(100% - 190px);
+    /* deixa espaço à direita para a música, a pausa e o sair da barra de topo */
+    max-width: calc(100% - 300px);
 }
 
 .pill,
@@ -410,7 +415,7 @@ body.in-game.is-placing #wrap::after {
 
 /* Telemóvel ao alto e estreito: etiquetas mais pequenas, nada de rótulos nos botões de topo. */
 @media (max-width: 480px) {
-    .statusRow { max-width: calc(100% - 120px); }
+    .statusRow { max-width: calc(100% - 136px); }
     .pill, .resChip { padding: 5px 8px; font-size: 12px; }
     /* Cinco botões têm de caber num ecrã de 320px. */
     .toolbar { gap: 2px; padding: 5px; }
@@ -419,6 +424,9 @@ body.in-game.is-placing #wrap::after {
     .toolIcon { font-size: 20px; }
     body.in-game .topLabel { display: none; }
     body.in-game .topIcon + .topLabel { margin-left: 0; }
+    /* Só ícones: três botões (música, pausa, sair) no espaço que eram dois. */
+    body.in-game .topBar { gap: 6px; }
+    body.in-game .topBtn { padding: 9px 10px; }
 }
 
 @media (max-width: 340px) {
