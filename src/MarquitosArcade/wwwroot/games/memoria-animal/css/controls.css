@@ -152,29 +152,24 @@ button { cursor: pointer; }
 .chipText { font-size: 13px; color: var(--muted); }
 .chipText b { color: var(--text); font-weight: 700; }
 
-/* ---------- Grelha dos níveis ---------- */
+/* ---------- Cartões dos níveis ---------- */
 
 /*
- * Os vinte e quatro níveis cabem num ecrã de telemóvel de uma vez — quatro
- * colunas ao alto, seis quando há largura, oito ao comprido —, por isso aqui
- * não há carrossel como no Maze Run. Os cartões têm as mesmas quatro linhas
- * todos, sempre presentes: número, cartas, estado e estrelas.
+ * Os níveis vão num carrossel (css/carousel.css), como no Maze Run, e os
+ * cartões têm a mesma anatomia dos de lá: uma caixa em cima com o desenho do
+ * nível — aqui, o tabuleiro em miniatura, com as cartas viradas na grelha em
+ * que vão aparecer ao alto — e cinco linhas por baixo, sempre as mesmas e
+ * sempre presentes: número, nome, cartas, estado e estrelas. É isso que lhes
+ * dá a todos a mesma altura.
  */
-.levelGrid {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    grid-auto-rows: 1fr;
-    gap: 8px;
-    width: 100%;
-}
-
 .levelCard {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 3px;
+    align-items: stretch;
     height: 100%;
-    padding: 10px 6px 9px;
+    gap: 8px;
+    padding: 12px;
+    text-align: left;
     border: 1px solid var(--glass-border);
     border-radius: var(--radius);
     background: var(--glass-bg-soft);
@@ -188,11 +183,14 @@ button { cursor: pointer; }
     background: linear-gradient(150deg, rgba(125, 220, 90, 0.2), rgba(76, 195, 255, 0.1));
 }
 
-.levelCard.is-done { border-color: rgba(125, 220, 90, 0.35); }
-.levelCard.active.is-done { border-color: var(--accent); }
-
+/*
+ * Um nível fechado continua a ser um botão: clicar nele abana o cartão, e o
+ * cartão diz o que falta fazer. Um `disabled` calado deixava quem joga sem
+ * saber porquê.
+ */
 .levelCard.is-locked { cursor: not-allowed; }
 .levelCard.is-locked:hover { background: var(--glass-bg-soft); transform: none; }
+.levelCard.is-locked .levelName,
 .levelCard.is-locked .levelNumber,
 .levelCard.is-locked .levelCards { color: var(--faint); }
 
@@ -208,32 +206,97 @@ button { cursor: pointer; }
     .levelCard.shake { animation: none; }
 }
 
-.levelNumber {
-    font-family: var(--font-display);
+/* A caixa do tabuleiro tem proporção fixa, seja qual for a grelha lá dentro:
+   senão um tabuleiro largo e um alto davam cartões de alturas diferentes. */
+.levelShape {
+    position: relative;
+    display: block;
+    aspect-ratio: 4 / 3;
+    border-radius: var(--radius-sm);
+    background: rgba(6, 16, 14, 0.45);
+    overflow: hidden;
+}
+
+.boardShape {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* As cartas da miniatura: as costas verdes, como no jogo. */
+.boardShape rect {
+    fill: var(--card-back-1);
+    stroke: rgba(255, 255, 255, 0.75);
+    stroke-width: 0.6;
+}
+
+.levelCard.is-done .boardShape rect { fill: var(--card-back-2); stroke: var(--card-matched); }
+
+.boardShape.is-locked rect {
+    fill: rgba(241, 247, 238, 0.16);
+    stroke: rgba(241, 247, 238, 0.25);
+}
+
+.levelLock {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
     font-size: 22px;
-    font-weight: 800;
-    line-height: 1.1;
+    background: rgba(6, 16, 14, 0.35);
+}
+
+.levelInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.levelNumber {
+    min-height: 1em;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--faint);
+}
+
+/* O nome nunca quebra: são de uma palavra (ver js/levels.js), e isto é a rede. */
+.levelName {
+    min-height: 1.15em;
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .levelCards {
-    font-size: 10.5px;
+    min-height: 1.2em;
+    font-size: 11px;
     font-weight: 600;
-    letter-spacing: 0.04em;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     color: var(--muted);
 }
 
 .levelState {
-    min-height: 1.3em;
-    font-size: 10.5px;
+    min-height: 1.25em;
+    font-size: 11px;
+    letter-spacing: 0.02em;
     white-space: nowrap;
-    color: var(--faint);
+    color: var(--muted);
 }
 
+/* As estrelas que faltam ficam lá, apagadas: vê-se de quantas é a escala. */
 .levelStars {
     display: flex;
+    align-items: center;
+    min-height: 13px;
     gap: 2px;
-    font-size: 12px;
+    font-size: 11px;
     line-height: 1;
     color: var(--gold);
 }
@@ -241,20 +304,18 @@ button { cursor: pointer; }
 .levelStars i { font-style: normal; }
 .levelStars i.off { color: rgba(241, 247, 238, 0.22); }
 
-/* Ao alto num telemóvel: quatro colunas, com os cartões mais baixos para as
-   seis filas caberem sem o painel ter de rolar. */
-@media (max-width: 480px) {
-    .levelGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
-    .levelCard { padding: 7px 3px 6px; gap: 2px; border-radius: var(--radius-sm); }
-    .levelNumber { font-size: 18px; }
-    .levelCards, .levelState { font-size: 9.5px; }
-    .levelStars { font-size: 10px; }
+/* Deitado, é a altura que falta: a caixa do tabuleiro achata. */
+@media (orientation: landscape) and (max-height: 600px) {
+    .levelShape { aspect-ratio: 16 / 9; }
 }
 
-@media (orientation: landscape) and (max-height: 600px) {
-    .levelGrid { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; }
-    .levelCard { padding: 5px 3px; gap: 1px; border-radius: var(--radius-sm); }
-    .levelNumber { font-size: 16px; }
-    .levelCards, .levelState { font-size: 9px; }
-    .levelStars { font-size: 9.5px; }
+/* Telemóvel: os cartões encolhem para caberem quatro por página ao alto (ou
+   uma fila de três ao comprido) sem o painel ter de rolar. */
+@media (max-width: 560px), (orientation: landscape) and (max-height: 600px) {
+    .levelCard { gap: 6px; padding: 9px; }
+    .levelNumber { font-size: 9px; letter-spacing: 0.1em; }
+    .levelName { font-size: 12.5px; }
+    .levelCards, .levelState { font-size: 10px; }
+    .levelStars { min-height: 12px; font-size: 10px; }
+    .levelLock { font-size: 18px; }
 }

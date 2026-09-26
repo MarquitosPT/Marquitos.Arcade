@@ -7,7 +7,7 @@ export const els = byId(
     'playArea', 'stage', 'board', 'banner', 'hud', 'hudLevel', 'hudTime', 'hudPairs', 'hudErrors',
     'startScreen', 'levelsScreen', 'howtoScreen', 'pauseScreen', 'resultScreen', 'resultBody',
     'playBtn', 'chooseBtn', 'howtoBtn', 'backBtn', 'howtoBackBtn', 'resumeBtn', 'quitBtn', 'pauseBtn', 'endBtn',
-    'levelGrid', 'levelsSub', 'progressLine', 'progressBar', 'progressNote',
+    'levelsCarousel', 'levelViewport', 'levelGrid', 'levelDots', 'prevPageBtn', 'nextPageBtn', 'levelsSub', 'progressLine', 'progressBar', 'progressNote',
     'animalGallery', 'howtoLastLevel',
     'nameSlot', 'nameRow', 'accountRow', 'accountName', 'accountInitial', 'playerNameInput',
     'arcadeLink', 'aboutBtn'

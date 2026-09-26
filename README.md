@@ -823,6 +823,14 @@ flex com quebra de linha, não uma grelha. O smoke-test confirma, nos vinte e
 quatro níveis e em três tamanhos de ecrã, que nenhuma carta sai do ecrã, fica por
 baixo do HUD ou por cima de outra.
 
+**A escolha de nível é o carrossel do Maze Run.** Os mesmos cartões de cinco
+linhas (número, nome, cartas, estado e estrelas) e as mesmas páginas — 2 × 2 ao
+alto, 3 × 1 ao comprido, 3 × 2 no computador —, com o carrossel partilhado do
+SDK (`lib/arcade/carousel.js`) e a folha `css/carousel.css` gémea da do Maze
+Run (ver [O carrossel dos níveis](#o-carrossel-dos-níveis)). Onde o Maze Run
+desenha o labirinto, aqui vai o tabuleiro em miniatura: as cartas do nível na
+grelha que o `fitGrid` lhes dá num telemóvel ao alto.
+
 **Estrelas pelos erros, pontos pelo resto.** Um erro é uma jogada de duas
 cartas sem par. ★ por concluir, ★★ com tantos erros como pares ou menos, ★★★
 com metade disso. É de propósito que o tempo não conta para as estrelas — é um

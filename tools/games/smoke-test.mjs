@@ -1013,16 +1013,42 @@ const GAMES = [
         menuSelector: '#startScreen',
         storage: { memoriaAnimalProgress_v1: JSON.stringify({ v: 1, unlocked: 24, levels: {} }) },
         async play(page) {
-            // O ecrã dos níveis: os vinte e quatro, de 4 a 50 cartas, todos à vista.
+            // O ecrã dos níveis: os vinte e quatro, de 4 a 50 cartas, em páginas.
             await page.click('#chooseBtn');
             await page.waitForSelector('.levelCard');
-            const levels = await page.$$eval('.levelCard', (cards) => cards.map((card) => card.querySelector('.levelCards').textContent));
+            await sleep(500); // o painel entra com uma animação
+            const levels = await page.$$eval('.levelCard', (cards) => cards.map((card) => ({
+                cards: card.querySelector('.levelCards').textContent,
+                tiles: card.querySelectorAll('.boardShape rect').length
+            })));
             if (levels.length !== 24) throw new Error(`${levels.length} níveis em vez de 24`);
-            if (levels[0] !== '4 cartas' || levels[23] !== '50 cartas') throw new Error(`os níveis vão de ${levels[0]} a ${levels[23]}`);
+            if (!levels[0].cards.startsWith('4 cartas') || !levels[23].cards.startsWith('50 cartas')) {
+                throw new Error(`os níveis vão de ${levels[0].cards} a ${levels[23].cards}`);
+            }
+            const wrongPreview = levels.findIndex((level) => level.tiles !== parseInt(level.cards, 10));
+            if (wrongPreview >= 0) throw new Error(`a miniatura do nível ${wrongPreview + 1} não tem as cartas do nível`);
+
+            // O carrossel: abre na página do nível apontado (o 24, o último
+            // aberto), e as setas mudam de página como no Maze Run.
+            const carousel = () => page.evaluate(() => ({
+                paginas: document.querySelectorAll('.levelPage').length,
+                ativa: [...document.querySelectorAll('.carouselDot')].findIndex((d) => d.classList.contains('active')),
+                prevOff: document.getElementById('prevPageBtn').disabled,
+                nextOff: document.getElementById('nextPageBtn').disabled
+            }));
+            const inicio = await carousel();
+            if (inicio.paginas < 2) throw new Error(`os níveis não ficaram em páginas (${inicio.paginas})`);
+            if (inicio.ativa !== inicio.paginas - 1 || !inicio.nextOff) throw new Error('o carrossel não abriu na página do nível apontado');
+            await page.click('#prevPageBtn');
+            await sleep(500);
+            const depois = await carousel();
+            if (depois.ativa !== inicio.paginas - 2 || depois.nextOff) throw new Error('a seta anterior não mudou de página');
+            await page.click('#nextPageBtn');
+            await sleep(500);
+            await page.click('.levelPage:last-child .levelCard:last-child');
 
             // Cada tabuleiro cabe no ecrã, sem cartas por cima umas das outras, ao
             // alto e ao comprido — e as 50 do último nível não ficam minúsculas.
-            await page.click('.levelCard[data-value="1"]');
             await waitForMemoPlaying(page);
             for (const size of [{ width: 390, height: 780 }, { width: 844, height: 390 }, { width: 320, height: 568 }]) {
                 await page.setViewportSize(size);
