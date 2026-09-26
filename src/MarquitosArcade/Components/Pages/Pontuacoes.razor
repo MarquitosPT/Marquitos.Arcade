@@ -87,15 +87,17 @@
 </main>
 
 @code {
+    // Mesma ordem do catálogo da home: mais recentes primeiro, e um jogo novo
+    // entra no topo do array.
     private static readonly (string Id, string Name, string Emoji)[] Games =
     [
-        ("tasca-do-ze", "Tasca do Zé", "🍽️"),
-        ("pong", "Pong Retro", "🏓"),
-        ("pixel-racing", "Pixel Racing", "🏎️"),
-        ("maze-run", "Maze Run", "🧩"),
         // O Terras do Reino ainda está em testes: as pontuações vão sendo
         // guardadas, mas o cartão só aparece quando o jogo for lançado.
         // ("terras-do-reino", "Terras do Reino", "🏰"),
+        ("maze-run", "Maze Run", "🧩"),
+        ("pixel-racing", "Pixel Racing", "🏎️"),
+        ("pong", "Pong Retro", "🏓"),
+        ("tasca-do-ze", "Tasca do Zé", "🍽️"),
     ];
 
     [SupplyParameterFromQuery(Name = "jogo")]
