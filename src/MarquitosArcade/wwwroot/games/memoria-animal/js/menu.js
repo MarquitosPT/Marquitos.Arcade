@@ -2,8 +2,8 @@
 //
 // São dois ecrãs, como no Maze Run. O primeiro pergunta o mínimo — o nome (só
 // a quem não tem sessão iniciada) — e propõe continuar de onde se ficou; o
-// segundo mostra os quinze níveis de uma vez, abertos e por abrir. Cabem todos
-// num ecrã de telemóvel, por isso não há carrossel.
+// segundo mostra os níveis todos de uma vez, abertos e por abrir. São botões
+// pequenos e cabem num ecrã de telemóvel, por isso não há carrossel.
 
 import { escapeHtml } from '/lib/arcade/index.js';
 

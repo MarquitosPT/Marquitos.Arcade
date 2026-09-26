@@ -10,14 +10,14 @@ import {
 } from './config.js';
 
 /**
- * Um nome por nível, uma palavra cada: o cartão do nível é estreito e um nome
- * que quebre desalinha a fila. Vão da capoeira à selva, como os animais que
- * vão aparecendo.
+ * Um nome por nível, uma palavra cada: aparece no HUD, que num telemóvel é
+ * estreito. Vão do ninho à arca — a do Noé, com a bicharada toda.
  */
 const NAMES = [
-    'Ninho', 'Capoeira', 'Pocilga', 'Curral', 'Estábulo',
-    'Celeiro', 'Pomar', 'Prado', 'Charco', 'Colmeia',
-    'Bosque', 'Montado', 'Serra', 'Savana', 'Selva'
+    'Ninho', 'Capoeira', 'Pocilga', 'Curral', 'Estábulo', 'Celeiro',
+    'Pomar', 'Prado', 'Charco', 'Ribeiro', 'Colmeia', 'Pinhal',
+    'Bosque', 'Montado', 'Lameiro', 'Serra', 'Planalto', 'Pântano',
+    'Savana', 'Deserto', 'Selva', 'Recife', 'Oceano', 'Arca'
 ];
 
 /**

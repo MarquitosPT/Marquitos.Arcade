@@ -28,26 +28,30 @@ export const PLAYER_FALLBACK = 'Tu';
 // ---------- Níveis ----------
 
 /**
- * O primeiro nível tem 4 cartas (2 pares) e cada nível acrescenta 2, até às 32
- * do último (16 pares): quinze níveis. As 32 cabem num telemóvel ao alto numa
- * grelha de 4 × 8 com cartões de uns 70px — o suficiente para se reconhecer o
- * animal de relance (ver js/layout.js).
+ * O primeiro nível tem 4 cartas (2 pares) e cada nível acrescenta 2, até às 50
+ * do último (25 pares): vinte e quatro níveis. As 50 cabem num telemóvel ao
+ * alto numa grelha de 5 × 10 com cartões quadrados de uns 60px — ainda o
+ * suficiente para se reconhecer o animal de relance (ver js/layout.js). Mais
+ * do que isto já pedia cartões abaixo dos 55px num telemóvel comum.
+ *
+ * Um tabuleiro de 50 precisa de 25 animais diferentes: o ANIMALS (animals.js)
+ * tem de ter pelo menos MAX_CARDS / 2, e o smoke-test confirma-o.
  */
 export const FIRST_LEVEL_CARDS = 4;
 export const CARDS_STEP = 2;
-export const MAX_CARDS = 32;
+export const MAX_CARDS = 50;
 
 // ---------- Ritmo ----------
 
 /**
  * No início de cada nível as cartas ficam à vista uns instantes, para se
  * olhar bem antes de se virarem. Cresce com o tabuleiro, mas com teto: num
- * tabuleiro de 32 ninguém as decora todas em três segundos e meio, e é
+ * tabuleiro de 50 ninguém as decora todas em quatro segundos, e é
  * precisamente isso que o torna difícil.
  */
 export const PREVIEW_BASE_SECONDS = 1.2;
 export const PREVIEW_PER_PAIR = 0.15;
-export const PREVIEW_MAX_SECONDS = 3.5;
+export const PREVIEW_MAX_SECONDS = 4;
 
 /** Quanto tempo ficam à vista duas cartas que não formam par, antes de se virarem. */
 export const MISMATCH_SECONDS = 0.9;

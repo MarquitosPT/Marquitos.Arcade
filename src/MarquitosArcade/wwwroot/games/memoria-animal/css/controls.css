@@ -155,14 +155,14 @@ button { cursor: pointer; }
 /* ---------- Grelha dos níveis ---------- */
 
 /*
- * Os quinze níveis cabem num ecrã de telemóvel de uma vez — três colunas ao
- * alto, cinco quando há largura —, por isso aqui não há carrossel como no
- * Maze Run. Os cartões têm as mesmas quatro linhas todos, sempre presentes:
- * número, cartas, estado e estrelas.
+ * Os vinte e quatro níveis cabem num ecrã de telemóvel de uma vez — quatro
+ * colunas ao alto, seis quando há largura, oito ao comprido —, por isso aqui
+ * não há carrossel como no Maze Run. Os cartões têm as mesmas quatro linhas
+ * todos, sempre presentes: número, cartas, estado e estrelas.
  */
 .levelGrid {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     grid-auto-rows: 1fr;
     gap: 8px;
     width: 100%;
@@ -241,12 +241,20 @@ button { cursor: pointer; }
 .levelStars i { font-style: normal; }
 .levelStars i.off { color: rgba(241, 247, 238, 0.22); }
 
+/* Ao alto num telemóvel: quatro colunas, com os cartões mais baixos para as
+   seis filas caberem sem o painel ter de rolar. */
 @media (max-width: 480px) {
-    .levelGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .levelGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+    .levelCard { padding: 7px 3px 6px; gap: 2px; border-radius: var(--radius-sm); }
+    .levelNumber { font-size: 18px; }
+    .levelCards, .levelState { font-size: 9.5px; }
+    .levelStars { font-size: 10px; }
 }
 
 @media (orientation: landscape) and (max-height: 600px) {
-    .levelGrid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
-    .levelCard { padding: 6px 4px; gap: 1px; }
-    .levelNumber { font-size: 18px; }
+    .levelGrid { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; }
+    .levelCard { padding: 5px 3px; gap: 1px; border-radius: var(--radius-sm); }
+    .levelNumber { font-size: 16px; }
+    .levelCards, .levelState { font-size: 9px; }
+    .levelStars { font-size: 9.5px; }
 }

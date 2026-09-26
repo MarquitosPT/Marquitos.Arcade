@@ -19,7 +19,7 @@ Blazor Web App (.NET 10, render mode Interactive Server) com ASP.NET Core Identi
   - `pong/`: Pong Retro, com modo 1 jogador (vs. CPU, pontuação submetida via `/api/scores/pong`) e 2 jogadores.
   - `maze-run/`: Maze Run, labirintos por níveis — apanhar os cristais abre a saída, e há guardas a impedi-lo. Pelo caminho há cristais de gelo que os congelam, portais que ligam duas pontas do labirinto e portas trancadas com a sua chave (ver [As peças do Maze Run](#as-peças-do-maze-run)). Os níveis vão-se desbloqueando à medida que se concluem, e o progresso fica guardado na conta de quem tem sessão iniciada (ver [Progresso e níveis](#progresso-e-níveis)). Os labirintos não estão desenhados à mão: saem de uma semente por nível (`buildMaze` em `js/maze.js`), como as pistas do Pixel Racing saem do `buildTrack` — **acrescentar um nível é acrescentar uma entrada ao array `LEVELS` do `js/levels.js`**, e mais nada.
   - `terras-do-reino/`: Terras do Reino, economia medieval contínua num tabuleiro isométrico com relevo — semear e colher trigo, cortar madeira, tirar pedra, pescar nos lagos, abrir minas de ouro, moinhos, padarias, vacarias, pocilgas e oficinas, lã e tecelagem, vinhas, destilaria e taberna, algodão, alfaiataria, teatro, hotel para os visitantes, escola, centro de saúde e posto de correios, galinheiro, cana-de-açúcar, arroz, pastelaria e joalharia, e comerciar com três vilas vizinhas geridas pelo CPU, que crescem sozinhas e são as rivais na tabela da prosperidade. Não há guerra nem fim de partida: o reino fica gravado (na conta, para quem tem sessão iniciada) e, fora do jogo, fica em pausa: ao voltar, continua do ponto exato onde ficou. Ver [Terras do Reino](#terras-do-reino).
-  - `memoria-animal/`: Memória Animal, jogo da memória com cartas de animais — virar duas de cada vez e encontrar os pares. Quinze níveis, de 4 cartas (2 pares) a 32 (16 pares), mais 2 por nível; as cartas encolhem à medida que o tabuleiro cresce, para caberem todas no ecrã do telemóvel. Níveis desbloqueados e estrelas pelo mesmo cliente de progresso do Maze Run. Ver [Memória Animal](#memória-animal).
+  - `memoria-animal/`: Memória Animal, jogo da memória com cartas de animais — virar duas de cada vez e encontrar os pares. Vinte e quatro níveis, de 4 cartas (2 pares) a 50 (25 pares), mais 2 por nível; as cartas encolhem à medida que o tabuleiro cresce, para caberem todas no ecrã do telemóvel. Níveis desbloqueados e estrelas pelo mesmo cliente de progresso do Maze Run. Ver [Memória Animal](#memória-animal).
   - `pixel-racing/`: Pixel Racing, corrida simples em qualquer uma das seis pistas ou campeonato de três, com pontuação via `/api/scores/pixel-racing`. O menu tem dois passos: o primeiro ecrã pergunta só o nome (a quem não tem sessão iniciada) e o modo; a pista (ou a taça, no campeonato), a cor do carro e a dificuldade ficam no ecrã seguinte, já a saber o que se vai correr. As pistas são geradas por `buildTrack` a partir de uma superelipse com harmónicos, e o grau de perícia que o cartão mostra é medido no traçado (`corneringProfile`) em vez de escrito à mão: as três primeiras fazem-se sem levantar o pé, as três da taça Pro são mais compridas, mais estreitas e têm curvas que obrigam a travar ou a entrar a derrapar. A cor sai da paleta única de `CAR_COLORS` e os adversários ficam com três das restantes, por isso nunca há dois carros da mesma cor na pista.
 - `src/MarquitosArcade/wwwroot/lib/arcade/`: SDK partilhado pelos jogos (áudio, leaderboard, armazenamento, viewport do canvas, ciclo de jogo, barra de topo, ecrã de arranque). Módulos ES sem dependências externas. O `splash.css`/`splash.js`/`splash-boot.js` são a exceção que também serve o portal — ver [Ecrã de arranque](#ecrã-de-arranque).
 - `tools/games/smoke-test.mjs`: smoke-test dos jogos em Chromium headless, corrido em cada pull request por `.github/workflows/jogos-smoke-test.yml`. Ver [Testar os jogos](#testar-os-jogos).
@@ -803,22 +803,24 @@ jogo da arcada todo em DOM — as cartas são `<button>`, viradas com uma rotaç
 3D de CSS (`css/board.css`) — e sem canvas nenhum.
 
 **Os níveis são só um número de cartas.** O primeiro tem 4 e cada nível traz
-mais 2, até às 32 do nível 15 (`FIRST_LEVEL_CARDS`, `CARDS_STEP` e `MAX_CARDS`
+mais 2, até às 50 do nível 24 (`FIRST_LEVEL_CARDS`, `CARDS_STEP` e `MAX_CARDS`
 no `js/config.js`; o `LEVELS` do `js/levels.js` sai daí). Os animais saem à
 sorte de cada vez que se começa um nível (`dealCards` em `js/board.js`), por
 isso repetir um nível nunca é decorar onde estavam as cartas. No início as
 cartas ficam uns instantes à vista ("Olha bem…"), mais tempo quanto maior o
-tabuleiro, com teto de 3,5 s.
+tabuleiro, com teto de 4 s.
 
 **O tamanho das cartas não é fixo — é o maior que cabe.** A cada mudança de
 tamanho do palco (um `ResizeObserver`: rodar o telemóvel, a barra do browser a
 esconder-se), o `fitGrid` do `js/layout.js` experimenta todas as contagens de
-colunas e fica com a que dá os maiores cartões na área livre. As 32 cartas do
-último nível ficam num 4 × 8 ao alto (cartões de uns 70px num telemóvel de
-390px) e num 11 × 3 ao comprido, sem nenhuma das grelhas estar escrita em lado
-nenhum. A última fila, quando não está cheia, fica centrada: o tabuleiro é um
-flex com quebra de linha, não uma grelha. O smoke-test confirma, nos quinze
-níveis e em três tamanhos de ecrã, que nenhuma carta sai do ecrã, fica por
+colunas — e duas formas de cartão, um pouco mais alto do que largo ou
+quadrado — e fica com a que dá os cartões com mais área na área livre. As 50
+cartas do último nível ficam num 5 × 10 ao alto (cartões quadrados de uns 59px
+num telemóvel de 390 × 780) e num 13 × 4 ao comprido, sem nenhuma das grelhas
+estar escrita em lado nenhum. O teto das 50 vem daí: mais um degrau e os
+cartões desciam abaixo dos 55px num telemóvel comum. A última fila, quando não está cheia, fica centrada: o tabuleiro é um
+flex com quebra de linha, não uma grelha. O smoke-test confirma, nos vinte e
+quatro níveis e em três tamanhos de ecrã, que nenhuma carta sai do ecrã, fica por
 baixo do HUD ou por cima de outra.
 
 **Estrelas pelos erros, pontos pelo resto.** Um erro é uma jogada de duas

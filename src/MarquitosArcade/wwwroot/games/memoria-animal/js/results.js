@@ -5,7 +5,7 @@
 
 import { escapeHtml } from '/lib/arcade/index.js';
 
-import { MAX_STARS } from './config.js';
+import { MAX_CARDS, MAX_STARS } from './config.js';
 import { fmtPoints, fmtTime } from './format.js';
 import { levelById, levelCount } from './levels.js';
 import { bestOf, totalScore } from './progress.js';
@@ -64,7 +64,7 @@ function renderCleared(result) {
 
     const next = hasNext
         ? `<button class="btn" id="nextLevelBtn" type="button">Nível ${nextId} · ${levelById(nextId).cards} cartas →</button>`
-        : '<div class="finalNote">🏆 Chegaste ao fim — as 32 cartas! Tenta agora as três estrelas em todos os níveis.</div>';
+        : '<div class="finalNote">🏆 Chegaste ao fim — as ${MAX_CARDS} cartas! Tenta agora as três estrelas em todos os níveis.</div>';
 
     html += `<div class="resultActions">
         ${next}

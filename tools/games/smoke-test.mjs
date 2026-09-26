@@ -1011,17 +1011,17 @@ const GAMES = [
         viewport: { width: 390, height: 780 },
         canvas: false,
         menuSelector: '#startScreen',
-        storage: { memoriaAnimalProgress_v1: JSON.stringify({ v: 1, unlocked: 15, levels: {} }) },
+        storage: { memoriaAnimalProgress_v1: JSON.stringify({ v: 1, unlocked: 24, levels: {} }) },
         async play(page) {
-            // O ecrã dos níveis: os quinze, de 4 a 32 cartas, todos à vista.
+            // O ecrã dos níveis: os vinte e quatro, de 4 a 50 cartas, todos à vista.
             await page.click('#chooseBtn');
             await page.waitForSelector('.levelCard');
             const levels = await page.$$eval('.levelCard', (cards) => cards.map((card) => card.querySelector('.levelCards').textContent));
-            if (levels.length !== 15) throw new Error(`${levels.length} níveis em vez de 15`);
-            if (levels[0] !== '4 cartas' || levels[14] !== '32 cartas') throw new Error(`os níveis vão de ${levels[0]} a ${levels[14]}`);
+            if (levels.length !== 24) throw new Error(`${levels.length} níveis em vez de 24`);
+            if (levels[0] !== '4 cartas' || levels[23] !== '50 cartas') throw new Error(`os níveis vão de ${levels[0]} a ${levels[23]}`);
 
             // Cada tabuleiro cabe no ecrã, sem cartas por cima umas das outras, ao
-            // alto e ao comprido — e as 32 do último nível não ficam minúsculas.
+            // alto e ao comprido — e as 50 do último nível não ficam minúsculas.
             await page.click('.levelCard[data-value="1"]');
             await waitForMemoPlaying(page);
             for (const size of [{ width: 390, height: 780 }, { width: 844, height: 390 }, { width: 320, height: 568 }]) {
@@ -1078,7 +1078,8 @@ const GAMES = [
             });
             if (gallery.items !== gallery.want) throw new Error(`a galeria mostra ${gallery.items} animais em vez de ${gallery.want}`);
             if (gallery.ids !== gallery.want) throw new Error('há animais repetidos em animals.js');
-            if (gallery.want < 16) throw new Error(`só ${gallery.want} animais — o último nível precisa de 16 pares`);
+            const { MAX_CARDS } = await page.evaluate(() => import('/games/memoria-animal/js/config.js').then((m) => ({ MAX_CARDS: m.MAX_CARDS })));
+            if (gallery.want < MAX_CARDS / 2) throw new Error(`só ${gallery.want} animais — o último nível precisa de ${MAX_CARDS / 2} pares`);
             if (gallery.broken.length) throw new Error(`ilustrações que não carregam: ${gallery.broken.join(', ')}`);
             await page.click('#howtoBackBtn');
 

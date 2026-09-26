@@ -11,8 +11,11 @@ import { fitGrid } from './layout.js';
 import { game } from './state.js';
 import { els } from './ui.js';
 
-/** Altura do cartão a dividir pela largura: um pouco mais alto do que largo, como as cartas de papel. */
-const CARD_RATIO = 1.15;
+/**
+ * Formas do cartão (altura a dividir pela largura): um pouco mais alto do que
+ * largo, como as cartas de papel, ou quadrado quando falta altura (ver layout.js).
+ */
+const CARD_RATIOS = [1.15, 1];
 
 /** Teto da largura de um cartão — num computador, quatro cartas não precisam de encher o ecrã. */
 const MAX_CARD_WIDTH = 150;
@@ -110,7 +113,7 @@ export function layoutBoard() {
     const height = els.stage.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
     if (width <= 0 || height <= 0) return;
 
-    const grid = fitGrid({ count, width, height, ratio: CARD_RATIO, maxWidth: MAX_CARD_WIDTH });
+    const grid = fitGrid({ count, width, height, ratios: CARD_RATIOS, maxWidth: MAX_CARD_WIDTH });
     const board = els.board.style;
     board.setProperty('--cols', grid.cols);
     board.setProperty('--card-w', `${grid.cardW}px`);
