@@ -1,21 +1,20 @@
-// Música de fundo da Memória Animal: uma melodia calma ao piano, com a mão
-// esquerda em arpejos e uma bateria de vassouras a acompanhar.
+// Música de fundo da Memória Animal: uma melodia calma na marimba (o xilofone
+// de lâminas de madeira, mais grave e redondo), com a mão esquerda em arpejos e
+// uma bateria de vassouras a acompanhar.
 //
 // Tudo sintetizado, sem ficheiros de áudio (como os efeitos em audio.js):
 //
-// - Piano: uma corda de piano é quase um som harmónico, forte na fundamental e
-//   com os harmónicos a enfraquecer — aqui uma onda periódica feita à medida,
-//   em duas "cordas" ligeiramente desafinadas uma da outra (o coro das cordas
-//   do mesmo martelo). O brilho do ataque apaga-se com um passa-baixo que vai
-//   fechando, e o volume cai depressa logo a seguir ao martelo e depois devagar,
-//   mais devagar nas notas graves. Um toque de ruído é o martelo na corda.
-//   A mão esquerda deixa as notas soar até ao fim do meio compasso, como quem
-//   tem o pedal carregado.
+// - Marimba: cada lâmina soa quase só a fundamental, uma onda sinusoidal, com
+//   um harmónico duas oitavas acima (a afinação da lâmina) e outro bem mais
+//   alto que só se ouve na pancada da baqueta. Nada fica a sustentar: o som cai
+//   logo a seguir à pancada, mais devagar nas notas graves — um som que
+//   sustenta com muitos harmónicos soaria a metal. As notas longas da melodia
+//   vão em rulo, com toques leves em colcheias.
 // - Bateria: bombo redondo e baixo, vassoura na tarola (ruído a entrar devagar,
 //   em vez de um estalo), pratos de choque fechados e macios, e dois timbalões
 //   a fechar as frases.
 // - Um reverb feito com uma resposta ao impulso gerada (ruído a decair) dá a
-//   sala. O piano manda mais para lá do que a bateria.
+//   sala. A marimba manda mais para lá do que a bateria.
 //
 // A forma do tema (20 compassos, pouco mais de um minuto) repete-se: A, A',
 // B, B' e uma secção calma de notas longas com a bateria a meio tempo — num
@@ -103,61 +102,53 @@ const BARS = SECTIONS.flatMap((section, si) =>
 /** O bus onde se está a tocar (o do jogo, ou um OfflineAudioContext a gravar): chega em cada passo. */
 let bus = null;
 
-/** O timbre da corda: a fundamental forte e os harmónicos a enfraquecer. */
-const PIANO_PARTIALS = [0, 1, 0.6, 0.32, 0.22, 0.13, 0.08, 0.05, 0.035, 0.02];
+/**
+ * As lâminas de uma marimba: a fundamental e os harmónicos que a afinação da
+ * lâmina deixa ficar — [razão da frequência, força, quanto do decaimento dura].
+ * Os de cima apagam-se muito antes da fundamental, e só dão a batida da baqueta.
+ */
+const BAR_PARTIALS = [
+    [1, 1, 1],
+    [4, 0.2, 0.28],
+    [9.8, 0.05, 0.1]
+];
 
 // ---------- Instrumentos ----------
 
 /**
- * Uma nota de piano. `duration` é quanto tempo a tecla fica carregada: a nota
- * vai-se apagando sozinha e, ao largar, o abafador cala-a.
+ * Uma nota de marimba: ondas sinusoidais que decaem sozinhas desde a pancada,
+ * sem sustentação (é isso que a afasta de um metal). `duration` é quanto tempo
+ * a lâmina pode soar antes de a mão a abafar.
  */
-function piano(time, m, duration, velocity, pan = 0) {
-    const { ctx, pianoWave } = bus;
+function mallet(time, m, duration, velocity, pan = 0) {
+    const { ctx } = bus;
     const f = freq(m);
-    // As cordas graves soam muito mais tempo do que as agudas.
-    const ring = Math.min(1.6, Math.max(0.45, 1.25 - (m - 60) * 0.03));
-    const end = time + Math.max(duration, 0.3);
-    const stopAt = end + 0.45;
+    // As lâminas graves soam mais tempo do que as agudas.
+    const ring = Math.min(0.85, Math.max(0.26, 0.55 - (m - 60) * 0.02));
+    const end = time + Math.max(duration, 0.2);
+    const stopAt = Math.min(end, time + ring * 5) + 0.3;
 
     const out = ctx.createGain();
-    out.gain.setValueAtTime(0, time);
-    out.gain.linearRampToValueAtTime(velocity, time + 0.005);
-    // Logo a seguir ao martelo cai depressa; depois vai-se apagando devagar.
-    out.gain.setTargetAtTime(velocity * 0.42, time + 0.005, 0.09);
-    out.gain.setTargetAtTime(0.0001, time + 0.25, ring);
-    // O abafador.
-    out.gain.setTargetAtTime(0, end, 0.08);
+    out.gain.setValueAtTime(1, time);
+    // A mão abafa a lâmina.
+    out.gain.setTargetAtTime(0, end, 0.05);
 
-    // O brilho do martelo apaga-se primeiro: o filtro vai fechando.
-    const bright = Math.min(f * (5 + velocity * 12), 9000);
-    const tone = bus.filter('lowpass', bright, 0.4);
-    tone.frequency.setValueAtTime(bright, time);
-    tone.frequency.exponentialRampToValueAtTime(Math.max(f * 1.6, 220), time + 1.4);
-    tone.connect(out);
-
-    // Duas cordas por nota, uma nada acima e outra nada abaixo.
-    for (const detune of [-3, 3.5]) {
+    for (const [ratio, level, decay] of BAR_PARTIALS) {
+        if (f * ratio > 12000) continue;
         const osc = ctx.createOscillator();
-        osc.setPeriodicWave(pianoWave);
-        osc.frequency.value = f;
-        osc.detune.value = detune;
-        osc.connect(tone);
+        osc.type = 'sine';
+        osc.frequency.value = f * ratio;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0, time);
+        g.gain.linearRampToValueAtTime(velocity * level, time + 0.003);
+        g.gain.setTargetAtTime(0.0001, time + 0.003, ring * decay);
+        osc.connect(g);
+        g.connect(out);
         osc.start(time);
         osc.stop(stopAt);
     }
 
-    // O martelo: um toque curto de ruído à volta do tom.
-    const hammer = bus.noise(time, time + 0.05);
-    const hammerBand = bus.filter('bandpass', Math.min(f * 3, 4000), 1.5);
-    const hammerGain = ctx.createGain();
-    hammerGain.gain.setValueAtTime(velocity * 0.18, time);
-    hammerGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.035);
-    hammer.connect(hammerBand);
-    hammerBand.connect(hammerGain);
-    hammerGain.connect(out);
-
-    bus.route(out, time, { pan, send: 0.38 });
+    bus.route(out, time, { pan, send: 0.3 });
 }
 
 function kick(time, velocity) {
@@ -241,7 +232,7 @@ function tom(time, pitch, velocity) {
 /**
  * Arpejo em colcheias, de meio em meio compasso: fundamental, quinta, a terceira
  * uma oitava acima e de novo a quinta. Cada nota fica a soar até ao fim do meio
- * compasso, como com o pedal carregado. Na calma, o acorde em bloco.
+ * compasso (a lâmina apaga-se sozinha antes, se for aguda). Na calma, o acorde em bloco.
  */
 function playLeftHand(b, s, time) {
     const half = s < 8 ? 0 : 1;
@@ -251,9 +242,9 @@ function playLeftHand(b, s, time) {
     if (b.drums === 'calm') {
         if (s % 8 !== 0) return;
         const hold = STEP * 8;
-        piano(time, c.root, hold, 0.12 * human(), -0.15);
-        piano(time + 0.012, c.root + 7, hold, 0.08 * human(), -0.1);
-        piano(time + 0.024, c.root + 12 + c.third, hold, 0.08 * human(), -0.05);
+        mallet(time, c.root, hold, 0.16 * human(), -0.15);
+        mallet(time + 0.012, c.root + 7, hold, 0.11 * human(), -0.1);
+        mallet(time + 0.024, c.root + 12 + c.third, hold, 0.11 * human(), -0.05);
         return;
     }
 
@@ -262,8 +253,8 @@ function playLeftHand(b, s, time) {
     const i = (s % 8) / 2;
     const hold = STEP * (8 - (s % 8));
     // A fundamental a abrir cada meio compasso vai um pouco mais forte.
-    const velocity = (i === 0 ? 0.13 : 0.085) * human();
-    piano(time, c.root + pattern[i], hold, velocity, -0.15);
+    const velocity = (i === 0 ? 0.16 : 0.11) * human();
+    mallet(time, c.root + pattern[i], hold, velocity, -0.15);
 }
 
 // ---------- Padrões da bateria ----------
@@ -299,8 +290,15 @@ function scheduleStep(b, s, time) {
     for (const note of b.melody) {
         if (note.step !== s) continue;
         // A primeira nota de cada compasso vai um nadinha mais forte.
-        const velocity = (s === 0 ? 0.24 : 0.2) * (0.92 + Math.random() * 0.1);
-        piano(time, note.midi, note.steps * STEP * 0.95, velocity, 0.1);
+        const velocity = (s === 0 ? 0.3 : 0.26) * (0.92 + Math.random() * 0.1);
+        const length = note.steps * STEP * 0.95;
+        mallet(time, note.midi, length, velocity, 0.1);
+        // As notas longas em rulo, como na marimba: toques leves em colcheias.
+        if (note.steps >= 6) {
+            for (let r = 2; r < note.steps; r += 2) {
+                mallet(time + r * STEP, note.midi, length - r * STEP, velocity * 0.45, 0.1);
+            }
+        }
     }
 
     playLeftHand(b, s, time);
@@ -312,12 +310,8 @@ export const music = createMusic({
     storageKey: 'memoriaAnimalMusic_v1',
     bpm: BPM,
     bars: BARS.length,
-    volume: 0.4,
+    volume: 0.22,
     reverb: { seconds: 2.8, decay: 2.4, wet: 0.85 },
-    // O passa-baixo de cada nota decide quantos harmónicos se ouvem a cada instante.
-    setup: ({ ctx }) => ({
-        pianoWave: ctx.createPeriodicWave(new Float32Array(PIANO_PARTIALS.length), new Float32Array(PIANO_PARTIALS))
-    }),
     onStep(barIndex, s, time, b) {
         bus = b;
         scheduleStep(BARS[barIndex], s, time);
