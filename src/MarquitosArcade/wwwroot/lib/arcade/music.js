@@ -29,7 +29,8 @@
 //     });
 //
 // E, no main.js, `music.setWanted(...)`, `bindMusicButton(...)` e
-// `unlockAudioOnGesture(...)` (mais abaixo).
+// `unlockAudioOnGesture(...)` (mais abaixo), que arranca a música mal o ecrã
+// de arranque sai, se o browser deixar, ou no primeiro gesto.
 //
 // Para ouvir sem abrir o jogo, `music.schedule(offlineContext)` marca uma volta
 // inteira num OfflineAudioContext (é o que faz o tools/games/render-music.mjs).
@@ -364,20 +365,56 @@ export function bindMusicButton(button, music, { resume = () => {}, onToggle = (
 }
 
 /**
- * O browser só deixa soar depois de um gesto. O primeiro toque ou tecla, onde
- * quer que seja (até a escrever o nome), chama `resume`; quando ele devolver um
+ * O browser só deixa soar depois de um gesto — mas nem sempre: quem chega de
+ * outra página da arcada com um clique (o portal, o guia) ou já a usa muito
+ * costuma poder ouvir logo. Por isso, assim que o ecrã de arranque sai da
+ * frente (`window.__arcadeSplash.done`, ou já, se não houver ecrã), tenta-se
+ * sem gesto: se o AudioContext nascer a tocar, chama `onUnlock` e a música
+ * começa no menu. Se não, fica à espera do primeiro toque ou tecla, onde quer
+ * que seja (até a escrever o nome), que chama `resume`; quando ele devolver um
  * AudioContext, chama `onUnlock` e deixa de ouvir.
  *
  * @param {() => AudioContext|null|undefined} resume
  * @param {() => void} onUnlock
  */
 export function unlockAudioOnGesture(resume, onUnlock) {
-    function unlock() {
-        if (!resume()) return;
+    let unlocked = false;
+
+    function finish() {
+        if (unlocked) return;
+        unlocked = true;
         document.removeEventListener('pointerup', unlock, true);
         document.removeEventListener('keydown', unlock, true);
         onUnlock();
     }
+
+    function unlock() {
+        if (resume()) finish();
+    }
+
+    /** Sem gesto: só conta se o browser deixar o AudioContext a tocar. */
+    function tryWithoutGesture() {
+        if (unlocked) return;
+        // Onde o browser já diz que não (Firefox), nem se cria o contexto.
+        if (navigator.getAutoplayPolicy?.('audiocontext') === 'disallowed') return;
+        const ctx = resume();
+        if (!ctx) return;
+        if (ctx.state === 'running') {
+            finish();
+            return;
+        }
+        // O `resume()` pode estar a meio: se acabar a tocar, também serve.
+        const onChange = () => {
+            if (ctx.state !== 'running') return;
+            ctx.removeEventListener('statechange', onChange);
+            finish();
+        };
+        ctx.addEventListener('statechange', onChange);
+    }
+
     document.addEventListener('pointerup', unlock, true);
     document.addEventListener('keydown', unlock, true);
+
+    const splashDone = window.__arcadeSplash?.done ?? Promise.resolve();
+    splashDone.then(tryWithoutGesture);
 }

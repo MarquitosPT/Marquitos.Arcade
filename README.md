@@ -242,7 +242,7 @@ export const music = createMusic({
 import { bindMusicButton, unlockAudioOnGesture } from '/lib/arcade/music.js';
 const syncMusic = () => music.setWanted(!game.paused && document.visibilityState === 'visible');
 bindMusicButton(els.musicBtn, music, { resume: resumeAudio, onToggle: syncMusic });
-unlockAudioOnGesture(resumeAudio, syncMusic);   // começa no primeiro toque ou tecla
+unlockAudioOnGesture(resumeAudio, syncMusic);   // começa após o ecrã de arranque, se o browser deixar; senão, no primeiro toque ou tecla
 ```
 
 O botão `#musicBtn` da barra de topo (a nota, com o traço `.musicSlash` quando
