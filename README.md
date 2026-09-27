@@ -986,15 +986,15 @@ smoke-test verifica que todas as ilustrações carregam.
 
 ### Música
 
-Uma melodia calma ao **piano**, com a mão esquerda em arpejos e uma **bateria**
+Uma melodia calma na **marimba** (xilofone de madeira), com a mão esquerda em arpejos e uma **bateria**
 de vassouras a acompanhar (`js/music.js`), toda sintetizada — sem ficheiros de
 áudio, como os efeitos de `js/audio.js`, com quem partilha o `AudioContext`. O
 motor é o [comum](#música-de-fundo) (agendador, reverb, compressor); aqui ficam
-o instrumento e a partitura. O piano é uma onda periódica com
-os harmónicos de uma corda, em duas "cordas" ligeiramente desafinadas, com um
-passa-baixo que fecha depois do martelo, um toque de ruído no ataque e um
-decaimento mais longo nas notas graves; a mão esquerda deixa as notas soar até
-ao fim do meio compasso, como com o pedal. A bateria é bombo, vassoura na
+o instrumento e a partitura. A marimba são ondas sinusoidais — a fundamental,
+um harmónico duas oitavas acima e outro agudo só na pancada da baqueta — que
+decaem sozinhas desde o ataque, sem sustentação (um som sustentado e rico em
+harmónicos soaria a metal), mais devagar nas notas graves; as notas longas da
+melodia vão em rulo. A música fica bem por baixo dos efeitos (volume 0,22). A bateria é bombo, vassoura na
 tarola, pratos de choque fechados e dois timbalões a fechar as frases que voltam
 a casa. O tema está em fá maior a 76 BPM, 20 compassos (pouco mais de um minuto)
 em loop: A, A', B, B' e uma secção calma de acordes em bloco com a bateria a
