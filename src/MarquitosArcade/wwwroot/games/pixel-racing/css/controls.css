@@ -354,18 +354,22 @@ button { cursor: pointer; }
     box-shadow: 0 0 0 1px var(--accent), 0 18px 36px -22px var(--glow);
 }
 
-/* A miniatura assenta num bocado de asfalto, para o carro se ver como na pista. */
+/*
+ * O carro mostra-se de perfil, numa box: parede escura com uma luz por cima e
+ * o chão a partir da linha onde assentam as rodas (88% da altura, o mesmo que
+ * o drawCarSide usa).
+ */
 .carPreview {
     display: block;
     width: 100%;
     height: auto;
-    aspect-ratio: 240 / 104;
+    aspect-ratio: 360 / 156;
     margin-bottom: 4px;
     border-radius: var(--radius-sm);
     background:
-        repeating-linear-gradient(90deg, transparent 0 18px, rgba(255, 255, 255, 0.05) 18px 30px) center / 100% 2px no-repeat,
-        radial-gradient(ellipse at 50% 40%, rgba(255, 255, 255, 0.08), transparent 70%),
-        #2a2d36;
+        linear-gradient(180deg, transparent 88%, rgba(255, 255, 255, 0.08) 88%, rgba(255, 255, 255, 0.02)),
+        radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.12), transparent 65%),
+        linear-gradient(180deg, #23262f, #30343f);
 }
 
 .carName {

@@ -19,10 +19,10 @@ import { escapeHtml } from '/lib/arcade/index.js';
 import { readText, writeText } from '/lib/arcade/storage.js';
 
 import {
-    CAR_COLORS, CAR_LEN, CAR_TYPE_STORAGE_KEY, CAR_TYPES, COLOR_STORAGE_KEY, LAPS_REQUIRED,
+    CAR_COLORS, CAR_TYPE_STORAGE_KEY, CAR_TYPES, COLOR_STORAGE_KEY, LAPS_REQUIRED,
     MODE_TOURNAMENT, TOURNAMENT_CUPS
 } from './config.js';
-import { drawCarSprite } from './carsprites.js';
+import { drawCarSide } from './carsprites.js';
 import { menuZoom } from './race.js';
 import { race, session } from './state.js';
 import { THEME_INFO, TRACKS } from './tracks.js';
@@ -124,8 +124,12 @@ const CAR_RATINGS = [
 ];
 const RATING_STEPS = 5;
 
-/** Resolução da miniatura do carro, em pixels do canvas (o CSS estica-a). */
-const CAR_PREVIEW = { w: 240, h: 104 };
+/**
+ * Resolução da miniatura do carro, em pixels do canvas. O CSS encolhe-a para a
+ * largura do cartão; o dobro do que se vê chega para ficar nítida num ecrã de
+ * alta densidade.
+ */
+const CAR_PREVIEW = { w: 360, h: 156 };
 
 function carCard(type) {
     const bars = CAR_RATINGS.map(([key, label]) => {
@@ -143,20 +147,14 @@ function carCard(type) {
 }
 
 /**
- * Desenha a miniatura com o mesmo desenho da corrida, na cor escolhida, virada
- * para a direita e de rodas um pouco viradas — parado e direito parecia um
- * ícone; assim parece um carro a sair da box.
+ * Desenha a miniatura de perfil, na cor escolhida. Na pista o carro vê-se de
+ * cima, mas para escolher é o perfil que diz que carro é — um 911 conhece-se
+ * pelo tejadilho a descer em fastback, não pela planta.
  */
 function drawCarPreview(canvas, typeId, color) {
     const c = canvas.getContext('2d');
     c.clearRect(0, 0, canvas.width, canvas.height);
-    const scale = (canvas.width * 0.62) / CAR_LEN;
-    c.save();
-    c.translate(canvas.width / 2, canvas.height / 2 - 2);
-    c.scale(scale, scale);
-    c.rotate(-0.12);
-    drawCarSprite(c, { type: typeId, color, steerInput: 0.45, speed: 0, brakeHeld: false });
-    c.restore();
+    drawCarSide(c, typeId, color, canvas.width, canvas.height);
 }
 
 /** A pista que se vê por trás do vidro enquanto se escolhe. */
