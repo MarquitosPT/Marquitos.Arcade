@@ -213,10 +213,18 @@ const GAMES = [
         menuSelector: '#startScreen',
         async play(page) {
             await page.fill('#playerNameInput', 'MARQUITOS');
-            // O menu tem dois passos: o modo leva ao ecrã da pista e da dificuldade.
+            // O menu tem dois passos: o modo leva ao ecrã da pista e da dificuldade,
+            // que tem uma segunda página com a garagem (carro e cor).
             await page.click('.modeBtn[data-mode="quick"]');
             await page.click('.trackCard[data-value="1"]');
+            await page.click('#nextBtn');
+            await page.click('.carCard[data-value="kart"]');
             await page.click('#startBtn');
+            const type = await page.evaluate(async () => {
+                const { race } = await import('/games/pixel-racing/js/state.js');
+                return race.player.type;
+            });
+            if (type !== 'kart') throw new Error(`a garagem não escolheu o kart: ${type}`);
             await waitForRacing(page);
             await page.keyboard.down('ArrowUp');
             await sleep(1200);
@@ -237,6 +245,8 @@ const GAMES = [
             await page.click('#cupRow .cupBtn[data-value="1"]');
             const first = await page.textContent('#trackRow .trackName');
             if (first !== 'Serra Torcida') throw new Error(`taça Pro não trocou as pistas: ${first}`);
+            await page.click('#nextBtn');
+            await page.click('.carCard[data-value="jeep"]');
             await page.click('#startBtn');
             await waitForRacing(page);
             await page.keyboard.down('ArrowUp');
@@ -1143,6 +1153,7 @@ const GAMES = [
             // módulos do jogo — o ecrã de resultados é montado pelo código real.
             await page.fill('#playerNameInput', 'MARQUITOS');
             await page.click('.modeBtn[data-mode="tournament"]');
+            await page.click('#nextBtn');
             await page.click('#startBtn');
             await waitForRacing(page);
 

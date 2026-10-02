@@ -32,10 +32,12 @@ function lateralOffset(car) {
 export function integrateCar(car, dt, isPlayer) {
     const wantsDrift = car.driftHold && Math.abs(car.steerInput) > 0.15 && car.speed > DRIFT_MIN_SPEED;
     const onOil = car.oilTimer > 0;
-    const grip = onOil ? GRIP_OIL : (wantsDrift ? GRIP_DRIFT : GRIP_NORMAL);
+    const { stats } = car;
+    // O óleo é igual para todos: em cima dele nenhum pneu agarra.
+    const grip = onOil ? GRIP_OIL : (wantsDrift ? GRIP_DRIFT : GRIP_NORMAL) * stats.grip;
     const turnMult = wantsDrift ? DRIFT_TURN_MULT : 1;
     const speedFrac = clamp(car.speed / MAX_SPEED, 0, 1.6);
-    car.facing += car.steerInput * TURN_RATE * turnMult * (0.6 + 0.4 * Math.min(1, speedFrac)) * dt;
+    car.facing += car.steerInput * TURN_RATE * stats.turn * turnMult * (0.6 + 0.4 * Math.min(1, speedFrac)) * dt;
 
     // Em cima do óleo o carro roda para o lado que lhe saiu à entrada, com força
     // a esvair-se até ao fim do tempo — o susto é no primeiro instante, e depois
@@ -48,17 +50,19 @@ export function integrateCar(car, dt, isPlayer) {
     }
 
     const boosting = car.boostHold && car.boost > 0;
-    const maxSpeedNow = MAX_SPEED * (car.speedMult || 1) * (boosting ? BOOST_MULT : 1);
+    const maxSpeedNow = MAX_SPEED * stats.top * (car.speedMult || 1) * (boosting ? BOOST_MULT : 1);
     if (car.brakeHeld) car.speed -= BRAKE_DECEL * dt;
-    else car.speed += ACCEL * dt;
+    else car.speed += ACCEL * stats.accel * dt;
     car.speed = clamp(car.speed, -MAX_SPEED * 0.35, maxSpeedNow);
 
     // Fora do alcatrão o carro atola-se: a velocidade desce até um quarto da
     // máxima, mas desce a travar em vez de cair de repente — sair da pista custa
-    // tempo a recuperar, que é o castigo, e não um empurrão seco.
+    // tempo a recuperar, que é o castigo, e não um empurrão seco. Quanto se
+    // atola depende do carro: o jeep anda na terra quase como no alcatrão, o
+    // fórmula enterra-se.
     car.offTrack = Math.abs(lateralOffset(car)) > race.track.halfWidth;
     if (car.offTrack) {
-        const cap = MAX_SPEED * OFFROAD_SPEED;
+        const cap = MAX_SPEED * OFFROAD_SPEED * stats.offroad;
         if (car.speed > cap) car.speed = Math.max(cap, car.speed - OFFROAD_DECEL * dt);
         car.dustTimer -= dt;
         if (car.dustTimer <= 0 && car.speed > 40) { spawnOffroadDust(car); car.dustTimer = 0.05; }
@@ -69,7 +73,7 @@ export function integrateCar(car, dt, isPlayer) {
     car.y += Math.sin(car.velAngle) * car.speed * dt;
 
     if (wantsDrift) {
-        car.driftCharge = Math.min(100, car.driftCharge + DRIFT_CHARGE_RATE * dt);
+        car.driftCharge = Math.min(100, car.driftCharge + DRIFT_CHARGE_RATE * stats.drift * dt);
         car.smokeTimer -= dt;
         if (car.smokeTimer <= 0) { spawnDriftSpark(car, car.steerInput >= 0 ? 1 : -1); car.smokeTimer = 0.04; }
         car.wasDrifting = true;

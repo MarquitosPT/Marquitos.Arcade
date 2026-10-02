@@ -151,11 +151,14 @@
             </div>
         </div>
 
-        <!-- Ecrã 2: pista (só na corrida simples), dificuldade e arranque. -->
+        <!-- Ecrã 2: a preparação da corrida, em duas páginas dentro do mesmo
+             painel — primeiro a pista (ou a taça) e a dificuldade, depois a
+             garagem, com o carro e a cor. Trocar de página troca o conteúdo do
+             painel, não abre outra janela por cima. -->
         <div id="setupScreen" class="screen" style="display:none;">
-            <div class="panel panel--wide">
+            <div class="panel panel--wide" id="setupPanel">
                 <div class="panelHead">
-                    <button class="iconBtn" id="backBtn" aria-label="Voltar ao menu">
+                    <button class="iconBtn" id="backBtn" aria-label="Voltar">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
                             <path d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z"></path>
                         </svg>
@@ -164,32 +167,49 @@
                         <h2 class="panelTitle" id="setupTitle">Corrida simples</h2>
                         <p class="panelSub" id="setupSub">Escolhe a pista</p>
                     </div>
+                    <ol class="steps" id="setupSteps" aria-label="Passos da preparação">
+                        <li class="step" data-step="track"><span class="stepNum">1</span><span class="stepName">Pista</span></li>
+                        <li class="step" data-step="garage"><span class="stepNum">2</span><span class="stepName">Carro</span></li>
+                    </ol>
                 </div>
 
-                <!-- A taça só se escolhe no campeonato; na corrida simples escolhe-se a pista. -->
-                <div class="field" id="cupField" hidden>
-                    <span class="fieldLabel">Taça</span>
-                    <div class="segmented" id="cupRow"></div>
-                </div>
-
-                <div class="trackGrid" id="trackRow"></div>
-
-                <div class="field">
-                    <span class="fieldLabel">A cor do teu carro</span>
-                    <div class="colorRow" id="colorRow"></div>
-                </div>
-
-                <div class="field">
-                    <span class="fieldLabel">Dificuldade dos adversários</span>
-                    <div class="segmented" id="diffRow">
-                        <button class="diffBtn" data-lvl="0.80">Fácil</button>
-                        <button class="diffBtn active" data-lvl="0.95">Médio</button>
-                        <button class="diffBtn" data-lvl="1.08">Difícil</button>
+                <!-- Página 1: pista ou taça, e a dificuldade. -->
+                <section class="setupPage" id="trackPage">
+                    <!-- A taça só se escolhe no campeonato; na corrida simples escolhe-se a pista. -->
+                    <div class="field" id="cupField" hidden>
+                        <span class="fieldLabel">Taça</span>
+                        <div class="segmented" id="cupRow"></div>
                     </div>
-                </div>
 
-                <button class="btn" id="startBtn">Arrancar</button>
-                <p id="hint">3 adversários CPU · setas ou arrasta no ecrã · segura DRIFT nas curvas para carregar o BOOST</p>
+                    <div class="trackGrid" id="trackRow"></div>
+
+                    <div class="field">
+                        <span class="fieldLabel">Dificuldade dos adversários</span>
+                        <div class="segmented" id="diffRow">
+                            <button class="diffBtn" data-lvl="0.80">Fácil</button>
+                            <button class="diffBtn active" data-lvl="0.95">Médio</button>
+                            <button class="diffBtn" data-lvl="1.08">Difícil</button>
+                        </div>
+                    </div>
+
+                    <button class="btn" id="nextBtn">Escolher o carro <span aria-hidden="true">→</span></button>
+                </section>
+
+                <!-- Página 2: a garagem. -->
+                <section class="setupPage" id="garagePage" hidden>
+                    <div class="field">
+                        <span class="fieldLabel">O teu carro</span>
+                        <div class="carGrid" id="carRow"></div>
+                    </div>
+
+                    <div class="field">
+                        <span class="fieldLabel">A cor do teu carro</span>
+                        <div class="colorRow" id="colorRow"></div>
+                    </div>
+
+                    <button class="btn" id="startBtn">Arrancar</button>
+                    <p id="hint">3 adversários CPU · setas ou arrasta no ecrã · segura DRIFT nas curvas para carregar o BOOST</p>
+                </section>
             </div>
         </div>
 

@@ -105,17 +105,18 @@ function stepFinishOverlay(dt) {
 const menu = createMenu({ playerName });
 
 // O modo não arranca a corrida: leva ao ecrã seguinte, onde se escolhe a pista
-// (corrida simples) e a dificuldade.
+// (corrida simples) e a dificuldade e, na página a seguir, o carro e a cor.
 createButtonGroup(els.modeRow, '.modeBtn', (mode) => menu.showSetup(mode));
 
 createButtonGroup(els.diffRow, '.diffBtn', (level) => {
     session.difficulty = parseFloat(level);
 });
 
-els.backBtn.addEventListener('click', () => menu.showMenu());
+els.backBtn.addEventListener('click', () => menu.back());
+els.nextBtn.addEventListener('click', () => menu.showGarage());
 
 els.startBtn.addEventListener('click', () => {
-    setupParticipants(playerName.remember(), session.playerColor);
+    setupParticipants(playerName.remember(), session.playerColor, session.playerCarType);
     session.playerBoardName = playerName.forBoard();
     session.raceIndex = 0;
     session.tracks = session.mode === MODE_TOURNAMENT ? [...TOURNAMENT_CUPS[session.cupIdx].tracks] : [session.trackIdx];
@@ -124,7 +125,7 @@ els.startBtn.addEventListener('click', () => {
 
 setReturnToMenuHandler((action) => {
     if (action === 'again') {
-        setupParticipants(playerName.remember(), session.playerColor);
+        setupParticipants(playerName.remember(), session.playerColor, session.playerCarType);
         session.playerBoardName = playerName.forBoard();
         session.raceIndex = 0;
         startRace(session.tracks[0]);

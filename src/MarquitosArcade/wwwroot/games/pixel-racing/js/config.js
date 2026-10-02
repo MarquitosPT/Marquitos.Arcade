@@ -19,6 +19,7 @@ export const ABOUT = {
 };
 export const NAME_STORAGE_KEY = 'pixelRacingPlayerName_v1';
 export const COLOR_STORAGE_KEY = 'pixelRacingPlayerColor_v1';
+export const CAR_TYPE_STORAGE_KEY = 'pixelRacingCarType_v1';
 
 /**
  * Paleta do jogo. O jogador escolhe a sua cor no ecrã de preparação e os
@@ -39,6 +40,54 @@ export const CAR_COLORS = [
 
 /** Cor por omissão do carro do jogador, enquanto não escolher outra. */
 export const PLAYER_COLOR = CAR_COLORS[0].value;
+
+/**
+ * Os tipos de carro. Cada um troca uma coisa por outra — nenhum é melhor em
+ * tudo, senão a escolha deixava de ser escolha. Os números de `stats` são
+ * multiplicadores das constantes de afinação lá de baixo (1 = como o carro de
+ * sempre), e ficam perto de 1 de propósito: mudam a maneira de correr, não
+ * decidem a corrida.
+ *
+ * - `top`: velocidade máxima (MAX_SPEED).
+ * - `accel`: aceleração (ACCEL).
+ * - `turn`: rapidez a virar (TURN_RATE).
+ * - `grip`: aderência, a normal e a do drift (GRIP_NORMAL, GRIP_DRIFT).
+ * - `offroad`: velocidade que aguenta fora do alcatrão (OFFROAD_SPEED).
+ * - `drift`: rapidez a carregar o boost em drift (DRIFT_CHARGE_RATE).
+ *
+ * `rating` é o que o cartão da garagem mostra, de 1 a 5. Escreve-se à mão
+ * para as barras dizerem o que se sente ao volante; quem mexer em `stats` tem
+ * de olhar para elas também.
+ */
+export const CAR_TYPES = [
+    {
+        id: 'f1', name: 'Fórmula 1', blurb: 'O mais rápido em reta. Fora do alcatrão, atola-se.',
+        stats: { top: 1.07, accel: 1.0, turn: 0.95, grip: 1.1, offroad: 0.7, drift: 0.9 },
+        rating: { speed: 5, accel: 3, handling: 3, offroad: 1 }
+    },
+    {
+        id: 'gt', name: '911 GT', blurb: 'Equilibrado, e o rei do drift: carrega o boost num instante.',
+        stats: { top: 1.0, accel: 1.03, turn: 1.0, grip: 0.95, offroad: 1.0, drift: 1.3 },
+        rating: { speed: 4, accel: 3, handling: 4, offroad: 2 }
+    },
+    {
+        id: 'kart', name: 'Kart', blurb: 'Arranca e vira como nenhum outro, mas a reta acaba-lhe cedo.',
+        stats: { top: 0.92, accel: 1.25, turn: 1.15, grip: 1.1, offroad: 0.9, drift: 1.0 },
+        rating: { speed: 2, accel: 5, handling: 5, offroad: 2 }
+    },
+    {
+        id: 'jeep', name: 'Jeep', blurb: 'Lento no alcatrão — mas a escapatória é dele, dá para cortar caminho.',
+        stats: { top: 0.94, accel: 0.95, turn: 0.95, grip: 0.95, offroad: 2.2, drift: 1.0 },
+        rating: { speed: 2, accel: 2, handling: 3, offroad: 5 }
+    }
+];
+
+/** Tipo de carro por omissão do jogador, enquanto não escolher outro. */
+export const PLAYER_CAR_TYPE = CAR_TYPES[0].id;
+
+export function carType(id) {
+    return CAR_TYPES.find((type) => type.id === id) || CAR_TYPES[0];
+}
 
 /**
  * Tipos de letra do HUD desenhado no canvas — os mesmos do menu (ver css/theme.css),

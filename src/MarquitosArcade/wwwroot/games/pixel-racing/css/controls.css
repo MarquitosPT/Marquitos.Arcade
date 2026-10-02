@@ -324,6 +324,106 @@ button { cursor: pointer; }
     background: rgba(53, 224, 255, 0.1);
 }
 
+/* ---------- Garagem: tipo de carro ---------- */
+
+.carGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    width: 100%;
+}
+
+.carCard {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    padding: 10px 12px 12px;
+    text-align: left;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    background: var(--glass-bg-soft);
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.carCard:hover { background: var(--glass-bg-hover); transform: translateY(-2px); }
+
+.carCard.active {
+    border-color: var(--accent);
+    background: linear-gradient(150deg, rgba(53, 224, 255, 0.18), rgba(139, 124, 255, 0.1));
+    box-shadow: 0 0 0 1px var(--accent), 0 18px 36px -22px var(--glow);
+}
+
+/* A miniatura assenta num bocado de asfalto, para o carro se ver como na pista. */
+.carPreview {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 240 / 104;
+    margin-bottom: 4px;
+    border-radius: var(--radius-sm);
+    background:
+        repeating-linear-gradient(90deg, transparent 0 18px, rgba(255, 255, 255, 0.05) 18px 30px) center / 100% 2px no-repeat,
+        radial-gradient(ellipse at 50% 40%, rgba(255, 255, 255, 0.08), transparent 70%),
+        #2a2d36;
+}
+
+.carName {
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.carBlurb {
+    min-height: 2.7em;
+    font-size: 11px;
+    line-height: 1.35;
+    color: var(--muted);
+}
+
+.carStats {
+    display: grid;
+    gap: 3px;
+    margin-top: 4px;
+}
+
+.carStat {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.carStatLabel {
+    overflow: hidden;
+    font-size: 10.5px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--faint);
+}
+
+.carStatBar {
+    display: inline-flex;
+    flex: none;
+    gap: 2px;
+}
+
+.carStatBar i {
+    width: 9px;
+    height: 5px;
+    border-radius: 2px;
+    background: var(--accent);
+}
+
+.carStatBar i.off { background: rgba(238, 242, 255, 0.18); }
+
+@media (max-width: 420px) {
+    .carCard { padding: 8px 9px 10px; }
+    .carStat { gap: 4px; }
+    .carStatLabel { font-size: 10px; }
+    .carStatBar i { width: 6px; }
+}
+
 /* ---------- Cor do carro ---------- */
 
 /* Uma linha só, em qualquer largura: as amostras encolhem em vez de passarem à linha de baixo. */
