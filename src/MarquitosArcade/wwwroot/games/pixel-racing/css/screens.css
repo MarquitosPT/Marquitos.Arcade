@@ -37,6 +37,14 @@
     -webkit-backdrop-filter: blur(var(--blur-soft));
     backdrop-filter: blur(var(--blur-soft));
     text-align: center;
+    /*
+     * O createOverlays mostra os ecrãs com `display: grid`. Sem colunas
+     * declaradas, a coluna implícita encolhe até ao conteúdo e o `100%` da
+     * largura do painel passa a ser 100% dessa coluna estreita: o painel dos
+     * resultados ficava com a largura dos nomes, não com a das suas classes.
+     * Uma coluna com a largura toda devolve ao `.panel` a largura que pede.
+     */
+    grid-template-columns: minmax(0, 1fr);
 }
 
 /* O JS mostra um ecrã de cada vez (createOverlays); o menu é o que arranca. */
