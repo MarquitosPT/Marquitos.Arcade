@@ -220,11 +220,12 @@ const GAMES = [
             await page.click('#nextBtn');
             await page.click('.carCard[data-value="kart"]');
             await page.click('#startBtn');
-            const type = await page.evaluate(async () => {
+            // Cada corrida é de um tipo só: os CPU correm com o carro do jogador.
+            const types = await page.evaluate(async () => {
                 const { race } = await import('/games/pixel-racing/js/state.js');
-                return race.player.type;
+                return race.cars.map((car) => car.type);
             });
-            if (type !== 'kart') throw new Error(`a garagem não escolheu o kart: ${type}`);
+            if (types.some((type) => type !== 'kart')) throw new Error(`a grelha não é toda de karts: ${types.join(', ')}`);
             await waitForRacing(page);
             await page.keyboard.down('ArrowUp');
             await sleep(1200);

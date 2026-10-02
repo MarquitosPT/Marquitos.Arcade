@@ -6,7 +6,7 @@
 // algoritmos de condução.
 
 import { shuffle, rand } from '/lib/arcade/math.js';
-import { CAR_COLORS, CAR_TYPES, CPU_NAMES, PLAYER_CAR_TYPE, PLAYER_COLOR, carType } from './config.js';
+import { CAR_COLORS, CPU_NAMES, PLAYER_CAR_TYPE, PLAYER_COLOR, carType } from './config.js';
 import { session } from './state.js';
 
 export function makeCar(key, name, color, type) {
@@ -26,19 +26,18 @@ export function makeCar(key, name, color, type) {
 
 /**
  * Monta a grelha: o jogador com o nome, a cor e o carro que escolheu, e três
- * CPU com nomes e cores sorteados de entre os que sobram. Os carros dos CPU
- * também são à sorte (podem repetir o do jogador): é o que faz cada grelha ser
- * uma mistura diferente de karts, jeeps, GT e fórmulas.
+ * CPU com nomes e cores sorteados de entre os que sobram. Todos correm com o
+ * mesmo tipo de carro — cada corrida é uma categoria (karts, jeeps, GT ou
+ * fórmulas), e assim ganha-se pela condução e não pelo carro que calhou.
  */
 export function setupParticipants(playerName, playerColor = PLAYER_COLOR, playerType = PLAYER_CAR_TYPE) {
     const cpuNames = shuffle(CPU_NAMES).slice(0, 3);
     const cpuColors = shuffle(CAR_COLORS.filter((c) => c.value !== playerColor)).slice(0, 3);
-    const cpuType = () => CAR_TYPES[Math.floor(Math.random() * CAR_TYPES.length)].id;
     session.participants = [
         { key: 'player', name: playerName, color: playerColor, type: playerType },
-        { key: 'cpu1', name: cpuNames[0], color: cpuColors[0].value, type: cpuType() },
-        { key: 'cpu2', name: cpuNames[1], color: cpuColors[1].value, type: cpuType() },
-        { key: 'cpu3', name: cpuNames[2], color: cpuColors[2].value, type: cpuType() }
+        { key: 'cpu1', name: cpuNames[0], color: cpuColors[0].value, type: playerType },
+        { key: 'cpu2', name: cpuNames[1], color: cpuColors[1].value, type: playerType },
+        { key: 'cpu3', name: cpuNames[2], color: cpuColors[2].value, type: playerType }
     ];
     session.tournamentPoints = { player: 0, cpu1: 0, cpu2: 0, cpu3: 0 };
     session.playerScore = 0;

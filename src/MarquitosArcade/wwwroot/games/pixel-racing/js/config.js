@@ -42,8 +42,11 @@ export const CAR_COLORS = [
 export const PLAYER_COLOR = CAR_COLORS[0].value;
 
 /**
- * Os tipos de carro. Cada um troca uma coisa por outra — nenhum é melhor em
- * tudo, senão a escolha deixava de ser escolha. Os números de `stats` são
+ * Os tipos de carro, do mais lento ao mais rápido — é por esta ordem que a
+ * garagem os mostra. Cada corrida é de um tipo só: os adversários correm com o
+ * mesmo carro que o jogador escolheu, portanto escolher o carro é escolher a
+ * categoria da corrida. Dentro de cada tipo, cada um troca uma coisa por
+ * outra — nenhum é melhor em tudo. Os números de `stats` são
  * multiplicadores das constantes de afinação lá de baixo (1 = como o carro de
  * sempre), e ficam perto de 1 de propósito: mudam a maneira de correr, não
  * decidem a corrida.
@@ -61,9 +64,14 @@ export const PLAYER_COLOR = CAR_COLORS[0].value;
  */
 export const CAR_TYPES = [
     {
-        id: 'f1', name: 'Fórmula 1', blurb: 'O mais rápido em reta. Fora do alcatrão, atola-se.',
-        stats: { top: 1.07, accel: 1.0, turn: 0.95, grip: 1.1, offroad: 0.7, drift: 0.9 },
-        rating: { speed: 5, accel: 3, handling: 3, offroad: 1 }
+        id: 'kart', name: 'Kart', blurb: 'Arranca e vira como nenhum outro, mas a reta acaba-lhe cedo.',
+        stats: { top: 0.92, accel: 1.25, turn: 1.15, grip: 1.1, offroad: 0.9, drift: 1.0 },
+        rating: { speed: 2, accel: 5, handling: 5, offroad: 2 }
+    },
+    {
+        id: 'jeep', name: 'Jeep', blurb: 'Robusto: anda na terra quase tão bem como no alcatrão.',
+        stats: { top: 0.96, accel: 0.95, turn: 0.95, grip: 0.95, offroad: 1.5, drift: 1.0 },
+        rating: { speed: 3, accel: 2, handling: 3, offroad: 3 }
     },
     {
         id: 'gt', name: '911 GT', blurb: 'Equilibrado, e o rei do drift: carrega o boost num instante.',
@@ -71,22 +79,17 @@ export const CAR_TYPES = [
         rating: { speed: 4, accel: 3, handling: 4, offroad: 2 }
     },
     {
-        id: 'kart', name: 'Kart', blurb: 'Arranca e vira como nenhum outro, mas a reta acaba-lhe cedo.',
-        stats: { top: 0.92, accel: 1.25, turn: 1.15, grip: 1.1, offroad: 0.9, drift: 1.0 },
-        rating: { speed: 2, accel: 5, handling: 5, offroad: 2 }
-    },
-    {
-        id: 'jeep', name: 'Jeep', blurb: 'Lento no alcatrão — mas a escapatória é dele, dá para cortar caminho.',
-        stats: { top: 0.94, accel: 0.95, turn: 0.95, grip: 0.95, offroad: 2.2, drift: 1.0 },
-        rating: { speed: 2, accel: 2, handling: 3, offroad: 5 }
+        id: 'f1', name: 'Fórmula 1', blurb: 'O mais rápido em reta. Fora do alcatrão, atola-se.',
+        stats: { top: 1.07, accel: 1.0, turn: 0.95, grip: 1.1, offroad: 0.7, drift: 0.9 },
+        rating: { speed: 5, accel: 3, handling: 3, offroad: 1 }
     }
 ];
 
 /** Tipo de carro por omissão do jogador, enquanto não escolher outro. */
-export const PLAYER_CAR_TYPE = CAR_TYPES[0].id;
+export const PLAYER_CAR_TYPE = 'f1';
 
 export function carType(id) {
-    return CAR_TYPES.find((type) => type.id === id) || CAR_TYPES[0];
+    return CAR_TYPES.find((type) => type.id === id) || CAR_TYPES.find((type) => type.id === PLAYER_CAR_TYPE);
 }
 
 /**
