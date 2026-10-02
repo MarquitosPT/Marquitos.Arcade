@@ -8,6 +8,8 @@ export const els = byId(
     'startBtn', 'backBtn', 'nextBtn', 'resumeBtn', 'quitBtn', 'pauseBtn', 'endBtn',
     'modeRow', 'trackRow', 'colorRow', 'diffRow', 'setupTitle', 'setupSub',
     'setupPanel', 'setupSteps', 'trackPage', 'garagePage', 'carRow',
+    'trackCarousel', 'trackViewport', 'trackPrevBtn', 'trackNextBtn', 'trackDots',
+    'carCarousel', 'carViewport', 'carPrevBtn', 'carNextBtn', 'carDots',
     'nameSlot', 'nameRow', 'accountRow', 'accountName', 'accountInitial', 'playerNameInput',
     'arcadeLink', 'aboutBtn', 'musicBtn'
 );

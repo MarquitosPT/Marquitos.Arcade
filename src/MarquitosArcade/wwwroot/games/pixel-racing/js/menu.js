@@ -15,7 +15,7 @@
 // A pista selecionada passa a ser a que o ciclo de desenho pinta por trás do
 // vidro: o menu é uma janela para a pista, não um cartaz.
 
-import { escapeHtml } from '/lib/arcade/index.js';
+import { createCarousel, escapeHtml } from '/lib/arcade/index.js';
 import { readText, writeText } from '/lib/arcade/storage.js';
 
 import {
@@ -168,6 +168,29 @@ function previewTrack(index) {
 }
 
 export function createMenu({ playerName }) {
+    // As pistas e os carros vão em carrosséis (ver css/carousel.css). O
+    // carrossel refaz as páginas ao receber os cartões e ao rodar o aparelho;
+    // `onRender` repõe o que não vem no HTML — o cartão escolhido e, nos
+    // carros, o desenho das miniaturas.
+    const trackCarousel = createCarousel({
+        root: els.trackCarousel,
+        viewport: els.trackViewport,
+        track: els.trackRow,
+        prev: els.trackPrevBtn,
+        next: els.trackNextBtn,
+        dots: els.trackDots
+    }, { onRender: () => markTrack() });
+
+    const carCarousel = createCarousel({
+        root: els.carCarousel,
+        viewport: els.carViewport,
+        track: els.carRow,
+        prev: els.carPrevBtn,
+        next: els.carNextBtn,
+        dots: els.carDots
+    }, { onRender: () => { markCar(); paintCarPreviews(); } });
+
+    const carIndex = () => Math.max(0, CAR_TYPES.findIndex((type) => type.id === session.playerCarType));
     /**
      * Quem tem sessão iniciada corre com o nome da conta — é esse que o servidor
      * guarda no quadro de pontuações, portanto pedir outro seria mentir ao
@@ -218,9 +241,7 @@ export function createMenu({ playerName }) {
         const stored = readText(CAR_TYPE_STORAGE_KEY);
         if (CAR_TYPES.some((type) => type.id === stored)) session.playerCarType = stored;
 
-        els.carRow.innerHTML = CAR_TYPES.map(carCard).join('');
-        markCar();
-        paintCarPreviews();
+        carCarousel.setCards(CAR_TYPES.map(carCard), { show: carIndex() });
 
         els.carRow.addEventListener('click', (event) => {
             const card = event.target.closest('.carCard');
@@ -285,6 +306,8 @@ export function createMenu({ playerName }) {
 
     function showGarage() {
         showPage('garage');
+        // Abre na página do carro que está escolhido.
+        carCarousel.showCard(carIndex(), { animate: false });
     }
 
     /** O botão de voltar recua uma página; da primeira, volta ao menu. */
@@ -301,34 +324,51 @@ export function createMenu({ playerName }) {
      * Segundo ecrã: a pista e a dificuldade e, na página seguinte, o carro.
      *
      * No campeonato não se escolhe pista: correm-se todas, e ficam à vista pela
-     * ordem em que se correm, em cartões mais pequenos (são muitas). Por trás
-     * do vidro mostra-se a primeira, que é por onde a coisa começa.
+     * ordem em que se correm, a começar na primeira página. Por trás do vidro
+     * mostra-se a primeira pista, que é por onde a coisa começa.
+     *
+     * O overlay tem de estar à vista antes de se entregarem os cartões: é aí
+     * que o carrossel lê do CSS quantos cabem por página.
      */
     function showSetup(mode) {
         session.mode = mode;
         const tournament = mode === MODE_TOURNAMENT;
 
         els.setupTitle.textContent = tournament ? 'Campeonato' : 'Corrida simples';
-        els.trackRow.classList.toggle('is-compact', tournament);
-        if (tournament) {
-            els.trackRow.innerHTML = TRACKS.map((track, index) => trackCard(track, { index, order: index + 1 })).join('');
-            previewTrack(0);
-        } else {
-            els.trackRow.innerHTML = TRACKS.map((track, index) => trackCard(track, { index })).join('');
-            selectTrack(session.trackIdx);
-        }
-
         overlays.show('setup');
         showPage('track');
+        if (tournament) {
+            trackCarousel.setCards(TRACKS.map((track, index) => trackCard(track, { index, order: index + 1 })));
+            previewTrack(0);
+        } else {
+            trackCarousel.setCards(TRACKS.map((track, index) => trackCard(track, { index })), { show: session.trackIdx });
+            selectTrack(session.trackIdx);
+        }
     }
 
     function selectTrack(index) {
         session.trackIdx = index;
-        for (const card of els.trackRow.querySelectorAll('.trackCard[data-value]')) {
-            card.classList.toggle('active', Number(card.dataset.value) === index);
-        }
+        markTrack();
         previewTrack(index);
     }
+
+    function markTrack() {
+        for (const card of els.trackRow.querySelectorAll('.trackCard[data-value]')) {
+            const active = Number(card.dataset.value) === session.trackIdx;
+            card.classList.toggle('active', active);
+            card.setAttribute('aria-pressed', String(active));
+        }
+    }
+
+    /**
+     * As setas do teclado viram a página do carrossel que está à vista — só
+     * com o ecrã de preparação aberto, que na corrida são o volante.
+     */
+    document.addEventListener('keydown', (event) => {
+        if (!overlays.isVisible('setup') || event.target.closest?.('input, textarea')) return;
+        const carousel = page === 'garage' ? carCarousel : trackCarousel;
+        if (carousel.handleKey(event.key)) event.preventDefault();
+    });
 
     els.trackRow.addEventListener('click', (event) => {
         const card = event.target.closest('.trackCard[data-value]');

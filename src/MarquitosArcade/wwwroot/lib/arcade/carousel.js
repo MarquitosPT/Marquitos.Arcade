@@ -34,8 +34,12 @@ const DIRECTION_LOCK = 8;
  * @param {object} [options]
  * @param {string} [options.pageClass='carouselPage'] Classe de cada página.
  * @param {(page: number, pageCount: number) => void} [options.onPageChange]
+ * @param {(track: HTMLElement) => void} [options.onRender] Chamado sempre que as
+ *   páginas são refeitas (ao entregar os cartões e ao rodar o aparelho). Os
+ *   cartões voltam a ser HTML acabado de pôr, por isso é aqui que se repõe o
+ *   que não vem no HTML: o que está escolhido, ou o desenho de um canvas.
  */
-export function createCarousel({ root, viewport, track, prev, next, dots }, { pageClass = 'carouselPage', onPageChange = null } = {}) {
+export function createCarousel({ root, viewport, track, prev, next, dots }, { pageClass = 'carouselPage', onPageChange = null, onRender = null } = {}) {
     /** Os cartões, em HTML, tal como quem usa o carrossel os entregou. */
     let cards = [];
     let page = 0;
@@ -70,6 +74,7 @@ export function createCarousel({ root, viewport, track, prev, next, dots }, { pa
         renderDots();
         root.classList.toggle('is-single', pageCount <= 1);
         goTo(Math.floor(keepCard / perPage), { animate: false });
+        onRender?.(track);
     }
 
     function renderDots() {
