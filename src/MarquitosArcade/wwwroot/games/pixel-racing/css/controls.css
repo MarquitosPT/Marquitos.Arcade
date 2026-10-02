@@ -215,14 +215,7 @@ button { cursor: pointer; }
 
 .modeBtn:hover .modeGo { color: var(--accent); transform: translateX(3px); }
 
-/* ---------- Escolha da pista ---------- */
-
-.trackGrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 10px;
-    width: 100%;
-}
+/* ---------- Escolha da pista (os cartões; o carrossel está em css/carousel.css) ---------- */
 
 .trackCard {
     display: flex;
@@ -248,21 +241,6 @@ button { cursor: pointer; }
 /* No campeonato as pistas mostram-se pela ordem em que se correm, sem escolha. */
 .trackCard.is-static { cursor: default; }
 .trackCard.is-static:hover { background: var(--glass-bg-soft); transform: none; }
-
-/*
- * No campeonato são as pistas todas, e é uma lista para ver e não para
- * escolher: cartões mais pequenos, mais por linha, só com a ordem, o nome e a
- * perícia — senão o botão para seguir ficava lá muito em baixo.
- */
-.trackGrid.is-compact {
-    grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
-    gap: 8px;
-}
-
-.is-compact .trackCard { gap: 6px; padding: 8px; }
-.is-compact .trackName { font-size: 12px; }
-.is-compact .trackMeta:not(:last-child) { display: none; }
-.is-compact .trackOrder { padding: 1px 6px; font-size: 9px; }
 
 .trackShape {
     display: block;
@@ -339,14 +317,7 @@ button { cursor: pointer; }
     background: rgba(53, 224, 255, 0.1);
 }
 
-/* ---------- Garagem: tipo de carro ---------- */
-
-.carGrid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-    width: 100%;
-}
+/* ---------- Garagem: tipo de carro (os cartões; o carrossel está em css/carousel.css) ---------- */
 
 .carCard {
     display: flex;

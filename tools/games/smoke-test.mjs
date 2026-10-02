@@ -216,9 +216,9 @@ const GAMES = [
             // O menu tem dois passos: o modo leva ao ecrã da pista e da dificuldade,
             // que tem uma segunda página com a garagem (carro e cor).
             await page.click('.modeBtn[data-mode="quick"]');
-            await page.click('.trackCard[data-value="1"]');
+            await pickCarouselCard(page, 'trackCarousel', '.trackCard[data-value="1"]');
             await page.click('#nextBtn');
-            await page.click('.carCard[data-value="kart"]');
+            await pickCarouselCard(page, 'carCarousel', '.carCard[data-value="kart"]');
             await page.click('#startBtn');
             // Cada corrida é de um tipo só: os CPU correm com o carro do jogador.
             const types = await page.evaluate(async () => {
@@ -274,7 +274,7 @@ const GAMES = [
             });
             if (shown.join('|') !== expected.join('|')) throw new Error(`o campeonato não mostra as pistas todas: ${shown.join(', ')}`);
             await page.click('#nextBtn');
-            await page.click('.carCard[data-value="jeep"]');
+            await pickCarouselCard(page, 'carCarousel', '.carCard[data-value="jeep"]');
             await page.click('#startBtn');
             await waitForRacing(page);
             await page.keyboard.down('ArrowUp');
@@ -1273,6 +1273,29 @@ function withTimeout(promise, ms, message) {
  * frames por segundo, o relógio do jogo anda mais devagar do que o relógio real e
  * a contagem decrescente demora mais do que os 4 segundos nominais.
  */
+/**
+ * Pixel Racing: escolhe um cartão de um dos carrosséis da preparação. Os
+ * cartões das outras páginas estão no DOM mas fora da janela do carrossel, e o
+ * Playwright não clica no que não se vê — por isso vira-se primeiro a página
+ * com as setas do teclado (o ecrã de preparação trata-as) até à do cartão.
+ */
+async function pickCarouselCard(page, carouselId, cardSelector) {
+    const { target, current } = await page.evaluate(([id, sel]) => {
+        const root = document.getElementById(id);
+        const pages = [...root.querySelectorAll('.carouselPage')];
+        const card = root.querySelector(sel);
+        const active = root.querySelector('.carouselDot.active');
+        return {
+            target: pages.indexOf(card.closest('.carouselPage')),
+            current: active ? Number(active.dataset.page) : 0
+        };
+    }, [carouselId, cardSelector]);
+    const key = target > current ? 'ArrowRight' : 'ArrowLeft';
+    for (let i = 0; i < Math.abs(target - current); i++) await page.keyboard.press(key);
+    await sleep(450); // a transição da página
+    await page.click(`#${carouselId} ${cardSelector}`);
+}
+
 async function waitForRacing(page) {
     // Atenção: o predicado de waitForFunction TEM de ser síncrono. Se for `async`,
     // o Playwright vê a Promise devolvida, considera-a verdadeira e devolve o
