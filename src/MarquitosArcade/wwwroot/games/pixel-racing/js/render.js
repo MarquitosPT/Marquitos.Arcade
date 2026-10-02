@@ -376,52 +376,92 @@ function drawCars() {
     }
 }
 
+/** Cor do carbono: fundo plano, suspensão, halo, endplates. */
+const CARBON = '#1b1f2b';
+
 /**
- * Silhueta do carro vista de cima: bico afilado, ombros largos e a traseira a
- * estreitar depois dos pontoons, para as rodas de trás ficarem à vista como num
- * monolugar. Tudo em frações de `CAR_LEN`/`CAR_W`, por isso mudar o tamanho do
- * carro no config não obriga a redesenhar nada aqui.
+ * Contorno simétrico a partir dos pontos do lado direito, do nariz para trás; o
+ * lado esquerdo é o espelho. Os pontos são de controlo e a curva passa pelos
+ * pontos médios entre eles, por isso sai sempre suave sem ter de afinar curvas
+ * à mão. Os pontos vêm em frações de `L` (x) e de meia-largura `hw` (y), como o
+ * resto do carro: mudar o tamanho no config não obriga a redesenhar nada aqui.
  */
-function carBodyPath(L, W) {
-    const hw = W / 2;
+function symPath(pts, L, hw) {
+    const right = pts.map(([x, y]) => [x * L, y * hw]);
+    const all = [...right, ...right.slice().reverse().map(([x, y]) => [x, -y])];
+    const n = all.length;
+    const mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
     ctx.beginPath();
-    ctx.moveTo(L * 0.50, -hw * 0.3);
-    ctx.quadraticCurveTo(L * 0.52, 0, L * 0.50, hw * 0.3);
-    ctx.lineTo(L * 0.44, hw * 0.36);
-    ctx.quadraticCurveTo(L * 0.30, hw * 0.5, L * 0.22, hw * 0.86);
-    ctx.lineTo(L * 0.1, hw);
-    ctx.lineTo(-L * 0.08, hw);
-    ctx.quadraticCurveTo(-L * 0.2, hw * 0.92, -L * 0.28, hw * 0.5);
-    ctx.lineTo(-L * 0.44, hw * 0.44);
-    ctx.quadraticCurveTo(-L * 0.48, hw * 0.42, -L * 0.48, hw * 0.2);
-    ctx.lineTo(-L * 0.48, -hw * 0.2);
-    ctx.quadraticCurveTo(-L * 0.48, -hw * 0.42, -L * 0.44, -hw * 0.44);
-    ctx.lineTo(-L * 0.28, -hw * 0.5);
-    ctx.quadraticCurveTo(-L * 0.2, -hw * 0.92, -L * 0.08, -hw);
-    ctx.lineTo(L * 0.1, -hw);
-    ctx.lineTo(L * 0.22, -hw * 0.86);
-    ctx.quadraticCurveTo(L * 0.30, -hw * 0.5, L * 0.44, -hw * 0.36);
+    let m = mid(all[n - 1], all[0]);
+    ctx.moveTo(m[0], m[1]);
+    for (let i = 0; i < n; i++) {
+        m = mid(all[i], all[(i + 1) % n]);
+        ctx.quadraticCurveTo(all[i][0], all[i][1], m[0], m[1]);
+    }
     ctx.closePath();
 }
 
-/** Braços que ligam as rodas ao corpo — sem eles a roda fica a flutuar ao lado. */
-function drawSuspension(x, L, W) {
-    const hw = W / 2;
-    ctx.fillStyle = '#1b1f2b';
-    ctx.fillRect(x - L * 0.025, -hw, L * 0.05, hw * 0.6);
-    ctx.fillRect(x - L * 0.025, hw * 0.4, L * 0.05, hw * 0.6);
+/**
+ * Carroçaria de um monolugar vista de cima: nariz comprido e fino, habitáculo
+ * estreito, sidepods largos logo atrás das rodas da frente e a traseira a
+ * fechar em "garrafa de Coca-Cola" até à estrutura de impacto. É a cintura
+ * estreita entre as rodas que separa um fórmula de um kart.
+ */
+const BODY = [
+    [0.52, 0], [0.51, 0.07], [0.42, 0.11], [0.28, 0.17], [0.17, 0.24],
+    [0.13, 0.30], [0.11, 0.62], [0.05, 0.72], [-0.07, 0.70], [-0.15, 0.56],
+    [-0.21, 0.32], [-0.30, 0.22], [-0.40, 0.17], [-0.45, 0.10], [-0.46, 0]
+];
+
+/** Fundo plano, em carbono: espreita à volta dos sidepods, como o de um F1. */
+const FLOOR = [
+    [0.18, 0], [0.17, 0.32], [0.13, 0.74], [0.02, 0.82], [-0.14, 0.78],
+    [-0.22, 0.52], [-0.34, 0.40], [-0.41, 0.30], [-0.42, 0]
+];
+
+/** Asa dianteira: a toda a largura do carro e ligeiramente em flecha. */
+const FRONT_WING = [
+    [0.49, 0], [0.50, 0.40], [0.49, 0.96], [0.43, 0.97], [0.41, 0.60], [0.43, 0.18], [0.43, 0]
+];
+
+const FRONT_AXLE = 0.29, REAR_AXLE = -0.29;
+
+/**
+ * Braços de suspensão em V, do cubo da roda ao chassis. Finos como num F1 a
+ * sério — mas com espessura suficiente para não desaparecerem ao tamanho a que
+ * o carro anda no ecrã.
+ */
+function drawSuspension(axle, wheelY, front, rear, L, hw) {
+    ctx.strokeStyle = CARBON;
+    ctx.lineWidth = 1.3;
+    ctx.lineCap = 'round';
+    for (const s of [1, -1]) {
+        ctx.beginPath();
+        ctx.moveTo(front[0] * L, s * front[1] * hw);
+        ctx.lineTo(axle * L, s * wheelY * hw);
+        ctx.lineTo(rear[0] * L, s * rear[1] * hw);
+        ctx.stroke();
+    }
 }
 
-function drawWheel(x, y, L, W, steer) {
+/**
+ * Pneu slick visto de cima. As rodas de trás são mais largas e mais compridas
+ * do que as da frente — é um dos pormenores que mais denunciam um fórmula.
+ */
+function drawWheel(x, y, len, wid, steer) {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(steer);
-    ctx.fillStyle = '#14161f';
-    rrect(-L * 0.12, -W * 0.11, L * 0.24, W * 0.22, W * 0.07);
+    ctx.fillStyle = '#12141c';
+    rrect(-len / 2, -wid / 2, len, wid, wid * 0.32);
     ctx.fill();
     // Risco claro no topo do pneu: sem ele a roda desaparece contra o asfalto.
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.14)';
-    rrect(-L * 0.09, -W * 0.09, L * 0.18, W * 0.06, W * 0.03);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.16)';
+    rrect(-len * 0.38, -wid * 0.36, len * 0.76, wid * 0.24, wid * 0.12);
+    ctx.fill();
+    // Ombro do pneu, mais escuro, para a roda ter volume e não ser um bloco.
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+    rrect(-len / 2, wid * 0.22, len, wid * 0.28, wid * 0.14);
     ctx.fill();
     ctx.restore();
 }
@@ -431,6 +471,7 @@ function drawCar(car) {
     const speedFrac = clamp(car.speed / MAX_SPEED, 0, 1.4);
     const lean = clamp(car.steerInput * Math.min(1, speedFrac) * 0.1, -0.12, 0.12);
     const steer = car.steerInput * 0.38;
+    const braking = car.brakeHeld && car.speed > 0;
 
     ctx.save();
     ctx.translate(car.x, car.y);
@@ -440,26 +481,41 @@ function drawCar(car) {
     ctx.rotate(car.facing);
 
     ctx.fillStyle = 'rgba(0, 0, 0, 0.32)';
-    ctx.beginPath();
-    ctx.ellipse(-1, 4, L * 0.52, W * 0.56, 0, 0, Math.PI * 2);
+    rrect(-L * 0.5, -hw * 0.9 + 4, L, hw * 1.8, hw * 0.6);
     ctx.fill();
 
-    drawSuspension(L * 0.28, L, W);
-    drawSuspension(-L * 0.28, L, W);
-    drawWheel(L * 0.28, -hw * 1.02, L, W, steer);
-    drawWheel(L * 0.28, hw * 1.02, L, W, steer);
-    drawWheel(-L * 0.28, -hw * 1.02, L, W, 0);
-    drawWheel(-L * 0.28, hw * 1.02, L, W, 0);
+    symPath(FLOOR, L, hw);
+    ctx.fillStyle = CARBON;
+    ctx.fill();
 
-    // Asa dianteira, por baixo do corpo para só assomarem as pontas. Na cor da
-    // carroçaria e não em preto: preta desaparecia contra o asfalto, e o carro
-    // ficava sem frente.
-    rrect(L * 0.44, -hw * 0.86, L * 0.07, W * 0.86, 2);
-    paintBodyPart(car.color, hw * 0.86);
+    const frontY = 0.79, rearY = 0.75;
+    drawSuspension(FRONT_AXLE, frontY, [0.36, 0.13], [0.21, 0.20], L, hw);
+    drawSuspension(REAR_AXLE, rearY, [-0.22, 0.30], [-0.37, 0.18], L, hw);
+    for (const s of [1, -1]) {
+        drawWheel(L * FRONT_AXLE, s * hw * frontY, L * 0.17, W * 0.21, steer);
+        drawWheel(L * REAR_AXLE, s * hw * rearY, L * 0.20, W * 0.27, 0);
+    }
+
+    // Asa dianteira, na cor da carroçaria e não em preto: preta desaparecia
+    // contra o asfalto, e o carro ficava sem frente. Os endplates e o risco do
+    // flap é que são em carbono.
+    symPath(FRONT_WING, L, hw);
+    paintBodyPart(car.color, hw);
+    ctx.strokeStyle = 'rgba(6, 9, 20, 0.55)';
+    ctx.lineWidth = 0.9;
+    ctx.beginPath();
+    ctx.moveTo(L * 0.455, -hw * 0.9);
+    ctx.quadraticCurveTo(L * 0.44, 0, L * 0.455, hw * 0.9);
+    ctx.stroke();
+    ctx.fillStyle = CARBON;
+    for (const s of [1, -1]) {
+        rrect(L * 0.40, s > 0 ? hw * 0.88 : -hw * 1.0, L * 0.11, hw * 0.12, 1);
+        ctx.fill();
+    }
 
     ctx.transform(1, 0, lean, 1, 0, 0);
 
-    carBodyPath(L, W);
+    symPath(BODY, L, hw);
     ctx.fillStyle = car.color;
     ctx.fill();
 
@@ -468,77 +524,92 @@ function drawCar(car) {
     // assim funciona com qualquer cor que o jogador escolha.
     ctx.save();
     ctx.clip();
-    const shade = ctx.createLinearGradient(0, -hw, 0, hw);
-    shade.addColorStop(0, 'rgba(255, 255, 255, 0.34)');
-    shade.addColorStop(0.42, 'rgba(255, 255, 255, 0.04)');
+    const shade = ctx.createLinearGradient(0, -hw * 0.66, 0, hw * 0.66);
+    shade.addColorStop(0, 'rgba(255, 255, 255, 0.36)');
+    shade.addColorStop(0.42, 'rgba(255, 255, 255, 0.05)');
     shade.addColorStop(0.62, 'rgba(0, 0, 0, 0.08)');
-    shade.addColorStop(1, 'rgba(0, 0, 0, 0.3)');
+    shade.addColorStop(1, 'rgba(0, 0, 0, 0.34)');
     ctx.fillStyle = shade;
     ctx.fillRect(-L, -hw, L * 2, W);
 
-    // Riscas do capô, do bico até à traseira.
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.fillRect(-L * 0.2, -W * 0.09, L * 0.62, W * 0.05);
-    ctx.fillRect(-L * 0.2, W * 0.04, L * 0.62, W * 0.05);
+    // Pintura: risca clara ao longo do nariz e da tampa do motor, e a traseira
+    // dos sidepods mais escura, para a "cintura" do carro se ler de longe.
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+    ctx.fillRect(L * 0.16, -hw * 0.06, L * 0.34, hw * 0.12);
+    ctx.fillRect(-L * 0.44, -hw * 0.06, L * 0.30, hw * 0.12);
+    ctx.fillStyle = 'rgba(6, 9, 20, 0.28)';
+    ctx.beginPath();
+    ctx.moveTo(-L * 0.04, -hw);
+    ctx.lineTo(-L * 0.12, -hw);
+    ctx.lineTo(-L * 0.22, 0);
+    ctx.lineTo(-L * 0.12, hw);
+    ctx.lineTo(-L * 0.04, hw);
+    ctx.lineTo(-L * 0.14, 0);
+    ctx.closePath();
+    ctx.fill();
     ctx.restore();
 
-    ctx.lineWidth = 1.1;
-    ctx.strokeStyle = 'rgba(6, 9, 20, 0.55)';
-    carBodyPath(L, W);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(6, 9, 20, 0.6)';
+    symPath(BODY, L, hw);
     ctx.stroke();
 
-    // Habitáculo e capacete do piloto.
-    ctx.fillStyle = 'rgba(10, 13, 24, 0.92)';
-    rrect(-L * 0.16, -W * 0.26, L * 0.34, W * 0.52, W * 0.16);
+    // Entradas de ar dos sidepods e espelhos à frente delas.
+    ctx.fillStyle = 'rgba(8, 10, 18, 0.9)';
+    for (const s of [1, -1]) {
+        ctx.beginPath();
+        ctx.ellipse(L * 0.095, s * hw * 0.5, L * 0.018, hw * 0.15, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.fillStyle = CARBON;
+    for (const s of [1, -1]) {
+        rrect(L * 0.12, s > 0 ? hw * 0.36 : -hw * 0.5, L * 0.045, hw * 0.14, 1);
+        ctx.fill();
+    }
+
+    // Habitáculo, capacete e halo por cima — o halo é a peça que hoje mais
+    // identifica um fórmula visto de cima.
+    ctx.fillStyle = 'rgba(8, 10, 18, 0.95)';
+    rrect(-L * 0.06, -hw * 0.25, L * 0.19, hw * 0.5, hw * 0.22);
     ctx.fill();
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.16)';
-    rrect(-L * 0.13, -W * 0.21, L * 0.12, W * 0.42, W * 0.12);
-    ctx.fill();
-    ctx.fillStyle = 'rgba(236, 242, 255, 0.85)';
+    ctx.fillStyle = 'rgba(240, 244, 255, 0.95)';
     ctx.beginPath();
-    ctx.arc(L * 0.01, 0, W * 0.13, 0, Math.PI * 2);
+    ctx.arc(L * 0.02, 0, hw * 0.19, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = 'rgba(12, 16, 28, 0.75)';
+    ctx.fillStyle = car.color;
+    ctx.fillRect(L * 0.02 - hw * 0.05, -hw * 0.19, hw * 0.1, hw * 0.38);
+    ctx.fillStyle = 'rgba(12, 16, 28, 0.8)';
     ctx.beginPath();
-    ctx.arc(L * 0.04, 0, W * 0.13, -Math.PI * 0.42, Math.PI * 0.42);
+    ctx.arc(L * 0.02, 0, hw * 0.19, -Math.PI * 0.4, Math.PI * 0.4);
     ctx.fill();
 
-    // Espelhos.
-    ctx.fillStyle = '#1b1f2b';
-    ctx.fillRect(L * 0.16, -hw * 0.92, L * 0.06, W * 0.1);
-    ctx.fillRect(L * 0.16, hw * 0.82, L * 0.06, W * 0.1);
+    ctx.strokeStyle = CARBON;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.ellipse(L * 0.03, 0, L * 0.085, hw * 0.29, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(L * 0.115, 0);
+    ctx.lineTo(L * 0.17, 0);
+    ctx.stroke();
 
-    // Faróis à frente; farolins atrás, vermelhos e acesos a travar.
-    ctx.fillStyle = 'rgba(255, 249, 224, 0.9)';
-    rrect(L * 0.38, -W * 0.26, L * 0.07, W * 0.16, 1.5);
+    // Airbox por cima da cabeça do piloto e a barbatana ao longo da tampa do motor.
+    ctx.fillStyle = CARBON;
+    symPath([[-0.07, 0], [-0.07, 0.14], [-0.13, 0.16], [-0.16, 0.06], [-0.16, 0]], L, hw);
     ctx.fill();
-    rrect(L * 0.38, W * 0.1, L * 0.07, W * 0.16, 1.5);
-    ctx.fill();
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(-L * 0.16, 0);
+    ctx.lineTo(-L * 0.40, 0);
+    ctx.stroke();
 
-    const braking = car.brakeHeld && car.speed > 0;
-    ctx.fillStyle = braking ? '#ff4438' : 'rgba(190, 46, 40, 0.8)';
-    if (braking) { ctx.shadowColor = '#ff4438'; ctx.shadowBlur = 10; }
-    // À frente do aileron (senão ficavam tapados) e encostados ao eixo: com a
-    // traseira estreita, mais para fora já saíam do corpo.
-    rrect(-L * 0.38, -W * 0.2, L * 0.05, W * 0.1, 1.5);
-    ctx.fill();
-    rrect(-L * 0.38, W * 0.1, L * 0.05, W * 0.1, 1.5);
-    ctx.fill();
-    ctx.shadowBlur = 0;
-
-    drawRearWing(L, W, car.color);
+    drawRearWing(L, W, car.color, braking);
 
     ctx.restore();
 
     if (car.boostHold && car.boost > 0) drawBoostFlame(car, L, W);
 }
 
-/**
- * Aileron traseiro: dois suportes laterais, um flap e o plano principal, mais
- * largo do que o carro. Vai por cima do corpo (um aileron está acima da
- * carroçaria, e visto de cima tapa a traseira) e leva a mesma sombra e o mesmo
- * gradiente de volume do resto do carro, senão ler-se-ia como um autocolante.
- */
 /**
  * Pinta a peça que estiver no caminho atual na cor da carroçaria, com o mesmo
  * gradiente de volume e o mesmo contorno do corpo — é o que faz uma asa parecer
@@ -559,24 +630,46 @@ function paintBodyPart(color, span) {
     ctx.stroke();
 }
 
-function drawRearWing(L, W, color) {
+/**
+ * Aileron traseiro: plano principal e flap na cor do carro, entre dois
+ * endplates de carbono. Mais estreito do que as rodas, como num F1, e por cima
+ * do corpo (visto de cima tapa a traseira). As luzes — a de chuva, ao centro,
+ * e as dos endplates — acendem a travar.
+ */
+function drawRearWing(L, W, color, braking) {
     const hw = W / 2;
-    const span = hw * 1.2;
+    const span = hw * 0.62;
 
     ctx.fillStyle = 'rgba(6, 9, 20, 0.35)';
-    rrect(-L * 0.58, -span + 3, L * 0.16, span * 2, 2);
+    rrect(-L * 0.50, -span + 3, L * 0.10, span * 2, 2);
     ctx.fill();
 
-    ctx.fillStyle = '#1b1f2b';
-    rrect(-L * 0.60, -span, L * 0.24, W * 0.1, 2);
-    ctx.fill();
-    rrect(-L * 0.60, span - W * 0.1, L * 0.24, W * 0.1, 2);
-    ctx.fill();
-    rrect(-L * 0.43, -span * 0.84, L * 0.055, span * 1.68, 1.5);
-    ctx.fill();
-
-    rrect(-L * 0.58, -span, L * 0.13, span * 2, 2);
+    rrect(-L * 0.51, -span, L * 0.10, span * 2, 1.5);
     paintBodyPart(color, span);
+    ctx.strokeStyle = 'rgba(6, 9, 20, 0.55)';
+    ctx.lineWidth = 0.9;
+    ctx.beginPath();
+    ctx.moveTo(-L * 0.465, -span);
+    ctx.lineTo(-L * 0.465, span);
+    ctx.stroke();
+
+    ctx.fillStyle = CARBON;
+    for (const s of [1, -1]) {
+        rrect(-L * 0.53, s > 0 ? span - 1 : -span - 1.6, L * 0.14, 2.6, 1);
+        ctx.fill();
+    }
+
+    ctx.fillStyle = braking ? '#ff4438' : 'rgba(190, 46, 40, 0.85)';
+    if (braking) { ctx.shadowColor = '#ff4438'; ctx.shadowBlur = 10; }
+    rrect(-L * 0.55, -hw * 0.12, L * 0.035, hw * 0.24, 1);
+    ctx.fill();
+    if (braking) {
+        for (const s of [1, -1]) {
+            rrect(-L * 0.545, s > 0 ? span - 0.8 : -span - 1.2, L * 0.03, 2, 0.8);
+            ctx.fill();
+        }
+    }
+    ctx.shadowBlur = 0;
 }
 
 /** Chama do boost: sai pelo escape, na direção contrária ao andamento. */
