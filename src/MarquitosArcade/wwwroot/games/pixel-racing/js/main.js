@@ -8,7 +8,8 @@ import { createButtonGroup, createLoop, createViewport } from '/lib/arcade/index
 import { bindPlayerNameInput } from '/lib/arcade/scores.js';
 import { bindMusicButton, unlockAudioOnGesture } from '/lib/arcade/music.js';
 
-import { MODE_TOURNAMENT, NAME_STORAGE_KEY, TOURNAMENT_CUPS } from './config.js';
+import { MODE_TOURNAMENT, NAME_STORAGE_KEY } from './config.js';
+import { TRACKS } from './tracks.js';
 import { resumeAudio, sfx } from './audio.js';
 import { attachControls, setPauseHandler } from './input.js';
 import { resetParticles, updateConfetti, updateParticles } from './particles.js';
@@ -105,26 +106,28 @@ function stepFinishOverlay(dt) {
 const menu = createMenu({ playerName });
 
 // O modo não arranca a corrida: leva ao ecrã seguinte, onde se escolhe a pista
-// (corrida simples) e a dificuldade.
+// (corrida simples) e a dificuldade e, na página a seguir, o carro e a cor.
 createButtonGroup(els.modeRow, '.modeBtn', (mode) => menu.showSetup(mode));
 
 createButtonGroup(els.diffRow, '.diffBtn', (level) => {
     session.difficulty = parseFloat(level);
 });
 
-els.backBtn.addEventListener('click', () => menu.showMenu());
+els.backBtn.addEventListener('click', () => menu.back());
+els.nextBtn.addEventListener('click', () => menu.showGarage());
 
 els.startBtn.addEventListener('click', () => {
-    setupParticipants(playerName.remember(), session.playerColor);
+    setupParticipants(playerName.remember(), session.playerColor, session.playerCarType);
     session.playerBoardName = playerName.forBoard();
     session.raceIndex = 0;
-    session.tracks = session.mode === MODE_TOURNAMENT ? [...TOURNAMENT_CUPS[session.cupIdx].tracks] : [session.trackIdx];
+    // O campeonato corre as pistas todas, pela ordem de TRACKS (da mais fácil à mais difícil).
+    session.tracks = session.mode === MODE_TOURNAMENT ? TRACKS.map((_, i) => i) : [session.trackIdx];
     startRace(session.tracks[0]);
 });
 
 setReturnToMenuHandler((action) => {
     if (action === 'again') {
-        setupParticipants(playerName.remember(), session.playerColor);
+        setupParticipants(playerName.remember(), session.playerColor, session.playerCarType);
         session.playerBoardName = playerName.forBoard();
         session.raceIndex = 0;
         startRace(session.tracks[0]);

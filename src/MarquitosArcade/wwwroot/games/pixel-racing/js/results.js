@@ -2,11 +2,11 @@
 //
 // A pontuação enviada para o leaderboard não é a posição: é posição + tempo,
 // para uma vitória folgada valer mais do que uma à tangente, e para o modo
-// torneio (três corridas) poder somar.
+// torneio (todas as pistas) poder somar.
 
 import { escapeHtml } from '/lib/arcade/index.js';
 
-import { LAPS_REQUIRED, MODE_TOURNAMENT, RACE_POINTS, TOURNAMENT_CUPS } from './config.js';
+import { LAPS_REQUIRED, MODE_TOURNAMENT, RACE_POINTS, carType } from './config.js';
 import { fmtTime, ordinal } from './format.js';
 import { muteEngine } from './audio.js';
 import { spawnConfetti } from './particles.js';
@@ -33,8 +33,8 @@ const referenceMs = (track) => (track.total * LAPS_REQUIRED / REFERENCE_SPEED) *
 /** Multiplicador dos pontos de posição na pontuação do leaderboard. */
 const POSITION_WEIGHT = 20;
 
-/** A taça que se está a correr, para os resultados dizerem qual foi. */
-const cupName = () => (TOURNAMENT_CUPS[session.cupIdx] || { name: '' }).name;
+/** O campeonato que se está a correr — é o da categoria do carro escolhido. */
+const championshipName = () => carType(session.playerCarType).championship;
 
 /** Medalha do pódio; a partir do 4.º lugar é o próprio número. */
 const medal = (rank) => (rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : ordinal(rank));
@@ -85,7 +85,7 @@ function renderRaceEnd(playerEntry, raceTimeMs, raceScore, isTournament) {
     })));
 
     if (isTournament) {
-        html += `<div class="sectionLabel">Taça ${escapeHtml(cupName())} · corrida ${session.raceIndex + 1} de ${session.tracks.length}</div>`;
+        html += `<div class="sectionLabel">${escapeHtml(championshipName())} · corrida ${session.raceIndex + 1} de ${session.tracks.length}</div>`;
         html += resultTable(standingsRows());
         html += '<div class="resultActions"><button class="btn" id="nextRaceBtn">Próxima corrida →</button></div>';
     } else {
@@ -104,7 +104,7 @@ function renderTournamentEnd() {
 
     let html = `<div class="resultHead">
         <div class="resultMedal">${playerFinal === 1 ? '🏆' : medal(playerFinal)}</div>
-        <div class="bannerText">Taça ${escapeHtml(cupName())} concluída</div>
+        <div class="bannerText">${escapeHtml(championshipName())} concluído</div>
         <div class="sub">${playerFinal === 1 ? 'Campeão da arcade!' : `${ordinal(playerFinal)} lugar no campeonato`}</div>
     </div>`;
     html += resultTable(rows);

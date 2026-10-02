@@ -4,17 +4,18 @@
 // anda mesmo. Em condução normal o segundo persegue o primeiro depressa (muita
 // aderência); em drift persegue devagar, e é essa diferença que dá a derrapagem.
 
-import { clamp, lerpAngle } from '/lib/arcade/math.js';
+import { clamp, lerpAngle, normAngle } from '/lib/arcade/math.js';
 import {
     ACCEL, BOOST_DRAIN, BOOST_MULT, BOOST_REGEN, BRAKE_DECEL, BUMP_DAMP, CAR_RADIUS,
     DRIFT_CHARGE_RATE, DRIFT_MIN_SPEED, DRIFT_PERFECT, DRIFT_TO_BOOST, DRIFT_TURN_MULT,
     GRIP_DRIFT, GRIP_NORMAL, GRIP_OIL, MAX_SPEED, OFFROAD_DECEL, OFFROAD_SPEED, OFFTRACK_DAMP,
-    OIL_RADIUS, OIL_SPIN, OIL_TIME, TURN_RATE, WALL_STEER_BLEND
+    OIL_RADIUS, OIL_SPIN, OIL_TIME, TURN_RATE, WALL_STEER_BLEND,
+    LAND_MISALIGN, LAND_PENALTY, LAND_TIME, RAMP_AIR_MAX, RAMP_AIR_MIN, RAMP_MIN_SPEED
 } from './config.js';
 import { findNearestIdx } from './tracks.js';
 import { sfx } from './audio.js';
 import {
-    spawnBoostFlame, spawnDriftPerfectBurst, spawnDriftSpark, spawnImpactSpark,
+    spawnBoostFlame, spawnDriftPerfectBurst, spawnDriftSpark, spawnImpactSpark, spawnLandingDust,
     spawnOffroadDust, spawnOilSpray, spawnPadBurst, spawnSmoke, spawnWallDust
 } from './particles.js';
 import { bumpShake, race } from './state.js';
@@ -29,13 +30,67 @@ function lateralOffset(car) {
     return (car.x - p.x) * n.x + (car.y - p.y) * n.y;
 }
 
+/**
+ * Altura do carro no salto, de 0 (no chão) a 1 (no ponto mais alto): uma
+ * parábola ao longo do tempo de voo. É o que o desenho usa para o ampliar.
+ */
+export function airLift(car) {
+    if (!car.air) return 0;
+    const u = Math.min(1, car.air.t / car.air.dur);
+    return 4 * u * (1 - u);
+}
+
+/**
+ * Salto. O voo dura mais quanto mais depressa se entra, e é sempre na direção
+ * em que o carro ia (`velAngle`) — não para onde aponta, que num drift podem
+ * ser coisas bem diferentes.
+ */
+function launch(car, isPlayer) {
+    const frac = clamp(car.speed / MAX_SPEED, 0, 1.5);
+    car.air = { t: 0, dur: clamp(RAMP_AIR_MIN + (RAMP_AIR_MAX - RAMP_AIR_MIN) * (frac - 0.35) / 0.65, RAMP_AIR_MIN, RAMP_AIR_MAX) };
+    car.driftCharge = 0;
+    car.wasDrifting = false;
+    if (isPlayer) sfx.jump();
+}
+
+/**
+ * Aterragem. Quem chega ao chão com o nariz alinhado com o voo segue como se
+ * nada fosse; quem aterra torto perde velocidade, e a aderência trata de pôr o
+ * carro a andar para onde aponta — sai a derrapar.
+ */
+function land(car, isPlayer) {
+    car.air = null;
+    car.landT = 0;
+    if (Math.abs(normAngle(car.facing - car.velAngle)) > LAND_MISALIGN) car.speed *= LAND_PENALTY;
+    spawnLandingDust(car);
+    if (isPlayer) { bumpShake(4); sfx.land(); }
+}
+
+/**
+ * No ar não há chão: nem acelerador, nem travão, nem aderência. O carro segue
+ * a direito à velocidade que levava, e o volante só lhe roda o nariz, para se
+ * preparar a aterragem.
+ */
+function integrateAirborne(car, dt, isPlayer) {
+    car.air.t += dt;
+    car.facing += car.steerInput * TURN_RATE * car.stats.turn * dt;
+    car.x += Math.cos(car.velAngle) * car.speed * dt;
+    car.y += Math.sin(car.velAngle) * car.speed * dt;
+    car.boost = Math.min(100, car.boost + BOOST_REGEN * dt);
+    if (car.air.t >= car.air.dur) land(car, isPlayer);
+}
+
 export function integrateCar(car, dt, isPlayer) {
+    if (car.landT < LAND_TIME) car.landT += dt;
+    if (car.air) { integrateAirborne(car, dt, isPlayer); return; }
     const wantsDrift = car.driftHold && Math.abs(car.steerInput) > 0.15 && car.speed > DRIFT_MIN_SPEED;
     const onOil = car.oilTimer > 0;
-    const grip = onOil ? GRIP_OIL : (wantsDrift ? GRIP_DRIFT : GRIP_NORMAL);
+    const { stats } = car;
+    // O óleo é igual para todos: em cima dele nenhum pneu agarra.
+    const grip = onOil ? GRIP_OIL : (wantsDrift ? GRIP_DRIFT : GRIP_NORMAL) * stats.grip;
     const turnMult = wantsDrift ? DRIFT_TURN_MULT : 1;
     const speedFrac = clamp(car.speed / MAX_SPEED, 0, 1.6);
-    car.facing += car.steerInput * TURN_RATE * turnMult * (0.6 + 0.4 * Math.min(1, speedFrac)) * dt;
+    car.facing += car.steerInput * TURN_RATE * stats.turn * turnMult * (0.6 + 0.4 * Math.min(1, speedFrac)) * dt;
 
     // Em cima do óleo o carro roda para o lado que lhe saiu à entrada, com força
     // a esvair-se até ao fim do tempo — o susto é no primeiro instante, e depois
@@ -48,17 +103,19 @@ export function integrateCar(car, dt, isPlayer) {
     }
 
     const boosting = car.boostHold && car.boost > 0;
-    const maxSpeedNow = MAX_SPEED * (car.speedMult || 1) * (boosting ? BOOST_MULT : 1);
+    const maxSpeedNow = MAX_SPEED * stats.top * (car.speedMult || 1) * (boosting ? BOOST_MULT : 1);
     if (car.brakeHeld) car.speed -= BRAKE_DECEL * dt;
-    else car.speed += ACCEL * dt;
+    else car.speed += ACCEL * stats.accel * dt;
     car.speed = clamp(car.speed, -MAX_SPEED * 0.35, maxSpeedNow);
 
     // Fora do alcatrão o carro atola-se: a velocidade desce até um quarto da
     // máxima, mas desce a travar em vez de cair de repente — sair da pista custa
-    // tempo a recuperar, que é o castigo, e não um empurrão seco.
+    // tempo a recuperar, que é o castigo, e não um empurrão seco. Quanto se
+    // atola depende do carro: o jeep anda na terra quase como no alcatrão, o
+    // fórmula enterra-se.
     car.offTrack = Math.abs(lateralOffset(car)) > race.track.halfWidth;
     if (car.offTrack) {
-        const cap = MAX_SPEED * OFFROAD_SPEED;
+        const cap = MAX_SPEED * OFFROAD_SPEED * stats.offroad;
         if (car.speed > cap) car.speed = Math.max(cap, car.speed - OFFROAD_DECEL * dt);
         car.dustTimer -= dt;
         if (car.dustTimer <= 0 && car.speed > 40) { spawnOffroadDust(car); car.dustTimer = 0.05; }
@@ -69,7 +126,7 @@ export function integrateCar(car, dt, isPlayer) {
     car.y += Math.sin(car.velAngle) * car.speed * dt;
 
     if (wantsDrift) {
-        car.driftCharge = Math.min(100, car.driftCharge + DRIFT_CHARGE_RATE * dt);
+        car.driftCharge = Math.min(100, car.driftCharge + DRIFT_CHARGE_RATE * stats.drift * dt);
         car.smokeTimer -= dt;
         if (car.smokeTimer <= 0) { spawnDriftSpark(car, car.steerInput >= 0 ? 1 : -1); car.smokeTimer = 0.04; }
         car.wasDrifting = true;
@@ -104,6 +161,26 @@ export function computeProgress(car) {
     car.idx = best;
     car.totalDistance = Math.max(0, car.totalDistance + idxDelta * (race.track.total / race.track.N));
     car.lap = Math.floor(car.totalDistance / race.track.total);
+
+    // No ar não se apanha nada do que está no chão: nem turbo, nem óleo, nem
+    // outra rampa.
+    if (car.air) return;
+
+    // Descola no bordo: depois de percorrer a rampa (do centro até um pouco à
+    // frente dele), e não ao chegar a ela.
+    for (const ramp of race.track.ramps) {
+        let ahead = best - ramp.idx;
+        if (ahead > race.track.N / 2) ahead -= race.track.N;
+        else if (ahead < -race.track.N / 2) ahead += race.track.N;
+        if (ahead < 1 || ahead > 5 || car.lastRampIdx === ramp.idx || car.speed < RAMP_MIN_SPEED) continue;
+        if (Math.abs(lateralOffset(car) - ramp.offset) > ramp.halfSpan) continue;
+        car.lastRampIdx = ramp.idx;
+        launch(car, car === race.player);
+    }
+    if (car.lastRampIdx !== -1) {
+        let dLast = Math.abs(best - car.lastRampIdx); if (dLast > race.track.N / 2) dLast = race.track.N - dLast;
+        if (dLast > 8) car.lastRampIdx = -1;
+    }
 
     for (const padIdx of race.track.pads) {
         let d = Math.abs(best - padIdx); if (d > race.track.N / 2) d = race.track.N - d;
@@ -164,6 +241,8 @@ export function carCollisions() {
     for (let i = 0; i < cars.length; i++) {
         for (let j = i + 1; j < cars.length; j++) {
             const a = cars[i], b = cars[j];
+            // Quem vai no ar passa por cima dos outros.
+            if (a.air || b.air) continue;
             const dx = b.x - a.x, dy = b.y - a.y;
             const dist = Math.hypot(dx, dy) || 0.01;
             const minDist = CAR_RADIUS * 1.8;

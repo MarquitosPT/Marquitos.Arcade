@@ -5,9 +5,10 @@
 // precisa de saber onde está a câmara. O HUD vem depois, já fora dessa
 // transformação, por isso fica em coordenadas de ecrã.
 
-import { clamp } from '/lib/arcade/math.js';
-import { CAR_LEN, CAR_W, FONT_DISPLAY, LAPS_REQUIRED, MAX_SPEED, OIL_RADIUS } from './config.js';
+import { AIR_SCALE, CAR_LEN, CAR_W, FONT_DISPLAY, LAND_TIME, LAPS_REQUIRED, OIL_RADIUS } from './config.js';
+import { airLift } from './physics.js';
 import { THEME_COLORS } from './tracks.js';
+import { drawCarSprite } from './carsprites.js';
 import { drawConfetti, drawParticles, hasConfetti } from './particles.js';
 import { buttonRects, keys, touchState } from './input.js';
 import { fmtTime, ordinal } from './format.js';
@@ -241,6 +242,57 @@ function drawBarrier(theme, b) {
     ctx.restore();
 }
 
+/** Profundidade da rampa ao longo da pista, em unidades do mundo. */
+const RAMP_DEPTH = 46;
+
+/**
+ * Rampa vista de cima: uma chapa amarela a clarear da entrada para o bordo
+ * (é o lado mais alto, mais perto da luz), com setas pretas a apontar o
+ * sentido do salto, paredes laterais mais escuras e, depois do bordo, a
+ * sombra da queda — é ela que dá a ideia de altura.
+ */
+function drawRamp(ramp) {
+    const d = RAMP_DEPTH / 2, h = ramp.halfSpan;
+    ctx.save();
+    ctx.translate(ramp.x, ramp.y);
+    ctx.rotate(ramp.angle);
+
+    const drop = ctx.createLinearGradient(d, 0, d + 26, 0);
+    drop.addColorStop(0, 'rgba(0, 0, 0, 0.5)');
+    drop.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = drop;
+    ctx.fillRect(d, -h, 26, h * 2);
+
+    const face = ctx.createLinearGradient(-d, 0, d, 0);
+    face.addColorStop(0, '#7a5a1c');
+    face.addColorStop(1, '#f6c84a');
+    ctx.fillStyle = face;
+    ctx.fillRect(-d, -h, d * 2, h * 2);
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(-d, -h, d * 2, h * 2);
+    ctx.clip();
+    ctx.strokeStyle = 'rgba(20, 16, 10, 0.75)';
+    ctx.lineWidth = 5;
+    ctx.lineJoin = 'miter';
+    for (const x of [-14, 0, 14]) {
+        ctx.beginPath();
+        ctx.moveTo(x - 7, -h * 0.55);
+        ctx.lineTo(x + 5, 0);
+        ctx.lineTo(x - 7, h * 0.55);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    ctx.fillStyle = '#5a4214';
+    ctx.fillRect(-d, -h - 4, d * 2, 5);
+    ctx.fillRect(-d, h - 1, d * 2, 5);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.fillRect(d - 3, -h, 3, h * 2);
+    ctx.restore();
+}
+
 function drawTrack() {
     const colors = THEME_COLORS[race.track.theme];
 
@@ -339,6 +391,8 @@ function drawTrack() {
         ctx.restore();
     }
 
+    for (const ramp of race.track.ramps) drawRamp(ramp);
+
     for (const padIdx of race.track.pads) {
         const p = race.track.pts[padIdx];
         const pulse = 1 + 0.15 * Math.sin(race.globalClock * 5 + padIdx);
@@ -358,18 +412,33 @@ function drawTrack() {
     if (race.track.theme === 'night') {
         // Cada margem por si: uma fita fechada fecharia de uma ponta à outra e
         // deixava um risco atravessado na meta.
+        // Nos ganchos apertados o limite do lado de dentro passa por cima da
+        // pista: aí o rail interrompe-se (ver railClear em tracks.js).
         ctx.save();
         ctx.strokeStyle = 'rgba(0,229,255,0.45)';
         ctx.lineWidth = 4;
         ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 10;
-        for (const side of [1, -1]) { edgePath(side, race.track.barrierAt); ctx.stroke(); }
+        const { N, pts, norm, barrierAt, railClear } = race.track;
+        for (const side of [1, -1]) {
+            ctx.beginPath();
+            let drawing = false;
+            for (let i = 0; i <= N; i++) {
+                const idx = i % N;
+                if (!railClear[side][idx]) { drawing = false; continue; }
+                const x = pts[idx].x + norm[idx].x * barrierAt * side, y = pts[idx].y + norm[idx].y * barrierAt * side;
+                if (drawing) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+                drawing = true;
+            }
+            ctx.stroke();
+        }
         ctx.restore();
     }
     for (const b of race.track.barriers) drawBarrier(race.track.theme, b);
 }
 
 function drawCars() {
-    const sorted = [...race.cars].sort((a, b) => a.y - b.y);
+    // Quem vai no ar fica por cima de todos os outros.
+    const sorted = [...race.cars].sort((a, b) => (a.air ? 1 : 0) - (b.air ? 1 : 0) || a.y - b.y);
     for (const car of sorted) {
         drawCar(car);
         drawNameTag(car);
@@ -377,206 +446,42 @@ function drawCars() {
 }
 
 /**
- * Silhueta do carro vista de cima: bico afilado, ombros largos e a traseira a
- * estreitar depois dos pontoons, para as rodas de trás ficarem à vista como num
- * monolugar. Tudo em frações de `CAR_LEN`/`CAR_W`, por isso mudar o tamanho do
- * carro no config não obriga a redesenhar nada aqui.
+ * Quanto o carro cresce: no ar, até `AIR_SCALE` no ponto mais alto (visto de
+ * cima, subir é ficar maior); depois de aterrar, dois ou três saltinhos cada
+ * vez mais pequenos, como a suspensão a assentar.
  */
-function carBodyPath(L, W) {
-    const hw = W / 2;
-    ctx.beginPath();
-    ctx.moveTo(L * 0.50, -hw * 0.3);
-    ctx.quadraticCurveTo(L * 0.52, 0, L * 0.50, hw * 0.3);
-    ctx.lineTo(L * 0.44, hw * 0.36);
-    ctx.quadraticCurveTo(L * 0.30, hw * 0.5, L * 0.22, hw * 0.86);
-    ctx.lineTo(L * 0.1, hw);
-    ctx.lineTo(-L * 0.08, hw);
-    ctx.quadraticCurveTo(-L * 0.2, hw * 0.92, -L * 0.28, hw * 0.5);
-    ctx.lineTo(-L * 0.44, hw * 0.44);
-    ctx.quadraticCurveTo(-L * 0.48, hw * 0.42, -L * 0.48, hw * 0.2);
-    ctx.lineTo(-L * 0.48, -hw * 0.2);
-    ctx.quadraticCurveTo(-L * 0.48, -hw * 0.42, -L * 0.44, -hw * 0.44);
-    ctx.lineTo(-L * 0.28, -hw * 0.5);
-    ctx.quadraticCurveTo(-L * 0.2, -hw * 0.92, -L * 0.08, -hw);
-    ctx.lineTo(L * 0.1, -hw);
-    ctx.lineTo(L * 0.22, -hw * 0.86);
-    ctx.quadraticCurveTo(L * 0.30, -hw * 0.5, L * 0.44, -hw * 0.36);
-    ctx.closePath();
-}
-
-/** Braços que ligam as rodas ao corpo — sem eles a roda fica a flutuar ao lado. */
-function drawSuspension(x, L, W) {
-    const hw = W / 2;
-    ctx.fillStyle = '#1b1f2b';
-    ctx.fillRect(x - L * 0.025, -hw, L * 0.05, hw * 0.6);
-    ctx.fillRect(x - L * 0.025, hw * 0.4, L * 0.05, hw * 0.6);
-}
-
-function drawWheel(x, y, L, W, steer) {
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(steer);
-    ctx.fillStyle = '#14161f';
-    rrect(-L * 0.12, -W * 0.11, L * 0.24, W * 0.22, W * 0.07);
-    ctx.fill();
-    // Risco claro no topo do pneu: sem ele a roda desaparece contra o asfalto.
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.14)';
-    rrect(-L * 0.09, -W * 0.09, L * 0.18, W * 0.06, W * 0.03);
-    ctx.fill();
-    ctx.restore();
+function carScale(car, lift) {
+    const bounce = car.landT < LAND_TIME
+        ? 0.07 * Math.abs(Math.sin((Math.PI * car.landT) / 0.17)) * Math.exp(-5 * car.landT)
+        : 0;
+    return 1 + AIR_SCALE * lift + bounce;
 }
 
 function drawCar(car) {
-    const L = CAR_LEN, W = CAR_W, hw = W / 2;
-    const speedFrac = clamp(car.speed / MAX_SPEED, 0, 1.4);
-    const lean = clamp(car.steerInput * Math.min(1, speedFrac) * 0.1, -0.12, 0.12);
-    const steer = car.steerInput * 0.38;
+    const lift = airLift(car);
+    // No ar a sombra fica no chão e afasta-se do carro à medida que ele sobe —
+    // é a sombra solta que diz que o carro não está a tocar no alcatrão.
+    if (lift > 0) {
+        ctx.save();
+        ctx.translate(car.x + lift * 20, car.y + lift * 30);
+        ctx.rotate(car.facing);
+        ctx.fillStyle = `rgba(0, 0, 0, ${0.3 - 0.12 * lift})`;
+        rrect(-CAR_LEN * 0.48, -CAR_W * 0.42, CAR_LEN * 0.96, CAR_W * 0.84, CAR_W * 0.3);
+        ctx.fill();
+        ctx.restore();
+    }
 
     ctx.save();
     ctx.translate(car.x, car.y);
-
     // O carro aponta para onde está virado (`facing`), não para onde anda
     // (`velAngle`): é essa diferença que faz a derrapagem ver-se de fora.
     ctx.rotate(car.facing);
-
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.32)';
-    ctx.beginPath();
-    ctx.ellipse(-1, 4, L * 0.52, W * 0.56, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    drawSuspension(L * 0.28, L, W);
-    drawSuspension(-L * 0.28, L, W);
-    drawWheel(L * 0.28, -hw * 1.02, L, W, steer);
-    drawWheel(L * 0.28, hw * 1.02, L, W, steer);
-    drawWheel(-L * 0.28, -hw * 1.02, L, W, 0);
-    drawWheel(-L * 0.28, hw * 1.02, L, W, 0);
-
-    // Asa dianteira, por baixo do corpo para só assomarem as pontas. Na cor da
-    // carroçaria e não em preto: preta desaparecia contra o asfalto, e o carro
-    // ficava sem frente.
-    rrect(L * 0.44, -hw * 0.86, L * 0.07, W * 0.86, 2);
-    paintBodyPart(car.color, hw * 0.86);
-
-    ctx.transform(1, 0, lean, 1, 0, 0);
-
-    carBodyPath(L, W);
-    ctx.fillStyle = car.color;
-    ctx.fill();
-
-    // Volume: luz vinda de cima-esquerda do ecrã, sombra do lado oposto. Feito
-    // com branco e preto por cima da cor, em vez de aclarar/escurecer o hex —
-    // assim funciona com qualquer cor que o jogador escolha.
-    ctx.save();
-    ctx.clip();
-    const shade = ctx.createLinearGradient(0, -hw, 0, hw);
-    shade.addColorStop(0, 'rgba(255, 255, 255, 0.34)');
-    shade.addColorStop(0.42, 'rgba(255, 255, 255, 0.04)');
-    shade.addColorStop(0.62, 'rgba(0, 0, 0, 0.08)');
-    shade.addColorStop(1, 'rgba(0, 0, 0, 0.3)');
-    ctx.fillStyle = shade;
-    ctx.fillRect(-L, -hw, L * 2, W);
-
-    // Riscas do capô, do bico até à traseira.
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.fillRect(-L * 0.2, -W * 0.09, L * 0.62, W * 0.05);
-    ctx.fillRect(-L * 0.2, W * 0.04, L * 0.62, W * 0.05);
+    const scale = carScale(car, lift);
+    ctx.scale(scale, scale);
+    drawCarSprite(ctx, car, { shadow: lift === 0 });
     ctx.restore();
 
-    ctx.lineWidth = 1.1;
-    ctx.strokeStyle = 'rgba(6, 9, 20, 0.55)';
-    carBodyPath(L, W);
-    ctx.stroke();
-
-    // Habitáculo e capacete do piloto.
-    ctx.fillStyle = 'rgba(10, 13, 24, 0.92)';
-    rrect(-L * 0.16, -W * 0.26, L * 0.34, W * 0.52, W * 0.16);
-    ctx.fill();
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.16)';
-    rrect(-L * 0.13, -W * 0.21, L * 0.12, W * 0.42, W * 0.12);
-    ctx.fill();
-    ctx.fillStyle = 'rgba(236, 242, 255, 0.85)';
-    ctx.beginPath();
-    ctx.arc(L * 0.01, 0, W * 0.13, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = 'rgba(12, 16, 28, 0.75)';
-    ctx.beginPath();
-    ctx.arc(L * 0.04, 0, W * 0.13, -Math.PI * 0.42, Math.PI * 0.42);
-    ctx.fill();
-
-    // Espelhos.
-    ctx.fillStyle = '#1b1f2b';
-    ctx.fillRect(L * 0.16, -hw * 0.92, L * 0.06, W * 0.1);
-    ctx.fillRect(L * 0.16, hw * 0.82, L * 0.06, W * 0.1);
-
-    // Faróis à frente; farolins atrás, vermelhos e acesos a travar.
-    ctx.fillStyle = 'rgba(255, 249, 224, 0.9)';
-    rrect(L * 0.38, -W * 0.26, L * 0.07, W * 0.16, 1.5);
-    ctx.fill();
-    rrect(L * 0.38, W * 0.1, L * 0.07, W * 0.16, 1.5);
-    ctx.fill();
-
-    const braking = car.brakeHeld && car.speed > 0;
-    ctx.fillStyle = braking ? '#ff4438' : 'rgba(190, 46, 40, 0.8)';
-    if (braking) { ctx.shadowColor = '#ff4438'; ctx.shadowBlur = 10; }
-    // À frente do aileron (senão ficavam tapados) e encostados ao eixo: com a
-    // traseira estreita, mais para fora já saíam do corpo.
-    rrect(-L * 0.38, -W * 0.2, L * 0.05, W * 0.1, 1.5);
-    ctx.fill();
-    rrect(-L * 0.38, W * 0.1, L * 0.05, W * 0.1, 1.5);
-    ctx.fill();
-    ctx.shadowBlur = 0;
-
-    drawRearWing(L, W, car.color);
-
-    ctx.restore();
-
-    if (car.boostHold && car.boost > 0) drawBoostFlame(car, L, W);
-}
-
-/**
- * Aileron traseiro: dois suportes laterais, um flap e o plano principal, mais
- * largo do que o carro. Vai por cima do corpo (um aileron está acima da
- * carroçaria, e visto de cima tapa a traseira) e leva a mesma sombra e o mesmo
- * gradiente de volume do resto do carro, senão ler-se-ia como um autocolante.
- */
-/**
- * Pinta a peça que estiver no caminho atual na cor da carroçaria, com o mesmo
- * gradiente de volume e o mesmo contorno do corpo — é o que faz uma asa parecer
- * parte do carro e não uma peça solta.
- * @param {number} span Meia-altura da peça, para o gradiente bater certo com o do corpo.
- */
-function paintBodyPart(color, span) {
-    ctx.fillStyle = color;
-    ctx.fill();
-    const shade = ctx.createLinearGradient(0, -span, 0, span);
-    shade.addColorStop(0, 'rgba(255, 255, 255, 0.38)');
-    shade.addColorStop(0.45, 'rgba(255, 255, 255, 0.06)');
-    shade.addColorStop(1, 'rgba(0, 0, 0, 0.32)');
-    ctx.fillStyle = shade;
-    ctx.fill();
-    ctx.lineWidth = 1.1;
-    ctx.strokeStyle = 'rgba(6, 9, 20, 0.6)';
-    ctx.stroke();
-}
-
-function drawRearWing(L, W, color) {
-    const hw = W / 2;
-    const span = hw * 1.2;
-
-    ctx.fillStyle = 'rgba(6, 9, 20, 0.35)';
-    rrect(-L * 0.58, -span + 3, L * 0.16, span * 2, 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#1b1f2b';
-    rrect(-L * 0.60, -span, L * 0.24, W * 0.1, 2);
-    ctx.fill();
-    rrect(-L * 0.60, span - W * 0.1, L * 0.24, W * 0.1, 2);
-    ctx.fill();
-    rrect(-L * 0.43, -span * 0.84, L * 0.055, span * 1.68, 1.5);
-    ctx.fill();
-
-    rrect(-L * 0.58, -span, L * 0.13, span * 2, 2);
-    paintBodyPart(color, span);
+    if (car.boostHold && car.boost > 0) drawBoostFlame(car, CAR_LEN, CAR_W);
 }
 
 /** Chama do boost: sai pelo escape, na direção contrária ao andamento. */

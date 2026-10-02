@@ -213,30 +213,68 @@ const GAMES = [
         menuSelector: '#startScreen',
         async play(page) {
             await page.fill('#playerNameInput', 'MARQUITOS');
-            // O menu tem dois passos: o modo leva ao ecrã da pista e da dificuldade.
+            // O menu tem dois passos: o modo leva ao ecrã da pista e da dificuldade,
+            // que tem uma segunda página com a garagem (carro e cor).
             await page.click('.modeBtn[data-mode="quick"]');
             await page.click('.trackCard[data-value="1"]');
+            await page.click('#nextBtn');
+            await page.click('.carCard[data-value="kart"]');
             await page.click('#startBtn');
+            // Cada corrida é de um tipo só: os CPU correm com o carro do jogador.
+            const types = await page.evaluate(async () => {
+                const { race } = await import('/games/pixel-racing/js/state.js');
+                return race.cars.map((car) => car.type);
+            });
+            if (types.some((type) => type !== 'kart')) throw new Error(`a grelha não é toda de karts: ${types.join(', ')}`);
             await waitForRacing(page);
             await page.keyboard.down('ArrowUp');
             await sleep(1200);
+
+            // Rampa: põe o carro do jogador lançado mesmo antes da primeira e
+            // confirma que salta, que aterra e que fica de novo no chão.
+            await page.evaluate(async () => {
+                const { race } = await import('/games/pixel-racing/js/state.js');
+                const { track, player } = race;
+                const ramp = track.ramps[0];
+                const i = (ramp.idx - 10 + track.N) % track.N;
+                const p = track.pts[i], n = track.norm[i], t = track.tang[i];
+                Object.assign(player, {
+                    x: p.x + n.x * ramp.offset, y: p.y + n.y * ramp.offset,
+                    facing: Math.atan2(t.y, t.x), velAngle: Math.atan2(t.y, t.x),
+                    speed: 300, idx: i, lastRampIdx: -1, air: null
+                });
+            });
+            const jumped = await page.waitForFunction(async () => {
+                const { race } = await import('/games/pixel-racing/js/state.js');
+                return !!race.player.air;
+            }, null, { timeout: 2000 }).then(() => true, () => false);
+            if (!jumped) throw new Error('o carro passou na rampa e não saltou');
+            await page.waitForFunction(async () => {
+                const { race } = await import('/games/pixel-racing/js/state.js');
+                return !race.player.air && race.player.landT < 1;
+            }, null, { timeout: 3000 });
             await page.keyboard.up('ArrowUp');
         }
     },
     {
         slug: 'pixel-racing',
-        name: 'pixel-racing-taca-pro',
+        name: 'pixel-racing-campeonato',
         viewport: { width: 800, height: 450 },
         canvas: true,
         menuSelector: '#startScreen',
         async play(page) {
-            // A taça Pro: confirma que o seletor de taça troca os cartões pelas
-            // pistas apertadas e que uma delas arranca e se conduz como as outras.
+            // O campeonato corre as pistas todas: o ecrã tem de as mostrar todas,
+            // pela ordem de TRACKS, e a primeira tem de arrancar.
             await page.fill('#playerNameInput', 'MARQUITOS');
             await page.click('.modeBtn[data-mode="tournament"]');
-            await page.click('#cupRow .cupBtn[data-value="1"]');
-            const first = await page.textContent('#trackRow .trackName');
-            if (first !== 'Serra Torcida') throw new Error(`taça Pro não trocou as pistas: ${first}`);
+            const shown = await page.$$eval('#trackRow .trackName', (els) => els.map((el) => el.textContent));
+            const expected = await page.evaluate(async () => {
+                const { TRACKS } = await import('/games/pixel-racing/js/tracks.js');
+                return TRACKS.map((track) => track.name);
+            });
+            if (shown.join('|') !== expected.join('|')) throw new Error(`o campeonato não mostra as pistas todas: ${shown.join(', ')}`);
+            await page.click('#nextBtn');
+            await page.click('.carCard[data-value="jeep"]');
             await page.click('#startBtn');
             await waitForRacing(page);
             await page.keyboard.down('ArrowUp');
@@ -1143,6 +1181,7 @@ const GAMES = [
             // módulos do jogo — o ecrã de resultados é montado pelo código real.
             await page.fill('#playerNameInput', 'MARQUITOS');
             await page.click('.modeBtn[data-mode="tournament"]');
+            await page.click('#nextBtn');
             await page.click('#startBtn');
             await waitForRacing(page);
 
@@ -1160,18 +1199,26 @@ const GAMES = [
             await page.click('#nextRaceBtn');
             await waitForRacing(page);
 
-            // Segunda e terceira corridas, para chegar ao fim do torneio.
-            for (let i = 0; i < 2; i++) {
+            // As restantes corridas, até ao fim do campeonato. A contagem
+            // decrescente de cada uma salta-se, senão eram quatro segundos por pista.
+            const skipCountdown = () => page.evaluate(async () => {
+                const { race } = await import('/games/pixel-racing/js/state.js');
+                race.countdownValue = 0;
+                race.countdownTimer = 1;
+            });
+            for (let i = 0; i < 30 && !(await page.$('#menuBtn')); i++) {
                 await page.evaluate(async () => {
                     const { race } = await import('/games/pixel-racing/js/state.js');
                     const { triggerFinish } = await import('/games/pixel-racing/js/race.js');
+                    if (race.phase !== 'racing') return;
                     race.player.lap = 3;
                     triggerFinish();
                 });
-                await sleep(2000);
+                await sleep(1700);
                 const next = await page.$('#nextRaceBtn');
                 if (next) {
                     await next.click();
+                    await skipCountdown();
                     await waitForRacing(page);
                 }
             }

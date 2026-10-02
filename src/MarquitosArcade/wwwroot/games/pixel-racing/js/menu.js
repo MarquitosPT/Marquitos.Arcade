@@ -4,8 +4,13 @@
 // quem não tem sessão iniciada) e o modo; o segundo, já sabendo o modo, mostra
 // as pistas e a dificuldade. Assim quem quer só dar uma volta não passa por uma
 // parede de opções, e o campeonato não obriga a escolher uma pista que vai
-// correr as três — aí escolhe-se a taça, e as três pistas dela mostram-se pela
-// ordem em que se correm.
+// correr todas — aí as pistas mostram-se pela ordem em que se correm, e o que
+// se escolhe é a categoria, na garagem.
+//
+// O segundo ecrã tem duas páginas no mesmo painel: a pista e, a seguir, a
+// garagem (carro e cor). São páginas e não janelas: o painel fica onde está e
+// só o conteúdo desliza, com os passos no cabeçalho a dizer onde se vai. Abrir
+// a garagem por cima da escolha da pista dava a sensação de janelas empilhadas.
 //
 // A pista selecionada passa a ser a que o ciclo de desenho pinta por trás do
 // vidro: o menu é uma janela para a pista, não um cartaz.
@@ -13,7 +18,11 @@
 import { escapeHtml } from '/lib/arcade/index.js';
 import { readText, writeText } from '/lib/arcade/storage.js';
 
-import { CAR_COLORS, COLOR_STORAGE_KEY, LAPS_REQUIRED, MODE_TOURNAMENT, TOURNAMENT_CUPS } from './config.js';
+import {
+    CAR_COLORS, CAR_LEN, CAR_TYPE_STORAGE_KEY, CAR_TYPES, COLOR_STORAGE_KEY, LAPS_REQUIRED,
+    MODE_TOURNAMENT
+} from './config.js';
+import { drawCarSprite } from './carsprites.js';
 import { menuZoom } from './race.js';
 import { race, session } from './state.js';
 import { THEME_INFO, TRACKS } from './tracks.js';
@@ -98,12 +107,56 @@ function trackCard(track, { index, order = null }) {
 }
 
 /**
- * Amostras de cor. Ficam no ecrã de preparação, ao lado da pista e da
- * dificuldade — é onde se afina a corrida que está prestes a começar.
+ * Amostras de cor. Ficam na garagem, ao lado do carro: a cor vê-se logo nas
+ * miniaturas, tal como vai aparecer na pista.
  */
 function colorSwatches() {
     return CAR_COLORS.map((color) => `<button type="button" class="colorBtn" data-value="${color.value}"
         style="--swatch: ${color.value}" title="${color.name}" aria-label="Cor ${color.name}"></button>`).join('');
+}
+
+/** As barras dos cartões da garagem, pela ordem em que aparecem. */
+const CAR_RATINGS = [
+    ['speed', 'Velocidade'],
+    ['accel', 'Aceleração'],
+    ['handling', 'Curvas'],
+    ['offroad', 'Fora de pista']
+];
+const RATING_STEPS = 5;
+
+/** Resolução da miniatura do carro, em pixels do canvas (o CSS estica-a). */
+const CAR_PREVIEW = { w: 240, h: 104 };
+
+function carCard(type) {
+    const bars = CAR_RATINGS.map(([key, label]) => {
+        const value = type.rating[key];
+        const dots = Array.from({ length: RATING_STEPS }, (_, i) => `<i class="${i < value ? '' : 'off'}"></i>`).join('');
+        return `<span class="carStat"><span class="carStatLabel">${label}</span>
+            <span class="carStatBar" role="img" aria-label="${label} ${value} de ${RATING_STEPS}">${dots}</span></span>`;
+    }).join('');
+    return `<button type="button" class="carCard" data-value="${type.id}" aria-label="${escapeHtml(type.name)}">
+        <canvas class="carPreview" width="${CAR_PREVIEW.w}" height="${CAR_PREVIEW.h}" aria-hidden="true"></canvas>
+        <span class="carName">${escapeHtml(type.name)}</span>
+        <span class="carBlurb">${escapeHtml(type.blurb)}</span>
+        <span class="carStats">${bars}</span>
+    </button>`;
+}
+
+/**
+ * Desenha a miniatura com o mesmo desenho da corrida, na cor escolhida, virada
+ * para a direita e de rodas um pouco viradas — parado e direito parecia um
+ * ícone; assim parece um carro a sair da box.
+ */
+function drawCarPreview(canvas, typeId, color) {
+    const c = canvas.getContext('2d');
+    c.clearRect(0, 0, canvas.width, canvas.height);
+    const scale = (canvas.width * 0.62) / CAR_LEN;
+    c.save();
+    c.translate(canvas.width / 2, canvas.height / 2 - 2);
+    c.scale(scale, scale);
+    c.rotate(-0.12);
+    drawCarSprite(c, { type: typeId, color, steerInput: 0.45, speed: 0, brakeHeld: false });
+    c.restore();
 }
 
 /** A pista que se vê por trás do vidro enquanto se escolhe. */
@@ -150,6 +203,7 @@ export function createMenu({ playerName }) {
             session.playerColor = swatch.dataset.value;
             writeText(COLOR_STORAGE_KEY, session.playerColor);
             markColor();
+            paintCarPreviews();
         });
     }
 
@@ -159,49 +213,113 @@ export function createMenu({ playerName }) {
         }
     }
 
+    /** O tipo de carro fica guardado neste aparelho, como a cor. */
+    function bindCars() {
+        const stored = readText(CAR_TYPE_STORAGE_KEY);
+        if (CAR_TYPES.some((type) => type.id === stored)) session.playerCarType = stored;
+
+        els.carRow.innerHTML = CAR_TYPES.map(carCard).join('');
+        markCar();
+        paintCarPreviews();
+
+        els.carRow.addEventListener('click', (event) => {
+            const card = event.target.closest('.carCard');
+            if (!card) return;
+            session.playerCarType = card.dataset.value;
+            writeText(CAR_TYPE_STORAGE_KEY, session.playerCarType);
+            markCar();
+        });
+    }
+
+    function markCar() {
+        for (const card of els.carRow.querySelectorAll('.carCard')) {
+            const active = card.dataset.value === session.playerCarType;
+            card.classList.toggle('active', active);
+            card.setAttribute('aria-pressed', String(active));
+        }
+    }
+
+    function paintCarPreviews() {
+        for (const card of els.carRow.querySelectorAll('.carCard')) {
+            drawCarPreview(card.querySelector('.carPreview'), card.dataset.value, session.playerColor);
+        }
+    }
+
+    /**
+     * Mostra uma das páginas do painel de preparação. `forward` diz para que
+     * lado desliza o conteúdo novo: a avançar entra pela direita, a recuar pela
+     * esquerda — o mesmo sentido dos passos no cabeçalho.
+     */
+    let page = 'track';
+    function showPage(name, { forward = true } = {}) {
+        page = name;
+        const garage = name === 'garage';
+        els.trackPage.hidden = garage;
+        els.garagePage.hidden = !garage;
+        els.setupPanel.dataset.dir = forward ? 'forward' : 'back';
+        // Recomeça a animação de entrada mesmo que a página já tenha estado à vista.
+        const shown = garage ? els.garagePage : els.trackPage;
+        shown.style.animation = 'none';
+        void shown.offsetWidth;
+        shown.style.animation = '';
+
+        for (const step of els.setupSteps.querySelectorAll('.step')) {
+            const current = step.dataset.step === name;
+            step.classList.toggle('is-current', current);
+            step.classList.toggle('is-done', garage && step.dataset.step === 'track');
+            if (current) step.setAttribute('aria-current', 'step');
+            else step.removeAttribute('aria-current');
+        }
+        els.setupSub.textContent = garage
+            ? (session.mode === MODE_TOURNAMENT ? 'O carro é a categoria do campeonato' : 'Escolhe o carro e a cor')
+            : trackSubtitle();
+        els.backBtn.setAttribute('aria-label', garage ? 'Voltar à pista' : 'Voltar ao menu');
+        els.setupScreen.scrollTop = 0;
+    }
+
+    function trackSubtitle() {
+        return session.mode === MODE_TOURNAMENT
+            ? `As ${TRACKS.length} pistas seguidas, ${LAPS_REQUIRED} voltas cada`
+            : `Escolhe a pista · ${LAPS_REQUIRED} voltas`;
+    }
+
+    function showGarage() {
+        showPage('garage');
+    }
+
+    /** O botão de voltar recua uma página; da primeira, volta ao menu. */
+    function back() {
+        if (page === 'garage') showPage('track', { forward: false });
+        else showMenu();
+    }
+
     function showMenu() {
         overlays.show('start');
     }
 
-    /** Segundo ecrã: taça ou pista (conforme o modo), dificuldade e arranque. */
+    /**
+     * Segundo ecrã: a pista e a dificuldade e, na página seguinte, o carro.
+     *
+     * No campeonato não se escolhe pista: correm-se todas, e ficam à vista pela
+     * ordem em que se correm, em cartões mais pequenos (são muitas). Por trás
+     * do vidro mostra-se a primeira, que é por onde a coisa começa.
+     */
     function showSetup(mode) {
         session.mode = mode;
         const tournament = mode === MODE_TOURNAMENT;
 
         els.setupTitle.textContent = tournament ? 'Campeonato' : 'Corrida simples';
-        els.setupSub.textContent = tournament
-            ? `Três pistas seguidas, ${LAPS_REQUIRED} voltas cada`
-            : `Escolhe a pista · ${LAPS_REQUIRED} voltas`;
-
-        els.cupField.hidden = !tournament;
+        els.trackRow.classList.toggle('is-compact', tournament);
         if (tournament) {
-            els.cupRow.innerHTML = TOURNAMENT_CUPS
-                .map((cup, index) => `<button type="button" class="cupBtn" data-value="${index}">${escapeHtml(cup.name)}</button>`)
-                .join('');
-            selectCup(session.cupIdx);
+            els.trackRow.innerHTML = TRACKS.map((track, index) => trackCard(track, { index, order: index + 1 })).join('');
+            previewTrack(0);
         } else {
             els.trackRow.innerHTML = TRACKS.map((track, index) => trackCard(track, { index })).join('');
             selectTrack(session.trackIdx);
         }
 
         overlays.show('setup');
-    }
-
-    /**
-     * No campeonato não se escolhe pista: escolhe-se a taça, e as três pistas
-     * dela ficam à vista pela ordem em que se correm. Por trás do vidro mostra-se
-     * a primeira, que é por onde a coisa começa.
-     */
-    function selectCup(index) {
-        session.cupIdx = index;
-        const cup = TOURNAMENT_CUPS[index];
-        for (const button of els.cupRow.querySelectorAll('.cupBtn')) {
-            button.classList.toggle('active', Number(button.dataset.value) === index);
-        }
-        els.trackRow.innerHTML = cup.tracks
-            .map((trackIdx, order) => trackCard(TRACKS[trackIdx], { index: trackIdx, order: order + 1 }))
-            .join('');
-        previewTrack(cup.tracks[0]);
+        showPage('track');
     }
 
     function selectTrack(index) {
@@ -217,14 +335,11 @@ export function createMenu({ playerName }) {
         if (card) selectTrack(Number(card.dataset.value));
     });
 
-    els.cupRow.addEventListener('click', (event) => {
-        const button = event.target.closest('.cupBtn');
-        if (button) selectCup(Number(button.dataset.value));
-    });
 
     bindAccount();
     bindColors();
+    bindCars();
     previewTrack(session.trackIdx);
 
-    return { showMenu, showSetup };
+    return { showMenu, showSetup, showGarage, back };
 }

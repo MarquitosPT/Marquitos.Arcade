@@ -37,7 +37,7 @@ export function menuZoom() {
 
 export function startRace(trackIdx) {
     race.track = TRACKS[trackIdx];
-    race.cars = session.participants.map(p => makeCar(p.key, p.name, p.color));
+    race.cars = session.participants.map(p => makeCar(p.key, p.name, p.color, p.type));
     race.player = race.cars[0];
     for (const c of race.cars) if (c.key !== 'player') c.ai = makePersonality();
 

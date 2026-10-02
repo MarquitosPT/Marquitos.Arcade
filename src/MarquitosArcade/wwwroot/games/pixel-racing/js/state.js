@@ -4,24 +4,24 @@
 // menu até se voltar ao menu (é ela que guarda os pontos do torneio entre
 // corridas); a `race` é reposta a cada arranque de corrida.
 
-import { MODE_QUICK, PLAYER_COLOR, ZOOM } from './config.js';
+import { MODE_QUICK, PLAYER_CAR_TYPE, PLAYER_COLOR, ZOOM } from './config.js';
 import { TRACKS } from './tracks.js';
 
 export const session = {
     mode: MODE_QUICK,
     /** Pista escolhida no modo corrida rápida. */
     trackIdx: 0,
-    /** Taça escolhida no modo campeonato (índice em TOURNAMENT_CUPS). */
-    cupIdx: 0,
-    /** Pistas desta sessão: uma na corrida rápida, três no torneio. */
+    /** Pistas desta sessão: uma na corrida rápida, todas no campeonato. */
     tracks: [0],
     /** Índice da corrida atual dentro de `tracks`. */
     raceIndex: 0,
-    /** Cor do carro do jogador, escolhida no ecrã de preparação. */
+    /** Cor do carro do jogador, escolhida na garagem. */
     playerColor: PLAYER_COLOR,
+    /** Tipo de carro do jogador (id em CAR_TYPES), escolhido na garagem. */
+    playerCarType: PLAYER_CAR_TYPE,
     /** Multiplicador de velocidade dos adversários. */
     difficulty: 0.95,
-    /** [{ key, name, color }] — o jogador é sempre o índice 0. */
+    /** [{ key, name, color, type }] — o jogador é sempre o índice 0. */
     participants: [],
     /**
      * Nome do jogador para o quadro de pontuações. Não é o mesmo que o da
