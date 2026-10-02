@@ -8,7 +8,8 @@ import { createButtonGroup, createLoop, createViewport } from '/lib/arcade/index
 import { bindPlayerNameInput } from '/lib/arcade/scores.js';
 import { bindMusicButton, unlockAudioOnGesture } from '/lib/arcade/music.js';
 
-import { MODE_TOURNAMENT, NAME_STORAGE_KEY, TOURNAMENT_CUPS } from './config.js';
+import { MODE_TOURNAMENT, NAME_STORAGE_KEY } from './config.js';
+import { TRACKS } from './tracks.js';
 import { resumeAudio, sfx } from './audio.js';
 import { attachControls, setPauseHandler } from './input.js';
 import { resetParticles, updateConfetti, updateParticles } from './particles.js';
@@ -119,7 +120,8 @@ els.startBtn.addEventListener('click', () => {
     setupParticipants(playerName.remember(), session.playerColor, session.playerCarType);
     session.playerBoardName = playerName.forBoard();
     session.raceIndex = 0;
-    session.tracks = session.mode === MODE_TOURNAMENT ? [...TOURNAMENT_CUPS[session.cupIdx].tracks] : [session.trackIdx];
+    // O campeonato corre as pistas todas, pela ordem de TRACKS (da mais fácil à mais difícil).
+    session.tracks = session.mode === MODE_TOURNAMENT ? TRACKS.map((_, i) => i) : [session.trackIdx];
     startRace(session.tracks[0]);
 });
 

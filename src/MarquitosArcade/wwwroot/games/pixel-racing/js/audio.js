@@ -65,6 +65,15 @@ export const sfx = {
     oil: () => {
         for (let i = 0; i < 5; i++) beep(420 - i * 60, 0.1, 'triangle', 0.13, i * 0.045);
     },
+    /** Saída de uma rampa: um silvo a subir. */
+    jump: () => {
+        for (let i = 0; i < 4; i++) beep(300 + i * 140, 0.07, 'triangle', 0.16, i * 0.03);
+    },
+    /** Aterragem: um baque grave e o eco da suspensão. */
+    land: () => {
+        beep(80, 0.12, 'square', 0.22);
+        beep(120, 0.07, 'square', 0.12, 0.13);
+    },
     /** Encontrão noutro carro. */
     bump: () => beep(110, 0.1, 'square', 0.2),
     /** Embate na parede. */

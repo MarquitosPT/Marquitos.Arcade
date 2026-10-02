@@ -143,7 +143,7 @@
                         <span class="modeIcon">🏆</span>
                         <span class="modeText">
                             <span class="modeName">Campeonato</span>
-                            <span class="modeDesc">Três pistas seguidas, pontos por corrida</span>
+                            <span class="modeDesc">Todas as pistas seguidas, um campeonato por categoria</span>
                         </span>
                         <span class="modeGo">→</span>
                     </button>
@@ -152,7 +152,7 @@
         </div>
 
         <!-- Ecrã 2: a preparação da corrida, em duas páginas dentro do mesmo
-             painel — primeiro a pista (ou a taça) e a dificuldade, depois a
+             painel — primeiro a pista e a dificuldade, depois a
              garagem, com o carro e a cor. Trocar de página troca o conteúdo do
              painel, não abre outra janela por cima. -->
         <div id="setupScreen" class="screen" style="display:none;">
@@ -173,14 +173,9 @@
                     </ol>
                 </div>
 
-                <!-- Página 1: pista ou taça, e a dificuldade. -->
+                <!-- Página 1: a pista (no campeonato, a lista de todas pela ordem
+                     em que se correm) e a dificuldade. -->
                 <section class="setupPage" id="trackPage">
-                    <!-- A taça só se escolhe no campeonato; na corrida simples escolhe-se a pista. -->
-                    <div class="field" id="cupField" hidden>
-                        <span class="fieldLabel">Taça</span>
-                        <div class="segmented" id="cupRow"></div>
-                    </div>
-
                     <div class="trackGrid" id="trackRow"></div>
 
                     <div class="field">

@@ -4,8 +4,8 @@
 // quem não tem sessão iniciada) e o modo; o segundo, já sabendo o modo, mostra
 // as pistas e a dificuldade. Assim quem quer só dar uma volta não passa por uma
 // parede de opções, e o campeonato não obriga a escolher uma pista que vai
-// correr as três — aí escolhe-se a taça, e as três pistas dela mostram-se pela
-// ordem em que se correm.
+// correr todas — aí as pistas mostram-se pela ordem em que se correm, e o que
+// se escolhe é a categoria, na garagem.
 //
 // O segundo ecrã tem duas páginas no mesmo painel: a pista e, a seguir, a
 // garagem (carro e cor). São páginas e não janelas: o painel fica onde está e
@@ -20,7 +20,7 @@ import { readText, writeText } from '/lib/arcade/storage.js';
 
 import {
     CAR_COLORS, CAR_LEN, CAR_TYPE_STORAGE_KEY, CAR_TYPES, COLOR_STORAGE_KEY, LAPS_REQUIRED,
-    MODE_TOURNAMENT, TOURNAMENT_CUPS
+    MODE_TOURNAMENT
 } from './config.js';
 import { drawCarSprite } from './carsprites.js';
 import { menuZoom } from './race.js';
@@ -270,14 +270,16 @@ export function createMenu({ playerName }) {
             if (current) step.setAttribute('aria-current', 'step');
             else step.removeAttribute('aria-current');
         }
-        els.setupSub.textContent = garage ? 'Escolhe o carro e a cor' : trackSubtitle();
+        els.setupSub.textContent = garage
+            ? (session.mode === MODE_TOURNAMENT ? 'O carro é a categoria do campeonato' : 'Escolhe o carro e a cor')
+            : trackSubtitle();
         els.backBtn.setAttribute('aria-label', garage ? 'Voltar à pista' : 'Voltar ao menu');
         els.setupScreen.scrollTop = 0;
     }
 
     function trackSubtitle() {
         return session.mode === MODE_TOURNAMENT
-            ? `Três pistas seguidas, ${LAPS_REQUIRED} voltas cada`
+            ? `As ${TRACKS.length} pistas seguidas, ${LAPS_REQUIRED} voltas cada`
             : `Escolhe a pista · ${LAPS_REQUIRED} voltas`;
     }
 
@@ -295,19 +297,22 @@ export function createMenu({ playerName }) {
         overlays.show('start');
     }
 
-    /** Segundo ecrã: taça ou pista (conforme o modo), dificuldade e arranque. */
+    /**
+     * Segundo ecrã: a pista e a dificuldade e, na página seguinte, o carro.
+     *
+     * No campeonato não se escolhe pista: correm-se todas, e ficam à vista pela
+     * ordem em que se correm, em cartões mais pequenos (são muitas). Por trás
+     * do vidro mostra-se a primeira, que é por onde a coisa começa.
+     */
     function showSetup(mode) {
         session.mode = mode;
         const tournament = mode === MODE_TOURNAMENT;
 
         els.setupTitle.textContent = tournament ? 'Campeonato' : 'Corrida simples';
-
-        els.cupField.hidden = !tournament;
+        els.trackRow.classList.toggle('is-compact', tournament);
         if (tournament) {
-            els.cupRow.innerHTML = TOURNAMENT_CUPS
-                .map((cup, index) => `<button type="button" class="cupBtn" data-value="${index}">${escapeHtml(cup.name)}</button>`)
-                .join('');
-            selectCup(session.cupIdx);
+            els.trackRow.innerHTML = TRACKS.map((track, index) => trackCard(track, { index, order: index + 1 })).join('');
+            previewTrack(0);
         } else {
             els.trackRow.innerHTML = TRACKS.map((track, index) => trackCard(track, { index })).join('');
             selectTrack(session.trackIdx);
@@ -315,23 +320,6 @@ export function createMenu({ playerName }) {
 
         overlays.show('setup');
         showPage('track');
-    }
-
-    /**
-     * No campeonato não se escolhe pista: escolhe-se a taça, e as três pistas
-     * dela ficam à vista pela ordem em que se correm. Por trás do vidro mostra-se
-     * a primeira, que é por onde a coisa começa.
-     */
-    function selectCup(index) {
-        session.cupIdx = index;
-        const cup = TOURNAMENT_CUPS[index];
-        for (const button of els.cupRow.querySelectorAll('.cupBtn')) {
-            button.classList.toggle('active', Number(button.dataset.value) === index);
-        }
-        els.trackRow.innerHTML = cup.tracks
-            .map((trackIdx, order) => trackCard(TRACKS[trackIdx], { index: trackIdx, order: order + 1 }))
-            .join('');
-        previewTrack(cup.tracks[0]);
     }
 
     function selectTrack(index) {
@@ -347,10 +335,6 @@ export function createMenu({ playerName }) {
         if (card) selectTrack(Number(card.dataset.value));
     });
 
-    els.cupRow.addEventListener('click', (event) => {
-        const button = event.target.closest('.cupBtn');
-        if (button) selectCup(Number(button.dataset.value));
-    });
 
     bindAccount();
     bindColors();

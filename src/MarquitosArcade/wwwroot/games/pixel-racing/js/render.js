@@ -5,7 +5,8 @@
 // precisa de saber onde está a câmara. O HUD vem depois, já fora dessa
 // transformação, por isso fica em coordenadas de ecrã.
 
-import { CAR_LEN, CAR_W, FONT_DISPLAY, LAPS_REQUIRED, OIL_RADIUS } from './config.js';
+import { AIR_SCALE, CAR_LEN, CAR_W, FONT_DISPLAY, LAND_TIME, LAPS_REQUIRED, OIL_RADIUS } from './config.js';
+import { airLift } from './physics.js';
 import { THEME_COLORS } from './tracks.js';
 import { drawCarSprite } from './carsprites.js';
 import { drawConfetti, drawParticles, hasConfetti } from './particles.js';
@@ -241,6 +242,57 @@ function drawBarrier(theme, b) {
     ctx.restore();
 }
 
+/** Profundidade da rampa ao longo da pista, em unidades do mundo. */
+const RAMP_DEPTH = 46;
+
+/**
+ * Rampa vista de cima: uma chapa amarela a clarear da entrada para o bordo
+ * (é o lado mais alto, mais perto da luz), com setas pretas a apontar o
+ * sentido do salto, paredes laterais mais escuras e, depois do bordo, a
+ * sombra da queda — é ela que dá a ideia de altura.
+ */
+function drawRamp(ramp) {
+    const d = RAMP_DEPTH / 2, h = ramp.halfSpan;
+    ctx.save();
+    ctx.translate(ramp.x, ramp.y);
+    ctx.rotate(ramp.angle);
+
+    const drop = ctx.createLinearGradient(d, 0, d + 26, 0);
+    drop.addColorStop(0, 'rgba(0, 0, 0, 0.5)');
+    drop.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = drop;
+    ctx.fillRect(d, -h, 26, h * 2);
+
+    const face = ctx.createLinearGradient(-d, 0, d, 0);
+    face.addColorStop(0, '#7a5a1c');
+    face.addColorStop(1, '#f6c84a');
+    ctx.fillStyle = face;
+    ctx.fillRect(-d, -h, d * 2, h * 2);
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(-d, -h, d * 2, h * 2);
+    ctx.clip();
+    ctx.strokeStyle = 'rgba(20, 16, 10, 0.75)';
+    ctx.lineWidth = 5;
+    ctx.lineJoin = 'miter';
+    for (const x of [-14, 0, 14]) {
+        ctx.beginPath();
+        ctx.moveTo(x - 7, -h * 0.55);
+        ctx.lineTo(x + 5, 0);
+        ctx.lineTo(x - 7, h * 0.55);
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    ctx.fillStyle = '#5a4214';
+    ctx.fillRect(-d, -h - 4, d * 2, 5);
+    ctx.fillRect(-d, h - 1, d * 2, 5);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.fillRect(d - 3, -h, 3, h * 2);
+    ctx.restore();
+}
+
 function drawTrack() {
     const colors = THEME_COLORS[race.track.theme];
 
@@ -339,6 +391,8 @@ function drawTrack() {
         ctx.restore();
     }
 
+    for (const ramp of race.track.ramps) drawRamp(ramp);
+
     for (const padIdx of race.track.pads) {
         const p = race.track.pts[padIdx];
         const pulse = 1 + 0.15 * Math.sin(race.globalClock * 5 + padIdx);
@@ -358,31 +412,73 @@ function drawTrack() {
     if (race.track.theme === 'night') {
         // Cada margem por si: uma fita fechada fecharia de uma ponta à outra e
         // deixava um risco atravessado na meta.
+        // Nos ganchos apertados o limite do lado de dentro passa por cima da
+        // pista: aí o rail interrompe-se (ver railClear em tracks.js).
         ctx.save();
         ctx.strokeStyle = 'rgba(0,229,255,0.45)';
         ctx.lineWidth = 4;
         ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 10;
-        for (const side of [1, -1]) { edgePath(side, race.track.barrierAt); ctx.stroke(); }
+        const { N, pts, norm, barrierAt, railClear } = race.track;
+        for (const side of [1, -1]) {
+            ctx.beginPath();
+            let drawing = false;
+            for (let i = 0; i <= N; i++) {
+                const idx = i % N;
+                if (!railClear[side][idx]) { drawing = false; continue; }
+                const x = pts[idx].x + norm[idx].x * barrierAt * side, y = pts[idx].y + norm[idx].y * barrierAt * side;
+                if (drawing) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+                drawing = true;
+            }
+            ctx.stroke();
+        }
         ctx.restore();
     }
     for (const b of race.track.barriers) drawBarrier(race.track.theme, b);
 }
 
 function drawCars() {
-    const sorted = [...race.cars].sort((a, b) => a.y - b.y);
+    // Quem vai no ar fica por cima de todos os outros.
+    const sorted = [...race.cars].sort((a, b) => (a.air ? 1 : 0) - (b.air ? 1 : 0) || a.y - b.y);
     for (const car of sorted) {
         drawCar(car);
         drawNameTag(car);
     }
 }
 
+/**
+ * Quanto o carro cresce: no ar, até `AIR_SCALE` no ponto mais alto (visto de
+ * cima, subir é ficar maior); depois de aterrar, dois ou três saltinhos cada
+ * vez mais pequenos, como a suspensão a assentar.
+ */
+function carScale(car, lift) {
+    const bounce = car.landT < LAND_TIME
+        ? 0.07 * Math.abs(Math.sin((Math.PI * car.landT) / 0.17)) * Math.exp(-5 * car.landT)
+        : 0;
+    return 1 + AIR_SCALE * lift + bounce;
+}
+
 function drawCar(car) {
+    const lift = airLift(car);
+    // No ar a sombra fica no chão e afasta-se do carro à medida que ele sobe —
+    // é a sombra solta que diz que o carro não está a tocar no alcatrão.
+    if (lift > 0) {
+        ctx.save();
+        ctx.translate(car.x + lift * 20, car.y + lift * 30);
+        ctx.rotate(car.facing);
+        ctx.fillStyle = `rgba(0, 0, 0, ${0.3 - 0.12 * lift})`;
+        rrect(-CAR_LEN * 0.48, -CAR_W * 0.42, CAR_LEN * 0.96, CAR_W * 0.84, CAR_W * 0.3);
+        ctx.fill();
+        ctx.restore();
+    }
+
     ctx.save();
     ctx.translate(car.x, car.y);
     // O carro aponta para onde está virado (`facing`), não para onde anda
     // (`velAngle`): é essa diferença que faz a derrapagem ver-se de fora.
     ctx.rotate(car.facing);
-    drawCarSprite(ctx, car);
+    const scale = carScale(car, lift);
+    ctx.scale(scale, scale);
+    drawCarSprite(ctx, car, { shadow: lift === 0 });
     ctx.restore();
 
     if (car.boostHold && car.boost > 0) drawBoostFlame(car, CAR_LEN, CAR_W);

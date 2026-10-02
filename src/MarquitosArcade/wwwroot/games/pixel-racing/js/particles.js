@@ -75,6 +75,19 @@ export function spawnOffroadDust(car) {
     }
 }
 
+/** Nuvem de pó à volta do carro quando aterra de um salto. */
+export function spawnLandingDust(car) {
+    const color = DUST_COLOR[race.track.theme] || DUST_COLOR.grass;
+    for (let i = 0; i < 14; i++) {
+        const a = (i / 14) * Math.PI * 2;
+        spawnParticle({
+            type: 'smoke', x: car.x + Math.cos(a) * CAR_W * 0.6, y: car.y + Math.sin(a) * CAR_W * 0.6,
+            vx: Math.cos(a) * rand(40, 110), vy: Math.sin(a) * rand(40, 110), life: rand(0.35, 0.6), maxLife: 0.6,
+            size: rand(5, 10), color
+        });
+    }
+}
+
 /** Salpico escuro de quem está a patinar em cima de uma poça de óleo. */
 export function spawnOilSpray(car) {
     for (let i = 0; i < 2; i++) {

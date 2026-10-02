@@ -249,6 +249,21 @@ button { cursor: pointer; }
 .trackCard.is-static { cursor: default; }
 .trackCard.is-static:hover { background: var(--glass-bg-soft); transform: none; }
 
+/*
+ * No campeonato são as pistas todas, e é uma lista para ver e não para
+ * escolher: cartões mais pequenos, mais por linha, só com a ordem, o nome e a
+ * perícia — senão o botão para seguir ficava lá muito em baixo.
+ */
+.trackGrid.is-compact {
+    grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+    gap: 8px;
+}
+
+.is-compact .trackCard { gap: 6px; padding: 8px; }
+.is-compact .trackName { font-size: 12px; }
+.is-compact .trackMeta:not(:last-child) { display: none; }
+.is-compact .trackOrder { padding: 1px 6px; font-size: 9px; }
+
 .trackShape {
     display: block;
     width: 100%;
@@ -473,7 +488,7 @@ button { cursor: pointer; }
     transform: rotate(45deg);
 }
 
-/* ---------- Taça e dificuldade ---------- */
+/* ---------- Dificuldade ---------- */
 
 .segmented {
     display: flex;
@@ -485,8 +500,7 @@ button { cursor: pointer; }
     background: rgba(6, 9, 20, 0.35);
 }
 
-.diffBtn,
-.cupBtn {
+.diffBtn {
     flex: 1;
     padding: 10px 6px;
     font-size: 13px;
@@ -498,11 +512,9 @@ button { cursor: pointer; }
     transition: background 0.2s ease, color 0.2s ease;
 }
 
-.diffBtn:hover,
-.cupBtn:hover { color: var(--text); background: var(--glass-bg-soft); }
+.diffBtn:hover { color: var(--text); background: var(--glass-bg-soft); }
 
-.diffBtn.active,
-.cupBtn.active {
+.diffBtn.active {
     color: var(--on-accent);
     background: linear-gradient(100deg, var(--accent), var(--accent-2));
     box-shadow: 0 8px 20px -12px var(--glow);

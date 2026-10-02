@@ -19,6 +19,8 @@ import { CAR_LEN, CAR_W, MAX_SPEED } from './config.js';
 
 /** O contexto da chamada em curso; muda a cada `drawCarSprite`. */
 let ctx = null;
+/** Se a sombra vai colada ao carro. No ar não vai: quem a desenha é o render, no chão. */
+let withShadow = true;
 
 /** Cor do carbono: fundos planos, suspensão, halo, endplates, para-choques. */
 const CARBON = '#1b1f2b';
@@ -108,6 +110,7 @@ function shadedBody(path, color, span, livery) {
 }
 
 function shadow(front, back, half, r) {
+    if (!withShadow) return;
     ctx.fillStyle = 'rgba(0, 0, 0, 0.32)';
     rrect(-L * back, -half + 4, L * (front + back), half * 2, r);
     ctx.fill();
@@ -712,8 +715,9 @@ const DRAWERS = { f1: drawF1, gt: drawGT, kart: drawKart, jeep: drawJeep };
  * saem do volante e da velocidade do próprio carro; numa miniatura parada não
  * há nem uma coisa nem outra.
  */
-export function drawCarSprite(target, car) {
+export function drawCarSprite(target, car, { shadow: attachedShadow = true } = {}) {
     ctx = target;
+    withShadow = attachedShadow;
     const speedFrac = clamp(car.speed / MAX_SPEED, 0, 1.4);
     const pose = {
         color: car.color,

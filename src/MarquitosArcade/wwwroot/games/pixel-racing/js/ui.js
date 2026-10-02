@@ -6,7 +6,7 @@ import { ABOUT } from './config.js';
 export const els = byId(
     'game', 'startScreen', 'setupScreen', 'pauseScreen', 'resultScreen', 'resultBody',
     'startBtn', 'backBtn', 'nextBtn', 'resumeBtn', 'quitBtn', 'pauseBtn', 'endBtn',
-    'modeRow', 'cupField', 'cupRow', 'trackRow', 'colorRow', 'diffRow', 'setupTitle', 'setupSub',
+    'modeRow', 'trackRow', 'colorRow', 'diffRow', 'setupTitle', 'setupSub',
     'setupPanel', 'setupSteps', 'trackPage', 'garagePage', 'carRow',
     'nameSlot', 'nameRow', 'accountRow', 'accountName', 'accountInitial', 'playerNameInput',
     'arcadeLink', 'aboutBtn', 'musicBtn'

@@ -20,7 +20,9 @@ export function makeCar(key, name, color, type) {
         boost: 0, driftCharge: 0, wasDrifting: false,
         oilTimer: 0, oilSpin: 1, offTrack: false, dustTimer: 0,
         idx: 0, totalDistance: 0, lap: 0, lastPadIdx: -1,
-        speedMult: 1, ai: null, smokeTimer: 0
+        speedMult: 1, ai: null, smokeTimer: 0,
+        /** Salto em curso ({ t, dur }) ou null; `landT` conta o tempo desde a última aterragem. */
+        air: null, landT: Infinity, lastRampIdx: -1
     };
 }
 
