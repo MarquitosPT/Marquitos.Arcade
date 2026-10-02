@@ -48,6 +48,8 @@ const CURVE_WINDOW = 6;
  */
 const RAMP_STRAIGHT = 480;
 const RAMP_MAX_TURN = 0.3;
+/** Que parte da largura da faixa de rodagem a rampa ocupa. */
+const RAMP_LANE_SHARE = 0.6;
 
 /**
  * Ponto do traçado no ângulo `t`. Com `edge` a 2 é uma elipse; acima disso os
@@ -160,8 +162,9 @@ function corneringProfile(tang, ds) {
  * alcatrão — quem entra torto é que sai da pista, e esse é o castigo. Nada de
  * rampas em cima da meta, de um posto de turbo ou de uma poça de óleo.
  *
- * Cada uma ocupa metade da largura, de um lado e do outro alternadamente:
- * saltar é uma escolha, e quem não quer pode passar ao lado.
+ * Cada uma fica numa das faixas de rodagem (uma de cada lado, alternadamente),
+ * centrada nela e com 60% da sua largura: sobra margem dos dois lados da
+ * rampa, e saltar é uma escolha — quem não quer passa pela outra faixa.
  *
  * Numa pista sem retas compridas (o Trevo é só ganchos) contenta-se com retas
  * mais curtas, de degrau em degrau, até caber pelo menos uma rampa.
@@ -196,9 +199,11 @@ function placeRampsWithin({ pts, tang, norm, N, total, pads, oils, halfWidth }, 
     }
     chosen.sort((a, b) => a - b);
     return chosen.map((idx, k) => {
-        const offset = (k % 2 === 0 ? -1 : 1) * halfWidth * 0.45;
+        // A faixa vai da linha central à guia (largura `halfWidth`): o centro
+        // dela fica a meio caminho, e a rampa ocupa RAMP_LANE_SHARE dela.
+        const offset = (k % 2 === 0 ? -1 : 1) * halfWidth * 0.5;
         const p = pts[idx], n = norm[idx];
-        return { idx, offset, halfSpan: halfWidth * 0.5, x: p.x + n.x * offset, y: p.y + n.y * offset, angle: angle(idx) };
+        return { idx, offset, halfSpan: halfWidth * 0.5 * RAMP_LANE_SHARE, x: p.x + n.x * offset, y: p.y + n.y * offset, angle: angle(idx) };
     });
 }
 
