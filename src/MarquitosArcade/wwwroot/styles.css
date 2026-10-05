@@ -1291,6 +1291,12 @@ main {
   --cover-bg: #10293f;
 }
 
+/* O cor-de-rosa do algodão-doce; o fundo é o céu da Doçaria, o da capa. */
+.theme-gulosinhos {
+  --game-accent: #ff7ec2;
+  --cover-bg: #ff9fcf;
+}
+
 /* ---------- Ficha do jogo ---------- */
 
 .game-card-body {

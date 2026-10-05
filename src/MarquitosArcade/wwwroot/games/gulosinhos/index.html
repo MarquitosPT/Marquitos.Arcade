@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Gulosinhos | Marquitos Arcade</title>
+    <link rel="icon" type="image/png" sizes="64x64" href="/favicon3_64x64.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon3_32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon3_16x16.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon3.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#2a1640" />
+    <meta name="msapplication-TileColor" content="#123a5e" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Marquitos Arcade" />
+
+    <!-- Ecrã de arranque partilhado pela arcada (lib/arcade/splash.*). Vem antes
+         das folhas do jogo porque é o primeiro que se vê, e o logótipo é
+         pré-carregado para não aparecer a meio da animação. -->
+    <link rel="preload" as="image" href="/logo3.png" />
+    <link rel="stylesheet" href="/lib/arcade/splash.css" />
+    <!-- Mede o viewport curto das apps afixadas em iOS (ver o ficheiro). -->
+    <script src="/lib/arcade/standalone-fit.js"></script>
+    <script src="/lib/arcade/no-context-menu.js"></script>
+    <script type="module" src="/lib/arcade/splash-boot.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" />
+
+    <link rel="stylesheet" href="/lib/arcade/about.css" />
+    <link rel="stylesheet" href="css/theme.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/hud.css" />
+    <link rel="stylesheet" href="css/screens.css" />
+    <link rel="stylesheet" href="css/controls.css" />
+    <link rel="stylesheet" href="css/carousel.css" />
+    <link rel="stylesheet" href="css/results.css" />
+</head>
+
+<body>
+    <!-- Ecrã de arranque: fica no ar pelo menos 2s (ver lib/arcade/splash.js). -->
+    <div id="arcadeSplash" class="arcade-splash">
+        <div class="arcade-splash-rays" aria-hidden="true"></div>
+        <div class="arcade-splash-pixels" aria-hidden="true"></div>
+        <div class="arcade-splash-stage">
+            <img class="arcade-splash-logo" src="/logo3.png" width="512" height="366"
+                 alt="MarquitosPT Game Arcade" fetchpriority="high" decoding="async" />
+            <p class="arcade-splash-caption">Gulosinhos</p>
+            <p class="arcade-splash-status" role="status">A carregar&hellip;</p>
+            <div class="arcade-splash-track" role="progressbar" aria-label="Progresso do carregamento"
+                 aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <div class="arcade-splash-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="wrap">
+        <div class="topBar">
+            <a class="topBtn" id="arcadeLink" href="/">
+                <div style="display:flex">
+                    <svg class="topIcon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
+                        <path d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z"></path>
+                    </svg>
+                    <span class="topLabel">Arcade</span>
+                </div>
+            </a>
+            <button class="topBtn" id="aboutBtn" type="button" aria-haspopup="dialog">
+                <div style="display:flex">
+                    <svg class="topIcon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
+                        <path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path>
+                    </svg>
+                    <span class="topLabel">Acerca</span>
+                </div>
+            </button>
+            <!-- Música: fica à mão dentro e fora do percurso. O traço só aparece
+                 com a música desligada (aria-pressed="false", ver css/hud.css). -->
+            <button class="topBtn" id="musicBtn" type="button" aria-pressed="true" title="Desligar a música">
+                <div style="display:flex">
+                    <svg class="topIcon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
+                        <circle cx="4.5" cy="12" r="2.25"></circle>
+                        <circle cx="11.5" cy="10.5" r="2.25"></circle>
+                        <path d="M5.25 12V4.2l8.5-2v8.3h-1.5V4.1l-5.5 1.3V12Z"></path>
+                        <path class="musicSlash" d="M1.75 1.75l12.5 12.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"></path>
+                    </svg>
+                    <span class="topLabel">Música</span>
+                </div>
+            </button>
+            <button class="topBtn" id="pauseBtn">
+                <div style="display:flex">
+                    <svg class="topIcon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
+                        <path d="M5 2h1a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Zm5 0h1a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Z"></path>
+                    </svg>
+                    <span class="topLabel">Pausa</span>
+                </div>
+            </button>
+            <button class="topBtn topBtn--quit" id="endBtn">
+                <div style="display:flex">
+                    <svg class="topIcon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
+                        <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path>
+                    </svg>
+                    <span class="topLabel">Sair</span>
+                </div>
+            </button>
+        </div>
+        <canvas id="game"></canvas>
+
+        <!-- Ecrã 1: quem és, que bicho és, e continuar de onde ficaste. -->
+        <div id="startScreen" class="screen">
+            <div class="panel">
+                <div class="brand">
+                    <span class="brandBadge">🍭</span>
+                    <h1 class="title">Gulosinhos</h1>
+                    <p class="sub">Plataformas · Guloseimas · Corrida</p>
+                </div>
+
+                <!-- O nome só se pede a visitantes: com sessão iniciada vem da conta. -->
+                <div class="nameSlot is-pending" id="nameSlot">
+                    <label class="field" id="nameRow" for="playerNameInput">
+                        <span class="fieldLabel">O teu nome</span>
+                        <input type="text" id="playerNameInput" class="nameInput" placeholder="Como queres aparecer no quadro"
+                               maxlength="20" autocomplete="nickname" spellcheck="false">
+                    </label>
+                    <div class="playerChip" id="accountRow" hidden>
+                        <span class="chipAvatar" id="accountInitial"></span>
+                        <span class="chipText">A jogar como <b id="accountName"></b></span>
+                    </div>
+                </div>
+
+                <!-- Os quatro bichos: os cartões são montados pelo js/menu.js a
+                     partir do ANIMALS (js/animals.js), com o retrato num canvas. -->
+                <div class="animalField">
+                    <span class="fieldLabel" id="animalLabel">O teu bicho</span>
+                    <div class="animalPicker" id="animalPicker" role="radiogroup" aria-labelledby="animalLabel"></div>
+                </div>
+
+                <div class="progress">
+                    <span class="progressLine" id="progressLine"></span>
+                    <span class="progressBar" id="progressBar"></span>
+                </div>
+
+                <button class="btn" id="playBtn">Jogar</button>
+                <button class="btnOutline" id="chooseBtn">Escolher nível</button>
+
+                <p id="hint">Apanha as guloseimas e chega ao frasco no fim do percurso, depressa ·
+                    setas ou A/D para correr, espaço ou ↑ para saltar · no telemóvel, os botões em baixo ·
+                    salta em cima das geleias, foge das plantas e das bombas-relógio</p>
+            </div>
+        </div>
+
+        <!-- Ecrã 2: os níveis, abertos e por abrir. -->
+        <div id="levelsScreen" class="screen">
+            <div class="panel panel--wide">
+                <div class="panelHead">
+                    <button class="iconBtn" id="backBtn" aria-label="Voltar ao menu">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
+                            <path d="M7.78 12.53a.75.75 0 0 1-1.06 0L2.47 8.28a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L4.81 7h7.44a.75.75 0 0 1 0 1.5H4.81l2.97 2.97a.75.75 0 0 1 0 1.06Z"></path>
+                        </svg>
+                    </button>
+                    <div class="panelHeadText">
+                        <h2 class="panelTitle" id="levelsTitle">Níveis</h2>
+                        <p class="panelSub" id="levelsSub"></p>
+                    </div>
+                </div>
+
+                <!-- Os níveis vão em páginas: quantos cabem em cada uma é decidido
+                     no css/carousel.css e lido pelo js/carousel.js. -->
+                <div class="levelsCarousel" id="levelsCarousel">
+                    <button class="carouselArrow carouselArrow--prev" id="prevPageBtn" type="button"
+                            aria-label="Níveis anteriores" aria-controls="levelGrid">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
+                            <path d="M9.78 12.78a.75.75 0 0 1-1.06 0L4.47 8.53a.75.75 0 0 1 0-1.06l4.25-4.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L6.06 8l3.72 3.72a.75.75 0 0 1 0 1.06Z"></path>
+                        </svg>
+                    </button>
+                    <div class="carouselViewport" id="levelViewport">
+                        <div class="carouselTrack" id="levelGrid"></div>
+                    </div>
+                    <button class="carouselArrow carouselArrow--next" id="nextPageBtn" type="button"
+                            aria-label="Níveis seguintes" aria-controls="levelGrid">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
+                            <path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"></path>
+                        </svg>
+                    </button>
+                    <div class="carouselDots" id="levelDots" role="tablist" aria-label="Páginas de níveis"></div>
+                </div>
+
+                <p class="progressNote" id="progressNote" hidden>
+                    <span aria-hidden="true">💾</span>
+                    <span>O teu progresso fica só neste aparelho.
+                        <a href="/Account/Login">Inicia sessão</a> para o levares contigo e recomeçares
+                        em qualquer nível já desbloqueado.</span>
+                </p>
+            </div>
+        </div>
+
+        <div id="pauseScreen" class="screen">
+            <div class="panel panel--narrow">
+                <h2 class="title">Pausa</h2>
+                <p class="sub">As guloseimas estão à tua espera</p>
+                <button class="btn" id="resumeBtn">Continuar</button>
+                <button class="btnOutline" id="quitBtn">Sair para o menu</button>
+            </div>
+        </div>
+
+        <div id="resultScreen" class="screen">
+            <div class="panel panel--wide">
+                <div id="resultBody"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+
+</html>

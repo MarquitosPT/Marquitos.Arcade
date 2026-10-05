@@ -19,6 +19,7 @@ Blazor Web App (.NET 10, render mode Interactive Server) com ASP.NET Core Identi
   - `pong/`: Pong Retro, com modo 1 jogador (vs. CPU, pontuação submetida via `/api/scores/pong`) e 2 jogadores.
   - `maze-run/`: Maze Run, labirintos por níveis — apanhar os cristais abre a saída, e há guardas a impedi-lo. Pelo caminho há cristais de gelo que os congelam, portais que ligam duas pontas do labirinto e portas trancadas com a sua chave (ver [As peças do Maze Run](#as-peças-do-maze-run)). Os níveis vão-se desbloqueando à medida que se concluem, e o progresso fica guardado na conta de quem tem sessão iniciada (ver [Progresso e níveis](#progresso-e-níveis)). Os labirintos não estão desenhados à mão: saem de uma semente por nível (`buildMaze` em `js/maze.js`), como as pistas do Pixel Racing saem do `buildTrack` — **acrescentar um nível é acrescentar uma entrada ao array `LEVELS` do `js/levels.js`**, e mais nada.
   - `terras-do-reino/`: Terras do Reino, economia medieval contínua num tabuleiro isométrico com relevo — semear e colher trigo, cortar madeira, tirar pedra, pescar nos lagos, abrir minas de ouro, moinhos, padarias, vacarias, pocilgas e oficinas, lã e tecelagem, vinhas, destilaria e taberna, algodão, alfaiataria, teatro, hotel para os visitantes, escola, centro de saúde e posto de correios, galinheiro, cana-de-açúcar, arroz, pastelaria e joalharia, e comerciar com três vilas vizinhas geridas pelo CPU, que crescem sozinhas e são as rivais na tabela da prosperidade. Não há guerra nem fim de partida: o reino fica gravado (na conta, para quem tem sessão iniciada) e, fora do jogo, fica em pausa: ao voltar, continua do ponto exato onde ficou. Ver [Terras do Reino](#terras-do-reino).
+  - `gulosinhos/`: Gulosinhos, jogo de plataformas em tiles — um de quatro bichos fofinhos (gatinha, coelhinho, pandinha e raposinha) corre até ao frasco no fim de cada percurso a apanhar guloseimas, entre geleias que guardam os doces, ouriços, abelhas, plantas carnívoras, bombas-relógio, picos, molas, elevadores, plataformas que andam e pontes de bolachas. A câmara segue o bicho. Doze níveis, cada um com 1:30 a 2:00 de percurso, que não estão desenhados à mão: saem de uma semente e de uma receita (`LEVELS` em `js/levels.js`, gerados por `buildWorld` em `js/world.js`). **Em testes**, fora do catálogo. Ver [Gulosinhos](#gulosinhos).
   - `memoria-animal/`: Memória Animal, jogo da memória com cartas de animais — virar duas de cada vez e encontrar os pares. Vinte e quatro níveis, de 4 cartas (2 pares) a 50 (25 pares), mais 2 por nível; as cartas encolhem à medida que o tabuleiro cresce, para caberem todas no ecrã do telemóvel. Níveis desbloqueados e estrelas pelo mesmo cliente de progresso do Maze Run. Ver [Memória Animal](#memória-animal).
   - `pixel-racing/`: Pixel Racing, corrida simples em qualquer uma das doze pistas ou campeonato com todas, com pontuação via `/api/scores/pixel-racing`. O menu tem dois passos: o primeiro ecrã pergunta só o nome (a quem não tem sessão iniciada) e o modo; o segundo tem duas páginas no mesmo painel — a pista (no campeonato, a lista das que se vão correr) e a dificuldade, e depois a garagem, com o carro e a cor. As pistas e os carros escolhem-se em carrosséis — o partilhado do SDK (`lib/arcade/carousel.js`), com a folha `css/carousel.css` do jogo a dizer quantos cabem por página: pistas 2 × 2 ao alto, 3 × 1 ao comprido e 3 × 2 no computador; carros sempre numa fila só, dois por página. Os cartões dos carros levam miniaturas em canvas, que se perdem quando o carrossel refaz as páginas (ao rodar o aparelho); a opção `onRender` do `createCarousel` é onde se voltam a desenhar, e onde se repõe o cartão escolhido. Há quatro carros (`CAR_TYPES` em `js/config.js`), do mais lento ao mais rápido: kart, jeep, 911 GT e Fórmula 1, cada um com multiplicadores próprios de velocidade, aceleração, curva, aderência, andamento fora de pista e carga de drift. Cada corrida é de um tipo só — os adversários correm com o carro que o jogador escolheu —, por isso escolher o carro é escolher a categoria; no modo campeonato, é escolher qual dos quatro campeonatos (karts, jeeps, GT, Fórmula 1) se corre, e cada um corre as doze pistas, da mais fácil à mais difícil. O desenho dos quatro está em `js/carsprites.js`, partilhado pela corrida e pelas miniaturas da garagem, e cabe no mesmo retângulo de colisão (`CAR_LEN` × `CAR_W`). As pistas são geradas por `buildTrack` de duas maneiras: a partir de uma superelipse com harmónicos (as seis originais) ou de uma lista de pontos de controlo por onde passa uma Catmull-Rom centrípeta (`points`, as seis com ganchos, serpentinas e esses, que nenhuma superelipse dá). A dificuldade é medida no traçado (`corneringProfile`) em vez de escrita à mão — a curva mais fechada comparada com o raio que se faz a fundo, mais o quanto a pista vira por cada 1000 unidades —, e é por ela que `TRACKS` se ordena e que sai o grau de perícia do cartão. Ao desenhar uma pista por pontos, nenhuma curva deve ser mais apertada do que a meia largura da pista (senão a margem de dentro dobra-se) e troços diferentes têm de ficar a mais de duas vezes `barrierAt` um do outro, para as escapatórias não se tocarem. Além dos postos de turbo e das poças de óleo, cada pista tem uma ou duas rampas (`placeRamps`), postas sozinhas nas retas mais compridas, centradas numa das faixas e com 60% da largura dela: quem passa nelas com velocidade salta, segue a direito no ar (o volante só roda o nariz) e cresce com a altura do salto; ao aterrar há dois ou três saltinhos de suspensão, e aterrar torto custa velocidade. A cor sai da paleta única de `CAR_COLORS` e os adversários ficam com três das restantes, por isso nunca há dois carros da mesma cor na pista.
 - `src/MarquitosArcade/wwwroot/lib/arcade/`: SDK partilhado pelos jogos (áudio, leaderboard, armazenamento, viewport do canvas, ciclo de jogo, barra de topo, ecrã de arranque). Módulos ES sem dependências externas. O `splash.css`/`splash.js`/`splash-boot.js` são a exceção que também serve o portal — ver [Ecrã de arranque](#ecrã-de-arranque).
@@ -246,8 +247,8 @@ unlockAudioOnGesture(resumeAudio, syncMusic);   // começa após o ecrã de arra
 ```
 
 O botão `#musicBtn` da barra de topo (a nota, com o traço `.musicSlash` quando
-está desligada) e as três regras de CSS que o acompanham são iguais no Terras do
-Reino, na Memória Animal, no Pixel Racing e no Maze Run; na Tasca do Zé o mesmo
+está desligada) e as três regras de CSS que o acompanham são iguais nos
+Gulosinhos, no Terras do Reino, na Memória Animal, no Pixel Racing e no Maze Run; na Tasca do Zé o mesmo
 desenho vai num dos botões redondos do cabeçalho, ao lado do 🔊, que cala tudo,
 música incluída.
 
@@ -1005,6 +1006,122 @@ na pausa e com a página escondida. Começa no primeiro toque ou tecla, onde que
 que seja. O botão **Música** da barra de topo liga-a e desliga-a, e a escolha
 fica no aparelho (`memoriaAnimalMusic_v1`); os efeitos sonoros continuam a
 tocar. Num telemóvel estreito o botão fica só com a nota, para caberem os três.
+
+## Gulosinhos
+
+> **Em testes desde 5 de outubro de 2026** (versão 0.9.0), fora do catálogo:
+> aparece como "Em breve" e joga-se em `/games/gulosinhos/` (ver a nota do
+> [Terras do Reino](#terras-do-reino)). O painel das pontuações está comentado
+> em `Pontuacoes.razor` até ao lançamento.
+
+O primeiro jogo de plataformas da arcada. Escolhe-se um de quatro bichos —
+cabeça grande, olhos enormes, corpo pequenino — e corre-se para a direita até
+ao frasco das guloseimas, no fim do percurso, a apanhar as guloseimas pelo
+caminho. Ganha quem lá chega depressa e com mais guloseimas: as três estrelas de
+cada nível são chegar ao fim, trazer as guloseimas todas e chegar dentro do
+tempo-alvo — independentes, para quem corre sem as apanhar todas também ter a
+sua.
+
+Tudo é desenhado no canvas, sem imagens: os bichos (`js/animals.js`), os
+guardiões, as plantas, as bombas e os enfeites (`js/sprites.js`) e os tiles
+(`js/tiles.js`, pintados uma vez por tamanho e depois só carimbados). Os quatro
+bichos têm a mesma física de propósito — o quadro é um só, e escolher a raposa
+não pode ser escolher uma vantagem. A escolha fica no aparelho
+(`gulosinhosAnimal_v1`).
+
+### Os percursos saem de uma semente
+
+**Acrescentar um nível é acrescentar uma entrada ao `LEVELS`** (`js/levels.js`):
+o cenário, a semente, a dificuldade, os desafios que pode ter, os que apresenta
+(aparecem mais vezes) e quantos segundos deve durar. O `buildWorld` de
+`js/world.js` monta o percurso da esquerda para a direita, troço a troço — um
+buraco, uma escada, uma geleia a patrulhar, uma parede de caixotes com uma bomba
+à frente —, escolhidos à sorte pela semente, até o tempo estimado chegar ao da
+receita. Por isso os níveis duram todos mais ou menos o mesmo, sejam feitos de
+troços rápidos ou de troços de esperar. Há duas bandeiras por nível, a um terço
+e a dois terços, onde se recomeça depois de cair num buraco.
+
+**Cada troço é escrito a contar com o salto.** Com a física do `js/config.js`, o
+salto sobe ~2,8 tiles e, a correr, vai ~4,8 tiles mais longe; daí os limites do
+gerador — degraus de 2 no máximo (`MAX_STEP_UP`), buracos de 4 (`MAX_GAP`), de 3
+se o outro lado for um degrau acima — e as guloseimas só onde se chega. Quem
+mudar a física ou escrever um troço novo tem de refazer essas contas; o
+smoke-test verifica-as nos doze níveis (`gulosinhos-percursos`) e joga cada
+mecânica num pedaço de percurso feito à medida (`gulosinhos-mecanicas`).
+
+O tempo da receita é a conta do gerador, não um cronómetro: o **tempo-alvo** é
+15% acima dela. Para saber quanto um nível demora a sério há um piloto
+automático, `tools/games/gulosinhos-bot.mjs`, que joga cada nível com a física
+do jogo e diz o tempo, as guloseimas e onde levou pancada. Ele só corre, sem se
+desviar para as guloseimas, e faz os níveis em 1:00 a 1:45; quem joga com calma
+leva os 1:30 a 2:00 que o jogo pede.
+
+```bash
+cd tools/games
+node gulosinhos-bot.mjs           # os doze níveis
+node gulosinhos-bot.mjs 3,7       # só alguns
+```
+
+### Os desafios
+
+| desafio            | o que faz                                                                  | na receita  |
+| ------------------ | -------------------------------------------------------------------------- | ----------- |
+| Geleia             | guarda as guloseimas, a patrulhar; cair-lhe em cima pisa-a                 | `jelly`     |
+| Ouriço             | como a geleia, mas pica por cima: salta-se por cima dele                    | `hedgehog`  |
+| Abelha             | sobe e desce por cima do caminho; passa-se quando está lá em cima          | `bees`      |
+| Planta carnívora   | sai do vaso de tempos a tempos, de boca aberta                             | `plants`    |
+| Bomba-relógio      | começa a contar quando alguém se chega perto e rebenta passados 2,4 s       | `bombs`     |
+| Picos              | no chão; os compridos atravessam-se por plataformas                         | `spikes`    |
+| Pilares            | saltinhos por cima de um buraco comprido                                   | `pillars`   |
+| Mola               | atira para cima de uma parede que nenhum salto vence                       | `springs`   |
+| Elevador           | sobe a um planalto; ao lado é buraco                                       | `lifts`     |
+| Plataforma         | vai e vem por cima de um buraco largo de mais para saltar                  | `movers`    |
+| Ponte de bolachas  | desfaz-se pouco depois de se lhe pôr o pé em cima                          | `crumble`   |
+
+Decisões que não são óbvias:
+
+- **A bomba rebenta os caixotes que toca e todos os que lhes estão encostados**
+  (`breakCrates` em `js/level.js`). Uma parede de caixotes nunca fica meio de pé,
+  por isso o percurso nunca fica trancado. A bomba fica encostada à parede: para
+  fugir dela basta recuar, sem ter de passar por cima dela.
+- **As plataformas param uns instantes em cada ponta** (`MOVER_DWELL`) e sobe-se
+  para elas sem saltar quando estão um nadinha acima do chão (`STEP_ONTO` em
+  `js/physics.js`): sem isso, apanhar um elevador que já arrancou era cair no
+  buraco ao lado.
+- **Logo a seguir a uma pancada o empurrão manda**: uns instantes sem controlo
+  horizontal. Sem isso bastava carregar para a frente para cair em cima de quem
+  bateu e pisá-lo.
+- **Cair num buraco custa um coração e volta-se à última bandeira**, com as
+  guloseimas que já se apanharam. O relógio não pára enquanto se cai.
+- **A física corre a 240 passos por segundo** (`SUBSTEP`): a mola atira a 26
+  tiles por segundo, e um passo de um fotograma atravessava um tile.
+- **Saltar perdoa**: uns instantes depois de sair da borda ainda dá para saltar,
+  e um salto pedido pouco antes de aterrar fica guardado (`COYOTE_TIME` e
+  `JUMP_BUFFER`). Largar o botão a subir encurta o salto.
+
+### Câmara e controlos
+
+O tile é o maior que deixa ver 11,5 tiles na vertical e 11 na horizontal
+(`js/camera.js`): ao comprido vê-se um bom bocado do caminho à frente; ao alto o
+percurso cabe todo na vertical, com céu por cima. A câmara segue o bicho com um
+pouco de atraso e olha para o lado para onde ele corre.
+
+No computador: setas ou A/D para correr, espaço, ↑, W, Z ou K para saltar, Esc
+ou P para a pausa. No telemóvel, três botões desenhados no canvas (`buttonRects`
+em `js/input.js`): ← e → à esquerda, o salto à direita. Ao alto ficam numa faixa
+só deles por baixo do mundo, para os polegares não taparem o chão; ao comprido,
+por cima do mundo, nos cantos. Aparecem num aparelho de toque, ou ao primeiro
+toque no ecrã.
+
+### Música
+
+Uma marcha saltitona de desenho animado (`js/music.js`), toda sintetizada: a
+melodia num "pizzicato" de brinquedo (onda quadrada abafada por um filtro que
+fecha logo a seguir ao ataque, mais um seno uma oitava acima), baixo aos saltos,
+acordes de cavaquinho nos contratempos e bateria leve. Dó maior a 132 BPM, 20
+compassos em loop: A, A', B, B' e uma ponte calma só com o bombo. O motor é o
+[comum](#música-de-fundo); o botão **Música** liga-a e desliga-a
+(`gulosinhosMusic_v1`).
 
 ## Música da Tasca do Zé
 

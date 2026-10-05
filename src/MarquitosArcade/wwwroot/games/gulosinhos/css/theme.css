@@ -1,0 +1,66 @@
+/*
+ * Tokens dos Gulosinhos — a variante "glass" do tema da arcada, com os mesmos
+ * nomes de token do Maze Run e do Pixel Racing, em cores de pastelaria:
+ * cor-de-rosa de algodão-doce e laranja de rebuçado.
+ *
+ * Só existe a variante escura: os ecrãs ficam por cima do percurso, que tem
+ * céus claros em quase todos os níveis, e é o vidro escuro por cima deles que
+ * dá contraste ao texto. Por isso nada de media query de `prefers-color-scheme`.
+ *
+ * A cor de cada nível (`--level-accent`, `--card-accent`) não vive aqui: vem do
+ * cenário (js/themes.js) e é escrita no elemento pelo JS.
+ */
+
+:root {
+    /* acentos: algodão-doce, rebuçado de laranja e menta */
+    --accent: #ff7ec2;
+    --accent-2: #ffb054;
+    --accent-3: #ff5d7a;
+    --gold: #ffd23f;
+    --on-accent: #3a1230;
+
+    /* texto */
+    --text: #eef2ff;
+    --muted: rgba(238, 242, 255, 0.66);
+    --faint: rgba(238, 242, 255, 0.42);
+
+    /* vidro */
+    --glass-bg: linear-gradient(155deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04) 60%);
+    --glass-bg-soft: rgba(255, 255, 255, 0.06);
+    --glass-bg-hover: rgba(255, 255, 255, 0.11);
+    --glass-border: rgba(255, 255, 255, 0.16);
+    --glass-border-strong: rgba(255, 255, 255, 0.28);
+    --glass-shadow: 0 34px 70px -30px rgba(0, 0, 0, 0.9);
+    --glass-shadow-sm: 0 14px 30px -18px rgba(0, 0, 0, 0.85);
+    --blur: 24px;
+    --blur-soft: 10px;
+
+    /* o véu que separa o vidro do percurso que está a ser desenhado por trás */
+    --scrim: radial-gradient(ellipse at 50% 18%, rgba(90, 30, 90, 0.45), rgba(24, 10, 34, 0.78) 70%);
+
+    --ring: rgba(255, 126, 194, 0.45);
+    --glow: rgba(255, 126, 194, 0.4);
+
+    /* geometria */
+    --radius-sm: 12px;
+    --radius: 18px;
+    --radius-lg: 26px;
+    --radius-pill: 999px;
+
+    /* tipografia */
+    --font-display: "Fredoka", "Outfit", "Segoe UI", system-ui, sans-serif;
+    --font-body: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+}
+
+/* Janela "Acerca" (lib/arcade/about.css), com o vidro e o acento deste jogo. */
+:root {
+    --about-panel: rgba(42, 18, 58, 0.95);
+    --about-border: var(--glass-border);
+    --about-ink: var(--text);
+    --about-muted: var(--muted);
+    --about-accent: var(--accent);
+    --about-on-accent: var(--on-accent);
+    --about-radius: var(--radius-lg);
+    --about-font-display: var(--font-display);
+    --about-font-body: var(--font-body);
+}
