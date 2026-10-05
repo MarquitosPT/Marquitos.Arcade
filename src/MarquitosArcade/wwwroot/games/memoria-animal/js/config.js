@@ -14,9 +14,8 @@ export const ABOUT = {
     title: 'Memória Animal',
     emoji: '🐮',
     tagline: 'Pares · Memória · Bicharada',
-    version: '0.9.0',
-    published: '2026-09-26',
-    status: 'Em testes'
+    version: '1.0.0',
+    published: '2026-10-05'
 };
 
 export const NAME_STORAGE_KEY = 'memoriaAnimalPlayerName_v1';
