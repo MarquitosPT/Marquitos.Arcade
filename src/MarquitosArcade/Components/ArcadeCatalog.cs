@@ -53,6 +53,19 @@ public static class ArcadeCatalog
     // antigos vão descendo para o fim do catálogo.
     public static readonly ArcadeGame[] Games =
     [
+        new("gulosinhos",
+            "Gulosinhos",
+            "saltos • guloseimas • corrida",
+            "Escolhe um bicho guloso e corre até ao fim do percurso a apanhar as guloseimas todas.",
+            "🍭",
+            "theme-gulosinhos",
+            "/covers/gulosinhos.webp",
+            "0.9.0",
+            new(2026, 10, 5),
+            // Em testes: fica "Em breve" no catálogo, mas joga-se em
+            // /games/gulosinhos/ para quem lá for direto.
+            IsPlayable: false),
+
         new("memoria-animal",
             "Memória Animal",
             "pares • memória • bicharada",

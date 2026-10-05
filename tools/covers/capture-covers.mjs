@@ -135,6 +135,43 @@ const GAMES = [
         clip: () => ({ x: 0, y: 0, width: 800, height: 450 })
     },
     {
+        slug: 'gulosinhos',
+        viewport: { width: 800, height: 450 },
+        scale: 2,
+        async play(page) {
+            // A Doçaria (o último nível, o mais cor-de-rosa), com a raposa a meio
+            // de um salto por cima de umas guloseimas e de um guardião. O nível
+            // abre-se pelo progresso guardado, como faria quem lá chegou.
+            await page.evaluate(() => {
+                localStorage.setItem('gulosinhosProgress_v1', JSON.stringify({ v: 1, unlocked: 12, levels: {} }));
+                localStorage.setItem('gulosinhosAnimal_v1', 'raposa');
+            });
+            await page.reload({ waitUntil: 'load' });
+            await waitForSplash(page);
+            await page.click('#playBtn');
+            await page.addStyleTag({ content: HIDE_ARCADE_CHROME });
+            await page.evaluate(async () => {
+                const { game } = await import('/games/gulosinhos/js/state.js');
+                window.__arcadeGulosinhos = game;
+            });
+            await page.waitForFunction(() => window.__arcadeGulosinhos.phase === 'playing', undefined, { timeout: 20000 });
+            // Salta para o primeiro guardião de geleia do percurso.
+            await page.evaluate(() => {
+                const game = window.__arcadeGulosinhos;
+                const seg = game.world.segments.find((s) => s.name === 'jelly' || s.name === 'ledge');
+                game.player.x = seg.x - 1;
+                game.player.y = 2;
+            });
+            await sleep(900);
+            await page.keyboard.down('ArrowRight');
+            await sleep(250);
+            await page.keyboard.down('Space');
+            await sleep(330);
+            await page.keyboard.up('ArrowRight');
+        },
+        clip: () => ({ x: 0, y: 0, width: 800, height: 450 })
+    },
+    {
         slug: 'memoria-animal',
         viewport: { width: 800, height: 450 },
         scale: 2,

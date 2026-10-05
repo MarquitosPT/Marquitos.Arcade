@@ -1170,6 +1170,314 @@ const GAMES = [
         }
     },
     {
+        slug: 'gulosinhos',
+        // Ao alto e com toque, como num telemóvel: os botões ficam na faixa de baixo.
+        viewport: { width: 390, height: 780 },
+        touch: true,
+        canvas: true,
+        menuSelector: '#startScreen',
+        async play(page) {
+            await page.fill('#playerNameInput', 'MARQUITOS');
+            // Escolher o panda fica lembrado no aparelho.
+            await page.click('.animalBtn[data-value="panda"]');
+            if (await page.evaluate(() => localStorage.getItem('gulosinhosAnimal_v1')) !== 'panda') throw new Error('o bicho escolhido não ficou guardado');
+            await page.click('#playBtn');
+            await waitForGulosinhosPlaying(page);
+            const band = await page.evaluate(() => window.__arcadeGulosinhos.controlsBand);
+            if (!(band > 0)) throw new Error('ao alto e com toque, os botões não ficaram numa faixa própria');
+
+            // Correr e saltar com os botões táteis: o bicho tem de avançar.
+            const rects = await page.evaluate(async () => {
+                const { buttonRects } = await import('/games/gulosinhos/js/input.js');
+                return buttonRects();
+            });
+            const center = (r) => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 });
+            const start = await page.evaluate(() => window.__arcadeGulosinhos.player.x);
+            const right = center(rects.right);
+            const jump = center(rects.jump);
+            const cdp = await page.context().newCDPSession(page);
+            const touch = (type, points) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points.map((p, id) => ({ ...p, id })) });
+            await touch('touchStart', [right]);
+            for (let i = 0; i < 5; i++) {
+                await sleep(250);
+                await touch('touchStart', [right, jump]);
+                await sleep(200);
+                await touch('touchEnd', [right]);
+            }
+            await touch('touchEnd', []);
+            const moved = await page.evaluate(() => window.__arcadeGulosinhos.player.x) - start;
+            if (moved < 4) throw new Error(`os botões táteis não fizeram o bicho andar (${moved.toFixed(1)} tiles)`);
+        }
+    },
+    {
+        slug: 'gulosinhos',
+        name: 'gulosinhos-mecanicas',
+        viewport: { width: 900, height: 450 },
+        canvas: true,
+        menuSelector: '#startScreen',
+        async play(page) {
+            // Cada mecânica num pedaço de percurso feito à medida, jogado com a
+            // física do jogo a 60 passos por segundo. Tudo dentro de um só
+            // evaluate: assim o ciclo do jogo não corre entre os passos.
+            const failures = await page.evaluate(async () => {
+                const G = '/games/gulosinhos/js/';
+                const L = await import(G + 'level.js');
+                const S = await import(G + 'state.js');
+                const W = await import(G + 'world.js');
+                const { input, releaseAll } = await import(G + 'input.js');
+                const { ROWS } = await import(G + 'config.js');
+                const out = [];
+
+                function makeWorld(cols, groundAt) {
+                    const tiles = new Uint8Array(cols * ROWS);
+                    for (let c = 0; c < cols; c++) {
+                        const top = groundAt(c);
+                        if (top === null) continue;
+                        for (let r = top; r < ROWS; r++) tiles[r * cols + c] = W.T.GROUND;
+                    }
+                    return {
+                        cols, rows: ROWS, tiles, candies: [], guards: [], plants: [], bombs: [], springs: [], movers: [],
+                        checkpoints: [], decor: [], spawn: { x: 2.5, y: 12 }, goal: { x: cols + 50, y: 12 }, par: 100, estimate: 80
+                    };
+                }
+                function setup(world, spawn = world.spawn) {
+                    L.startLevel(1);
+                    world.spawn = spawn;
+                    S.game.world = world;
+                    S.game.player = L.createPlayer(spawn);
+                    S.game.phase = 'playing';
+                    S.game.hearts = 3;
+                    releaseAll();
+                    return S.game.player;
+                }
+                function run(seconds, control, until = null) {
+                    for (let t = 0; t < seconds; t += 1 / 60) {
+                        if (until?.()) break;
+                        control?.(S.game.player, t);
+                        L.updateLevel(1 / 60);
+                        if (S.game.phase !== 'playing') break;
+                    }
+                    releaseAll();
+                }
+                const jumpAt = (edge) => {
+                    let done = false;
+                    return (p) => {
+                        input.right = true;
+                        input.jump = true;
+                        if (!done && p.x + p.w > edge) { input.jumpPressed = true; done = true; }
+                    };
+                };
+                const check = (ok, what) => { if (!ok) out.push(what); };
+                const feet = () => S.game.player.y + S.game.player.h;
+
+                // O buraco mais largo do gerador (MAX_GAP), saltado a correr.
+                let p = setup(makeWorld(40, (c) => (c >= 10 && c < 10 + W.MAX_GAP ? null : 12)));
+                run(2.5, jumpAt(9.7));
+                check(S.game.phase === 'playing' && p.x > 16, `não se salta um buraco de ${W.MAX_GAP} (x=${p.x.toFixed(1)}, ${S.game.phase})`);
+
+                // Três de buraco com o outro lado um tile acima.
+                p = setup(makeWorld(40, (c) => (c < 10 ? 12 : c < 13 ? null : 11)));
+                run(2.5, jumpAt(9.7));
+                check(S.game.phase === 'playing' && p.x > 15 && Math.abs(feet() - 11) < 0.01, 'não se salta um buraco de 3 para um degrau acima');
+
+                // O degrau mais alto (MAX_STEP_UP).
+                p = setup(makeWorld(40, (c) => (c < 10 ? 12 : 12 - W.MAX_STEP_UP)));
+                run(2, jumpAt(9.2));
+                check(p.x > 12 && Math.abs(feet() - (12 - W.MAX_STEP_UP)) < 0.01, `não se sobe um degrau de ${W.MAX_STEP_UP}`);
+
+                // Cair em cima de uma geleia pisa-a; ir contra ela custa um coração.
+                const jelly = (x) => ({ type: 'jelly', x, y: 12, minX: x, maxX: x, speed: 0, dir: 1, w: 0.9, h: 0.78, alive: true, dead: 0 });
+                let world = makeWorld(40, () => 12);
+                world.guards.push(jelly(8));
+                p = setup(world, { x: 8, y: 9 });
+                run(1);
+                check(!world.guards[0].alive && S.game.hearts === 3 && S.game.stomps === 1, 'cair em cima da geleia não a pisou');
+                world = makeWorld(40, () => 12);
+                world.guards.push(jelly(8));
+                p = setup(world);
+                run(1.5, () => { input.right = true; });
+                check(S.game.hearts === 2 && world.guards[0].alive, 'ir contra a geleia não custou um coração');
+                // O ouriço pica mesmo por cima.
+                world = makeWorld(40, () => 12);
+                world.guards.push({ ...jelly(8), type: 'hedgehog', w: 1, h: 0.72 });
+                p = setup(world, { x: 8, y: 9 });
+                run(1);
+                check(S.game.hearts === 2 && world.guards[0].alive, 'cair em cima do ouriço não picou');
+
+                // A mola atira por cima de uma parede de cinco.
+                world = makeWorld(40, (c) => (c < 8 ? 12 : 7));
+                world.springs.push({ x: 5.5, y: 12, squash: 0 });
+                p = setup(world);
+                run(3, () => { input.right = true; });
+                check(Math.abs(feet() - 7) < 0.01 && p.x > 9, `a mola não levou ao cimo da parede (x=${p.x.toFixed(1)}, pés=${feet().toFixed(2)})`);
+
+                // A bomba-relógio: chega-se perto, afasta-se, e a parede de caixotes vai toda.
+                world = makeWorld(40, () => 12);
+                for (const c of [12, 13]) for (let r = 8; r < 12; r++) world.tiles[r * world.cols + c] = W.T.CRATE;
+                world.bombs.push({ x: 10.5, y: 12, state: 'idle', timer: 0, boomT: 0, lastTick: 0 });
+                p = setup(world);
+                run(3, (pl) => { input.right = pl.x < 8.3; });
+                run(3.5, () => { input.left = true; });
+                const crates = [...world.tiles].filter((t) => t === W.T.CRATE).length;
+                check(crates === 0 && S.game.hearts === 3, `a bomba deixou ${crates} caixotes (corações: ${S.game.hearts})`);
+                run(3, () => { input.right = true; });
+                check(p.x > 15, 'depois da bomba não se passa onde estava a parede');
+                // Ficar ao pé da bomba custa um coração.
+                world = makeWorld(40, () => 12);
+                world.bombs.push({ x: 10.5, y: 12, state: 'idle', timer: 0, boomT: 0, lastTick: 0 });
+                p = setup(world, { x: 9.5, y: 12 });
+                run(3.5);
+                check(S.game.hearts === 2, 'ficar ao pé da bomba não custou um coração');
+
+                // A plataforma que vai e vem leva o bicho por cima do buraco.
+                world = makeWorld(40, (c) => (c >= 10 && c < 18 ? null : 12));
+                world.movers.push({ x: 10.15, y: 12, w: 2.5, axis: 'x', from: 10.15, to: 15.35, speed: 2.4, phase: 0, dx: 0, dy: 0 });
+                p = setup(world, { x: 9.2, y: 12 });
+                const mover = world.movers[0];
+                run(0.5, (pl) => { input.right = pl.x < 10.5; });
+                // Fica-se em cima dela até chegar ao outro lado, e salta-se para lá.
+                run(5, null, () => mover.x > mover.to - 0.01);
+                run(1.5, () => { input.right = true; });
+                check(S.game.phase === 'playing' && p.x > 18.5, `a plataforma não levou o bicho ao outro lado (x=${p.x.toFixed(1)}, ${S.game.phase})`);
+
+                // O elevador sobe até ao planalto.
+                world = makeWorld(40, (c) => (c < 3 ? 12 : c < 5 ? null : 7));
+                world.movers.push({ x: 3, y: 12, w: 2, axis: 'y', from: 12, to: 7, speed: 2.2, phase: 0, dx: 0, dy: 0 });
+                p = setup(world, { x: 1.5, y: 12 });
+                const lift = world.movers[0];
+                run(0.8, (pl) => { input.right = pl.x < 3.5; });
+                run(5, null, () => lift.y < lift.to + 0.01);
+                run(1.5, () => { input.right = true; });
+                check(S.game.phase === 'playing' && p.x > 6 && Math.abs(feet() - 7) < 0.01, `o elevador não levou ao planalto (x=${p.x.toFixed(1)}, pés=${feet().toFixed(2)})`);
+
+                // A ponte de bolachas aguenta quem passa a correr, e cai a seguir.
+                world = makeWorld(40, (c) => (c >= 10 && c < 19 ? null : 12));
+                for (let c = 10; c < 19; c++) world.tiles[12 * world.cols + c] = W.T.CRUMBLE;
+                p = setup(world);
+                run(3, () => { input.right = true; });
+                check(S.game.phase === 'playing' && p.x > 20, 'não se atravessa a ponte de bolachas a correr');
+                check(S.game.crumbles.some((item) => item.fallen), 'as bolachas não se desfizeram');
+
+                // A planta de boca aberta e os picos custam um coração cada.
+                world = makeWorld(40, () => 12);
+                world.plants.push({ x: 8.5, y: 12, phase: 0 });
+                p = setup(world, { x: 8.4, y: 12 });
+                S.game.levelClock = 2; // a meio do tempo de boca aberta
+                run(0.1);
+                check(S.game.hearts === 2, 'a planta de boca aberta não mordeu');
+                world = makeWorld(40, () => 12);
+                world.tiles[11 * world.cols + 8] = W.T.SPIKES;
+                p = setup(world);
+                run(2, () => { input.right = true; });
+                check(S.game.hearts === 2, 'os picos não picaram');
+
+                // Cair num buraco: menos um coração e de volta à última bandeira.
+                world = makeWorld(40, (c) => (c >= 10 && c < 14 ? null : 12));
+                world.checkpoints.push({ x: 6, y: 12, reached: false });
+                p = setup(world);
+                run(4, () => { input.right = true; });
+                check(S.game.phase === 'falling' && S.game.hearts === 2, `cair no buraco não custou um coração (${S.game.phase})`);
+                L.respawn();
+                check(S.game.phase === 'playing' && Math.abs(p.x + p.w / 2 - 6) < 0.01, 'não se voltou à bandeira depois de cair');
+
+                // As guloseimas apanham-se ao passar.
+                world = makeWorld(40, () => 12);
+                world.candies.push({ x: 8.5, y: 11.5, kind: 0, big: false, taken: false }, { x: 11.5, y: 11.5, kind: 0, big: true, taken: false });
+                p = setup(world);
+                run(2, () => { input.right = true; });
+                check(S.game.candies === 2 && S.game.bigCandies === 1, `apanharam-se ${S.game.candies} de 2 guloseimas`);
+
+                L.abortLevel();
+                return out;
+            });
+            if (failures.length) throw new Error(`mecânicas partidas:\n  ${failures.join('\n  ')}`);
+        }
+    },
+    {
+        slug: 'gulosinhos',
+        name: 'gulosinhos-percursos',
+        viewport: { width: 900, height: 450 },
+        canvas: true,
+        menuSelector: '#startScreen',
+        async play(page) {
+            // Os doze percursos, montados pelo gerador: cumprem as contas do
+            // salto, duram o que a receita pede e têm as guloseimas onde se chega.
+            const problems = await page.evaluate(async () => {
+                const G = '/games/gulosinhos/js/';
+                const W = await import(G + 'world.js');
+                const { LEVELS } = await import(G + 'levels.js');
+                const out = [];
+                for (const level of LEVELS) {
+                    const w = W.buildWorld(level);
+                    const say = (what) => out.push(`nível ${level.id} (${level.name}): ${what}`);
+                    if (w.estimate < 80 || w.estimate > 110) say(`dura ${w.estimate.toFixed(0)} s a correr (fora de 80–110)`);
+                    if (w.par < 90 || w.par > 130) say(`tempo-alvo de ${w.par} s`);
+                    if (w.checkpoints.length !== 2) say(`${w.checkpoints.length} bandeiras em vez de 2`);
+                    if (w.candies.length < 50) say(`só ${w.candies.length} guloseimas`);
+                    for (const c of w.candies) {
+                        const t = W.tileAt(w, Math.floor(c.x), Math.floor(c.y));
+                        if (W.isSolidTile(t) && t !== W.T.CRATE) say(`guloseima dentro do chão em (${c.x}, ${c.y})`);
+                        if (c.y < 0.5) say(`guloseima fora do céu em (${c.x}, ${c.y})`);
+                    }
+                    // O chão, coluna a coluna: degraus e buracos dentro do salto,
+                    // a não ser onde há mola, elevador, plataforma ou bolachas.
+                    const profile = W.groundProfile(w);
+                    const helped = (c0, c1) => w.springs.some((s) => s.x > c0 - 4 && s.x < c1 + 1)
+                        || w.movers.some((m) => m.x < c1 + 1 && m.x + m.w + Math.abs(m.to - m.from) > c0 - 1)
+                        || [...Array(Math.max(0, c1 - c0))].some((_, i) => [...Array(w.rows)].some((__, r) => W.tileAt(w, c0 + i, r) === W.T.CRUMBLE));
+                    let last = 0;
+                    for (let c = 1; c < w.cols; c++) {
+                        if (profile[c] >= w.rows) continue;
+                        const gap = c - last - 1;
+                        const rise = profile[last] - profile[c];
+                        if (!helped(last + 1, c)) {
+                            if (gap === 0 && rise > W.MAX_STEP_UP) say(`degrau de ${rise} na coluna ${c}`);
+                            if (gap > 0 && (gap > W.MAX_GAP || (rise >= 1 && gap > 3) || (rise >= 2 && gap > 2) || rise > 2)) say(`buraco de ${gap} (a subir ${rise}) na coluna ${c}`);
+                        }
+                        last = c;
+                    }
+                    if (!w.goal || w.goal.x >= w.cols) say('sem meta');
+                }
+                return out;
+            });
+            if (problems.length) throw new Error(`percursos com problemas:\n  ${problems.join('\n  ')}`);
+
+            // Chegar à meta acaba o nível, grava-o e abre o seguinte.
+            await page.click('#playBtn');
+            await waitForGulosinhosPlaying(page);
+            await page.evaluate(async () => {
+                const { game } = await import('/games/gulosinhos/js/state.js');
+                const p = game.player;
+                p.x = game.world.goal.x - 2;
+                p.y = game.world.goal.y - p.h;
+            });
+            await page.keyboard.down('ArrowRight');
+            await page.waitForSelector('#nextLevelBtn', { timeout: 8000 });
+            await page.keyboard.up('ArrowRight');
+            const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('gulosinhosProgress_v1') || '{}'));
+            if (saved.unlocked !== 2) throw new Error(`o nível 2 não ficou desbloqueado (unlocked=${saved.unlocked})`);
+            if (!(saved.levels?.['1']?.stars >= 1)) throw new Error('a marca do nível 1 não ficou gravada');
+
+            // Os níveis: doze, em páginas, o 2 já aberto.
+            await page.click('#levelsBtn');
+            await page.waitForSelector('.levelCard');
+            await sleep(500);
+            const cards = await page.$$eval('.levelCard', (els) => els.map((el) => el.classList.contains('is-locked')));
+            if (cards.length !== 12) throw new Error(`${cards.length} níveis em vez de 12`);
+            if (cards[0] || cards[1] || !cards[2]) throw new Error('os níveis abertos não batem certo com o progresso');
+            await page.click('.levelCard[data-value="2"]');
+            await waitForGulosinhosPlaying(page);
+
+            // Pausa: o relógio pára; continuar retoma.
+            await page.click('#pauseBtn');
+            const frozen = await page.evaluate(() => window.__arcadeGulosinhos.elapsed);
+            await sleep(600);
+            if (await page.evaluate(() => window.__arcadeGulosinhos.elapsed) !== frozen) throw new Error('o relógio andou em pausa');
+            await page.click('#resumeBtn');
+            await sleep(400);
+        }
+    },
+    {
         slug: 'pixel-racing',
         name: 'pixel-racing-resultados',
         viewport: { width: 800, height: 450 },
@@ -1429,6 +1737,18 @@ async function tapPlaceable(page, kind, { touch = false } = {}) {
  *
  * Devolve false se o jogo nem sequer traz o ecrã de arranque no markup.
  */
+/**
+ * Gulosinhos: espera que a contagem acabe e o nível comece, e deixa o estado
+ * numa global para os predicados síncronos (ver a nota do `waitForRacing`).
+ */
+async function waitForGulosinhosPlaying(page) {
+    await page.evaluate(async () => {
+        const { game } = await import('/games/gulosinhos/js/state.js');
+        window.__arcadeGulosinhos = game;
+    });
+    await page.waitForFunction(() => window.__arcadeGulosinhos && window.__arcadeGulosinhos.phase === 'playing', undefined, { timeout: 20000 });
+}
+
 async function waitForSplash(page) {
     if (!(await page.$('#arcadeSplash'))) return false;
     await page.waitForSelector('#arcadeSplash', { state: 'hidden', timeout: SPLASH_TIMEOUT_MS });
@@ -1452,7 +1772,10 @@ async function canvasHasContent(page) {
 
 async function runGame(browser, game, baseUrl) {
     const problems = [];
-    const context = await browser.newContext({ viewport: game.viewport, deviceScaleFactor: 1 });
+    // `touch`: um telemóvel a sério (ecrã tátil), para os jogos que mudam com isso.
+    const context = await browser.newContext({
+        viewport: game.viewport, deviceScaleFactor: 1, ...(game.touch ? { hasTouch: true, isMobile: true } : {})
+    });
     await context.addInitScript(SEED_RANDOM);
     // Estado que o jogo já devia ter encontrado no aparelho — por exemplo o
     // progresso que abre os níveis de um jogo com níveis. Tem de ser escrito
