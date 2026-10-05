@@ -912,12 +912,10 @@ fim da lista**, senão as gravações antigas trocam os edifícios uns pelos out
 
 ## Memória Animal
 
-> **Em testes.** No catálogo aparece como "Em breve" (`IsPlayable: false` em
-> `ArcadeCatalog.cs`), mas joga-se indo direto a `/games/memoria-animal/` (ou
-> com o toque duplo de três dedos no cartão, ver `secret-play.js`). O painel
-> das pontuações está comentado em `Pontuacoes.razor`; as pontuações já são
-> guardadas. Para lançar: `IsPlayable` fora, o painel de volta e o `ABOUT` do
-> `js/config.js` (e a versão no catálogo) a `1.0.0`, sem o `status`.
+> **Versão 1.0.0, lançada a 5 de outubro de 2026.** Esteve em testes desde 26
+> de setembro, fora do catálogo (ver a nota do [Terras do Reino](#terras-do-reino)).
+> As pontuações desse período já estavam a ser guardadas e aparecem no quadro
+> desde o lançamento.
 
 O jogo da memória de sempre, com animais: as cartas estão viradas para baixo,
 viram-se duas de cada vez e, se forem iguais, o par fica à vista. É o primeiro

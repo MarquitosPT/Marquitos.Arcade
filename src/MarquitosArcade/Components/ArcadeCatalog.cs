@@ -60,11 +60,9 @@ public static class ArcadeCatalog
             "🐮",
             "theme-memoria",
             "/covers/memoria-animal.webp",
-            "0.9.0",
-            new(2026, 9, 26),
-            // Em testes: fica "Em breve" no catálogo, mas joga-se em
-            // /games/memoria-animal/ para quem lá for direto.
-            IsPlayable: false),
+            "1.0.0",
+            new(2026, 10, 5),
+            Badge: "Novo"),
 
         new("terras-do-reino",
             "Terras do Reino",
@@ -85,8 +83,7 @@ public static class ArcadeCatalog
             "theme-maze",
             "/covers/maze-run.webp",
             "1.0.0",
-            new(2026, 9, 19),
-            Badge: "Novo"),
+            new(2026, 9, 19)),
 
         new("pixel-racing",
             "Pixel Racing",
