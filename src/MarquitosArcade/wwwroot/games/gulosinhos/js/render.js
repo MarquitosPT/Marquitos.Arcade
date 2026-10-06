@@ -48,6 +48,31 @@ export function render() {
     const oy = Math.round(-game.camera.y * T + sy);
     const clock = game.globalClock;
 
+    const levelClock = game.world ? game.levelClock : clock;
+    const { px, py } = drawWorld(ctx, { world, level, theme, W, bottom, ox, oy, T, clock, levelClock, dpr: view.dpr });
+
+    drawPlayer(ctx, px, py, T, clock);
+    drawParticles(ctx, px, py, T);
+    drawWeather(ctx, theme, W, bottom, clock);
+    ctx.restore();
+
+    if (game.phase === 'menu') return;
+    drawHud(ctx, W);
+    drawTouchControls(ctx, W, H);
+    drawCenterText(ctx, W, bottom, T);
+    if (game.phase === 'falling') {
+        ctx.fillStyle = `rgba(20, 10, 30, ${0.5 * (1 - game.holdTimer / 0.8)})`;
+        ctx.fillRect(0, 0, W, H);
+    }
+}
+
+/**
+ * O mundo sem o bicho, as partículas e o tempo que faz: céu, colinas,
+ * enfeites, tiles e tudo o que lá está. Deixa o recorte (`clip`) aberto — quem
+ * chama desenha o resto por cima e fecha-o. Serve ao jogo e às miniaturas dos
+ * cartões de nível (`paintLevelShot`).
+ */
+function drawWorld(ctx, { world, level, theme, W, bottom, ox, oy, T, clock, levelClock, dpr, snapshot = false }) {
     drawBackground(ctx, theme, W, bottom, ox, oy, T, clock);
 
     ctx.save();
@@ -69,11 +94,11 @@ export function render() {
         if (visible(cp.x)) drawCheckpoint(ctx, cp, px(cp.x), py(cp.y), T, clock, level.accent);
     }
 
-    drawTiles(ctx, world, theme, level.theme, T, ox, oy, view, bottom);
+    drawTiles(ctx, world, theme, level.theme, T, ox, oy, { width: W, dpr }, bottom);
 
-    const levelClock = game.world ? game.levelClock : clock;
     for (const plant of world.plants) {
-        if (visible(plant.x)) drawPlant(ctx, px(plant.x), py(plant.y), T, plantExtension(plant, levelClock), PLANT_HEIGHT, clock);
+        const ext = snapshot ? 1 : plantExtension(plant, levelClock);
+        if (visible(plant.x)) drawPlant(ctx, px(plant.x), py(plant.y), T, ext, PLANT_HEIGHT, clock);
     }
     for (const spring of world.springs) {
         if (visible(spring.x)) drawSpring(ctx, spring, px(spring.x), py(spring.y), T);
@@ -82,33 +107,59 @@ export function render() {
         if (visible(m.x) || visible(m.x + m.w)) drawMover(ctx, m, px(m.x), py(m.y), m.w * T, T, theme);
     }
     for (const bomb of world.bombs) {
-        if (visible(bomb.x)) drawBomb(ctx, bomb, px(bomb.x), py(bomb.y), T, clock);
+        // Na miniatura, a bomba já a contar: é assim que se reconhece.
+        const shown = snapshot ? { ...bomb, state: 'armed', timer: 2.6 } : bomb;
+        if (visible(bomb.x)) drawBomb(ctx, shown, px(bomb.x), py(bomb.y), T, clock);
     }
     for (const candy of world.candies) {
         if (!candy.taken && visible(candy.x)) drawCandy(ctx, candy, px(candy.x), py(candy.y), T, clock);
     }
-    const player = game.player;
+    const player = snapshot ? null : game.player;
     for (const g of world.guards) {
         if (!visible(g.x)) continue;
         const facing = g.type === 'bee' ? (player && player.x + player.w / 2 < g.x ? -1 : 1) : g.dir;
         drawGuard(ctx, g, px(g.x), py(g.y), T, clock, facing);
     }
 
-    drawPlayer(ctx, px, py, T, clock);
-    drawParticles(ctx, px, py, T);
+    return { px, py };
+}
 
-    if (theme.snow) drawSnow(ctx, W, bottom, clock);
-    if (theme.night) drawCaveShade(ctx, W, bottom);
+/** A chuva de neve e a sombra das grutas, por cima de tudo o que é do mundo. */
+function drawWeather(ctx, theme, W, H, clock) {
+    if (theme.snow) drawSnow(ctx, W, H, clock);
+    if (theme.night) drawCaveShade(ctx, W, H);
+}
+
+/**
+ * Uma miniatura do nível num canvas, centrada em (`focusX`, `groundY`), em
+ * tiles: o mesmo desenho do jogo, em ponto pequeno, com as plantas de boca
+ * aberta e as bombas a contar. É a imagem dos cartões de nível (js/menu.js).
+ */
+export function paintLevelShot(canvas, world, level, focusX, groundY) {
+    const dpr = window.devicePixelRatio || 1;
+    const W = canvas.clientWidth;
+    const H = canvas.clientHeight;
+    if (!W || !H) return;
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    // Seis tiles e meio de alto: o desafio vê-se bem, com o chão em baixo e
+    // um bocado de céu por cima.
+    const T = Math.max(6, Math.round(H / 6.5));
+    const cols = W / T;
+    const rows = H / T;
+    const camX = Math.max(0, Math.min(world.cols - cols, focusX - cols / 2));
+    const camY = Math.max(-2, Math.min(ROWS - rows, groundY - rows * 0.75));
+    const theme = THEMES[level.theme];
+    drawWorld(ctx, {
+        world, level, theme, W, bottom: H, ox: Math.round(-camX * T), oy: Math.round(-camY * T),
+        T, clock: 0.6, levelClock: 0, dpr, snapshot: true
+    });
+    // A neve não: os flocos têm tamanho de ecrã, e numa miniatura eram bolas.
+    if (theme.night) drawCaveShade(ctx, W, H);
     ctx.restore();
-
-    if (game.phase === 'menu') return;
-    drawHud(ctx, W);
-    drawTouchControls(ctx, W, H);
-    drawCenterText(ctx, W, bottom, T);
-    if (game.phase === 'falling') {
-        ctx.fillStyle = `rgba(20, 10, 30, ${0.5 * (1 - game.holdTimer / 0.8)})`;
-        ctx.fillRect(0, 0, W, H);
-    }
 }
 
 // ---------- O fundo ----------
@@ -136,7 +187,9 @@ function drawBackground(ctx, theme, W, H, ox, oy, T, clock) {
 
     if (theme.night) {
         // Pontinhos a cintilar no teto da gruta.
-        for (let i = 0; i < 40; i++) {
+        // Tantos quantos cabem: numa miniatura, quarenta faziam riscas.
+        const stars = Math.min(40, Math.round((W * H) / 9000));
+        for (let i = 0; i < stars; i++) {
             const x = ((i * 137.5 + ox * 0.1) % (W + 40) + W + 40) % (W + 40) - 20;
             const y = ((i * 71) % 100) / 100 * H * 0.6;
             ctx.fillStyle = `rgba(255, 240, 200, ${0.25 + 0.35 * Math.abs(Math.sin(clock * 1.5 + i))})`;

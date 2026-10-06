@@ -1062,6 +1062,15 @@ node gulosinhos-bot.mjs           # os doze níveis
 node gulosinhos-bot.mjs 3,7       # só alguns
 ```
 
+**Os cartões dos níveis mostram o próprio nível** em ponto pequeno: uma
+miniatura desenhada num canvas pelo mesmo código do jogo (`paintLevelShot` em
+`js/render.js`), apontada ao primeiro sítio do percurso onde aparece o desafio
+que o nível apresenta — a planta do Pomar, a parede de caixotes do Bosque, o
+elevador da Gruta —, com as plantas de boca aberta e as bombas a contar. Onde
+apontar sai do registo dos troços que o gerador deixa no mundo (`segments`) e
+da tabela `FEATURE_SEGMENTS` do `js/menu.js`. São canvas e não imagens, por
+isso o carrossel volta a pintá-las sempre que refaz as páginas (o `onRender`).
+
 ### Os desafios
 
 | desafio            | o que faz                                                                  | na receita  |

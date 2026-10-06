@@ -14,10 +14,10 @@ import { layoutView, snapCamera } from './camera.js';
 import { ANIMAL_STORAGE_KEY, MAX_STARS } from './config.js';
 import { fmtPoints, fmtTime } from './format.js';
 import { prepareWorld } from './level.js';
+import { paintLevelShot } from './render.js';
 import { LEVELS, levelById, levelCount } from './levels.js';
 import { bestOf, isUnlocked, progress, totalScore, totalStars, unlockedCount } from './progress.js';
 import { game, session } from './state.js';
-import { THEMES } from './themes.js';
 import { els, overlays } from './ui.js';
 import { groundProfile } from './world.js';
 
@@ -49,33 +49,53 @@ function worldFor(level) {
 }
 
 /**
- * O perfil do percurso no cartão: o chão de uma ponta à outra, com os buracos
- * à vista. É o percurso que se vai jogar, e não uma ilustração.
+ * Os troços (ver SEGMENTS em world.js) onde aparece cada desafio, pela ordem
+ * de preferência, e a quantos tiles do início do troço ele está.
  */
-function profileSvg(level, { locked }) {
+const FEATURE_SEGMENTS = {
+    jelly: [['jelly', 6], ['ledge', 6]],
+    hedgehog: [['hedgehog', 6]],
+    bees: [['bees', 5]],
+    plants: [['plants', 5]],
+    bombs: [['bombWall', 5], ['bombAlley', 6]],
+    spikes: [['spikes', 4]],
+    pillars: [['pillars', 4]],
+    springs: [['spring', 4]],
+    lifts: [['lift', 4]],
+    movers: [['mover', 4]],
+    crumble: [['crumble', 4]]
+};
+
+/**
+ * Onde apontar a miniatura de um nível: o primeiro sítio do percurso com o
+ * desafio que o nível apresenta (o primeiro do `focus`), para o cartão mostrar
+ * o que há de novo lá dentro, centrado onde está o guardião, a planta ou a bomba.
+ */
+function shotFocus(level) {
     const world = worldFor(level);
-    const profile = groundProfile(world);
-    const rows = world.rows;
-    let d = '';
-    let open = false;
-    profile.forEach((top, c) => {
-        if (top >= rows) {
-            if (open) d += `L${c} ${rows}Z`;
-            open = false;
-            return;
+    for (const feature of level.focus || []) {
+        for (const [name, offset] of FEATURE_SEGMENTS[feature] || []) {
+            const seg = world.segments.find((sg) => sg.name === name);
+            if (seg) return { x: seg.x + offset, y: groundBelow(world, seg.x + offset) };
         }
-        d += open ? `L${c} ${top}L${c + 1} ${top}` : `M${c} ${rows}L${c} ${top}L${c + 1} ${top}`;
-        open = true;
-    });
-    if (open) d += `L${profile.length} ${rows}Z`;
-    const theme = THEMES[level.theme];
-    // Só a faixa de baixo do mundo interessa: lá em cima é céu.
-    const top = 3;
-    return `<svg class="routeShape${locked ? ' is-locked' : ''}" viewBox="0 ${top} ${world.cols} ${rows - top}"
-        preserveAspectRatio="none" aria-hidden="true"
-        style="--sky-a: ${theme.sky[0]}; --sky-b: ${theme.sky[1]}; --ground: ${theme.grass}; --level-accent: ${level.accent}">
-        <path class="routeGround" d="${d}"></path>
-    </svg>`;
+    }
+    return { x: world.spawn.x + 5, y: world.spawn.y };
+}
+
+/** A linha do chão debaixo de uma coluna — ou, num buraco, a do último chão antes dele. */
+function groundBelow(world, x) {
+    const profile = groundProfile(world);
+    for (let c = Math.floor(x); c >= 0; c--) if (profile[c] < world.rows) return profile[c];
+    return world.spawn.y;
+}
+
+/** Pinta as miniaturas dos cartões que estão no carrossel. */
+function paintShots(track) {
+    for (const canvas of track.querySelectorAll('.levelShot')) {
+        const level = levelById(canvas.dataset.level);
+        const focus = shotFocus(level);
+        paintLevelShot(canvas, worldFor(level), level, focus.x, focus.y);
+    }
 }
 
 function starRow(stars) {
@@ -118,7 +138,7 @@ function levelCard(level) {
     return `<button type="button" class="levelCard${unlocked ? '' : ' is-locked'}"
         data-value="${level.id}" aria-label="${escapeHtml(label)}" style="--card-accent: ${level.accent}">
         <span class="levelShape">
-            ${profileSvg(level, { locked: !unlocked })}
+            <canvas class="levelShot${unlocked ? '' : ' is-locked'}" data-level="${level.id}" aria-hidden="true"></canvas>
             ${unlocked ? '' : '<span class="levelLock" aria-hidden="true">🔒</span>'}
         </span>
         <span class="levelInfo">
@@ -149,7 +169,15 @@ export function createMenu({ playerName, onPlay }) {
         prev: els.prevPageBtn,
         next: els.nextPageBtn,
         dots: els.levelDots
-    }, { pageClass: 'levelPage', onRender: markSelected });
+    }, {
+        pageClass: 'levelPage',
+        // As miniaturas são canvas: perdem-se sempre que o carrossel refaz as
+        // páginas (ao rodar o aparelho), e é aqui que se voltam a pintar.
+        onRender(track) {
+            markSelected();
+            paintShots(track);
+        }
+    });
 
     // ---------- O bicho ----------
 
