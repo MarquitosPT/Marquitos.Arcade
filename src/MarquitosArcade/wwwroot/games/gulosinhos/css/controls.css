@@ -204,9 +204,8 @@ button { cursor: pointer; }
 }
 
 /*
- * A caixa do percurso tem proporção fixa, e não a do percurso que lá está
- * dentro: os níveis têm todos o mesmo comprido (mais coisa, menos coisa), mas
- * sem isto bastava um nível um pouco mais curto para a fila ficar torta.
+ * A caixa da miniatura tem proporção fixa: é o que dá a todos os cartões de
+ * uma fila a mesma altura.
  */
 .levelShape {
     position: relative;
@@ -218,22 +217,17 @@ button { cursor: pointer; }
 }
 
 /*
- * O perfil do percurso: o céu do cenário e o chão do nível de uma ponta à
- * outra, com os buracos à vista. As cores vêm do cenário, escritas no
- * elemento pelo JS (js/menu.js).
+ * A miniatura do nível: o próprio jogo em ponto pequeno, no sítio onde aparece
+ * o desafio que o nível apresenta (js/menu.js), desenhada num canvas pelo
+ * mesmo código do jogo (`paintLevelShot` em js/render.js).
  */
-.routeShape {
+.levelShot {
     display: block;
     width: 100%;
     height: 100%;
-    background: linear-gradient(180deg, var(--sky-a), var(--sky-b));
 }
 
-.routeShape .routeGround {
-    fill: var(--level-accent, var(--accent));
-}
-
-.routeShape.is-locked {
+.levelShot.is-locked {
     filter: grayscale(0.85) brightness(0.6);
 }
 
@@ -345,7 +339,7 @@ button { cursor: pointer; }
  * Telemóvel: os cartões encolhem para caberem quatro por página ao alto (ou uma
  * fila de três ao comprido) sem o painel ter de rolar. É o texto que encolhe.
  * Deitado, a caixa do percurso passa a ser mais larga do que alta: é a altura
- * que falta, e o perfil estica-se para a encher (`preserveAspectRatio="none"`).
+ * que falta, e a miniatura mostra mais caminho para os lados.
  */
 @media (orientation: landscape) and (max-height: 600px) {
     .levelShape { aspect-ratio: 16 / 9; }

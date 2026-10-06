@@ -631,7 +631,7 @@ export function setTile(world, c, r, t) {
 
 /**
  * O perfil do chão: para cada coluna, a linha do primeiro tile sólido, ou
- * `rows` onde há buraco. É o que os cartões do menu desenham.
+ * `rows` onde há buraco. É por ele que as miniaturas do menu acham o chão.
  */
 export function groundProfile(world) {
     const profile = new Array(world.cols);

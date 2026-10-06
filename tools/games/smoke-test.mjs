@@ -1465,6 +1465,11 @@ const GAMES = [
             const cards = await page.$$eval('.levelCard', (els) => els.map((el) => el.classList.contains('is-locked')));
             if (cards.length !== 12) throw new Error(`${cards.length} níveis em vez de 12`);
             if (cards[0] || cards[1] || !cards[2]) throw new Error('os níveis abertos não batem certo com o progresso');
+            // As miniaturas da página à vista estão pintadas (são canvas, não imagens).
+            const blankShots = await page.$$eval('.levelPage .levelShot', (shots) => shots
+                .filter((c) => c.getBoundingClientRect().left >= 0 && c.getBoundingClientRect().right <= innerWidth)
+                .filter((c) => !c.width || !c.getContext('2d').getImageData(c.width / 2, c.height / 2, 1, 1).data[3]).length);
+            if (blankShots) throw new Error(`${blankShots} miniatura(s) de nível por pintar`);
             await page.click('.levelCard[data-value="2"]');
             await waitForGulosinhosPlaying(page);
 

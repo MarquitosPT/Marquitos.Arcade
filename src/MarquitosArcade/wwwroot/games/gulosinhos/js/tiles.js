@@ -5,16 +5,34 @@
 // tile e por densidade de píxeis) e depois só se carimba com `drawImage` — um
 // ecrã cheio são umas centenas de tiles por fotograma, e repintar cada um com
 // caminhos vetoriais custava mais do que o resto do jogo junto.
+//
+// Há um jogo de carimbos por cenário e tamanho, e vários ao mesmo tempo: as
+// miniaturas dos cartões de nível desenham doze cenários em ponto pequeno,
+// e não podem deitar fora os do jogo, que está a ser desenhado por trás.
 
 import { crumbleShake } from './level.js';
 import { roundRect } from './sprites.js';
 import { T, isSolidTile, tileAt } from './world.js';
 
-const cache = new Map();
-let cacheFor = '';
+/** Os jogos de carimbos, do mais antigo para o mais recente. */
+const sets = new Map();
+const MAX_SETS = 16;
+let cache = null;
 
-function sprite(name, size, dpr, paint) {
-    const key = name;
+function useSet(key) {
+    cache = sets.get(key);
+    if (cache) {
+        // Volta ao fim da fila: é o mais recente.
+        sets.delete(key);
+        sets.set(key, cache);
+        return;
+    }
+    cache = new Map();
+    sets.set(key, cache);
+    if (sets.size > MAX_SETS) sets.delete(sets.keys().next().value);
+}
+
+function sprite(key, size, dpr, paint) {
     let canvas = cache.get(key);
     if (canvas) return canvas;
     canvas = document.createElement('canvas');
@@ -146,11 +164,7 @@ function paintSpikes(ctx, s) {
 /** Desenha os tiles à vista. `ox`, `oy`: onde fica o canto (0, 0) do mundo no ecrã. */
 export function drawTiles(ctx, world, theme, themeName, T_, ox, oy, view, bottom) {
     const dpr = view.dpr;
-    const key = `${themeName}|${T_}|${dpr}`;
-    if (key !== cacheFor) {
-        cache.clear();
-        cacheFor = key;
-    }
+    useSet(`${themeName}|${T_}|${dpr}`);
     const s = T_;
     const c0 = Math.max(0, Math.floor(-ox / s));
     const c1 = Math.min(world.cols - 1, Math.ceil((view.width - ox) / s));
