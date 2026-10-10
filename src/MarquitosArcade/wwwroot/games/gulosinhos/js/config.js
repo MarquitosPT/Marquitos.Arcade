@@ -15,8 +15,8 @@ export const ABOUT = {
     title: 'Gulosinhos',
     emoji: '🍭',
     tagline: 'Plataformas · Guloseimas · Corrida',
-    version: '0.9.0',
-    published: '2026-10-05'
+    version: '1.0.0',
+    published: '2026-10-10'
 };
 export const NAME_STORAGE_KEY = 'gulosinhosPlayerName_v1';
 export const PROGRESS_STORAGE_KEY = 'gulosinhosProgress_v1';
