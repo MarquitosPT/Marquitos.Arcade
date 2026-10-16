@@ -946,7 +946,7 @@ const GAMES = [
                     const expectedCost = after.cost[kind]?.coins;
                     if (!Number.isFinite(expectedCost)) throw new Error(`o custo de limpar (${kind}) não está configurado`);
                     if (after.res.coins !== before.res.coins - expectedCost) throw new Error(`limpar (${kind}) não cobrou o custo certo`);
-                    if (after.res.wood > (before.res.wood ?? 0) || after.res.stone > (before.res.stone ?? 0)) {
+                    if ((after.res.wood ?? 0) > (before.res.wood ?? 0) || (after.res.stone ?? 0) > (before.res.stone ?? 0)) {
                         throw new Error(`limpar (${kind}) deu madeira ou pedra`);
                     }
                     cleared.push(spot.y * 88 + spot.x);
