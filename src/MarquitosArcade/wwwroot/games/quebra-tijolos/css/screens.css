@@ -17,10 +17,6 @@
     backdrop-filter: blur(20px);
 }
 
-#startScreen {
-    display: flex;
-}
-
 .panel {
     width: min(100%, 440px);
     margin: auto;

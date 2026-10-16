@@ -189,6 +189,11 @@
     .carouselDots {
         justify-content: flex-start;
     }
+
+    .levelsCarousel.is-single {
+        grid-template-columns: 1fr;
+        grid-template-areas: "pages";
+    }
 }
 
 @media (orientation: landscape) and (max-height: 700px) {
