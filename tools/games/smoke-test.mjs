@@ -933,7 +933,9 @@ const GAMES = [
                         const { game } = await import('/games/terras-do-reino/js/state.js');
                         const { CLEAR_COST } = await import('/games/terras-do-reino/js/config.js');
                         game.paused = true;
-                        return {
+                        const button = document.querySelector('#sheetBody [data-action="clear"]');
+                        if (!(button instanceof HTMLButtonElement)) throw new Error('não apareceu o botão de limpar');
+                        const snapshot = {
                             res: {
                                 coins: game.res.coins ?? 0,
                                 wood: game.res.wood ?? 0,
@@ -941,8 +943,9 @@ const GAMES = [
                             },
                             cost: CLEAR_COST
                         };
+                        button.click();
+                        return snapshot;
                     });
-                    await page.click('#sheetBody [data-action="clear"]');
                     const after = await page.evaluate(async ({ x, y }) => {
                         const G = '/games/terras-do-reino/js/';
                         const { game } = await import(G + 'state.js');
