@@ -27,6 +27,7 @@ import { scores } from './scores.js';
 import { game, session } from './state.js';
 
 const MIN_PADDLE_WIDTH = 72;
+const REFERENCE_FRAME_WIDTH = 540;
 
 function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
@@ -121,7 +122,7 @@ function fitPaddle() {
     const layout = game.layout;
     if (!layout) return;
     const baseWidth = game.level?.paddleWidth || 130;
-    const scale = layout.frame.width / 540;
+    const scale = layout.frame.width / REFERENCE_FRAME_WIDTH;
     const maxWidth = Math.max(MIN_PADDLE_WIDTH, Math.min(baseWidth, Math.floor(layout.inner.width * 0.42)));
     const width = clamp(
         Math.round(baseWidth * scale),

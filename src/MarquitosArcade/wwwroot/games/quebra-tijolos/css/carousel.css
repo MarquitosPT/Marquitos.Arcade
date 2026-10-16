@@ -29,9 +29,9 @@
     flex: 0 0 100%;
     display: grid;
     grid-template-columns: repeat(var(--page-cols), minmax(0, 1fr));
+    grid-template-rows: repeat(var(--page-rows), minmax(0, 1fr));
     align-content: start;
     gap: 12px;
-    grid-auto-rows: 1fr;
 }
 
 .carouselArrow {
