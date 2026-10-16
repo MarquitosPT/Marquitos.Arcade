@@ -933,7 +933,14 @@ const GAMES = [
                         const { game } = await import('/games/terras-do-reino/js/state.js');
                         const { CLEAR_COST } = await import('/games/terras-do-reino/js/config.js');
                         game.paused = true;
-                        return { res: { ...game.res }, cost: CLEAR_COST };
+                        return {
+                            res: {
+                                coins: game.res.coins ?? 0,
+                                wood: game.res.wood ?? 0,
+                                stone: game.res.stone ?? 0
+                            },
+                            cost: CLEAR_COST
+                        };
                     });
                     await page.click('#sheetBody [data-action="clear"]');
                     const after = await page.evaluate(async ({ x, y }) => {
