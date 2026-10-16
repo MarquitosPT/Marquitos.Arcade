@@ -30,29 +30,3 @@
     display: grid;
     gap: 10px;
 }
-
-@media (orientation: landscape) and (max-height: 700px) {
-    .screen {
-        padding-top: 74px;
-        align-items: start;
-    }
-
-    .panel {
-        max-height: calc(100vh - 96px);
-        overflow: auto;
-    }
-}
-
-@media (max-width: 720px) {
-    .levelsCarousel {
-        grid-template-columns: 1fr;
-    }
-
-    .carouselArrow {
-        display: none;
-    }
-
-    .levelPage {
-        grid-template-columns: 1fr;
-    }
-}

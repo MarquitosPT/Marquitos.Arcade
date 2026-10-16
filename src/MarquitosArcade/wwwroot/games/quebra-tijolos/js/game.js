@@ -118,7 +118,14 @@ export function abortLevel() {
 function fitPaddle() {
     const layout = game.layout;
     if (!layout) return;
-    const width = game.level?.paddleWidth || 130;
+    const baseWidth = game.level?.paddleWidth || 130;
+    const scale = layout.frame.width / 540;
+    const maxWidth = Math.max(72, Math.min(baseWidth, Math.floor(layout.inner.width * 0.42)));
+    const width = clamp(
+        Math.round(baseWidth * scale),
+        72,
+        maxWidth
+    );
     game.paddle.width = width;
     if (!Number.isFinite(game.paddle.x) || game.paddle.x === 0) {
         game.paddle.x = layout.inner.x + (layout.inner.width - width) / 2;
