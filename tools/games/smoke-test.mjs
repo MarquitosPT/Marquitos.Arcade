@@ -929,34 +929,36 @@ const GAMES = [
                 }, kind);
                 if (!spot) throw new Error(`não há nenhum(a) ${kind} para limpar no território`);
                 try {
-                    const before = await page.evaluate(async () => {
+                    const result = await page.evaluate(async ({ x, y, kind }) => {
                         const { game } = await import('/games/terras-do-reino/js/state.js');
                         const { CLEAR_COST } = await import('/games/terras-do-reino/js/config.js');
                         game.paused = true;
                         const button = document.querySelector('#sheetBody [data-action="clear"]');
                         if (!(button instanceof HTMLButtonElement)) throw new Error('não apareceu o botão de limpar');
-                        const snapshot = {
-                            res: {
-                                coins: game.res.coins ?? 0,
-                                wood: game.res.wood ?? 0,
-                                stone: game.res.stone ?? 0
-                            },
-                            cost: CLEAR_COST
+                        const before = {
+                            coins: game.res.coins ?? 0,
+                            wood: game.res.wood ?? 0,
+                            stone: game.res.stone ?? 0
                         };
                         button.click();
-                        return snapshot;
-                    });
-                    const after = await page.evaluate(async ({ x, y }) => {
-                        const G = '/games/terras-do-reino/js/';
-                        const { game } = await import(G + 'state.js');
-                        // Um rochedo numa colina deixa a colina: o que conta é a casa ficar sem nada em cima.
-                        return { free: game.world.feature[y * 88 + x] === null, res: { ...game.res } };
-                    }, spot);
-                    if (!after.free) throw new Error(`a casa ${spot.x},${spot.y} (${kind}) não ficou limpa`);
-                    const expectedCost = before.cost[kind]?.coins;
+                        return {
+                            before,
+                            after: {
+                                free: game.world.feature[y * 88 + x] === null,
+                                res: {
+                                    coins: game.res.coins ?? 0,
+                                    wood: game.res.wood ?? 0,
+                                    stone: game.res.stone ?? 0
+                                }
+                            },
+                            expectedCost: CLEAR_COST[kind]?.coins
+                        };
+                    }, { ...spot, kind });
+                    if (!result.after.free) throw new Error(`a casa ${spot.x},${spot.y} (${kind}) não ficou limpa`);
+                    const expectedCost = result.expectedCost;
                     if (!Number.isFinite(expectedCost)) throw new Error(`o custo de limpar (${kind}) não está configurado`);
-                    if (after.res.coins !== before.res.coins - expectedCost) throw new Error(`limpar (${kind}) não cobrou o custo certo`);
-                    if ((after.res.wood ?? 0) > (before.res.wood ?? 0) || (after.res.stone ?? 0) > (before.res.stone ?? 0)) {
+                    if (result.after.res.coins !== result.before.coins - expectedCost) throw new Error(`limpar (${kind}) não cobrou o custo certo`);
+                    if (result.after.res.wood > result.before.wood || result.after.res.stone > result.before.stone) {
                         throw new Error(`limpar (${kind}) deu madeira ou pedra`);
                     }
                     cleared.push(spot.y * 88 + spot.x);
