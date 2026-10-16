@@ -932,7 +932,7 @@ const GAMES = [
                     const before = await page.evaluate(async () => {
                         const { game } = await import('/games/terras-do-reino/js/state.js');
                         game.paused = true;
-                        return { ...game.res };
+                        return { res: { ...game.res } };
                     });
                     await page.click('#sheetBody [data-action="clear"]');
                     const after = await page.evaluate(async ({ x, y }) => {
@@ -945,8 +945,8 @@ const GAMES = [
                     if (!after.free) throw new Error(`a casa ${spot.x},${spot.y} (${kind}) não ficou limpa`);
                     const expectedCost = after.cost[kind]?.coins;
                     if (!Number.isFinite(expectedCost)) throw new Error(`o custo de limpar (${kind}) não está configurado`);
-                    if (after.res.coins !== before.coins - expectedCost) throw new Error(`limpar (${kind}) não cobrou o custo certo`);
-                    if (after.res.wood > (before.wood ?? 0) || after.res.stone > (before.stone ?? 0)) {
+                    if (after.res.coins !== before.res.coins - expectedCost) throw new Error(`limpar (${kind}) não cobrou o custo certo`);
+                    if (after.res.wood > (before.res.wood ?? 0) || after.res.stone > (before.res.stone ?? 0)) {
                         throw new Error(`limpar (${kind}) deu madeira ou pedra`);
                     }
                     cleared.push(spot.y * 88 + spot.x);
