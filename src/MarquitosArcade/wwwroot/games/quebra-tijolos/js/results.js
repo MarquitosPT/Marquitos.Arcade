@@ -1,6 +1,6 @@
 import { escapeHtml } from '/lib/arcade/index.js';
 
-import { MAX_STARS } from './config.js';
+import { LIVES, MAX_STARS } from './config.js';
 import { fmtPoints, fmtTime } from './format.js';
 import { levelById, levelCount } from './levels.js';
 import { bestOf, totalScore } from './progress.js';
@@ -23,7 +23,7 @@ function statTable(rows) {
 function checklist(result, level) {
     const items = [
         [true, 'Limpar a muralha'],
-        [result.livesLeft === 3, 'Guardar as 3 vidas'],
+        [result.livesLeft === LIVES, `Guardar as ${LIVES} vidas`],
         [result.ms <= level.targetMs, `Dentro do alvo (${fmtTime(level.targetMs)})`]
     ];
     return `<ul class="starChecklist">${items.map(([ok, text]) => `<li class="${ok ? 'ok' : ''}"><i aria-hidden="true">${ok ? '★' : '☆'}</i>${escapeHtml(text)}</li>`).join('')}</ul>`;
@@ -60,7 +60,7 @@ function renderCleared(result) {
     }
 
     html += `<div class="resultActions">
-        ${hasNext ? `<button class="btn" id="nextLevelBtn" type="button">Nível ${nextId} →</button>` : '<div class="sectionLabel">Já limpaste as 48 muralhas.</div>'}
+        ${hasNext ? `<button class="btn" id="nextLevelBtn" type="button">Nível ${nextId} →</button>` : `<div class="sectionLabel">Já limpaste as ${levelCount()} muralhas.</div>`}
         <button class="btnOutline" id="retryBtn" type="button">Repetir o nível</button>
         <button class="btnOutline" id="levelsBtn" type="button">Escolher nível</button>
     </div>`;
