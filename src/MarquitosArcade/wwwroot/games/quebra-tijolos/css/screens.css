@@ -18,16 +18,7 @@
 }
 
 .panel {
-    width: min(100%, 440px);
     margin: auto;
-}
-
-.panel--wide {
-    width: min(100%, 980px);
-}
-
-.panel--narrow {
-    width: min(100%, 360px);
 }
 
 .nameSlot.is-pending {
