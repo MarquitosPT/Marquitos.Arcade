@@ -1,0 +1,48 @@
+.topBar {
+    position: fixed;
+    top: 10px;
+    left: max(10px, env(safe-area-inset-left));
+    right: max(10px, env(safe-area-inset-right));
+    z-index: 20;
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.topBtn {
+    min-height: 44px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(7, 12, 24, 0.58);
+    color: var(--text);
+    backdrop-filter: blur(18px);
+}
+
+.topBtnInner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.topBtn--quit {
+    background: rgba(127, 29, 29, 0.58);
+}
+
+.topIcon {
+    flex: none;
+}
+
+.topLabel {
+    font-size: 0.92rem;
+    font-weight: 700;
+}
+
+.musicSlash {
+    opacity: 0;
+}
+
+#musicBtn[aria-pressed="false"] .musicSlash {
+    opacity: 1;
+}

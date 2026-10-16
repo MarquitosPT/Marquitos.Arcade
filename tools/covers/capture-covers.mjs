@@ -172,6 +172,37 @@ const GAMES = [
         clip: () => ({ x: 0, y: 0, width: 800, height: 450 })
     },
     {
+        slug: 'quebra-tijolos',
+        viewport: { width: 800, height: 450 },
+        scale: 2,
+        async play(page) {
+            await page.evaluate(() => {
+                localStorage.setItem('quebraTijolosProgress_v1', JSON.stringify({ v: 1, unlocked: 48, levels: {} }));
+            });
+            await page.reload({ waitUntil: 'load' });
+            await waitForSplash(page);
+            await page.click('#playBtn');
+            await page.addStyleTag({ content: HIDE_ARCADE_CHROME });
+            await page.evaluate(async () => {
+                const { game } = await import('/games/quebra-tijolos/js/state.js');
+                window.__arcadeQuebra = game;
+            });
+            await page.waitForFunction(() => window.__arcadeQuebra?.phase === 'playing', undefined, { timeout: 20000 });
+            await page.evaluate(() => {
+                const game = window.__arcadeQuebra;
+                const brick = game.bricks.find((b) => !b.steel && b.hp > 0);
+                game.ball.x = brick.x + brick.w * 0.3;
+                game.ball.y = brick.y + brick.h + 88;
+                game.ball.vx = 135;
+                game.ball.vy = -480;
+                game.ball.stuck = false;
+                game.paddle.x = game.layout.inner.x + game.layout.inner.width * 0.6 - game.paddle.width / 2;
+            });
+            await sleep(450);
+        },
+        clip: () => ({ x: 0, y: 0, width: 800, height: 450 })
+    },
+    {
         slug: 'memoria-animal',
         viewport: { width: 800, height: 450 },
         scale: 2,

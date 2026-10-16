@@ -922,23 +922,52 @@ const GAMES = [
                     for (let y = 0; y < 88; y++) for (let x = 0; x < 88; x++) {
                         if (game.world.feature[y * 88 + x] === kind && checkClear(x, y).ok) {
                             openSheet('tile', `${x},${y}`);
-                            return { x, y, res: { ...game.res } };
+                            return { x, y };
                         }
                     }
                     return null;
                 }, kind);
                 if (!spot) throw new Error(`não há nenhum(a) ${kind} para limpar no território`);
-                await page.click('#sheetBody [data-action="clear"]');
-                const after = await page.evaluate(async ({ x, y }) => {
-                    const G = '/games/terras-do-reino/js/';
-                    const { game } = await import(G + 'state.js');
-                    // Um rochedo numa colina deixa a colina: o que conta é a casa ficar sem nada em cima.
-                    return { free: game.world.feature[y * 88 + x] === null, res: { ...game.res } };
-                }, spot);
-                if (!after.free) throw new Error(`a casa ${spot.x},${spot.y} (${kind}) não ficou limpa`);
-                if (!(after.res.coins < spot.res.coins)) throw new Error(`limpar (${kind}) não custou moedas`);
-                if (after.res.wood > spot.res.wood || after.res.stone > spot.res.stone) throw new Error(`limpar (${kind}) deu madeira ou pedra`);
-                cleared.push(spot.y * 88 + spot.x);
+                try {
+                    const result = await page.evaluate(async ({ x, y, kind }) => {
+                        const { game } = await import('/games/terras-do-reino/js/state.js');
+                        const { CLEAR_COST } = await import('/games/terras-do-reino/js/config.js');
+                        game.paused = true;
+                        const button = document.querySelector('#sheetBody [data-action="clear"]');
+                        if (!(button instanceof HTMLButtonElement)) throw new Error('não apareceu o botão de limpar');
+                        const before = {
+                            coins: game.res.coins ?? 0,
+                            wood: game.res.wood ?? 0,
+                            stone: game.res.stone ?? 0
+                        };
+                        button.click();
+                        return {
+                            before,
+                            after: {
+                                free: game.world.feature[y * 88 + x] === null,
+                                res: {
+                                    coins: game.res.coins ?? 0,
+                                    wood: game.res.wood ?? 0,
+                                    stone: game.res.stone ?? 0
+                                }
+                            },
+                            expectedCost: CLEAR_COST[kind]?.coins
+                        };
+                    }, { ...spot, kind });
+                    if (!result.after.free) throw new Error(`a casa ${spot.x},${spot.y} (${kind}) não ficou limpa`);
+                    const expectedCost = result.expectedCost;
+                    if (!Number.isFinite(expectedCost)) throw new Error(`o custo de limpar (${kind}) não está configurado`);
+                    if (result.after.res.coins !== result.before.coins - expectedCost) throw new Error(`limpar (${kind}) não cobrou o custo certo`);
+                    if (result.after.res.wood > result.before.wood || result.after.res.stone > result.before.stone) {
+                        throw new Error(`limpar (${kind}) deu madeira ou pedra`);
+                    }
+                    cleared.push(spot.y * 88 + spot.x);
+                } finally {
+                    await page.evaluate(async () => {
+                        const { game } = await import('/games/terras-do-reino/js/state.js');
+                        game.paused = false;
+                    });
+                }
             }
             await page.click('#sheetCloseBtn');
 
@@ -1167,6 +1196,63 @@ const GAMES = [
                 throw new Error('sair a meio gravou o nível como feito');
             }
             await sleep(400);
+        }
+    },
+    {
+        slug: 'quebra-tijolos',
+        viewport: { width: 390, height: 780 },
+        canvas: true,
+        menuSelector: '#startScreen',
+        async play(page) {
+            await page.fill('#playerNameInput', 'MARQUITOS');
+            await page.click('#playBtn');
+            await waitForQuebraPlaying(page);
+            const before = await page.evaluate(() => ({
+                paddle: window.__arcadeQuebra.paddle.x,
+                frameW: window.__arcadeQuebra.layout.frame.width,
+                frameH: window.__arcadeQuebra.layout.frame.height,
+                remaining: window.__arcadeQuebra.remaining
+            }));
+            if (!(before.frameH > before.frameW)) throw new Error('ao alto, o campo não ficou em formato retrato');
+            await page.keyboard.down('ArrowRight');
+            await sleep(700);
+            await page.keyboard.up('ArrowRight');
+            await sleep(2000);
+            const after = await page.evaluate(() => ({
+                paddle: window.__arcadeQuebra.paddle.x,
+                remaining: window.__arcadeQuebra.remaining
+            }));
+            if (!(after.paddle > before.paddle + 8)) throw new Error('a raquete não respondeu ao teclado');
+            if (!(after.remaining < before.remaining)) throw new Error('a bola não partiu tijolos');
+        }
+    },
+    {
+        slug: 'quebra-tijolos',
+        name: 'quebra-tijolos-paisagem',
+        viewport: { width: 900, height: 450 },
+        canvas: true,
+        menuSelector: '#startScreen',
+        async play(page) {
+            await page.evaluate(() => {
+                localStorage.setItem('quebraTijolosProgress_v1', JSON.stringify({ v: 1, unlocked: 8, levels: {} }));
+            });
+            await page.reload({ waitUntil: 'load' });
+            await waitForSplash(page);
+            await page.click('#playBtn');
+            await waitForQuebraPlaying(page);
+            const layout = await page.evaluate(() => ({
+                viewW: window.__arcadeQuebra.view.width,
+                frameW: window.__arcadeQuebra.layout.frame.width
+            }));
+            if (!(layout.frameW < layout.viewW * 0.78)) throw new Error('em paisagem não sobraram paredes laterais');
+            await page.click('#pauseBtn');
+            await page.waitForSelector('#pauseScreen', { state: 'visible' });
+            const frozen = await page.evaluate(() => window.__arcadeQuebra.elapsed);
+            await sleep(700);
+            if ((await page.evaluate(() => window.__arcadeQuebra.elapsed)) !== frozen) throw new Error('o relógio andou em pausa');
+            await page.click('#resumeBtn');
+            await sleep(700);
+            if (!((await page.evaluate(() => window.__arcadeQuebra.elapsed)) > frozen)) throw new Error('o relógio não retomou');
         }
     },
     {
@@ -1752,6 +1838,14 @@ async function waitForGulosinhosPlaying(page) {
         window.__arcadeGulosinhos = game;
     });
     await page.waitForFunction(() => window.__arcadeGulosinhos && window.__arcadeGulosinhos.phase === 'playing', undefined, { timeout: 20000 });
+}
+
+async function waitForQuebraPlaying(page) {
+    await page.evaluate(async () => {
+        const { game } = await import('/games/quebra-tijolos/js/state.js');
+        window.__arcadeQuebra = game;
+    });
+    await page.waitForFunction(() => window.__arcadeQuebra && window.__arcadeQuebra.phase === 'playing', undefined, { timeout: 20000 });
 }
 
 async function waitForSplash(page) {
