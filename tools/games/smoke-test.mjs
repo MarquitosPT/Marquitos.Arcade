@@ -931,19 +931,19 @@ const GAMES = [
                 try {
                     const before = await page.evaluate(async () => {
                         const { game } = await import('/games/terras-do-reino/js/state.js');
+                        const { CLEAR_COST } = await import('/games/terras-do-reino/js/config.js');
                         game.paused = true;
-                        return { res: { ...game.res } };
+                        return { res: { ...game.res }, cost: CLEAR_COST };
                     });
                     await page.click('#sheetBody [data-action="clear"]');
                     const after = await page.evaluate(async ({ x, y }) => {
                         const G = '/games/terras-do-reino/js/';
                         const { game } = await import(G + 'state.js');
-                        const { CLEAR_COST } = await import(G + 'config.js');
                         // Um rochedo numa colina deixa a colina: o que conta é a casa ficar sem nada em cima.
-                        return { free: game.world.feature[y * 88 + x] === null, res: { ...game.res }, cost: CLEAR_COST };
+                        return { free: game.world.feature[y * 88 + x] === null, res: { ...game.res } };
                     }, spot);
                     if (!after.free) throw new Error(`a casa ${spot.x},${spot.y} (${kind}) não ficou limpa`);
-                    const expectedCost = after.cost[kind]?.coins;
+                    const expectedCost = before.cost[kind]?.coins;
                     if (!Number.isFinite(expectedCost)) throw new Error(`o custo de limpar (${kind}) não está configurado`);
                     if (after.res.coins !== before.res.coins - expectedCost) throw new Error(`limpar (${kind}) não cobrou o custo certo`);
                     if ((after.res.wood ?? 0) > (before.res.wood ?? 0) || (after.res.stone ?? 0) > (before.res.stone ?? 0)) {
