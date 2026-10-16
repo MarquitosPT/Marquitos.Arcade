@@ -229,6 +229,12 @@ button {
     line-height: 1.5;
 }
 
+.hint {
+    max-width: 42ch;
+    font-size: clamp(11px, 2.8vw, 12.5px);
+    color: var(--faint);
+}
+
 .progressNote {
     display: flex;
     gap: 10px;

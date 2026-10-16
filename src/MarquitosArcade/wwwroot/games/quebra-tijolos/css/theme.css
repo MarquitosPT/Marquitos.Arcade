@@ -6,9 +6,11 @@
     --line: rgba(255, 255, 255, 0.12);
     --text: #eef6ff;
     --muted: rgba(238, 246, 255, 0.78);
+    --faint: rgba(238, 246, 255, 0.62);
     --accent: #7dd3fc;
     --accent-2: #f472b6;
     --danger: #fb7185;
+    --gold: #fbbf24;
     --shadow: 0 26px 70px rgba(0, 0, 0, 0.34);
     --font-display: 'Fredoka', 'Outfit', 'Segoe UI', system-ui, sans-serif;
     --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
