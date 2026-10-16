@@ -939,7 +939,9 @@ const GAMES = [
                         return { free: game.world.feature[y * 88 + x] === null, res: { ...game.res }, cost: CLEAR_COST };
                     }, spot);
                     if (!after.free) throw new Error(`a casa ${spot.x},${spot.y} (${kind}) não ficou limpa`);
-                    if (after.res.coins !== spot.res.coins - after.cost[kind].coins) throw new Error(`limpar (${kind}) não cobrou o custo certo`);
+                    const expectedCost = after.cost[kind]?.coins;
+                    if (!Number.isFinite(expectedCost)) throw new Error(`o custo de limpar (${kind}) não está configurado`);
+                    if (after.res.coins !== spot.res.coins - expectedCost) throw new Error(`limpar (${kind}) não cobrou o custo certo`);
                     if (after.res.wood > spot.res.wood || after.res.stone > spot.res.stone) throw new Error(`limpar (${kind}) deu madeira ou pedra`);
                     cleared.push(spot.y * 88 + spot.x);
                 } finally {
