@@ -128,7 +128,7 @@ function drawBall(ctx) {
 function drawParticles(ctx) {
     for (const p of game.particles) {
         ctx.fillStyle = p.color;
-        ctx.globalAlpha = Math.max(0, p.life * 1.4);
+        ctx.globalAlpha = Math.min(1, Math.max(0, p.life * 1.4));
         ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
     }
     for (const spark of game.steelHits) {
