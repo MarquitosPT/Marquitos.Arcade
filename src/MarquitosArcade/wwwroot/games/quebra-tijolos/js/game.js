@@ -123,7 +123,7 @@ function fitPaddle() {
     if (!layout) return;
     const baseWidth = game.level?.paddleWidth || 130;
     const scale = layout.frame.width / REFERENCE_FRAME_WIDTH;
-    const maxWidth = Math.max(MIN_PADDLE_WIDTH, Math.min(baseWidth, Math.floor(layout.inner.width * 0.42)));
+    const maxWidth = Math.max(MIN_PADDLE_WIDTH, Math.floor(layout.inner.width * 0.42));
     const width = clamp(
         Math.round(baseWidth * scale),
         MIN_PADDLE_WIDTH,
