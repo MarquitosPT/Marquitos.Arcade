@@ -1209,9 +1209,7 @@ const GAMES = [
             });
             await page.reload({ waitUntil: 'load' });
             await waitForSplash(page);
-            await page.click('#chooseBtn');
-            await sleep(350);
-            await page.click('.levelCard[data-value=\"6\"]');
+            await page.click('#playBtn');
             await waitForQuebraPlaying(page);
             const layout = await page.evaluate(() => ({
                 viewW: window.__arcadeQuebra.view.width,
