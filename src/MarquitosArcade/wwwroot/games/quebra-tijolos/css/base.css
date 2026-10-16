@@ -1,21 +1,38 @@
-html,
-body {
+* {
     margin: 0;
-    min-height: 100%;
-    background: radial-gradient(circle at top, #162247 0%, var(--bg) 48%, #070b16 100%);
-    color: var(--text);
-    font-family: var(--font-body);
-    overflow: hidden;
-    touch-action: none;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
-* {
-    box-sizing: border-box;
+[hidden] {
+    display: none !important;
 }
 
 button,
 input {
     font: inherit;
+}
+
+input {
+    -webkit-user-select: text;
+    user-select: text;
+}
+
+html,
+body {
+    width: 100%;
+    height: calc(100dvh + var(--viewport-gap, 0px));
+    background: radial-gradient(circle at top, #162247 0%, var(--bg) 48%, #070b16 100%);
+    color: var(--text);
+    font-family: var(--font-body);
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    overflow: hidden;
+    touch-action: none;
+    overscroll-behavior: none;
 }
 
 button {
@@ -24,29 +41,13 @@ button {
 }
 
 #wrap {
-    position: fixed;
-    inset: 0;
+    position: relative;
+    width: 100vw;
+    height: calc(100dvh + var(--viewport-gap, 0px));
 }
 
 #game {
-    position: fixed;
-    inset: 0;
-    width: 100vw;
-    height: 100vh;
-}
-
-.screen {
-    position: fixed;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    padding: 90px 18px 28px;
-    backdrop-filter: blur(20px);
-    background: linear-gradient(180deg, rgba(8, 10, 18, 0.2), rgba(8, 10, 18, 0.46));
-}
-
-.screen.hidden {
-    display: none;
+    display: block;
 }
 
 .panel {

@@ -26,6 +26,9 @@ import { recordClear, totalScore } from './progress.js';
 import { scores } from './scores.js';
 import { game, session } from './state.js';
 
+const MIN_PADDLE_WIDTH = 72;
+const REFERENCE_FRAME_WIDTH = 540;
+
 function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
 }
@@ -118,7 +121,14 @@ export function abortLevel() {
 function fitPaddle() {
     const layout = game.layout;
     if (!layout) return;
-    const width = game.level?.paddleWidth || 130;
+    const baseWidth = game.level?.paddleWidth || 130;
+    const scale = layout.frame.width / REFERENCE_FRAME_WIDTH;
+    const maxWidth = Math.max(MIN_PADDLE_WIDTH, Math.floor(layout.inner.width * 0.42));
+    const width = clamp(
+        Math.round(baseWidth * scale),
+        MIN_PADDLE_WIDTH,
+        maxWidth
+    );
     game.paddle.width = width;
     if (!Number.isFinite(game.paddle.x) || game.paddle.x === 0) {
         game.paddle.x = layout.inner.x + (layout.inner.width - width) / 2;

@@ -17,7 +17,7 @@ export const overlays = createOverlays({
     levels: els.levelsScreen,
     pause: els.pauseScreen,
     result: els.resultScreen
-});
+}, 'flex');
 
 export const topBar = createTopBar({
     arcadeLink: els.arcadeLink,

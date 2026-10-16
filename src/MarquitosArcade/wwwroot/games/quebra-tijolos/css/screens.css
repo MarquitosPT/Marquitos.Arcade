@@ -1,3 +1,26 @@
+.screen {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: calc(env(safe-area-inset-top, 0px) + 74px) 18px calc(env(safe-area-inset-bottom, 0px) + 24px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    background: linear-gradient(180deg, rgba(8, 10, 18, 0.2), rgba(8, 10, 18, 0.46));
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+}
+
+.panel {
+    margin: auto;
+}
+
 .nameSlot.is-pending {
     opacity: 0.6;
 }
@@ -35,4 +58,19 @@
 
 .starChecklist li.ok {
     background: rgba(110, 231, 183, 0.12);
+}
+
+@media (orientation: landscape) and (max-height: 700px) {
+    .screen {
+        padding-top: calc(env(safe-area-inset-top, 0px) + 58px);
+        padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
+    }
+
+    .panel {
+        padding: 18px;
+    }
+
+    .panel--wide {
+        width: min(100%, 760px);
+    }
 }
