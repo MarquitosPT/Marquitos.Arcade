@@ -1,0 +1,38 @@
+.nameSlot.is-pending {
+    opacity: 0.6;
+}
+
+.resultHead .sub,
+.bannerText.failed {
+    margin-top: 6px;
+}
+
+.unlockNote {
+    margin-top: 16px;
+    padding: 12px 16px;
+    border-radius: 18px;
+    background: rgba(125, 211, 252, 0.12);
+    color: #d8f3ff;
+    text-align: center;
+}
+
+.starChecklist {
+    display: grid;
+    gap: 10px;
+    padding: 0;
+    margin: 18px 0;
+    list-style: none;
+}
+
+.starChecklist li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.05);
+}
+
+.starChecklist li.ok {
+    background: rgba(110, 231, 183, 0.12);
+}

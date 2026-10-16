@@ -1297,6 +1297,11 @@ main {
   --cover-bg: #ff9fcf;
 }
 
+.theme-quebra {
+  --game-accent: #7dd3fc;
+  --cover-bg: #111934;
+}
+
 /* ---------- Ficha do jogo ---------- */
 
 .game-card-body {

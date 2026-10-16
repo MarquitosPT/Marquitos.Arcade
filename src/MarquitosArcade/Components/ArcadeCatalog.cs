@@ -53,6 +53,17 @@ public static class ArcadeCatalog
     // antigos vão descendo para o fim do catálogo.
     public static readonly ArcadeGame[] Games =
     [
+        new("quebra-tijolos",
+            "Quebra-Tijolos",
+            "bola • raquete • muralhas",
+            "Parte os tijolos todos com a raquete, guarda as três vidas e sobe por 48 níveis cada vez mais apertados.",
+            "🧱",
+            "theme-quebra",
+            "/covers/quebra-tijolos.webp",
+            "1.0.0",
+            new(2026, 10, 16),
+            Badge: "Novo"),
+
         new("gulosinhos",
             "Gulosinhos",
             "saltos • guloseimas • corrida",

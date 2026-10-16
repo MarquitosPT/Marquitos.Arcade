@@ -1170,6 +1170,65 @@ const GAMES = [
         }
     },
     {
+        slug: 'quebra-tijolos',
+        viewport: { width: 390, height: 780 },
+        canvas: true,
+        menuSelector: '#startScreen',
+        async play(page) {
+            await page.fill('#playerNameInput', 'MARQUITOS');
+            await page.click('#playBtn');
+            await waitForQuebraPlaying(page);
+            const before = await page.evaluate(() => ({
+                paddle: window.__arcadeQuebra.paddle.x,
+                frameW: window.__arcadeQuebra.layout.frame.width,
+                frameH: window.__arcadeQuebra.layout.frame.height,
+                remaining: window.__arcadeQuebra.remaining
+            }));
+            if (!(before.frameH > before.frameW)) throw new Error('ao alto, o campo não ficou em formato retrato');
+            await page.keyboard.down('ArrowRight');
+            await sleep(700);
+            await page.keyboard.up('ArrowRight');
+            await sleep(2000);
+            const after = await page.evaluate(() => ({
+                paddle: window.__arcadeQuebra.paddle.x,
+                remaining: window.__arcadeQuebra.remaining
+            }));
+            if (!(after.paddle > before.paddle + 8)) throw new Error('a raquete não respondeu ao teclado');
+            if (!(after.remaining < before.remaining)) throw new Error('a bola não partiu tijolos');
+        }
+    },
+    {
+        slug: 'quebra-tijolos',
+        name: 'quebra-tijolos-paisagem',
+        viewport: { width: 900, height: 450 },
+        canvas: true,
+        menuSelector: '#startScreen',
+        async play(page) {
+            await page.evaluate(() => {
+                localStorage.setItem('quebraTijolosProgress_v1', JSON.stringify({ v: 1, unlocked: 8, levels: {} }));
+            });
+            await page.reload({ waitUntil: 'load' });
+            await waitForSplash(page);
+            await page.click('#chooseBtn');
+            await sleep(350);
+            await page.click('.levelCard[data-value=\"6\"]');
+            await waitForQuebraPlaying(page);
+            const layout = await page.evaluate(() => ({
+                viewW: window.__arcadeQuebra.view.width,
+                frameW: window.__arcadeQuebra.layout.frame.width
+            }));
+            if (!(layout.frameW < layout.viewW * 0.78)) throw new Error('em paisagem não sobraram paredes laterais');
+            await page.click('#pauseBtn');
+            await page.waitForSelector('#pauseScreen', { state: 'visible' });
+            const frozen = await page.evaluate(() => window.__arcadeQuebra.elapsed);
+            await sleep(700);
+            if ((await page.evaluate(() => window.__arcadeQuebra.elapsed)) !== frozen) throw new Error('o relógio andou em pausa');
+            await page.click('#resumeBtn');
+            await sleep(700);
+            if (!((await page.evaluate(() => window.__arcadeQuebra.elapsed)) > frozen)) throw new Error('o relógio não retomou');
+        }
+    },
+    {
         slug: 'gulosinhos',
         // Ao alto e com toque, como num telemóvel: os botões ficam na faixa de baixo.
         viewport: { width: 390, height: 780 },
@@ -1752,6 +1811,14 @@ async function waitForGulosinhosPlaying(page) {
         window.__arcadeGulosinhos = game;
     });
     await page.waitForFunction(() => window.__arcadeGulosinhos && window.__arcadeGulosinhos.phase === 'playing', undefined, { timeout: 20000 });
+}
+
+async function waitForQuebraPlaying(page) {
+    await page.evaluate(async () => {
+        const { game } = await import('/games/quebra-tijolos/js/state.js');
+        window.__arcadeQuebra = game;
+    });
+    await page.waitForFunction(() => window.__arcadeQuebra && window.__arcadeQuebra.phase === 'playing', undefined, { timeout: 20000 });
 }
 
 async function waitForSplash(page) {

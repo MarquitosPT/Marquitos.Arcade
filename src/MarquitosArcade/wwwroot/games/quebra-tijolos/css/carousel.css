@@ -1,0 +1,126 @@
+.levelsCarousel {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+}
+
+.carouselViewport {
+    overflow: hidden;
+}
+
+.carouselTrack {
+    display: flex;
+    align-items: stretch;
+}
+
+.levelPage {
+    min-width: 100%;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+}
+
+.carouselArrow {
+    width: 46px;
+}
+
+.carouselDots {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.carouselDot {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    border: 0;
+    background: rgba(255,255,255,0.2);
+}
+
+.carouselDot[aria-selected="true"] {
+    background: var(--accent);
+}
+
+.levelCard {
+    display: grid;
+    gap: 14px;
+    padding: 16px;
+    border-radius: 22px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+    border: 1px solid rgba(255,255,255,0.12);
+    color: inherit;
+    text-align: left;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+.levelCard.active,
+.levelCard:hover {
+    border-color: color-mix(in srgb, var(--card-accent) 45%, white);
+    box-shadow: 0 14px 34px rgba(0,0,0,0.22);
+}
+
+.levelCard.is-locked {
+    opacity: 0.72;
+}
+
+.levelCard.shake {
+    animation: shake 0.35s linear;
+}
+
+.levelShape {
+    position: relative;
+    display: block;
+    padding: 10px;
+    border-radius: 18px;
+    background: rgba(6, 10, 22, 0.7);
+}
+
+.boardShape {
+    display: block;
+    width: 100%;
+    aspect-ratio: 120 / 76;
+}
+
+.levelLock {
+    position: absolute;
+    right: 12px;
+    top: 10px;
+}
+
+.levelInfo {
+    display: grid;
+    gap: 4px;
+}
+
+.levelNumber,
+.levelCards,
+.levelState {
+    color: var(--muted);
+    font-size: 0.92rem;
+}
+
+.levelName {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+}
+
+.levelStars {
+    display: flex;
+    gap: 4px;
+    color: #fbbf24;
+    font-size: 1rem;
+}
+
+.levelStars .off {
+    color: rgba(255,255,255,0.2);
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
