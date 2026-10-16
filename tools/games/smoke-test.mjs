@@ -921,15 +921,19 @@ const GAMES = [
                     const { openSheet } = await import(G + 'sheets.js');
                     for (let y = 0; y < 88; y++) for (let x = 0; x < 88; x++) {
                         if (game.world.feature[y * 88 + x] === kind && checkClear(x, y).ok) {
-                            game.paused = true;
                             openSheet('tile', `${x},${y}`);
-                            return { x, y, res: { ...game.res } };
+                            return { x, y };
                         }
                     }
                     return null;
                 }, kind);
                 if (!spot) throw new Error(`não há nenhum(a) ${kind} para limpar no território`);
                 try {
+                    const before = await page.evaluate(async () => {
+                        const { game } = await import('/games/terras-do-reino/js/state.js');
+                        game.paused = true;
+                        return { ...game.res };
+                    });
                     await page.click('#sheetBody [data-action="clear"]');
                     const after = await page.evaluate(async ({ x, y }) => {
                         const G = '/games/terras-do-reino/js/';
@@ -941,8 +945,8 @@ const GAMES = [
                     if (!after.free) throw new Error(`a casa ${spot.x},${spot.y} (${kind}) não ficou limpa`);
                     const expectedCost = after.cost[kind]?.coins;
                     if (!Number.isFinite(expectedCost)) throw new Error(`o custo de limpar (${kind}) não está configurado`);
-                    if (after.res.coins !== spot.res.coins - expectedCost) throw new Error(`limpar (${kind}) não cobrou o custo certo`);
-                    if (after.res.wood > spot.res.wood || after.res.stone > spot.res.stone) throw new Error(`limpar (${kind}) deu madeira ou pedra`);
+                    if (after.res.coins !== before.coins - expectedCost) throw new Error(`limpar (${kind}) não cobrou o custo certo`);
+                    if (after.res.wood > before.wood || after.res.stone > before.stone) throw new Error(`limpar (${kind}) deu madeira ou pedra`);
                     cleared.push(spot.y * 88 + spot.x);
                 } finally {
                     await page.evaluate(async () => {
