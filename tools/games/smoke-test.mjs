@@ -922,6 +922,7 @@ const GAMES = [
                     for (let y = 0; y < 88; y++) for (let x = 0; x < 88; x++) {
                         if (game.world.feature[y * 88 + x] === kind && checkClear(x, y).ok) {
                             openSheet('tile', `${x},${y}`);
+                            game.paused = true;
                             return { x, y, res: { ...game.res } };
                         }
                     }
@@ -932,11 +933,14 @@ const GAMES = [
                 const after = await page.evaluate(async ({ x, y }) => {
                     const G = '/games/terras-do-reino/js/';
                     const { game } = await import(G + 'state.js');
+                    const { CLEAR_COST } = await import(G + 'config.js');
                     // Um rochedo numa colina deixa a colina: o que conta é a casa ficar sem nada em cima.
-                    return { free: game.world.feature[y * 88 + x] === null, res: { ...game.res } };
+                    const result = { free: game.world.feature[y * 88 + x] === null, res: { ...game.res }, cost: CLEAR_COST };
+                    game.paused = false;
+                    return result;
                 }, spot);
                 if (!after.free) throw new Error(`a casa ${spot.x},${spot.y} (${kind}) não ficou limpa`);
-                if (!(after.res.coins < spot.res.coins)) throw new Error(`limpar (${kind}) não custou moedas`);
+                if (after.res.coins !== spot.res.coins - after.cost[kind].coins) throw new Error(`limpar (${kind}) não cobrou o custo certo`);
                 if (after.res.wood > spot.res.wood || after.res.stone > spot.res.stone) throw new Error(`limpar (${kind}) deu madeira ou pedra`);
                 cleared.push(spot.y * 88 + spot.x);
             }
