@@ -1212,6 +1212,15 @@ const GAMES = [
             await page.keyboard.type('Ana Dada');
             const typed = await page.inputValue('#playerNameInput');
             if (typed !== 'Ana Dada') throw new Error(`o nome ficou "${typed}" em vez de "Ana Dada" (teclas comidas pelo jogo)`);
+
+            // Os cartões dos níveis têm todos a mesma altura, os da última página
+            // incluídos: ao alto são duas filas por página, e uma última página
+            // com uma fila só não pode esticar os cartões.
+            await page.click('#chooseBtn');
+            await page.waitForSelector('#levelsScreen', { state: 'visible' });
+            const heights = await page.$$eval('.levelCard', (cards) => cards.map((c) => Math.round(c.getBoundingClientRect().height)));
+            if (new Set(heights).size !== 1) throw new Error(`os cartões dos níveis não têm todos a mesma altura (${[...new Set(heights)].join(', ')} px)`);
+            await page.click('#backBtn');
             await page.click('#playBtn');
             await waitForQuebraPlaying(page);
             const layout = await page.evaluate(() => window.__arcadeQuebra.layout.screen);
@@ -1262,6 +1271,7 @@ const GAMES = [
             await page.reload({ waitUntil: 'load' });
             await waitForSplash(page);
             if (!(await page.textContent('#playBtn')).includes('nível 8')) throw new Error('o progresso guardado não abriu o nível 8');
+
             await page.click('#playBtn');
             await waitForQuebraPlaying(page);
 
@@ -1322,7 +1332,7 @@ const GAMES = [
                 };
 
                 // Os desenhos: 13 letras por linha, já validados ao carregar o módulo.
-                if (LEVELS.length !== 30) problems.push(`há ${LEVELS.length} níveis em vez de 30`);
+                if (LEVELS.length % 12) problems.push(`há ${LEVELS.length} níveis: só um múltiplo de 12 enche a última página do carrossel ao alto, deitado e no computador`);
 
                 // TNT em cadeia: no Dominó, a TNT de baixo leva o V todo atrás.
                 L.startLevel(LEVELS.find((l) => l.name === 'Dominó').id);

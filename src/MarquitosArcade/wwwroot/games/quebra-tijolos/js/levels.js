@@ -1,4 +1,11 @@
-// Os níveis do Quebra-Tijolos: trinta muralhas desenhadas à mão, em cinco mundos.
+// Os níveis do Quebra-Tijolos: trinta e seis muralhas desenhadas à mão, em
+// seis mundos.
+//
+// Trinta e seis, e não outro número: o carrossel dos níveis mostra 4 cartões
+// por página ao alto, 6 no computador e 3 deitado, e só um múltiplo de 12
+// enche a última página nos três (ver o README). Um nível novo entra de seis
+// em seis, num mundo novo — e no fim, para os números dos que já lá estão não
+// mudarem (o progresso está guardado pelo número do nível).
 //
 // Cada nível é uma grelha de texto com 13 letras por linha — a legenda está em
 // js/bricks.js (`w o c g r b p y v` são cores, `S` prata, `T` titânio, `E`
@@ -6,7 +13,8 @@
 // ficheiro é o que aparece no campo. Os nomes são de uma palavra só, para
 // caberem nos cartões do carrossel sem partir a linha (ver o README).
 //
-// Cada mundo apresenta um tijolo novo e tem a sua cor. A velocidade da bola e
+// Os quatro primeiros mundos apresentam cada um um tijolo novo; os dois
+// últimos juntam-nos todos. Cada mundo tem a sua cor. A velocidade da bola e
 // a largura da raquete não se escrevem nível a nível: crescem e encolhem com
 // o número do nível (`levelTuning`), do primeiro ao último.
 
@@ -61,6 +69,15 @@ export const WORLDS = [
         grid: 'rgba(255, 210, 63, 0.07)',
         wall: ['#4a4a6a', '#1e1e34'],
         hint: 'Apanha as cápsulas: três bolas ou o laser mudam um nível inteiro.'
+    },
+    {
+        name: 'Supernova',
+        accent: '#ff5dd6',
+        accent2: '#ffb03c',
+        sky: ['#14041e', '#2a0830'],
+        grid: 'rgba(255, 93, 214, 0.08)',
+        wall: ['#6a3a78', '#2e1236'],
+        hint: 'Procura a TNT que leva as outras atrás: uma explosão bem apontada vale meio nível.'
     }
 ];
 
@@ -363,6 +380,70 @@ const DESIGNS = [
         'vvvvvvvvvvvvv',
         'pppppTpTppppp',
         '##.........##'
+    ] },
+
+    // ---------- Supernova: tudo junto, mais depressa ----------
+    { name: 'Caveira', grid: [
+        '...wwwwwww...',
+        '..wwwwwwwww..',
+        '.wwTTwwwTTww.',
+        '.wwTTwwwTTww.',
+        '.wwwwwEwwwww.',
+        '..wwwwwwwww..',
+        '...w.w.w.w...',
+        '...S.S.S.S...'
+    ] },
+    { name: 'Torres', grid: [
+        '.###.....###.',
+        '.rTr.....rTr.',
+        '.rrr..E..rrr.',
+        '.oSo.ooo.oSo.',
+        '.ooo.oEo.ooo.',
+        '.yyy.ooo.yyy.',
+        '.yTy.....yTy.',
+        '.yyy.....yyy.'
+    ] },
+    { name: 'Relâmpago', grid: [
+        '.......yyyy..',
+        '......yyyy...',
+        '.....yyEy....',
+        '....yyyy.....',
+        '...yyyyyyyy..',
+        '.....yEyy....',
+        '....yyyy.....',
+        '...yyy.......',
+        '..yy.........'
+    ] },
+    { name: 'Bunker', grid: [
+        'bbbbbbbbbbbbb',
+        'bTTTbbbbbTTTb',
+        'b#.#bbbbb#.#b',
+        'bbbbbEbEbbbbb',
+        'vvvvvvvvvvvvv',
+        'vSvSvTvTvSvSv',
+        '##...#.#...##'
+    ] },
+    { name: 'Galáxia', grid: [
+        '....vvvvv....',
+        '..vv.....vv..',
+        '.v...ppp...v.',
+        'v...pSTSp...v',
+        'v...pSESp...v',
+        '.v...ppp...v.',
+        '..vv.....vv..',
+        '....vvvvv....'
+    ] },
+    { name: 'Supernova', grid: [
+        '......E......',
+        '...T.yyy.T...',
+        '..TyyyEyyyT..',
+        '.SyyEyyyEyyS.',
+        'EyyyyyTyyyyyE',
+        '.SyyEyyyEyyS.',
+        '..TyyyEyyyT..',
+        '...T.yyy.T...',
+        '......E......',
+        '#...........#'
     ] }
 ];
 
