@@ -56,7 +56,7 @@ public static class ArcadeCatalog
         new("quebra-tijolos",
             "Quebra-Tijolos",
             "bola • raquete • tijolos",
-            "Parte os tijolos todos com a raquete, apanha as cápsulas e atravessa cinco mundos em 30 níveis.",
+            "Parte os tijolos todos com a raquete, apanha as cápsulas e atravessa seis mundos em 36 níveis.",
             "🧱",
             "theme-quebra",
             "/covers/quebra-tijolos.webp",

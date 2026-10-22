@@ -56,8 +56,13 @@
     /* Todas as filas com a mesma altura, e não a altura do que cada uma tem lá
        dentro: a caixa da miniatura tem proporção fixa e, em larguras que não
        dão número redondo, arredondava para um píxel diferente de fila para
-       fila. */
-    grid-auto-rows: 1fr;
+       fila.
+
+       As filas vêm contadas (`--page-rows`) e não só "as que houver": a página
+       estica até à altura da mais alta, e uma última página com uma fila só
+       dava-lhe a altura toda — os cartões ficavam compridos. Assim a fila que
+       falta fica lá, vazia, e os cartões têm o tamanho de sempre. */
+    grid-template-rows: repeat(var(--page-rows), minmax(0, 1fr));
 }
 
 /* ---------- Setas ---------- */

@@ -50,7 +50,7 @@ export const PADDLE_Y = FIELD_H - 44;
 export const PADDLE_H = 14;
 /** Largura no nível 1 e no último; os do meio ficam pelo caminho. */
 export const PADDLE_W_FIRST = 80;
-export const PADDLE_W_LAST = 62;
+export const PADDLE_W_LAST = 60;
 /** A raquete alargada (cápsula A). */
 export const PADDLE_WIDE_FACTOR = 1.5;
 /** Teclado: velocidade máxima e aceleração (unidades/s e unidades/s²). */
@@ -64,7 +64,7 @@ export const PADDLE_MAX_ANGLE = (62 * Math.PI) / 180;
 export const BALL_R = 6;
 /** Velocidade da bola no nível 1 e no último (unidades/s). */
 export const BALL_SPEED_FIRST = 300;
-export const BALL_SPEED_LAST = 430;
+export const BALL_SPEED_LAST = 445;
 /** Cada toque na raquete acelera um pouco, até ao teto. */
 export const BALL_SPEEDUP = 1.012;
 export const BALL_SPEED_CAP = 1.3;
