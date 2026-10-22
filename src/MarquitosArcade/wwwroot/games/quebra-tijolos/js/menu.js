@@ -1,65 +1,84 @@
+// Menu: quem joga, em que nível, e o que já se fez.
+//
+// Dois ecrãs, como no Maze Run e nos Gulosinhos: o primeiro pergunta o nome
+// (só a quem não tem sessão iniciada) e propõe continuar de onde se ficou; o
+// segundo mostra os níveis no carrossel do SDK (lib/arcade/carousel.js).
+//
+// Por trás do vidro está o campo do nível apontado, com os tijolos no sítio e
+// a bola na raquete: o menu é uma janela para o nível, não um cartaz.
+
 import { createCarousel, escapeHtml } from '/lib/arcade/index.js';
 
+import { KIND_TAGS } from './bricks.js';
 import { MAX_STARS } from './config.js';
 import { fmtPoints, fmtTime } from './format.js';
-import { LEVELS, levelCount } from './levels.js';
+import { prepareLevel } from './level.js';
+import { LEVELS, levelById, levelCount } from './levels.js';
 import { bestOf, isUnlocked, progress, totalScore, totalStars, unlockedCount } from './progress.js';
+import { paintLevelShot } from './render.js';
 import { game } from './state.js';
 import { els, overlays } from './ui.js';
 
 function starRow(stars) {
     const filled = Math.max(0, Math.min(MAX_STARS, stars || 0));
-    return `<span class="levelStars" role="img" aria-label="${filled} de ${MAX_STARS} estrelas">${Array.from({ length: MAX_STARS }, (_, i) => `<i class="${i < filled ? '' : 'off'}">★</i>`).join('')}</span>`;
+    const dots = Array.from({ length: MAX_STARS }, (_, i) => `<i class="${i < filled ? '' : 'off'}">★</i>`).join('');
+    return `<span class="levelStars" role="img" aria-label="${filled} de ${MAX_STARS} estrelas">${dots}</span>`;
 }
 
-function previewSvg(level, { locked }) {
-    const cols = level.cols;
-    const rows = level.rows;
-    const cellW = 10;
-    const cellH = 6;
-    const gap = 1.4;
-    const width = cols * cellW + (cols - 1) * gap;
-    const height = rows * cellH + (rows - 1) * gap;
-    const x0 = (120 - width) / 2;
-    const y0 = (76 - height) / 2;
-    const rects = [];
-    for (let row = 0; row < rows; row++) {
-        for (let col = 0; col < cols; col++) {
-            const cell = level.grid[row][col];
-            if (!cell) continue;
-            const x = x0 + col * (cellW + gap);
-            const y = y0 + row * (cellH + gap);
-            const fill = cell >= 9 ? '#b4b4c5' : level.palette.bricks[Math.min(2, Math.max(0, cell - 1))];
-            rects.push(`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${cellW}" height="${cellH}" rx="2" fill="${fill}" opacity="${locked ? '0.55' : '1'}"/>`);
-        }
-    }
-    return `<svg class="boardShape${locked ? ' is-locked' : ''}" viewBox="0 0 120 76" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${rects.join('')}</svg>`;
+/** Os tijolos especiais do nível. A linha existe mesmo vazia (altura dos cartões). */
+function levelTags(level) {
+    const chips = level.kinds
+        .map((kind) => {
+            const [icon, label] = KIND_TAGS[kind];
+            return `<span class="levelTag" title="${label}"><i aria-hidden="true">${icon}</i>${escapeHtml(label)}</span>`;
+        })
+        .join('');
+    return `<span class="levelTags">${chips}</span>`;
 }
 
+/**
+ * Um cartão de nível: sempre as mesmas cinco linhas, pela mesma ordem —
+ * número, nome, tijolos especiais, estado e estrelas — para os cartões terem
+ * todos a mesma altura (ver a nota do carrossel no README).
+ */
 function levelCard(level) {
     const unlocked = isUnlocked(level.id);
     const best = bestOf(level.id);
+
     const state = !unlocked
         ? `Conclui o nível ${level.id - 1}`
-        : best ? `${fmtTime(best.ms)} · ${fmtPoints(best.score)} pts` : 'Por jogar';
-    const label = unlocked
-        ? `Nível ${level.id}, ${level.name}, ${level.brickCount} tijolos`
-        : `Nível ${level.id}, ${level.name}, bloqueado, conclui o nível ${level.id - 1}`;
+        : best
+            ? `${fmtPoints(best.score)} pts · ${fmtTime(best.ms)}`
+            : 'Por jogar';
 
-    return `<button type="button" class="levelCard${unlocked ? '' : ' is-locked'}${best ? ' is-done' : ''}"
+    const label = unlocked
+        ? `Nível ${level.id}, ${level.name}`
+        : `Nível ${level.id}, ${level.name} — bloqueado, conclui o nível ${level.id - 1}`;
+
+    return `<button type="button" class="levelCard${unlocked ? '' : ' is-locked'}"
         data-value="${level.id}" aria-label="${escapeHtml(label)}" style="--card-accent: ${level.accent}">
         <span class="levelShape">
-            ${previewSvg(level, { locked: !unlocked })}
+            <canvas class="levelShot${unlocked ? '' : ' is-locked'}" data-level="${level.id}" aria-hidden="true"></canvas>
             ${unlocked ? '' : '<span class="levelLock" aria-hidden="true">🔒</span>'}
         </span>
         <span class="levelInfo">
-            <span class="levelNumber">Nível ${level.id}</span>
+            <span class="levelNumber">Nível ${level.id} · ${escapeHtml(level.world.name)}</span>
             <span class="levelName">${escapeHtml(level.name)}</span>
-            <span class="levelCards">${level.brickCount} tijolos · alvo ${fmtTime(level.targetMs)}</span>
+            ${levelTags(level)}
             <span class="levelState">${escapeHtml(state)}</span>
             ${starRow(best?.stars)}
         </span>
     </button>`;
+}
+
+/** O campo do nível apontado, por trás do vidro. */
+export function previewLevel(levelId) {
+    const level = levelById(levelId);
+    if (!level) return;
+    prepareLevel(level);
+    game.score = 0;
+    game.elapsed = 0;
+    document.documentElement.style.setProperty('--level-accent', level.accent);
 }
 
 export function createMenu({ playerName, onPlay }) {
@@ -70,20 +89,30 @@ export function createMenu({ playerName, onPlay }) {
         prev: els.prevPageBtn,
         next: els.nextPageBtn,
         dots: els.levelDots
-    }, { pageClass: 'levelPage' });
+    }, {
+        pageClass: 'levelPage',
+        // As miniaturas são canvas: perdem-se sempre que o carrossel refaz as
+        // páginas (ao rodar o aparelho), e é aqui que se voltam a pintar.
+        onRender(track) {
+            markSelected();
+            for (const canvas of track.querySelectorAll('.levelShot')) paintLevelShot(canvas, levelById(Number(canvas.dataset.level)));
+        }
+    });
 
-    function bindAccount() {
-        playerName.account.then((displayName) => {
-            const signedIn = !!displayName;
-            els.nameRow.hidden = signedIn;
-            els.accountRow.hidden = !signedIn;
-            if (signedIn) {
-                els.accountName.textContent = displayName;
-                els.accountInitial.textContent = [...displayName][0].toUpperCase();
-            }
-            els.nameSlot.classList.remove('is-pending');
-        });
-    }
+    // ---------- A conta ----------
+
+    playerName.account.then((displayName) => {
+        const signedIn = !!displayName;
+        els.nameRow.hidden = signedIn;
+        els.accountRow.hidden = !signedIn;
+        if (signedIn) {
+            els.accountName.textContent = displayName;
+            els.accountInitial.textContent = [...displayName][0].toUpperCase();
+        }
+        els.nameSlot.classList.remove('is-pending');
+    });
+
+    // ---------- O progresso ----------
 
     function refreshProgress() {
         const open = unlockedCount();
@@ -91,26 +120,24 @@ export function createMenu({ playerName, onPlay }) {
         els.progressLine.textContent = `${open} de ${total} níveis · ${totalStars()} de ${total * MAX_STARS} estrelas`;
         els.progressBar.style.setProperty('--fill', `${Math.round((open / total) * 100)}%`);
         els.progressNote.hidden = progress.stored;
-        const level = LEVELS[open - 1];
-        els.playBtn.textContent = `${bestOf(open) ? 'Repetir' : 'Jogar'} o nível ${open} · ${level.brickCount} tijolos`;
+        const level = levelById(open);
+        els.playBtn.textContent = `${bestOf(open) ? 'Repetir' : 'Jogar'} o nível ${open} · ${level.name}`;
     }
 
     function showMenu() {
-        game.menuLevelId = unlockedCount();
-        game.level = LEVELS[game.menuLevelId - 1];
         game.phase = 'menu';
-        game.elapsed = 0;
-        game.levelScore = 0;
+        game.menuLevelId = unlockedCount();
         refreshProgress();
+        previewLevel(game.menuLevelId);
         overlays.show('start');
     }
 
     function showLevels() {
+        game.phase = 'menu';
         refreshProgress();
-        els.levelsSub.textContent = `Escolhe uma muralha · ${fmtPoints(totalScore())} pontos até agora`;
-        carousel.setCards(LEVELS.map(levelCard), { show: LEVELS.findIndex((level) => level.id === game.menuLevelId) });
-        markSelected();
+        els.levelsSub.textContent = `Escolhe por onde recomeçar · ${fmtPoints(totalScore())} pontos até agora`;
         overlays.show('levels');
+        carousel.setCards(LEVELS.map(levelCard), { show: LEVELS.findIndex((level) => level.id === game.menuLevelId) });
     }
 
     function markSelected() {
@@ -138,6 +165,5 @@ export function createMenu({ playerName, onPlay }) {
         onPlay(levelId);
     });
 
-    bindAccount();
     return { showMenu, showLevels, refreshProgress };
 }

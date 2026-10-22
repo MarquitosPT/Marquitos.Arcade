@@ -1200,30 +1200,53 @@ const GAMES = [
     },
     {
         slug: 'quebra-tijolos',
+        // Ao alto e com toque, como num telemóvel.
         viewport: { width: 390, height: 780 },
+        touch: true,
         canvas: true,
         menuSelector: '#startScreen',
         async play(page) {
-            await page.fill('#playerNameInput', 'MARQUITOS');
+            // O nome escreve-se tecla a tecla: o A e o D (que também mexem a
+            // raquete) têm de chegar à caixa do nome.
+            await page.click('#playerNameInput');
+            await page.keyboard.type('Ana Dada');
+            const typed = await page.inputValue('#playerNameInput');
+            if (typed !== 'Ana Dada') throw new Error(`o nome ficou "${typed}" em vez de "Ana Dada" (teclas comidas pelo jogo)`);
             await page.click('#playBtn');
             await waitForQuebraPlaying(page);
-            const before = await page.evaluate(() => ({
-                paddle: window.__arcadeQuebra.paddle.x,
-                frameW: window.__arcadeQuebra.layout.frame.width,
-                frameH: window.__arcadeQuebra.layout.frame.height,
-                remaining: window.__arcadeQuebra.remaining
-            }));
-            if (!(before.frameH > before.frameW)) throw new Error('ao alto, o campo não ficou em formato retrato');
-            await page.keyboard.down('ArrowRight');
-            await sleep(700);
-            await page.keyboard.up('ArrowRight');
-            await sleep(2000);
-            const after = await page.evaluate(() => ({
-                paddle: window.__arcadeQuebra.paddle.x,
-                remaining: window.__arcadeQuebra.remaining
-            }));
-            if (!(after.paddle > before.paddle + 8)) throw new Error('a raquete não respondeu ao teclado');
-            if (!(after.remaining < before.remaining)) throw new Error('a bola não partiu tijolos');
+            const layout = await page.evaluate(() => window.__arcadeQuebra.layout.screen);
+            if (!(layout.h > layout.w)) throw new Error('ao alto, o campo não ficou em formato retrato');
+            if (layout.x < 0 || layout.y < 0 || layout.x + layout.w > 390 || layout.y + layout.h > 780) throw new Error('o campo não cabe no ecrã');
+
+            // Arrastar o dedo em qualquer sítio move a raquete; um toque curto lança.
+            const cdp = await page.context().newCDPSession(page);
+            const touch = (type, points) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points.map((p, id) => ({ ...p, id })) });
+            const before = await page.evaluate(() => window.__arcadeQuebra.paddle.x);
+            await touch('touchStart', [{ x: 120, y: 500 }]);
+            for (let x = 130; x <= 220; x += 10) {
+                await touch('touchMove', [{ x, y: 500 }]);
+                await sleep(16);
+            }
+            await touch('touchEnd', []);
+            await sleep(100);
+            const after = await page.evaluate(() => window.__arcadeQuebra.paddle.x);
+            if (!(after > before + 60)) throw new Error(`arrastar o dedo não moveu a raquete (${before.toFixed(1)} → ${after.toFixed(1)})`);
+            const remaining = await page.evaluate(() => window.__arcadeQuebra.remaining);
+            await touch('touchStart', [{ x: 200, y: 400 }]);
+            await touch('touchEnd', []);
+            await sleep(200);
+            if (!(await page.evaluate(() => window.__arcadeQuebra.launched))) throw new Error('um toque no ecrã não lançou a bola');
+            // A bola sobe até aos tijolos (a raquete segue-a, para não a perder).
+            await page.evaluate(async () => {
+                const { input } = await import('/games/quebra-tijolos/js/input.js');
+                window.__quebraFollow = setInterval(() => {
+                    const ball = window.__arcadeQuebra.balls[0];
+                    if (ball) input.pointerX = ball.x;
+                }, 16);
+            });
+            await page.waitForFunction((n) => window.__arcadeQuebra.remaining < n, remaining, { timeout: 8000 })
+                .catch(() => { throw new Error('a bola não partiu tijolos'); });
+            await page.evaluate(() => clearInterval(window.__quebraFollow));
         }
     },
     {
@@ -1234,25 +1257,144 @@ const GAMES = [
         menuSelector: '#startScreen',
         async play(page) {
             await page.evaluate(() => {
-                localStorage.setItem('quebraTijolosProgress_v1', JSON.stringify({ v: 1, unlocked: 8, levels: {} }));
+                localStorage.setItem('quebraTijolosProgress_v1', JSON.stringify({ v: 2, unlocked: 8, levels: {} }));
             });
             await page.reload({ waitUntil: 'load' });
             await waitForSplash(page);
+            if (!(await page.textContent('#playBtn')).includes('nível 8')) throw new Error('o progresso guardado não abriu o nível 8');
             await page.click('#playBtn');
             await waitForQuebraPlaying(page);
-            const layout = await page.evaluate(() => ({
-                viewW: window.__arcadeQuebra.view.width,
-                frameW: window.__arcadeQuebra.layout.frame.width
+
+            // Ao comprido o campo sobe até ao cimo, à esquerda dos botões da barra, sem lhes tocar.
+            const fit = await page.evaluate(() => ({
+                field: window.__arcadeQuebra.layout.screen,
+                bar: document.querySelector('.topBar').getBoundingClientRect().left
             }));
-            if (!(layout.frameW < layout.viewW * 0.78)) throw new Error('em paisagem não sobraram paredes laterais');
+            if (fit.field.x + fit.field.w > fit.bar) throw new Error('o campo passou por baixo da barra de topo');
+            if (fit.field.y + fit.field.h > 450) throw new Error('o campo não cabe na altura do ecrã');
+
+            const before = await page.evaluate(() => window.__arcadeQuebra.paddle.x);
+            await page.keyboard.down('d');
+            await sleep(400);
+            await page.keyboard.up('d');
+            const after = await page.evaluate(() => window.__arcadeQuebra.paddle.x);
+            if (!(after > before + 20)) throw new Error('a tecla D não moveu a raquete');
+            await page.keyboard.press('Space');
+            await sleep(300);
+
             await page.click('#pauseBtn');
             await page.waitForSelector('#pauseScreen', { state: 'visible' });
             const frozen = await page.evaluate(() => window.__arcadeQuebra.elapsed);
-            await sleep(700);
+            await sleep(600);
             if ((await page.evaluate(() => window.__arcadeQuebra.elapsed)) !== frozen) throw new Error('o relógio andou em pausa');
             await page.click('#resumeBtn');
-            await sleep(700);
+            await sleep(600);
             if (!((await page.evaluate(() => window.__arcadeQuebra.elapsed)) > frozen)) throw new Error('o relógio não retomou');
+        }
+    },
+    {
+        slug: 'quebra-tijolos',
+        name: 'quebra-tijolos-mecanicas',
+        viewport: { width: 900, height: 450 },
+        canvas: true,
+        menuSelector: '#startScreen',
+        async play(page) {
+            // As peças, uma a uma, com a física do jogo a 60 passos por segundo.
+            // Tudo dentro de um só evaluate: assim o ciclo do jogo não corre entre os passos.
+            const problems = await page.evaluate(async () => {
+                const L = await import('/games/quebra-tijolos/js/level.js');
+                const { game } = await import('/games/quebra-tijolos/js/state.js');
+                const { applyCapsule, capsuleById } = await import('/games/quebra-tijolos/js/powerups.js');
+                const { LEVELS } = await import('/games/quebra-tijolos/js/levels.js');
+                const { PADDLE_Y } = await import('/games/quebra-tijolos/js/config.js');
+                const problems = [];
+                const step = (seconds) => {
+                    for (let t = 0; t < seconds; t += 1 / 60) L.updateLevel(1 / 60);
+                };
+                const shoot = (brick) => {
+                    const ball = game.balls[0];
+                    ball.stuck = false;
+                    game.launched = true;
+                    ball.x = brick.x + brick.w / 2;
+                    ball.y = brick.y + brick.h + 20;
+                    ball.dx = 0;
+                    ball.dy = -1;
+                };
+
+                // Os desenhos: 13 letras por linha, já validados ao carregar o módulo.
+                if (LEVELS.length !== 30) problems.push(`há ${LEVELS.length} níveis em vez de 30`);
+
+                // TNT em cadeia: no Dominó, a TNT de baixo leva o V todo atrás.
+                L.startLevel(LEVELS.find((l) => l.name === 'Dominó').id);
+                game.paused = true;
+                const tnts = () => game.bricks.filter((b) => b.kind === 'tnt' && b.alive).length;
+                const bottom = game.bricks.filter((b) => b.kind === 'tnt').sort((a, b) => b.row - a.row)[0];
+                const before = tnts();
+                shoot(bottom);
+                step(0.2);
+                if (tnts() !== 0) problems.push(`a TNT não rebentou em cadeia (${before} → ${tnts()})`);
+
+                // Prata: dois golpes. O primeiro só racha.
+                L.startLevel(LEVELS.find((l) => l.name === 'Xadrez').id);
+                game.paused = true;
+                const silver = game.bricks.find((b) => b.kind === 'silver');
+                shoot(silver);
+                step(0.12);
+                if (!silver.alive || silver.hits !== 1) problems.push('a prata não ficou só rachada ao primeiro golpe');
+
+                // Aço: não se parte.
+                L.startLevel(LEVELS.find((l) => l.name === 'Portões').id);
+                game.paused = true;
+                const steel = game.bricks.find((b) => b.kind === 'steel');
+                shoot(steel);
+                step(0.12);
+                if (!steel.alive) problems.push('o aço partiu-se');
+
+                // Cápsulas: três bolas, raquete larga, laser.
+                L.startLevel(1);
+                game.paused = true;
+                shoot(game.bricks[game.bricks.length - 1]);
+                game.balls[0].y = PADDLE_Y - 80;
+                applyCapsule(capsuleById('multi'));
+                if (game.balls.length !== 3) problems.push(`a cápsula M deu ${game.balls.length} bolas em vez de 3`);
+                const narrow = game.paddle.w;
+                applyCapsule(capsuleById('wide'));
+                step(0.5);
+                if (!(game.paddle.w > narrow * 1.4)) problems.push('a cápsula A não alargou a raquete');
+                applyCapsule(capsuleById('laser'));
+                const left = game.remaining;
+                step(1.5);
+                if (!(game.remaining < left)) problems.push('o laser não partiu tijolos');
+
+                // Perder as bolas todas custa uma vida; sem vidas, o nível acaba.
+                L.startLevel(1);
+                game.paused = true;
+                for (let i = 0; i < 3; i++) {
+                    if (game.phase === 'lost') step(1.5);
+                    const ball = game.balls[0];
+                    ball.stuck = false;
+                    game.launched = true;
+                    ball.x = 10;
+                    ball.y = PADDLE_Y + 30;
+                    ball.dx = 0;
+                    ball.dy = 1;
+                    game.paddle.x = 300;
+                    step(0.3);
+                }
+                if (game.lives !== 0 || game.phase !== 'ending' || game.result?.cleared !== false) {
+                    problems.push(`perder as três bolas não acabou o nível (vidas ${game.lives}, fase ${game.phase})`);
+                }
+                step(2);
+                return problems;
+            });
+            if (problems.length) throw new Error(problems.join('; '));
+            // O ecrã de resultados monta-se pelo ciclo da página.
+            await page.evaluate(async () => {
+                const { game } = await import('/games/quebra-tijolos/js/state.js');
+                game.paused = false;
+            });
+            await page.waitForSelector('#resultScreen', { state: 'visible', timeout: 5000 });
+            if (!(await page.textContent('#resultBody')).includes('Sem vidas')) throw new Error('o ecrã de resultados não disse "Sem vidas"');
         }
     },
     {

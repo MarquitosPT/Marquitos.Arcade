@@ -55,14 +55,16 @@ public static class ArcadeCatalog
     [
         new("quebra-tijolos",
             "Quebra-Tijolos",
-            "bola • raquete • muralhas",
-            "Parte os tijolos todos com a raquete, guarda as três vidas e sobe por 48 níveis cada vez mais apertados.",
+            "bola • raquete • tijolos",
+            "Parte os tijolos todos com a raquete, apanha as cápsulas e atravessa cinco mundos em 30 níveis.",
             "🧱",
             "theme-quebra",
             "/covers/quebra-tijolos.webp",
-            "1.0.0",
-            new(2026, 10, 16),
-            Badge: "Novo"),
+            "0.9.0",
+            new(2026, 10, 22),
+            // Em testes: fica "Em breve" no catálogo, mas joga-se em
+            // /games/quebra-tijolos/ para quem lá for direto.
+            IsPlayable: false),
 
         new("gulosinhos",
             "Gulosinhos",
