@@ -20,7 +20,7 @@ Blazor Web App (.NET 10, render mode Interactive Server) com ASP.NET Core Identi
   - `maze-run/`: Maze Run, labirintos por níveis — apanhar os cristais abre a saída, e há guardas a impedi-lo. Pelo caminho há cristais de gelo que os congelam, portais que ligam duas pontas do labirinto e portas trancadas com a sua chave (ver [As peças do Maze Run](#as-peças-do-maze-run)). Os níveis vão-se desbloqueando à medida que se concluem, e o progresso fica guardado na conta de quem tem sessão iniciada (ver [Progresso e níveis](#progresso-e-níveis)). Os labirintos não estão desenhados à mão: saem de uma semente por nível (`buildMaze` em `js/maze.js`), como as pistas do Pixel Racing saem do `buildTrack` — **acrescentar um nível é acrescentar uma entrada ao array `LEVELS` do `js/levels.js`**, e mais nada.
   - `terras-do-reino/`: Terras do Reino, economia medieval contínua num tabuleiro isométrico com relevo — semear e colher trigo, cortar madeira, tirar pedra, pescar nos lagos, abrir minas de ouro, moinhos, padarias, vacarias, pocilgas e oficinas, lã e tecelagem, vinhas, destilaria e taberna, algodão, alfaiataria, teatro, hotel para os visitantes, escola, centro de saúde e posto de correios, galinheiro, cana-de-açúcar, arroz, pastelaria e joalharia, e comerciar com três vilas vizinhas geridas pelo CPU, que crescem sozinhas e são as rivais na tabela da prosperidade. Não há guerra nem fim de partida: o reino fica gravado (na conta, para quem tem sessão iniciada) e, fora do jogo, fica em pausa: ao voltar, continua do ponto exato onde ficou. Ver [Terras do Reino](#terras-do-reino).
   - `gulosinhos/`: Gulosinhos, jogo de plataformas em tiles — um de quatro bichos fofinhos (gatinha, coelhinho, pandinha e raposinha) corre até ao frasco no fim de cada percurso a apanhar guloseimas, entre geleias que guardam os doces, ouriços, abelhas, plantas carnívoras, bombas-relógio, picos, molas, elevadores, plataformas que andam e pontes de bolachas. A câmara segue o bicho. Doze níveis, cada um com 1:30 a 2:00 de percurso, que não estão desenhados à mão: saem de uma semente e de uma receita (`LEVELS` em `js/levels.js`, gerados por `buildWorld` em `js/world.js`). Ver [Gulosinhos](#gulosinhos).
-  - `quebra-tijolos/`: Quebra-Tijolos, arcade ao alto do estilo brick breaker — a raquete segura a bola entre paredes laterais e teto, os tijolos ficam concentrados perto do topo e a dificuldade sobe por 48 níveis. O campo joga-se sempre em retrato; em paisagem sobra parede contínua dos dois lados, a mesma que fecha a arena. Progresso por níveis e leaderboard usam os clientes genéricos do SDK (`lib/arcade/progress.js` e `lib/arcade/scores.js`).
+  - `quebra-tijolos/`: Quebra-Tijolos, o clássico de bola e raquete — partir os tijolos todos sem deixar cair a bola, com cápsulas que caem de alguns tijolos (raquete larga, íman, laser, bola devagar, três bolas e vida extra). Trinta níveis desenhados à mão em texto (`LEVELS` em `js/levels.js`), em cinco mundos de seis, cada um a apresentar um tijolo novo: prata, aço, TNT e titânio. Em testes, fora do catálogo. Ver [Quebra-Tijolos](#quebra-tijolos).
   - `memoria-animal/`: Memória Animal, jogo da memória com cartas de animais — virar duas de cada vez e encontrar os pares. Vinte e quatro níveis, de 4 cartas (2 pares) a 50 (25 pares), mais 2 por nível; as cartas encolhem à medida que o tabuleiro cresce, para caberem todas no ecrã do telemóvel. Níveis desbloqueados e estrelas pelo mesmo cliente de progresso do Maze Run. Ver [Memória Animal](#memória-animal).
   - `pixel-racing/`: Pixel Racing, corrida simples em qualquer uma das doze pistas ou campeonato com todas, com pontuação via `/api/scores/pixel-racing`. O menu tem dois passos: o primeiro ecrã pergunta só o nome (a quem não tem sessão iniciada) e o modo; o segundo tem duas páginas no mesmo painel — a pista (no campeonato, a lista das que se vão correr) e a dificuldade, e depois a garagem, com o carro e a cor. As pistas e os carros escolhem-se em carrosséis — o partilhado do SDK (`lib/arcade/carousel.js`), com a folha `css/carousel.css` do jogo a dizer quantos cabem por página: pistas 2 × 2 ao alto, 3 × 1 ao comprido e 3 × 2 no computador; carros sempre numa fila só, dois por página. Os cartões dos carros levam miniaturas em canvas, que se perdem quando o carrossel refaz as páginas (ao rodar o aparelho); a opção `onRender` do `createCarousel` é onde se voltam a desenhar, e onde se repõe o cartão escolhido. Há quatro carros (`CAR_TYPES` em `js/config.js`), do mais lento ao mais rápido: kart, jeep, 911 GT e Fórmula 1, cada um com multiplicadores próprios de velocidade, aceleração, curva, aderência, andamento fora de pista e carga de drift. Cada corrida é de um tipo só — os adversários correm com o carro que o jogador escolheu —, por isso escolher o carro é escolher a categoria; no modo campeonato, é escolher qual dos quatro campeonatos (karts, jeeps, GT, Fórmula 1) se corre, e cada um corre as doze pistas, da mais fácil à mais difícil. O desenho dos quatro está em `js/carsprites.js`, partilhado pela corrida e pelas miniaturas da garagem, e cabe no mesmo retângulo de colisão (`CAR_LEN` × `CAR_W`). As pistas são geradas por `buildTrack` de duas maneiras: a partir de uma superelipse com harmónicos (as seis originais) ou de uma lista de pontos de controlo por onde passa uma Catmull-Rom centrípeta (`points`, as seis com ganchos, serpentinas e esses, que nenhuma superelipse dá). A dificuldade é medida no traçado (`corneringProfile`) em vez de escrita à mão — a curva mais fechada comparada com o raio que se faz a fundo, mais o quanto a pista vira por cada 1000 unidades —, e é por ela que `TRACKS` se ordena e que sai o grau de perícia do cartão. Ao desenhar uma pista por pontos, nenhuma curva deve ser mais apertada do que a meia largura da pista (senão a margem de dentro dobra-se) e troços diferentes têm de ficar a mais de duas vezes `barrierAt` um do outro, para as escapatórias não se tocarem. Além dos postos de turbo e das poças de óleo, cada pista tem uma ou duas rampas (`placeRamps`), postas sozinhas nas retas mais compridas, centradas numa das faixas e com 60% da largura dela: quem passa nelas com velocidade salta, segue a direito no ar (o volante só roda o nariz) e cresce com a altura do salto; ao aterrar há dois ou três saltinhos de suspensão, e aterrar torto custa velocidade. A cor sai da paleta única de `CAR_COLORS` e os adversários ficam com três das restantes, por isso nunca há dois carros da mesma cor na pista.
 - `src/MarquitosArcade/wwwroot/lib/arcade/`: SDK partilhado pelos jogos (áudio, leaderboard, armazenamento, viewport do canvas, ciclo de jogo, barra de topo, ecrã de arranque). Módulos ES sem dependências externas. O `splash.css`/`splash.js`/`splash-boot.js` são a exceção que também serve o portal — ver [Ecrã de arranque](#ecrã-de-arranque).
@@ -1132,6 +1132,130 @@ acordes de cavaquinho nos contratempos e bateria leve. Dó maior a 132 BPM, 20
 compassos em loop: A, A', B, B' e uma ponte calma só com o bombo. O motor é o
 [comum](#música-de-fundo); o botão **Música** liga-a e desliga-a
 (`gulosinhosMusic_v1`).
+
+## Quebra-Tijolos
+
+> **Versão 0.9.0, em testes desde 22 de outubro de 2026** — no catálogo como
+> "Em breve", com o painel das pontuações comentado (ver a nota do
+> [Terras do Reino](#terras-do-reino)). Uma primeira versão chegou a ser
+> publicada a 16 de outubro sem passar pelos testes; esta foi reescrita de raiz,
+> e o progresso dessa (48 níveis gerados, outra numeração) não passa para
+> esta: o `VERSION` do `js/progress.js` subiu para 2.
+
+Bola, raquete e tijolos, como na máquina de salão. Cada nível acaba quando não
+sobra nenhum tijolo que se parta; as três estrelas são acabar, acabar sem perder
+vidas e acabar dentro do tempo-alvo (`par`, que sai dos golpes que os tijolos
+pedem: `PAR_BASE` + `PAR_PER_HIT` por golpe, em `js/config.js`).
+
+### O campo tem um tamanho só
+
+**Tudo é medido em unidades do campo, nunca em píxeis do ecrã.** O campo tem
+13 colunas de tijolos de 32 × 16 unidades (416 de largura, 640 de altura), com
+paredes à esquerda, à direita e no teto e a faixa do marcador por cima. O
+`js/field.js` é o único sítio que olha para o ecrã: calcula a escala com que a
+caixa inteira cabe, e o desenho passa por uma única transformação
+(`applyFieldTransform`). A física, os tijolos, a raquete, o marcador e a grelha
+do chão (as colunas dos tijolos) vivem no mesmo referencial, e por isso não há
+como ficarem desalinhados — que era o defeito da primeira versão, que media
+umas coisas em unidades e outras em píxeis.
+
+Ao alto, o campo fica por baixo da barra de topo. Ao comprido sobra largura e
+falta altura, por isso o campo sobe até ao cimo do ecrã sempre que cabe à
+esquerda dos botões da barra sem lhes tocar (o smoke-test confirma); à volta
+fica o céu do mundo.
+
+O cenário (céu, paredes, chão, vidro do marcador) não muda a jogar, e é
+desenhado uma vez num canvas à parte e carimbado a cada frame. Os tijolos
+também: cada aspeto (tipo, cor, golpes que faltam) é desenhado uma vez à
+resolução do ecrã (`brickSprite` em `js/draw.js`).
+
+### Os níveis desenham-se em texto
+
+**Acrescentar um nível é acrescentar uma grelha ao `DESIGNS`** (`js/levels.js`):
+13 letras por linha, e o que se vê no ficheiro é o que aparece no campo.
+
+| letra               | tijolo                                                  |
+| ------------------- | ------------------------------------------------------- |
+| `w o c g r b p v y` | de cor; um golpe, e vale mais quanto mais "quente" a cor |
+| `S`                 | prata: dois golpes                                      |
+| `T`                 | titânio: três golpes                                    |
+| `E`                 | TNT: rebenta e parte os oito vizinhos (uma TNT vizinha rebenta também) |
+| `#`                 | aço: não se parte                                       |
+| `.`                 | buraco                                                  |
+
+Os níveis estão em mundos de seis (`WORLDS`), cada um com a sua cor e o seu
+tijolo novo. A velocidade da bola e a largura da raquete não se escrevem nível a
+nível: andam em linha reta do primeiro ao último (`levelTuning`). Os nomes são
+de uma palavra, pela regra dos cartões do carrossel.
+
+Duas regras para o aço, aprendidas a jogar: **nunca fechar um corredor de uma
+fila só** (a bola não consegue andar de lado lá dentro, e o que estiver ao fundo
+fica por partir), e **nunca uma abertura de uma coluna** para chegar a tijolos
+que só se alcançam por ela. Ao mexer nos níveis, o piloto automático (abaixo)
+diz se todos se acabam.
+
+### A bola
+
+`js/physics.js` faz andar a bola aos bocadinhos de `BALL_SUBSTEP` unidades —
+menos do que o raio — e resolve no máximo um tijolo por bocadinho, como um
+círculo contra um retângulo: numa face espelha nesse eixo, num canto espelha na
+direção do canto. Assim nenhuma bola atravessa um tijolo num frame lento nem
+parte dois de uma vez por uma esquina. Na raquete, o ressalto depende só de
+onde a bola bate (no meio sobe a direito, nas pontas sai inclinada até
+`PADDLE_MAX_ANGLE`) — é isso que dá pontaria. Uma bola quase horizontal é
+endireitada (`BALL_MIN_VY`), para não ficar presa a ricochetear de parede em
+parede.
+
+### Controlos
+
+- **Teclado:** setas ou A/D movem a raquete, espaço ou ↑ lança, P ou Esc
+  pausam. As teclas só contam fora das caixas de texto — na primeira versão o
+  jogo comia o A e o D do campo do nome, e o smoke-test escreve agora o nome
+  tecla a tecla para isso não voltar.
+- **Rato:** a raquete segue o ponteiro; o clique lança.
+- **Dedo:** arrastar em qualquer sítio do ecrã move a raquete pelo mesmo tanto
+  que o dedo andou, sem ela saltar para debaixo do dedo — assim o dedo nunca a
+  tapa, nem tapa a bola. Um toque curto lança.
+
+A bola sai sozinha ao fim de `AUTO_LAUNCH` segundos na raquete.
+
+### Cápsulas
+
+Caem de alguns tijolos partidos (`CAPSULE_CHANCE`) e cada uma só aparece a
+partir de um nível (`from`, em `js/powerups.js`):
+
+| cápsula | poder                                                         |
+| ------- | ------------------------------------------------------------- |
+| A       | raquete larga                                                 |
+| D       | bola devagar (com relógio)                                    |
+| M       | cada bola dá mais duas                                        |
+| +       | vida extra                                                    |
+| C       | raquete-íman: a bola cola e sai quando se lança               |
+| L       | laser: dois disparos a cada `LASER_INTERVAL` (com relógio)    |
+
+A, C e L são da raquete e trocam umas pelas outras; perder a bola leva todos os
+poderes.
+
+### Piloto automático
+
+Para afinar níveis sem os jogar à mão, o smoke-test tem um cenário de mecânicas
+(TNT em cadeia, prata, aço, cápsulas, perder as vidas), e qualquer guião pode
+correr a física do jogo a 60 passos por segundo dentro de um `page.evaluate`:
+`startLevel`, `game.paused = true` (para o ciclo da página não mexer) e
+`updateLevel(1 / 60)` em ciclo, com `input.pointerX` a seguir a bola. Foi assim
+que se apanharam os dois níveis que não se acabavam e que se mediu o tempo-alvo.
+
+### Música
+
+Um tema de salão de jogos em synthwave (`js/music.js`): lá menor a 136 BPM,
+com baixo de dentes de serra a saltar à oitava, arpejo em semicolcheias com eco
+de lado a lado, solo de dois dentes de serra e uma quadrada com vibrato, pad na
+pausa e bateria a quatro tempos. 32 compassos (perto de um minuto) em loop:
+introdução, tema, segunda parte mais acima, pausa sem bombo a crescer num rufo,
+e o tema com o solo dobrado à oitava. Tem o volume da do Pixel Racing (RMS
+perto de −21 dBFS no `render-music.mjs`) — a primeira versão tinha uma volta de
+7 segundos a −42 dBFS. O botão **Música** liga-a e desliga-a
+(`quebraTijolosMusic_v1`).
 
 ## Música da Tasca do Zé
 

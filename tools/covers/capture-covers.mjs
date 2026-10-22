@@ -173,11 +173,15 @@ const GAMES = [
     },
     {
         slug: 'quebra-tijolos',
-        viewport: { width: 800, height: 450 },
+        // O campo joga-se ao alto: captura-se em retrato e recorta-se em 16:9 a
+        // faixa de cima, do marcador até por baixo dos tijolos, para os
+        // tijolos aparecerem grandes. O último nível (todos os tijolos
+        // especiais), a meio, com três bolas no ar e uma TNT a rebentar.
+        viewport: { width: 450, height: 800 },
         scale: 2,
         async play(page) {
             await page.evaluate(() => {
-                localStorage.setItem('quebraTijolosProgress_v1', JSON.stringify({ v: 1, unlocked: 48, levels: {} }));
+                localStorage.setItem('quebraTijolosProgress_v1', JSON.stringify({ v: 2, unlocked: 30, levels: {} }));
             });
             await page.reload({ waitUntil: 'load' });
             await waitForSplash(page);
@@ -188,19 +192,48 @@ const GAMES = [
                 window.__arcadeQuebra = game;
             });
             await page.waitForFunction(() => window.__arcadeQuebra?.phase === 'playing', undefined, { timeout: 20000 });
+            await page.evaluate(async () => {
+                const { applyCapsule, capsuleById } = await import('/games/quebra-tijolos/js/powerups.js');
+                const game = window.__arcadeQuebra;
+                game.bannerTimer = 0;
+                // Uns buracos na muralha, como a meio de uma partida.
+                for (const brick of game.bricks) {
+                    if (brick.kind !== 'steel' && brick.row >= 6 && (brick.col + brick.row) % 3 !== 0) {
+                        brick.alive = false;
+                        game.remaining -= 1;
+                    }
+                }
+                game.score = 18450;
+                game.launched = true;
+                const ball = game.balls[0];
+                ball.stuck = false;
+                ball.x = 150;
+                ball.y = 200;
+                ball.dx = 0.45;
+                ball.dy = -0.89;
+                applyCapsule(capsuleById('multi'));
+                applyCapsule(capsuleById('laser'));
+            });
+            await sleep(700);
+            // As bolas fogem depressa do recorte: põem-se nos buracos da muralha,
+            // com o rasto atrás, e o jogo pára para a fotografia.
             await page.evaluate(() => {
                 const game = window.__arcadeQuebra;
-                const brick = game.bricks.find((b) => !b.steel && b.hp > 0);
-                game.ball.x = brick.x + brick.w * 0.3;
-                game.ball.y = brick.y + brick.h + 88;
-                game.ball.vx = 135;
-                game.ball.vy = -480;
-                game.ball.stuck = false;
-                game.paddle.x = game.layout.inner.x + game.layout.inner.width * 0.6 - game.paddle.width / 2;
+                game.paused = true;
+                game.elapsed = 37;
+                const spots = [[150, 182, 0.5, -0.86], [262, 180, -0.6, -0.8], [348, 152, 0.35, 0.94]];
+                game.balls.forEach((ball, i) => {
+                    const [x, y, dx, dy] = spots[i % spots.length];
+                    Object.assign(ball, { x, y, dx, dy, stuck: false });
+                    ball.trail = Array.from({ length: 8 }, (_, k) => ({ x: x - dx * 7 * (k + 1), y: y - dy * 7 * (k + 1) }));
+                });
             });
-            await sleep(450);
+            await sleep(100);
         },
-        clip: () => ({ x: 0, y: 0, width: 800, height: 450 })
+        async clip(page) {
+            const box = await page.evaluate(() => window.__arcadeQuebra.layout.screen);
+            return { x: box.x, y: box.y, width: box.w, height: box.w * 9 / 16 };
+        }
     },
     {
         slug: 'memoria-animal',

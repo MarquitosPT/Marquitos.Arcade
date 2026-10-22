@@ -1,17 +1,66 @@
+/*
+ * Tokens do Quebra-Tijolos — a variante "glass" do tema da arcada, com os mesmos
+ * nomes de token dos Gulosinhos e do Maze Run, em cores de salão de jogos:
+ * ciano de néon e rosa-choque.
+ *
+ * Só existe a variante escura: os ecrãs ficam por cima do campo, que é escuro
+ * em todos os mundos, e vidro claro por cima dele não teria contraste. Por isso
+ * nada de media query de `prefers-color-scheme`.
+ *
+ * A cor de cada mundo (`--level-accent`, `--card-accent`) não vive aqui: vem de
+ * WORLDS em js/levels.js e é escrita no elemento pelo JS.
+ */
+
 :root {
-    --bg: #0b1020;
-    --bg-2: #111832;
-    --glass: rgba(12, 20, 38, 0.72);
-    --glass-strong: rgba(12, 20, 38, 0.86);
-    --line: rgba(255, 255, 255, 0.12);
-    --text: #eef6ff;
-    --muted: rgba(238, 246, 255, 0.78);
-    --faint: rgba(238, 246, 255, 0.62);
-    --accent: #7dd3fc;
-    --accent-2: #f472b6;
-    --danger: #fb7185;
-    --gold: #fbbf24;
-    --shadow: 0 26px 70px rgba(0, 0, 0, 0.34);
-    --font-display: 'Fredoka', 'Outfit', 'Segoe UI', system-ui, sans-serif;
-    --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+    /* acentos: néon ciano, rosa-choque e vermelho de tijolo */
+    --accent: #3fd8f2;
+    --accent-2: #ff6ec7;
+    --accent-3: #ff4d6a;
+    --gold: #ffd23f;
+    --on-accent: #08142a;
+
+    /* texto */
+    --text: #eef2ff;
+    --muted: rgba(238, 242, 255, 0.66);
+    --faint: rgba(238, 242, 255, 0.42);
+
+    /* vidro */
+    --glass-bg: linear-gradient(155deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04) 60%);
+    --glass-bg-soft: rgba(255, 255, 255, 0.06);
+    --glass-bg-hover: rgba(255, 255, 255, 0.11);
+    --glass-border: rgba(255, 255, 255, 0.16);
+    --glass-border-strong: rgba(255, 255, 255, 0.28);
+    --glass-shadow: 0 34px 70px -30px rgba(0, 0, 0, 0.9);
+    --glass-shadow-sm: 0 14px 30px -18px rgba(0, 0, 0, 0.85);
+    --blur: 24px;
+    --blur-soft: 8px;
+
+    /* o véu que separa o vidro do campo que está a ser desenhado por trás */
+    --scrim: radial-gradient(ellipse at 50% 18%, rgba(30, 40, 110, 0.4), rgba(6, 8, 24, 0.74) 70%);
+
+    --ring: rgba(63, 216, 242, 0.45);
+    --glow: rgba(63, 216, 242, 0.4);
+
+    /* geometria */
+    --radius-sm: 12px;
+    --radius: 18px;
+    --radius-lg: 26px;
+    --radius-pill: 999px;
+
+    /* tipografia */
+    --font-display: "Fredoka", "Outfit", "Segoe UI", system-ui, sans-serif;
+    --font-body: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+}
+
+/* Janela "Acerca" (lib/arcade/about.css), com o vidro e o acento deste jogo. */
+:root {
+    --about-panel: rgba(14, 18, 48, 0.95);
+    --about-border: var(--glass-border);
+    --about-ink: var(--text);
+    --about-muted: var(--muted);
+    --about-accent: var(--accent);
+    --about-on-accent: var(--on-accent);
+    --about-radius: var(--radius-lg);
+    --about-font-display: var(--font-display);
+    --about-font-body: var(--font-body);
 }

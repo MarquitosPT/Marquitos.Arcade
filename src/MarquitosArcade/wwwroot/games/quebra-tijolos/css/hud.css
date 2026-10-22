@@ -1,55 +1,70 @@
+/*
+ * Barra de topo: voltar à arcada, acerca, música, pausar e sair.
+ *
+ * O marcador do jogo (pontos, nível, vidas, tempo) não está aqui: é desenhado
+ * no canvas, por cima do teto do campo, no mesmo referencial dos tijolos — o
+ * vidro dele é imitado à mão (`paintHudPanel` em js/render.js).
+ *
+ * Os botões são `inline-block` (e não `flex`) de propósito: quem os mostra e
+ * esconde é o `topbar.js` do SDK, que escreve `display: inline-block` no estilo
+ * do elemento. Daí o espaçamento entre o ícone e a etiqueta vir de uma margem e
+ * não de um `gap`.
+ */
+
 .topBar {
     position: absolute;
-    top: calc(env(safe-area-inset-top, 0px) + 12px);
-    right: calc(env(safe-area-inset-right, 0px) + 12px);
-    z-index: 20;
+    top: max(12px, env(safe-area-inset-top));
+    right: max(12px, env(safe-area-inset-right));
     display: flex;
     gap: 8px;
+    z-index: 20;
 }
 
 .topBtn {
     display: inline-block;
-    min-height: 44px;
     padding: 9px 14px;
     font-family: var(--font-display);
     font-size: 13px;
     font-weight: 600;
     line-height: 1.2;
+    color: var(--text);
     text-decoration: none;
     white-space: nowrap;
-    border-radius: 999px;
-    border: 1px solid rgba(255,255,255,0.12);
-    background: rgba(7, 12, 24, 0.58);
-    color: var(--text);
-    backdrop-filter: blur(18px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-pill);
+    background: rgba(14, 18, 48, 0.55);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    backdrop-filter: blur(14px) saturate(140%);
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
+.topBtn:hover {
+    background: rgba(14, 18, 48, 0.75);
+    border-color: var(--glass-border-strong);
+}
+
+.topBtn--quit:hover {
+    border-color: var(--accent-3);
+    color: #fff;
+}
+
+/* O ícone e a etiqueta lado a lado. Uma classe e não um `style` no HTML: o
+   index.html é só markup. */
 .topBtnInner {
     display: flex;
     align-items: center;
 }
 
-.topBtn--quit {
-    background: rgba(127, 29, 29, 0.58);
-}
-
-.topIcon {
-    flex: none;
-    font-size: 13px;
-    display: block;
-}
-
+.topIcon { font-size: 13px; }
 .topIcon + .topLabel { margin-left: 7px; }
 
-.musicSlash {
-    opacity: 0;
-}
+/* Música desligada: a nota leva um traço por cima e o botão fica mais apagado. */
+#musicBtn .musicSlash { display: none; }
+#musicBtn[aria-pressed="false"] .musicSlash { display: inline; }
+#musicBtn[aria-pressed="false"] { opacity: 0.7; }
 
-#musicBtn[aria-pressed="false"] .musicSlash {
-    opacity: 1;
-}
-
-@media (max-width: 560px) and (orientation: portrait) {
+/* Telemóvel estreito: três botões com rótulo não cabem, e a nota diz-se sozinha. */
+@media (max-width: 400px) {
     #musicBtn .topLabel { display: none; }
     #musicBtn .topIcon + .topLabel { margin-left: 0; }
 }

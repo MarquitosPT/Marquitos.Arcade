@@ -10,13 +10,16 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon3_16x16.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon3.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <meta name="theme-color" content="#181b34" />
+    <meta name="theme-color" content="#0a1030" />
     <meta name="msapplication-TileColor" content="#2b2355" />
     <meta name="msapplication-config" content="/browserconfig.xml" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Marquitos Arcade" />
 
+    <!-- Ecrã de arranque partilhado pela arcada (lib/arcade/splash.*). Vem antes
+         das folhas do jogo porque é o primeiro que se vê, e o logótipo é
+         pré-carregado para não aparecer a meio da animação. -->
     <link rel="preload" as="image" href="/logo3.png" />
     <link rel="stylesheet" href="/lib/arcade/splash.css" />
     <script src="/lib/arcade/standalone-fit.js"></script>
@@ -33,11 +36,13 @@
     <link rel="stylesheet" href="css/base.css" />
     <link rel="stylesheet" href="css/hud.css" />
     <link rel="stylesheet" href="css/screens.css" />
+    <link rel="stylesheet" href="css/controls.css" />
     <link rel="stylesheet" href="css/carousel.css" />
     <link rel="stylesheet" href="css/results.css" />
 </head>
 
 <body>
+    <!-- Ecrã de arranque: fica no ar pelo menos 2s (ver lib/arcade/splash.js). -->
     <div id="arcadeSplash" class="arcade-splash">
         <div class="arcade-splash-rays" aria-hidden="true"></div>
         <div class="arcade-splash-pixels" aria-hidden="true"></div>
@@ -71,6 +76,8 @@
                     <span class="topLabel">Acerca</span>
                 </div>
             </button>
+            <!-- Música: fica à mão dentro e fora do nível. O traço só aparece
+                 com a música desligada (aria-pressed="false", ver css/hud.css). -->
             <button class="topBtn" id="musicBtn" type="button" aria-pressed="true" title="Desligar a música">
                 <div class="topBtnInner">
                     <svg class="topIcon" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16" width="16" height="16">
@@ -102,14 +109,16 @@
 
         <canvas id="game"></canvas>
 
+        <!-- Ecrã 1: quem és, e continuar de onde ficaste. -->
         <div id="startScreen" class="screen">
             <div class="panel">
                 <div class="brand">
                     <span class="brandBadge">🧱</span>
                     <h1 class="title">Quebra-Tijolos</h1>
-                    <p class="sub">Bola · Raquete · Muralhas</p>
+                    <p class="sub">Bola · Raquete · Tijolos</p>
                 </div>
 
+                <!-- O nome só se pede a visitantes: com sessão iniciada vem da conta. -->
                 <div class="nameSlot is-pending" id="nameSlot">
                     <label class="field" id="nameRow" for="playerNameInput">
                         <span class="fieldLabel">O teu nome</span>
@@ -130,11 +139,13 @@
                 <button class="btn" id="playBtn" type="button">Jogar</button>
                 <button class="btnOutline" id="chooseBtn" type="button">Escolher nível</button>
 
-                <p class="hint">Parte os tijolos todos, protege as 3 vidas e mantém a bola no ar · setas ou A/D para mover,
-                    espaço para lançar · no telemóvel, arrasta a raquete ou toca no campo para lançar</p>
+                <p id="hint">Parte os tijolos todos sem deixar cair a bola · setas, A/D ou o rato para mexer a
+                    raquete, espaço ou clique para lançar · no telemóvel, arrasta o dedo em qualquer sítio do
+                    ecrã e toca para lançar · apanha as cápsulas que caem</p>
             </div>
         </div>
 
+        <!-- Ecrã 2: os níveis, abertos e por abrir. -->
         <div id="levelsScreen" class="screen">
             <div class="panel panel--wide">
                 <div class="panelHead">
@@ -148,6 +159,8 @@
                         <p class="panelSub" id="levelsSub"></p>
                     </div>
                 </div>
+                <!-- Os níveis vão em páginas: quantos cabem em cada uma é decidido
+                     no css/carousel.css e lido pelo carrossel do SDK. -->
                 <div class="levelsCarousel" id="levelsCarousel">
                     <button class="carouselArrow carouselArrow--prev" id="prevPageBtn" type="button"
                             aria-label="Níveis anteriores" aria-controls="levelGrid">
@@ -171,7 +184,7 @@
                     <span aria-hidden="true">💾</span>
                     <span>O teu progresso fica só neste aparelho.
                         <a href="/Account/Login">Inicia sessão</a> para o levares contigo e recomeçares
-                        em qualquer muralha já aberta.</span>
+                        em qualquer nível já desbloqueado.</span>
                 </p>
             </div>
         </div>
@@ -179,7 +192,7 @@
         <div id="pauseScreen" class="screen">
             <div class="panel panel--narrow">
                 <h2 class="title">Pausa</h2>
-                <p class="sub">A raquete fica à tua espera</p>
+                <p class="sub">A bola fica no ar à tua espera</p>
                 <button class="btn" id="resumeBtn" type="button">Continuar</button>
                 <button class="btnOutline" id="quitBtn" type="button">Sair para o menu</button>
             </div>
