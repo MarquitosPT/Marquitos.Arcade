@@ -12,8 +12,8 @@ export const ABOUT = {
     title: 'Quebra-Tijolos',
     emoji: '🧱',
     tagline: 'Bola · Raquete · Tijolos',
-    version: '0.9.0',
-    published: '2026-10-22'
+    version: '1.0.0',
+    published: '2026-10-24'
 };
 
 export const NAME_STORAGE_KEY = 'quebraTijolosPlayerName_v1';
