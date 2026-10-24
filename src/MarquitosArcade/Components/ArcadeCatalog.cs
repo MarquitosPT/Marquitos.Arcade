@@ -60,11 +60,9 @@ public static class ArcadeCatalog
             "🧱",
             "theme-quebra",
             "/covers/quebra-tijolos.webp",
-            "0.9.0",
-            new(2026, 10, 22),
-            // Em testes: fica "Em breve" no catálogo, mas joga-se em
-            // /games/quebra-tijolos/ para quem lá for direto.
-            IsPlayable: false),
+            "1.0.0",
+            new(2026, 10, 24),
+            Badge: "Novo"),
 
         new("gulosinhos",
             "Gulosinhos",
@@ -85,8 +83,7 @@ public static class ArcadeCatalog
             "theme-memoria",
             "/covers/memoria-animal.webp",
             "1.0.0",
-            new(2026, 10, 5),
-            Badge: "Novo"),
+            new(2026, 10, 5)),
 
         new("terras-do-reino",
             "Terras do Reino",
