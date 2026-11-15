@@ -131,8 +131,6 @@ elas, cada deploy terminava as sessões de um ano. Os deploys não tocam no volu
 `deploy/backup-sqlite.sh` tira uma cópia consistente (`sqlite3 .backup`) para `/var/backups/marquitos-arcade` e guarda
 14 dias; como repor está no topo do script.
 
-`.github/workflows/main_marquitos-arcade.yml` (a Azure Web App de antes) só corre à mão, até a Web App ser removida.
-
 ## Servidor único vs. um serviço por jogo
 
 A arcada usa **um único processo ASP.NET Core** para todos os jogos, em vez de um serviço por jogo. Razões:
@@ -1364,17 +1362,3 @@ nada**. Não há lista de assets para manter nem hash para escrever à mão.
 
 O porquê desta escolha, e o que faria mudá-la, está em
 [docs/cache-do-browser.md](docs/cache-do-browser.md).
-
-## Deploy (Azure App Service)
-
-O workflow `.github/workflows/main_marquitos-arcade.yml` publica `src/MarquitosArcade` e faz deploy para o App Service `marquitos-arcade` a cada push em `main`. O site é servido em [arcade.marquitos.pt](https://arcade.marquitos.pt), um domínio próprio apontado a esse App Service.
-
-O domínio próprio não é cosmético. O Azure já não dá a Web Apps novas um endereço
-simples: gera um sufixo único por app, do género
-`marquitos-arcade-<sufixo>.spaincentral-01.azurewebsites.net`. Se a Web App for
-recriada, esse endereço muda. Por isso o README não o refere, e o workflow também
-não: identifica o destino pelo **nome** do App Service (`app-name: 'marquitos-arcade'`),
-que se mantém. Recriar a Web App com o mesmo nome não obriga a mexer no deploy;
-só é preciso reapontar o DNS.
-
-Para a base de dados sobreviver a deploys, a connection string (`ConnectionStrings__DefaultConnection`) deve apontar para um caminho persistente do App Service (ex.: `/home/data/app.db`), não para dentro da pasta de conteúdo publicada.
