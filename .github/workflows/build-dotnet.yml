@@ -5,8 +5,8 @@
 # workflow de deploy, já depois do merge em main. Melhor rebentar no pull request
 # do que na única execução que também publica.
 #
-# É de propósito o mesmo comando do passo "Build with dotnet" de
-# main_marquitos-arcade.yml: se passa aqui, o deploy compila.
+# É de propósito o mesmo comando do passo "Compilar" de deploy-vds.yml: se passa
+# aqui, o deploy compila.
 #
 # Só corre em pull requests — em main, quem compila é o próprio workflow de deploy,
 # e não vale a pena pagar o build duas vezes.

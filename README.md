@@ -117,11 +117,27 @@ dotnet run
 
 As migrações do EF Core aplicam-se automaticamente no arranque (`Database.Migrate()` em `Program.cs`), incluindo a criação do `Data/app.db` na primeira execução.
 
+## Publicar
+
+`.github/workflows/deploy-vds.yml` publica a cada push para `main` no servidor (VDS) partilhado com o Margo: a imagem
+do site vai para o GitHub Container Registry e o servidor corre-a com o Docker Compose (`deploy/compose.yaml`, em
+`/opt/marquitos-arcade`), atrás do proxy reverso do servidor (Caddy), que tem o certificado de `arcade.marquitos.pt`
+e passa também o WebSocket do Blazor Server. O servidor e o proxy estão descritos em `deploy/vds/README.md` no
+repositório do Margo; as variáveis e o segredo do ambiente `vds` estão no topo do workflow.
+
+A base de dados não vai na imagem: é o `/home/app/app.db` do volume `marquitos-arcade-home`
+(`ConnectionStrings__DefaultConnection` no `deploy/compose.yaml`), que guarda também as chaves do Data Protection — sem
+elas, cada deploy terminava as sessões de um ano. Os deploys não tocam no volume. Todas as noites às 03:15,
+`deploy/backup-sqlite.sh` tira uma cópia consistente (`sqlite3 .backup`) para `/var/backups/marquitos-arcade` e guarda
+14 dias; como repor está no topo do script.
+
+`.github/workflows/main_marquitos-arcade.yml` (a Azure Web App de antes) só corre à mão, até a Web App ser removida.
+
 ## Servidor único vs. um serviço por jogo
 
 A arcada usa **um único processo ASP.NET Core** para todos os jogos, em vez de um serviço por jogo. Razões:
 
-- A arcada corre num único Azure App Service (`marquitos-arcade`) — ter vários serviços implicaria vários Web Apps ou um proxy reverso à frente deles, complexidade desnecessária para jogos casuais de baixo tráfego.
+- A arcada corre num único contentor (`marquitos-arcade`, ver [Publicar](#publicar)) — ter vários serviços implicaria vários contentores e entradas no proxy reverso, complexidade desnecessária para jogos casuais de baixo tráfego.
 - Os jogos são maioritariamente estáticos (HTML/CSS/JS/canvas no browser); só precisam de backend para o leaderboard persistente. O endpoint `/api/scores/:gameId` é genérico e serve qualquer jogo novo sem duplicar código de servidor.
 - Uma única base SQLite simplifica o deploy e o backup.
 
@@ -317,8 +333,8 @@ node smoke-test.mjs --out /tmp/novo --compare /tmp/ref
 O smoke-test acima não compila nada — serve o `wwwroot` estaticamente. Quem trata
 disso é o workflow `.github/workflows/build-dotnet.yml`, que corre
 `dotnet build --configuration Release` em cada pull request. É de propósito o
-mesmo comando do passo "Build with dotnet" do workflow de deploy: se passa no
-pull request, o deploy compila.
+mesmo comando do passo "Compilar" do workflow de deploy (`deploy-vds.yml`): se
+passa no pull request, o deploy compila.
 
 Sem ele, um erro de C# ou de Razor só aparecia depois do merge em `main`, na
 única execução que também publica. Em `main` este workflow não corre — quem

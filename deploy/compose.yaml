@@ -1,0 +1,40 @@
+# A arcada no servidor (VDS) partilhado com o Margo, atrás do proxy reverso do servidor (Caddy, na pasta
+# deploy/vds/edge do repositório do Margo): o Caddy recebe o https de arcade.marquitos.pt (e o WebSocket do Blazor
+# Server) e passa-o a este contentor pela rede Docker "edge", pelo nome do contentor e pela porta 8080. Nenhuma porta
+# do servidor vem diretamente para aqui.
+#
+# O workflow .github/workflows/deploy-vds.yml copia este ficheiro para /opt/marquitos-arcade no servidor, com um .env
+# que diz a imagem a correr (IMAGE, a do commit publicado).
+name: marquitos-arcade
+
+services:
+  website:
+    image: ${IMAGE:?Falta IMAGE no .env}
+    # <projeto>-<serviço>: o nome que o Caddy chama na rede edge, único entre todos os projetos do servidor
+    container_name: marquitos-arcade
+    restart: unless-stopped
+    environment:
+      # O esquema e o host do pedido do browser vêm dos cabeçalhos X-Forwarded-* do Caddy (https e
+      # arcade.marquitos.pt, não o http interno): as passkeys e os cookies dependem deles
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      # A base de dados no volume, não na pasta da aplicação (que é da imagem e muda a cada deploy)
+      ConnectionStrings__DefaultConnection: "DataSource=/home/app/app.db;Cache=Shared"
+    volumes:
+      # A casa do utilizador da aplicação: a base de dados SQLite (app.db) e as chaves do Data Protection
+      # (.aspnet/DataProtection-Keys), que protegem os cookies de sessão. Sem elas cada deploy terminava a sessão de
+      # toda a gente. O Docker copia o /home/app da imagem (do utilizador app) para o volume novo, por isso a
+      # aplicação pode escrever nele
+      - home:/home/app
+    expose:
+      - "8080"
+    networks:
+      - edge
+
+volumes:
+  home:
+    # Um nome fixo: é o que o backup (deploy/backup-sqlite.sh) e quem repõe a base de dados procuram
+    name: marquitos-arcade-home
+
+networks:
+  edge:
+    external: true
