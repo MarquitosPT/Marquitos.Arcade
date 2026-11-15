@@ -3,10 +3,9 @@
 
 name: Build and deploy ASP.Net Core app to Azure Web App - marquitos-arcade
 
+# Inativo: a arcada passou para o servidor (VDS), publicada pelo deploy-vds.yml. Só à mão, enquanto a Web App existir;
+# apagar este ficheiro quando ela for removida.
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 jobs:

@@ -1,0 +1,123 @@
+name: Deploy (VDS)
+
+# Publica a arcada no servidor (VDS) a cada push para main, ou à mão (no ramo escolhido em "Use workflow from"): a
+# imagem do site (dotnet publish, sem Dockerfile) vai para o GitHub Container Registry (ghcr.io) e o servidor, por
+# SSH, puxa-a e arranca-a com o Docker Compose (deploy/compose.yaml). A base de dados (SQLite) fica num volume do
+# servidor, que os deploys não tocam. O servidor e o proxy reverso (Caddy) são os do Margo (deploy/vds no
+# repositório do Margo).
+#
+# Corre no ambiente "vds" deste repositório:
+#   variáveis  VDS_HOST         o endereço de gestão (SSH) do servidor
+#              VDS_USER         o utilizador do deploy (deploy)
+#              VDS_KNOWN_HOSTS  a chave pública SSH do servidor (ssh-keyscan), para não confiar numa qualquer
+#   segredo    VDS_SSH_KEY      a chave privada SSH do utilizador do deploy
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  # A imagem vai para o GitHub Container Registry, e as versões antigas saem de lá
+  packages: write
+
+# Nunca dois deploys ao mesmo tempo, nem cancelar um a meio
+concurrency:
+  group: deploy-vds
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: vds
+
+    env:
+      REGISTRY: ghcr.io
+      DEPLOY_PATH: /opt/marquitos-arcade
+      CONTAINER: marquitos-arcade
+      VDS_HOST: ${{ vars.VDS_HOST }}
+      VDS_USER: ${{ vars.VDS_USER }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      # O mesmo comando do build-dotnet.yml: se passou no pull request, compila aqui
+      - name: Compilar
+        run: dotnet build --configuration Release
+
+      - name: Entrar no GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login "$REGISTRY" --username "${{ github.actor }}" --password-stdin
+
+      # Etiquetada com o commit: o servidor corre exatamente esta
+      - name: Criar e enviar a imagem
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          tag="$(git rev-parse --short=12 HEAD)"
+          dotnet publish src/MarquitosArcade/MarquitosArcade.csproj -c Release -t:PublishContainer \
+            -p:ContainerRegistry="$REGISTRY" \
+            -p:ContainerRepository="$owner/$CONTAINER" \
+            -p:ContainerImageTags="\"$tag;latest\""
+          echo "IMAGE=$REGISTRY/$owner/$CONTAINER:$tag" > "$RUNNER_TEMP/.env"
+
+      - name: Preparar o SSH
+        run: |
+          install -m 700 -d ~/.ssh
+          echo "${{ secrets.VDS_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "${{ vars.VDS_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+
+      # O servidor puxa a imagem com o token deste job (só vale enquanto o job corre, por isso nada fica lá), arranca-a
+      # (as migrations correm no arranque) e apaga as imagens que nenhum contentor usa. No fim, o Caddy pede a página
+      # inicial ao contentor pela rede edge, como faz com os pedidos dos browsers (não depende do DNS nem do certificado)
+      - name: Publicar no servidor
+        run: |
+          scp deploy/compose.yaml "$VDS_USER@$VDS_HOST:$DEPLOY_PATH/compose.yaml"
+          scp deploy/backup-sqlite.sh "$VDS_USER@$VDS_HOST:$DEPLOY_PATH/backup-sqlite.sh"
+          scp "$RUNNER_TEMP/.env" "$VDS_USER@$VDS_HOST:$DEPLOY_PATH/.env"
+          echo "${{ secrets.GITHUB_TOKEN }}" | ssh "$VDS_USER@$VDS_HOST" "
+            set -e
+            cd '$DEPLOY_PATH'
+            chmod 750 backup-sqlite.sh
+            docker login '$REGISTRY' --username '${{ github.actor }}' --password-stdin
+            docker compose pull --quiet
+            docker logout '$REGISTRY'
+            docker compose up --detach --remove-orphans --wait --wait-timeout 120
+            docker image prune --force
+            cd /opt/edge
+            for attempt in 1 2 3 4 5 6 7 8 9 10; do
+              docker compose exec -T caddy wget -q -O /dev/null 'http://$CONTAINER:8080/' && exit 0
+              sleep 3
+            done
+            echo 'A arcada não responde ao Caddy pela rede edge' >&2
+            exit 1
+          "
+
+      # Como um browser, pelo proxy reverso. Só avisa: antes de o DNS apontar para o servidor ainda não há certificado
+      - name: Verificar o endereço público
+        continue-on-error: true
+        run: |
+          curl --fail --silent --show-error --output /dev/null --retry 5 --retry-delay 6 --retry-all-errors \
+            "https://arcade.marquitos.pt/"
+          echo "https://arcade.marquitos.pt/: ok"
+
+      # Fica com as últimas KEEP versões da imagem no registo (dá para voltar alguns deploys atrás) e apaga as outras.
+      # A versão acabada de publicar vem primeiro, por isso fica sempre. Uma falha aqui não falha o deploy, já feito
+      - name: Apagar imagens antigas
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          KEEP: 10
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER}"
+          scope="users"
+          [[ "$(gh api "users/$owner" --jq .type)" == "Organization" ]] && scope="orgs"
+          old=$(gh api --paginate "$scope/$owner/packages/container/$CONTAINER/versions?per_page=100" --jq '.[].id' | tail -n +$((KEEP + 1)))
+          for id in $old; do
+            gh api --method DELETE "$scope/$owner/packages/container/$CONTAINER/versions/$id" --silent
+          done
+          echo "$CONTAINER: $(echo "$old" | grep -c . || true) versão(ões) antiga(s) apagada(s)"
